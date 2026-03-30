@@ -1,0 +1,199 @@
+.landing-main {
+  background: var(--bg);
+  color: var(--primary);
+  min-height: calc(100vh - 120px);
+}
+
+.hero {
+  padding: 0;
+  background: none;
+  height: 50vh;
+  position: relative; 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-inner {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #fff;  
+  position: relative;
+  z-index: 2;
+}
+
+/* overlay para melhorar legibilidade do texto sobre a imagem */
+.hero::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+}
+
+/* garante que o conteúdo fique acima do overlay */
+.hero-inner > * {
+  position: relative;
+  z-index: 2
+}
+
+
+/* versão maior para o brand dentro do hero */
+.brand-name {
+  width: 160px;
+  height: auto;
+  filter: drop-shadow(0 1px 6px rgba(47,70,80,0.12));
+}
+
+/* logo reduzido (usado no header) — mantido aqui por compatibilidade */
+.brand-logo {
+  width: 50px;
+  height: 50px;
+  filter: drop-shadow(0 1px 6px rgba(47,70,80,0.12));
+}
+
+/* botões */
+.btn-primary {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+.btn-outline-secondary {
+  color: var(--primary);
+  border-color: var(--secondary);
+}
+
+/* cards de features */
+.features .card {
+  border: 1px solid rgba(47,70,80,0.06);
+  background: var(--card-bg);
+}
+
+/* Tabela e paginação para seção #features */
+.features .features-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card-bg);
+  border: 1px solid rgba(47,70,80,0.06);
+  margin-bottom: 0.5rem;
+}
+
+.features .features-table th,
+.features .features-table td {
+  padding: 0.75rem 0.9rem;
+  border: 1px solid rgba(0,0,0,0.06);
+  text-align: left;
+  vertical-align: middle;
+  font-size: 0.95rem;
+}
+
+.features .features-table thead th {
+  background: rgba(0,0,0,0.03);
+  font-weight: 600;
+}
+
+.features .pagination {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.features .pagination button {
+  padding: 0.35rem 0.75rem;
+  border: 1px solid rgba(47,70,80,0.08);
+  background: transparent;
+  color: var(--primary);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.features .pagination button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.features .pagination button.active {
+  font-weight: 700;
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+/* --- Seção Quem Somos (About Company) --- */
+.about-company {
+  /* Usando a cor primária escura como fundo */
+  background: var(--primary); 
+  
+  /* Usando o cinza-claro (do root) para o texto */
+  color: var(--bg); 
+
+  /* O py-4 (Bootstrap) já aplica 1.5rem. 
+     Podemos aumentar para 3rem (py-5) se quiser mais respiro.
+     Vamos manter o seu py-4 por enquanto, mas se quiser maior, 
+     adicione: padding: 3rem 0; 
+  */
+}
+
+.about-company h3 {
+  /* Título em branco com uma borda de destaque verde */
+  color: #fff;
+  font-weight: 600;
+  border-bottom: 2px solid var(--accent-green);
+  display: inline-block; /* Faz a borda parar logo após o texto */
+  padding-bottom: 0.25rem;
+  
+  /* Sobrescreve o mb-3 para dar mais espaço abaixo do título */
+  margin-bottom: 1.5rem !important; 
+}
+
+.about-company p {
+  font-size: 1.05rem; /* Deixa o texto de leitura levemente maior */
+  line-height: 1.7;   /* Aumenta o espaçamento entre linhas */
+}
+
+/* Deixa os "labels" (Anos de atuação, etc.) mais nítidos */
+.about-company p strong {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* --- Estilização da Lista "O que fazemos" --- */
+.about-list {
+  list-style: none; /* Remove os bullets padrões */
+  padding-left: 0;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.about-list li {
+  position: relative;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  padding-left: 1.75rem; /* Espaço para o ícone */
+  margin-bottom: 0.75rem;
+}
+
+/* Adiciona um "check" verde antes de cada item da lista */
+.about-list li::before {
+  content: '✔'; /* Você pode trocar por '•' ou '»' se preferir */
+  position: absolute;
+  left: 0;
+  top: 2px;
+  color: var(--accent-green);
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+/* Coloca o texto <strong> da lista em branco */
+.about-list li strong {
+  color: var(--accent-green);
+}

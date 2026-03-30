@@ -1,0 +1,67 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type AuthPayloadType {
+  accessToken: String!
+  user: UserType!
+}
+
+input CreateServicoInput {
+  desconto: Float
+  descricao: String
+  titulo: String
+  valor: Float
+  vendas: Int
+}
+
+input CreateUserInput {
+  email: String!
+  nome: String
+  senha: String!
+}
+
+input LoginInput {
+  email: String!
+  senha: String!
+}
+
+type Mutation {
+  createServico(input: CreateServicoInput!): ServicoType!
+  createUser(input: CreateUserInput!): UserType!
+  deleteServico(id: Int!): Boolean!
+  login(input: LoginInput!): AuthPayloadType!
+  logout: Boolean!
+  updateServico(input: UpdateServicoInput!): ServicoType!
+}
+
+type Query {
+  health: String!
+  me: UserType!
+  servicos: [ServicoType!]!
+  users: [UserType!]!
+}
+
+type ServicoType {
+  desconto: Float
+  descricao: String
+  id: Int!
+  titulo: String
+  valor: Float
+  vendas: Int
+}
+
+input UpdateServicoInput {
+  desconto: Float
+  descricao: String
+  id: Int!
+  titulo: String
+  valor: Float
+  vendas: Int
+}
+
+type UserType {
+  email: String!
+  id: String!
+  nome: String
+}

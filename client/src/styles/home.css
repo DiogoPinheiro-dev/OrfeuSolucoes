@@ -1,0 +1,51 @@
+:root{
+  /* nova paleta de cores baseada na imagem da Orfeu Sistemas */
+  --primary: #1a365d;   /* azul escuro - tom principal */
+  --secondary: #2a4a6e; /* azul médio - secundário */
+  --accent: #7f9bb3;    /* azul claro/acinzentado - destaque */
+  --bg: #f5f7f9;        /* cinza muito claro - fundo */
+  --muted: #718096;     /* cinza azulado - texto secundário */
+  --card-bg: #ffffff;   /* branco - fundo de cartões */
+  --footer-bg: #e6e9ed; /* cinza claro - fundo do footer */
+  --accent-green: #1d6825; /* <-- ADICIONE ESTA LINHA */
+  
+  /* cores específicas para o modal de login */
+  --lm-bg: #ffffff;
+  --lm-overlay: rgba(26, 54, 93, 0.45);
+  --lm-border: rgba(42, 74, 110, 0.1);
+  --lm-primary: #1a365d;
+  --lm-accent: #7f9bb3;
+  --lm-muted: #718096;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg);
+  background-image: none;
+  background-attachment: fixed;
+}
+
+.landing-main {
+  background: transparent;
+}
+
+.page-wrapper {
+  background-image: url("../assets/OrfeuSolucoes_Banner.png"); 
+  background-size: contain;
+  background-position: top center; 
+  background-repeat: no-repeat;
+  /* background-attachment: fixed;  */
+}
+.features .card {
+  border: 1px solid rgba(26, 54, 93, 0.08);
+  background: var(--card-bg);
+  box-shadow: 0 4px 12px rgba(26, 54, 93, 0.05);
+}
+
+footer.site-footer {
+  background: var(--footer-bg);
+  border-top: 1px solid rgba(26, 54, 93, 0.08);
+}
