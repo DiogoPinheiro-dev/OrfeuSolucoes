@@ -5,7 +5,11 @@ import { RouterProvider, createBrowserRouter } from "react-router-dom";
 
 import { apolloClient } from "./lib/apolloClient";
 import App from "./App.jsx";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import { AuthProvider } from "./context/AuthContext.jsx";
 import Home from "./pages/Home.jsx";
+import Hub from "./pages/Hub.jsx";
+import SolutionWorkspace from "./pages/SolutionWorkspace.jsx";
 
 const router = createBrowserRouter([
     {
@@ -13,8 +17,21 @@ const router = createBrowserRouter([
         element: <App />,
         children: [
             {
-                path: "/",
+                index: true,
                 element: <Home />
+            },
+            {
+                element: <ProtectedRoute />,
+                children: [
+                    {
+                        path: "hub",
+                        element: <Hub />
+                    },
+                    {
+                        path: "hub/:slug",
+                        element: <SolutionWorkspace />
+                    }
+                ]
             }
         ]
     }
@@ -23,7 +40,9 @@ const router = createBrowserRouter([
 createRoot(document.getElementById("root")).render(
     <StrictMode>
         <ApolloProvider client={apolloClient}>
-            <RouterProvider router={router} />
+            <AuthProvider>
+                <RouterProvider router={router} />
+            </AuthProvider>
         </ApolloProvider>
     </StrictMode>
 );

@@ -1,21 +1,31 @@
-:root{
-  /* nova paleta de cores baseada na imagem da Orfeu Sistemas */
-  --primary: #1a365d;   /* azul escuro - tom principal */
-  --secondary: #2a4a6e; /* azul médio - secundário */
-  --accent: #7f9bb3;    /* azul claro/acinzentado - destaque */
-  --bg: #f5f7f9;        /* cinza muito claro - fundo */
-  --muted: #718096;     /* cinza azulado - texto secundário */
-  --card-bg: #ffffff;   /* branco - fundo de cartões */
-  --footer-bg: #e6e9ed; /* cinza claro - fundo do footer */
-  --accent-green: #1d6825; /* <-- ADICIONE ESTA LINHA */
-  
-  /* cores específicas para o modal de login */
+:root {
+  --primary: #16324b;
+  --secondary: #27557a;
+  --accent: #7fa9c9;
+  --bg: #f4f8fb;
+  --muted: #587187;
+  --card-bg: rgba(255, 255, 255, 0.92);
+  --footer-bg: #e5eef5;
+  --accent-green: #1f7a4b;
+  --detail-accent-text: var(--accent-green);
+  --detail-accent-bg: #e9f1f8;
+  --detail-accent-border: rgba(39, 85, 122, 0.12);
+  --detail-accent-surface: rgba(255, 255, 255, 0.76);
+  --button-primary-bg: #17324d;
+  --button-primary-text: #fff;
+  --button-primary-hover-bg: var(--accent-green);
+  --button-primary-hover-text: #fff;
+  --button-primary-hover-border: var(--accent-green);
+  --line: rgba(22, 50, 75, 0.1);
+  --shadow: 0 18px 45px rgba(15, 41, 67, 0.12);
   --lm-bg: #ffffff;
-  --lm-overlay: rgba(26, 54, 93, 0.45);
+  --lm-overlay: rgba(20, 40, 65, 0.45);
   --lm-border: rgba(42, 74, 110, 0.1);
-  --lm-primary: #1a365d;
-  --lm-accent: #7f9bb3;
+  --lm-primary: #16324b;
+  --lm-accent: #7fa9c9;
   --lm-muted: #718096;
+  --site-header-height: 96px;
+  --site-header-height-mobile: 88px;
 }
 
 html {
@@ -23,29 +33,107 @@ html {
 }
 
 body {
-  background: var(--bg);
-  background-image: none;
+  background:
+    radial-gradient(circle at top, rgba(127, 169, 201, 0.2), transparent 32%),
+    linear-gradient(180deg, #f6fbff 0%, #edf4f9 100%);
   background-attachment: fixed;
 }
 
-.landing-main {
-  background: transparent;
-}
-
 .page-wrapper {
-  background-image: url("../assets/OrfeuSolucoes_Banner.png"); 
-  background-size: contain;
-  background-position: top center; 
-  background-repeat: no-repeat;
-  /* background-attachment: fixed;  */
-}
-.features .card {
-  border: 1px solid rgba(26, 54, 93, 0.08);
-  background: var(--card-bg);
-  box-shadow: 0 4px 12px rgba(26, 54, 93, 0.05);
+  min-height: 100vh;
 }
 
-footer.site-footer {
-  background: var(--footer-bg);
-  border-top: 1px solid rgba(26, 54, 93, 0.08);
+.container {
+  width: min(1120px, calc(100% - 32px));
+  margin: 0 auto;
+}
+
+.py-3 {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+.py-4 {
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+}
+
+.py-5 {
+  padding-top: 4.5rem;
+  padding-bottom: 4.5rem;
+}
+
+.mb-3 {
+  margin-bottom: 1rem;
+}
+
+.mb-4 {
+  margin-bottom: 1.5rem;
+}
+
+.list-unstyled {
+  list-style: none;
+  padding-left: 0;
+}
+
+.text-decoration-none {
+  text-decoration: none;
+}
+
+.about-company {
+  color: #f4fbff;
+}
+
+.about-company .container {
+  padding: 32px;
+  border-radius: 28px;
+  background: linear-gradient(145deg, rgba(15, 46, 76, 0.96), rgba(27, 75, 108, 0.92));
+  box-shadow: var(--shadow);
+}
+
+.about-company h3 {
+  color: #fff;
+  font-size: clamp(1.7rem, 3vw, 2.25rem);
+}
+
+.about-list {
+  display: grid;
+  gap: 16px;
+}
+
+.about-list li {
+  position: relative;
+  padding-left: 28px;
+  line-height: 1.7;
+  color: rgba(244, 251, 255, 0.9);
+}
+
+.about-list li::before {
+  content: "+";
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: #89e0b2;
+  font-weight: 700;
+}
+
+.about-list strong {
+  color: #c9f0db;
+}
+
+.clients h3 {
+  font-size: clamp(1.6rem, 2.6vw, 2.2rem);
+  color: var(--primary);
+}
+
+@media (max-width: 768px) {
+  .py-5 {
+    padding-top: 3.5rem;
+    padding-bottom: 3.5rem;
+  }
+
+  .about-company .container {
+    padding: 24px;
+    border-radius: 24px;
+  }
 }

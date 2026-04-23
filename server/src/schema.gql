@@ -19,6 +19,7 @@ input CreateUserInput {
   email: String!
   nome: String
   senha: String!
+  tipo: UserRole = CLIENTE
 }
 
 input LoginInput {
@@ -60,8 +61,16 @@ input UpdateServicoInput {
   vendas: Int
 }
 
+"""Perfis de acesso disponiveis no hub"""
+enum UserRole {
+  ADMIN
+  CLIENTE
+  FUNCIONARIO
+}
+
 type UserType {
   email: String!
   id: String!
   nome: String
+  tipo: UserRole!
 }

@@ -1,6 +1,7 @@
-﻿import { UseGuards } from '@nestjs/common';
+import { UseGuards } from '@nestjs/common';
 import { Args, Context, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { GraphQLContext } from '../../common/types/graphql-context.type';
+import { UserRole } from '../users/dto/user-role.enum';
 import { UserType } from '../users/dto/user.type';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './decorators/current-user.decorator';
@@ -35,7 +36,8 @@ export class AuthResolver {
     return {
       id: user.sub,
       email: user.email,
-      nome: user.nome ?? null
+      nome: user.nome ?? null,
+      tipo: (user.tipo as UserRole) ?? UserRole.CLIENTE
     };
   }
 }

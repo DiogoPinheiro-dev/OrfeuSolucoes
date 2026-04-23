@@ -1,11 +1,16 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-import { login, register } from "../../services/Auth/AuthService";
+import { register } from "../../services/Auth/AuthService";
+import { USER_ROLE } from "../auth/hubConfig";
+import { useAuth } from "../hooks/useAuth";
 
 import "../styles/loginModal.css";
 
 export default function LoginModal({ open, onClose }) {
+    const navigate = useNavigate();
     const modalRef = useRef(null);
+    const { signIn } = useAuth();
 
     const [mode, setMode] = useState("login");
     const [loading, setLoading] = useState(false);
@@ -79,16 +84,18 @@ export default function LoginModal({ open, onClose }) {
                 await register({
                     nome: form.fullName.trim(),
                     email: form.email.trim(),
-                    password: form.password
+                    password: form.password,
+                    tipo: USER_ROLE.CLIENTE
                 });
             }
 
-            await login({
+            await signIn({
                 email: form.email.trim(),
                 password: form.password
             });
 
             onClose?.();
+            navigate("/hub");
         } catch (submitError) {
             setError(submitError.message || "Nao foi possivel autenticar.");
         } finally {
@@ -179,6 +186,12 @@ export default function LoginModal({ open, onClose }) {
                             required
                         />
                     </label>
+
+                    {mode === "register" && (
+                        <p className="lm-helper">
+                            Novos cadastros entram como cliente. Perfis internos podem ser habilitados depois pela empresa.
+                        </p>
+                    )}
 
                     {error && <div className="lm-error" role="alert">{error}</div>}
 

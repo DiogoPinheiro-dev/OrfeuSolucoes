@@ -1,51 +1,108 @@
 import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
-import { logout } from "../../services/Auth/AuthService";
-import { isAuthenticated } from "../../services/Auth/session";
+import { ROLE_LABELS } from "../auth/hubConfig";
+import { useAuth } from "../hooks/useAuth";
 
-import logo from "../assets/Logo.ico";
+import logo from "../assets/logo.ico";
 
 import "../styles/header.css";
 
+const LANDING_LINKS = [
+    { id: "highlights", label: "Destaques" },
+    { id: "features", label: "Servicos", authOnly: true },
+    { id: "about-company", label: "Quem Somos" },
+    { id: "clients", label: "Clientes" },
+    { id: "contato", label: "Contato" }
+];
+
+const SCROLL_OFFSET = 75;
+
 export default function Header() {
-    const [auth, setAuth] = useState(isAuthenticated());
+    const location = useLocation();
+    const navigate = useNavigate();
+    const { isAuthenticated, role, signOut } = useAuth();
     const [open, setOpen] = useState(false);
+    const [isPinned, setIsPinned] = useState(location.pathname !== "/");
 
-    useEffect(() => {
-        const onResize = () => {
-            if (window.innerWidth > 768 && open) {
-                setOpen(false);
-            }
-        };
+    const isHubView = location.pathname.startsWith("/hub");
+    const isLandingView = location.pathname === "/";
 
-        const onAuth = () => setAuth(isAuthenticated());
+    const closeMenu = () => setOpen(false);
 
-        window.addEventListener("resize", onResize);
-        window.addEventListener("orfeu:authChanged", onAuth);
-        window.addEventListener("storage", onAuth);
+    const scrollWithOffset = (element) => {
+        const top = element.getBoundingClientRect().top + window.scrollY - SCROLL_OFFSET;
+        window.scrollTo({
+            top: Math.max(0, top),
+            behavior: "smooth"
+        });
+    };
 
-        return () => {
-            window.removeEventListener("resize", onResize);
-            window.removeEventListener("orfeu:authChanged", onAuth);
-            window.removeEventListener("storage", onAuth);
-        };
-    }, [open]);
+    const scrollToSection = (sectionId) => {
+        if (location.pathname !== "/") {
+            navigate("/", { state: { scrollTo: sectionId, scrollOffset: SCROLL_OFFSET } });
+            closeMenu();
+            return;
+        }
+
+        const el = document.getElementById(sectionId);
+
+        if (el) {
+            scrollWithOffset(el);
+        }
+
+        closeMenu();
+    };
 
     const handleLogout = async () => {
-        await logout();
-        setOpen(false);
+        await signOut();
+        closeMenu();
+        navigate("/");
     };
 
     const handleLogin = () => {
         window.dispatchEvent(new Event("orfeu:openLogin"));
+        closeMenu();
     };
 
+    useEffect(() => {
+        if (!isLandingView) {
+            setIsPinned(true);
+            return;
+        }
+
+        const syncHeaderState = () => {
+            const hero = document.querySelector(".hero");
+
+            if (!hero) {
+                setIsPinned(false);
+                return;
+            }
+
+            const heroHeight = hero.getBoundingClientRect().height;
+            const headerHeight = parseFloat(
+                getComputedStyle(document.documentElement).getPropertyValue("--site-header-height")
+            ) || 96;
+
+            setIsPinned(window.scrollY >= Math.max(0, heroHeight - headerHeight));
+        };
+
+        syncHeaderState();
+        window.addEventListener("scroll", syncHeaderState, { passive: true });
+        window.addEventListener("resize", syncHeaderState);
+
+        return () => {
+            window.removeEventListener("scroll", syncHeaderState);
+            window.removeEventListener("resize", syncHeaderState);
+        };
+    }, [isLandingView]);
+
     return (
-        <div className="container site-header">
+        <div className={`site-header ${isPinned ? "site-header--pinned" : "site-header--overlay"}`}>
             <header className="header-main py-3 mb-4" role="navigation" aria-label="Main navigation">
-                <a href="/" className="header-brand text-decoration-none" aria-label="Orfeu Sistemas">
-                    <img src={logo} alt="Orfeu Sistemas" className="brand-logo" />
-                </a>
+                <Link to="/" className="header-brand text-decoration-none" aria-label="Orfeu Solucoes">
+                    <img src={logo} alt="Orfeu Solucoes" className="brand-logo" />
+                </Link>
 
                 <button
                     className="mobile-toggle"
@@ -57,111 +114,60 @@ export default function Header() {
                 </button>
 
                 <ul className={`nav-links list-unstyled mb-0 ${open ? "open" : ""}`}>
-                    {auth && (
-                        <li>
-                            <a
-                                href="#features"
-                                className="nav-link px-2"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    const el = document.getElementById("features");
-                                    if (el) {
-                                        el.scrollIntoView({ behavior: "smooth", block: "start" });
-                                    }
-                                    setOpen(false);
-                                }}
-                            >
-                                Servicos
-                            </a>
-                        </li>
+                    {isHubView ? (
+                        <>
+                            <li>
+                                <button className="nav-link px-2 nav-button" onClick={() => navigate("/hub")}>
+                                    Hub
+                                </button>
+                            </li>
+                            <li>
+                                <button className="nav-link px-2 nav-button" onClick={() => navigate("/")}>
+                                    Home
+                                </button>
+                            </li>
+                            {role && (
+                                <li className="nav-role-chip">
+                                    <span>{ROLE_LABELS[role]}</span>
+                                </li>
+                            )}
+                        </>
+                    ) : (
+                        LANDING_LINKS.filter((item) => !item.authOnly || isAuthenticated).map((item) => (
+                            <li key={item.id}>
+                                <button
+                                    className="nav-link px-2 nav-button"
+                                    onClick={() => scrollToSection(item.id)}
+                                >
+                                    {item.label}
+                                </button>
+                            </li>
+                        ))
                     )}
 
-                    <li>
-                        <a
-                            href="#contato"
-                            className="nav-link px-2"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                const el = document.getElementById("contato");
-                                if (el) {
-                                    el.scrollIntoView({ behavior: "smooth", block: "start" });
-                                }
-                                setOpen(false);
-                            }}
-                        >
-                            Contato
-                        </a>
-                    </li>
-
-                    <li>
-                        <a
-                            href="#highlights"
-                            className="nav-link px-2"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                const el = document.getElementById("highlights");
-                                if (el) {
-                                    el.scrollIntoView({ behavior: "smooth", block: "start" });
-                                }
-                                setOpen(false);
-                            }}
-                        >
-                            Destaques
-                        </a>
-                    </li>
-
-                    <li>
-                        <a
-                            href="#about-company"
-                            className="nav-link px-2"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                const el = document.getElementById("about-company");
-                                if (el) {
-                                    el.scrollIntoView({ behavior: "smooth", block: "start" });
-                                }
-                                setOpen(false);
-                            }}
-                        >
-                            Quem Somos
-                        </a>
-                    </li>
-
-                    <li>
-                        <a
-                            href="#clients"
-                            className="nav-link px-2"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                const el = document.getElementById("clients");
-                                if (el) {
-                                    el.scrollIntoView({ behavior: "smooth", block: "start" });
-                                }
-                                setOpen(false);
-                            }}
-                        >
-                            Nossos Clientes
-                        </a>
-                    </li>
-
-                    {auth ? (
+                    {isAuthenticated ? (
                         <li className="mobile-logout">
-                            <button onClick={handleLogout}>
-                                Sair
-                            </button>
+                            <button onClick={handleLogout}>Sair</button>
                         </li>
                     ) : (
                         <li className="mobile-singup-login">
-                            <button onClick={handleLogin}>
-                                Cadastrar/Entrar
-                            </button>
+                            <button onClick={handleLogin}>Cadastrar/Entrar</button>
                         </li>
                     )}
                 </ul>
 
                 <div className="header-actions" aria-hidden={false}>
-                    {auth ? (
-                        <button onClick={handleLogout} className="btn btn-outline-secondary header-logout">Sair</button>
+                    {isAuthenticated ? (
+                        <>
+                            {!isHubView && (
+                                <button onClick={() => navigate("/hub")} className="btn header-login">
+                                    Acessar hub
+                                </button>
+                            )}
+                            <button onClick={handleLogout} className="btn btn-outline-secondary header-logout">
+                                Sair
+                            </button>
+                        </>
                     ) : (
                         <button onClick={handleLogin} className="btn header-login">Cadastrar/Entrar</button>
                     )}
@@ -171,7 +177,7 @@ export default function Header() {
             {open && (
                 <div
                     className="menu-overlay"
-                    onClick={() => setOpen(false)}
+                    onClick={closeMenu}
                 ></div>
             )}
         </div>

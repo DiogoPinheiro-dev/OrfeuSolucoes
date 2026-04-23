@@ -1,83 +1,62 @@
 footer.site-footer {
-  background: var(--footer-bg);
-  padding: 1.25rem 0;
-  border-top: 1px solid rgba(47,70,80,0.04);
+  margin-top: 48px;
+  padding: 24px 0 36px;
+  background: transparent;
 }
+
+footer.site-footer .container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 24px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--line);
+  box-shadow: 0 16px 35px rgba(18, 47, 77, 0.08);
+}
+
 footer.site-footer .text-muted {
   color: var(--muted);
 }
 
-/* estilos para contatos no footer */
 .footer-contacts {
-  gap: 0.5rem;
+  display: flex;
+  gap: 10px;
   align-items: center;
-  padding: 0;
-  margin: 0;
-  list-style: none;
   flex-wrap: wrap;
-}
-
-.footer-contacts li {
-  margin: 0;
 }
 
 .footer-contacts a {
   display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 8px;
   color: var(--primary);
-  text-decoration: none;
-  padding: 0.35rem 0.6rem;
-  border-radius: 6px;
-  border: 1px solid transparent;
-  transition: background-color .15s ease, color .15s ease, transform .06s ease;
-  background: rgba(47,70,80,0.00);
-  font-size: 0.95rem;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(22, 50, 75, 0.08);
+  background: #f7fbfd;
 }
 
-.footer-contacts a .icon {
-  font-size: 1.05rem;
-  line-height: 1;
-  opacity: 0.95;
-}
-
-/* destacar no hover */
 .footer-contacts a:hover,
-.footer-contacts a:focus {
+.footer-contacts a:focus-visible {
+  background: #16324b;
   color: #fff;
-  background: var(--primary);
-  border-color: var(--primary);
-  text-decoration: none;
-  transform: translateY(-1px);
   outline: none;
 }
 
-/* versão compacta para telas pequenas */
-@media (max-width: 575.98px) {
-  .footer-contacts {
-    width: 100%;
-    justify-content: center;
-  }
-  .footer-contacts a {
-    padding: 0.4rem 0.5rem;
-    font-size: 0.9rem;
-  }
-  .site-footer .container {
-    padding-left: 0.75rem;
-    padding-right: 0.75rem;
-  }
-}
-
-/* pequena separação entre ícone e texto quando necessário */
 .footer-contacts .link-text {
   white-space: nowrap;
-  display: inline-block;
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-/* evita que o alvo fique escondido atrás de um header fixo */
-#contato, .footer-contacts {
-  scroll-margin-top: 80px; /* ajuste conforme altura do header */
+#contato,
+.footer-contacts {
+  scroll-margin-top: 100px;
+}
+
+@media (max-width: 640px) {
+  footer.site-footer .container {
+    padding: 20px;
+  }
 }

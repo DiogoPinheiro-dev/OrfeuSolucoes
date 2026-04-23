@@ -12,6 +12,7 @@ model Usuario {
   nome      String? @map("Nome")
   email     String  @unique(map: "UX_Usuarios_Email") @map("Email")
   senhaHash String  @map("Senha")
+  tipo      String  @default("CLIENTE") @map("Tipo")
 
   @@map("Usuarios")
 }

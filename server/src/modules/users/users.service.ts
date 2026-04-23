@@ -1,9 +1,14 @@
-﻿import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Usuario } from '@prisma/client';
 import { hash } from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateUserInput } from './dto/create-user.input';
+import { UserRole } from './dto/user-role.enum';
 import { UserType } from './dto/user.type';
+
+type UsuarioWithRole = Usuario & {
+  tipo?: string;
+};
 
 @Injectable()
 export class UsersService {
@@ -19,21 +24,22 @@ export class UsersService {
 
     const senhaHash = await hash(input.senha, 10);
 
-    const user = await this.prisma.usuario.create({
+    const user = (await this.prisma.usuario.create({
       data: {
         nome: input.nome,
         email,
-        senhaHash
-      }
-    });
+        senhaHash,
+        tipo: input.tipo ?? UserRole.CLIENTE
+      } as never
+    })) as UsuarioWithRole;
 
     return this.toUserType(user);
   }
 
   async findAll(): Promise<UserType[]> {
-    const users = await this.prisma.usuario.findMany({
+    const users = (await this.prisma.usuario.findMany({
       orderBy: { email: 'asc' }
-    });
+    })) as UsuarioWithRole[];
 
     return users.map((user) => this.toUserType(user));
   }
@@ -48,17 +54,26 @@ export class UsersService {
     return user;
   }
 
-  async findByEmail(email: string): Promise<Usuario | null> {
-    return this.prisma.usuario.findUnique({
+  async findByEmail(email: string): Promise<UsuarioWithRole | null> {
+    return (await this.prisma.usuario.findUnique({
       where: { email: email.toLowerCase() }
-    });
+    })) as UsuarioWithRole | null;
   }
 
-  toUserType(user: Usuario): UserType {
+  toUserType(user: UsuarioWithRole): UserType {
     return {
       id: user.id,
       nome: user.nome,
-      email: user.email
+      email: user.email,
+      tipo: this.toGraphqlRole(user.tipo)
     };
+  }
+
+  private toGraphqlRole(role?: string): UserRole {
+    if (role === UserRole.FUNCIONARIO || role === UserRole.ADMIN) {
+      return role;
+    }
+
+    return UserRole.CLIENTE;
   }
 }

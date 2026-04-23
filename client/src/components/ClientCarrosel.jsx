@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import "../styles/clientCarrosel.css";
-import ClientCard from "./ClientCard"; // ADICIONADO
+import ClientCard from "./ClientCard";
 
 export default function ClientCarrosel({ clients = [] }) {
     const [current, setCurrent] = useState(0);
@@ -15,18 +15,17 @@ export default function ClientCarrosel({ clients = [] }) {
                 logo: c.logo ?? "",
                 name: c.name,
                 summary: c.summary,
-                link: c.link  // Adicionando a propriedade link
+                link: c.link
             };
             return { id: `c-${i}`, logo: "", name: undefined, summary: undefined, link: undefined };
         })
         : [];
 
-    // uma página por cliente (cada página contém exatamente um item)
-    const pages = items.length ? items.map(item => [item]) : [];
+    const pages = items.length ? items.map((item) => [item]) : [];
     const total = pages.length;
 
-    const ANIM_DURATION = 350; // ms
-    const AUTO_INTERVAL = 10000; // 10s
+    const ANIM_DURATION = 350;
+    const AUTO_INTERVAL = 10000;
 
     function clearAuto() {
         if (intervalRef.current) {
@@ -35,18 +34,19 @@ export default function ClientCarrosel({ clients = [] }) {
         }
     }
 
-    function startAuto() {
+    useEffect(() => {
         clearAuto();
-        if (total <= 1) return;
+
+        if (total <= 1) {
+            return () => clearAuto();
+        }
+
         intervalRef.current = setInterval(() => {
             setIsAnimating(true);
-            setCurrent(c => (c + 1) % total);
+            setCurrent((value) => (value + 1) % total);
             setTimeout(() => setIsAnimating(false), ANIM_DURATION);
         }, AUTO_INTERVAL);
-    }
 
-    useEffect(() => {
-        startAuto();
         return () => clearAuto();
     }, [total]);
 
@@ -59,20 +59,31 @@ export default function ClientCarrosel({ clients = [] }) {
     }, [pages.length, current]);
 
     function resetAuto() {
-        startAuto();
+        clearAuto();
+
+        if (total <= 1) {
+            return;
+        }
+
+        intervalRef.current = setInterval(() => {
+            setIsAnimating(true);
+            setCurrent((value) => (value + 1) % total);
+            setTimeout(() => setIsAnimating(false), ANIM_DURATION);
+        }, AUTO_INTERVAL);
     }
 
     function prev() {
         if (isAnimating || total === 0) return;
         setIsAnimating(true);
-        setCurrent(c => (c === 0 ? total - 1 : c - 1));
+        setCurrent((value) => (value === 0 ? total - 1 : value - 1));
         setTimeout(() => setIsAnimating(false), ANIM_DURATION);
         resetAuto();
     }
+
     function next() {
         if (isAnimating || total === 0) return;
         setIsAnimating(true);
-        setCurrent(c => (c + 1) % total);
+        setCurrent((value) => (value + 1) % total);
         setTimeout(() => setIsAnimating(false), ANIM_DURATION);
         resetAuto();
     }
@@ -85,7 +96,6 @@ export default function ClientCarrosel({ clients = [] }) {
         resetAuto();
     }
 
-    // cada página ocupa 100% da viewport do carrossel.
     const trackWidth = `${pages.length * 100}%`;
     const translateX = `-${current * 100}%`;
 
@@ -96,8 +106,8 @@ export default function ClientCarrosel({ clients = [] }) {
     return (
         <div className="client-carrosel" aria-roledescription="carrossel de clientes">
             <div className="cc-controls">
-                <button onClick={prev} disabled={isAnimating || pages.length <= 1} aria-label="Anterior cliente">‹</button>
-                <button onClick={next} disabled={isAnimating || pages.length <= 1} aria-label="Próximo cliente">›</button>
+                <button onClick={prev} disabled={isAnimating || pages.length <= 1} aria-label="Anterior cliente">&lt;</button>
+                <button onClick={next} disabled={isAnimating || pages.length <= 1} aria-label="Proximo cliente">&gt;</button>
             </div>
 
             <div className="cc-viewport">
@@ -106,14 +116,12 @@ export default function ClientCarrosel({ clients = [] }) {
                     style={{ transform: `translateX(${translateX})`, width: trackWidth }}
                 >
                     {pages.map((page, idx) => (
-                        // cada página ocupa 100% (uma logo por página)
-                        <div className="cc-page" key={idx} style={{ width: `100%` }}>
-                            {page.map(client => (
+                        <div className="cc-page" key={idx} style={{ width: "100%" }}>
+                            {page.map((client) => (
                                 <div className="cc-card" key={client.id}>
                                     <ClientCard
                                         logo={client.logo}
                                         name={client.name}
-                                        // summary={client.summary}
                                         link={client.link}
                                     />
                                 </div>
@@ -127,9 +135,9 @@ export default function ClientCarrosel({ clients = [] }) {
                 {pages.map((_, i) => (
                     <button
                         key={i}
-                        className={i === current ? 'active' : ''}
+                        className={i === current ? "active" : ""}
                         onClick={() => goTo(i)}
-                        aria-label={`Página ${i + 1}`}
+                        aria-label={`Pagina ${i + 1}`}
                         disabled={isAnimating}
                     />
                 ))}

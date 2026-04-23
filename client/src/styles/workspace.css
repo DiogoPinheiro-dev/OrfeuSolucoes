@@ -1,0 +1,72 @@
+.workspace-main {
+  padding-bottom: 36px;
+  padding-top: 120px;
+}
+
+.workspace-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.workspace-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+}
+
+.workspace-breadcrumb a {
+  color: var(--secondary);
+  font-weight: 700;
+}
+
+.workspace-hero,
+.workspace-panel {
+  padding: 28px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.workspace-kicker,
+.workspace-label {
+  display: inline-flex;
+  margin-bottom: 14px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--detail-accent-bg);
+  color: var(--detail-accent-text);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.workspace-hero h1,
+.workspace-panel h2 {
+  margin-bottom: 12px;
+}
+
+.workspace-hero p,
+.workspace-panel p {
+  color: var(--muted);
+  line-height: 1.75;
+}
+
+.workspace-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.workspace-panel-wide {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 900px) {
+  .workspace-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -34,6 +34,7 @@ export const LOGIN_MUTATION = gql`
         id
         nome
         email
+        tipo
       }
     }
   }
@@ -51,6 +52,18 @@ export const CREATE_USER_MUTATION = gql`
       id
       nome
       email
+      tipo
+    }
+  }
+`;
+
+export const ME_QUERY = gql`
+  query Me {
+    me {
+      id
+      nome
+      email
+      tipo
     }
   }
 `;

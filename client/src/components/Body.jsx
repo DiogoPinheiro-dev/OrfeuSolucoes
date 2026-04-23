@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
-import { isAuthenticated } from "../../services/Auth/session";
 import { getAllServices } from "../../services/Servicos/GetServices";
+import { useAuth } from "../hooks/useAuth";
 
 import "../styles/body.css";
 
-import LoginModal from "./LoginModal";
-import ServicoCard from "./ServicoCard";
 import ClientCarrosel from "./ClientCarrosel";
+import ServicoCard from "./ServicoCard";
 
 const fallback = [
     { id: 1, titulo: "Servico 1", descricao: "Descricao servico 1", valor: 3000, desconto: 0, vendas: 1000 },
@@ -24,18 +24,18 @@ const clients = [
     { id: "c4", logo: "../assets/clients/logo-delta.png", nome: "Delta Solucoes" }
 ];
 
-function applydescontos(list = []) {
+function applyDescontos(list = []) {
     return list.map((item) => {
         const desconto = Number(item.desconto) || 0;
-        const originalvalor = Number(item.valor) || 0;
+        const originalValue = Number(item.valor) || 0;
 
         if (desconto > 0) {
-            const adjusted = Math.round(originalvalor * (1 - desconto / 100));
+            const adjusted = Math.round(originalValue * (1 - desconto / 100));
 
-            return { ...item, originalvalor, valor: adjusted };
+            return { ...item, originalValue, valor: adjusted };
         }
 
-        return { ...item, originalvalor, valor: originalvalor };
+        return { ...item, originalValue, valor: originalValue };
     });
 }
 
@@ -44,21 +44,21 @@ function pickHighlights(list = []) {
         return [];
     }
 
-    const minvalor = list.reduce((acc, cur) => (cur.valor < acc.valor ? cur : acc), list[0]);
-    const maxdesconto = list.reduce((acc, cur) => (cur.desconto > acc.desconto ? cur : acc), list[0]);
-    const maxvendas = list.reduce((acc, cur) => (cur.vendas > acc.vendas ? cur : acc), list[0]);
+    const minValor = list.reduce((acc, cur) => (cur.valor < acc.valor ? cur : acc), list[0]);
+    const maxDesconto = list.reduce((acc, cur) => (cur.desconto > acc.desconto ? cur : acc), list[0]);
+    const maxVendas = list.reduce((acc, cur) => (cur.vendas > acc.vendas ? cur : acc), list[0]);
 
-    const candidates = [minvalor, maxdesconto, maxvendas];
+    const candidates = [minValor, maxDesconto, maxVendas];
     const unique = [];
     const seen = new Set();
 
-    for (const c of candidates) {
-        if (!c || seen.has(c.id)) {
+    for (const candidate of candidates) {
+        if (!candidate || seen.has(candidate.id)) {
             continue;
         }
 
-        unique.push(c);
-        seen.add(c.id);
+        unique.push(candidate);
+        seen.add(candidate.id);
 
         if (unique.length === 3) {
             break;
@@ -69,29 +69,32 @@ function pickHighlights(list = []) {
 }
 
 export default function Body() {
-    const [loginOpen, setLoginOpen] = useState(false);
-    const [isAuth, setIsAuth] = useState(isAuthenticated());
+    const location = useLocation();
+    const navigate = useNavigate();
+    const { isAuthenticated } = useAuth();
+
     const [servicos, setServicos] = useState([]);
     const [destaques, setDestaques] = useState([]);
-
     const [page, setPage] = useState(1);
+
     const ITEMS_PER_PAGE = 5;
+    const DEFAULT_SCROLL_OFFSET = 75;
 
     const loadFallback = useCallback(() => {
-        const adjustedFallback = applydescontos(fallback);
+        const adjustedFallback = applyDescontos(fallback);
         setServicos(adjustedFallback);
         setDestaques(pickHighlights(adjustedFallback));
     }, []);
 
     const fetchAllServicos = useCallback(async () => {
         try {
-            const res = await getAllServices();
+            const response = await getAllServices();
 
-            if (!res || res.length === 0) {
+            if (!response || response.length === 0) {
                 throw new Error("fetch failed");
             }
 
-            const adjusted = applydescontos(res);
+            const adjusted = applyDescontos(response);
 
             setServicos(adjusted);
             setDestaques(pickHighlights(adjusted));
@@ -101,44 +104,37 @@ export default function Body() {
     }, [loadFallback]);
 
     useEffect(() => {
-        if (isAuthenticated()) {
+        const sectionId = location.state?.scrollTo;
+        const scrollOffset = location.state?.scrollOffset ?? DEFAULT_SCROLL_OFFSET;
+
+        if (!sectionId) {
+            return;
+        }
+
+        const el = document.getElementById(sectionId);
+
+        if (el) {
+            const top = el.getBoundingClientRect().top + window.scrollY - scrollOffset;
+            window.scrollTo({
+                top: Math.max(0, top),
+                behavior: "smooth"
+            });
+        }
+
+        navigate(location.pathname, { replace: true, state: null });
+    }, [location, navigate]);
+
+    useEffect(() => {
+        if (isAuthenticated) {
             void fetchAllServicos();
             return;
         }
 
         loadFallback();
-    }, [fetchAllServicos, loadFallback]);
+    }, [fetchAllServicos, isAuthenticated, loadFallback]);
 
-    useEffect(() => {
-        const onAuth = () => {
-            const auth = isAuthenticated();
-            setIsAuth(auth);
-
-            if (auth) {
-                setLoginOpen(false);
-                void fetchAllServicos();
-                return;
-            }
-
-            loadFallback();
-        };
-
-        const onOpenLogin = () => setLoginOpen(true);
-
-        window.addEventListener("orfeu:authChanged", onAuth);
-        window.addEventListener("storage", onAuth);
-        window.addEventListener("orfeu:openLogin", onOpenLogin);
-
-        return () => {
-            window.removeEventListener("orfeu:authChanged", onAuth);
-            window.removeEventListener("storage", onAuth);
-            window.removeEventListener("orfeu:openLogin", onOpenLogin);
-        };
-    }, [fetchAllServicos, loadFallback]);
-
-    const destaqueIds = new Set(destaques.map((d) => d.id));
-
-    const nonHighlights = servicos.filter((s) => !destaqueIds.has(s.id));
+    const destaqueIds = new Set(destaques.map((item) => item.id));
+    const nonHighlights = servicos.filter((item) => !destaqueIds.has(item.id));
     const totalPages = Math.max(1, Math.ceil(nonHighlights.length / ITEMS_PER_PAGE));
 
     useEffect(() => {
@@ -158,24 +154,27 @@ export default function Body() {
 
     return (
         <main className="landing-main">
-            <section className="hero text-center">
+            <section className="hero">
                 <div className="hero-inner">
-                    <div className="container"></div>
+                    <div className="container hero-content">
+                        
+                    </div>
                 </div>
             </section>
 
-            <section id="highlights" className="features py-5 bg-light">
+            <section id="highlights" className="features py-5">
                 <div className="container">
                     <h3 className="mb-4">Destaques</h3>
-                    <div className="row g-4">
+                    <div className="highlight-grid">
                         {destaques.map((servico) => (
-                            <div className="col-12 col-sm-6 col-lg-4" key={servico.id}>
+                            <div key={servico.id}>
                                 <ServicoCard
                                     titulo={servico.titulo}
                                     descricao={servico.descricao}
                                     valor={servico.valor}
                                     desconto={servico.desconto}
                                     vendas={servico.vendas}
+                                    originalValue={servico.originalValue}
                                 />
                             </div>
                         ))}
@@ -203,14 +202,14 @@ export default function Body() {
                 </div>
             </section>
 
-            <section id="clients" className="clients py-5 bg-light">
+            <section id="clients" className="clients py-5">
                 <div className="container">
                     <h3 className="mb-4">Nossos clientes</h3>
                     <ClientCarrosel clients={clients} />
                 </div>
             </section>
 
-            {isAuth && (
+            {isAuthenticated && (
                 <section id="features" className="features py-5">
                     <div className="container">
                         <h3 className="mb-4">Todos os servicos</h3>
@@ -246,30 +245,31 @@ export default function Body() {
 
                         <div className="pagination mt-3">
                             <button
-                                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                onClick={() => setPage((value) => Math.max(1, value - 1))}
                                 disabled={page === 1}
                                 aria-label="Pagina anterior"
                             >
                                 Anterior
                             </button>
 
-                            {[...Array(totalPages)].map((_, i) => {
-                                const p = i + 1;
+                            {[...Array(totalPages)].map((_, index) => {
+                                const currentPage = index + 1;
+
                                 return (
                                     <button
-                                        key={p}
-                                        onClick={() => setPage(p)}
-                                        className={p === page ? "active" : ""}
-                                        disabled={p === page}
-                                        aria-current={p === page ? "page" : undefined}
+                                        key={currentPage}
+                                        onClick={() => setPage(currentPage)}
+                                        className={currentPage === page ? "active" : ""}
+                                        disabled={currentPage === page}
+                                        aria-current={currentPage === page ? "page" : undefined}
                                     >
-                                        {p}
+                                        {currentPage}
                                     </button>
                                 );
                             })}
 
                             <button
-                                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                                onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
                                 disabled={page === totalPages}
                                 aria-label="Proxima pagina"
                             >
@@ -279,8 +279,6 @@ export default function Body() {
                     </div>
                 </section>
             )}
-
-            <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
         </main>
     );
 }

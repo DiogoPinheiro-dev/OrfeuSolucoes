@@ -19,7 +19,3 @@ Projeto com frontend React (`client`) e backend NestJS/GraphQL (`server`).
 4. No frontend:
    - `cd client`
    - `npm run dev`
-
-## Cutover
-
-O frontend está integrado ao backend `server`.

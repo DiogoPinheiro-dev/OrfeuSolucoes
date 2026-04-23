@@ -1,0 +1,138 @@
+.hub-main {
+  padding-top: 120px;
+  padding-bottom: 36px;
+}
+
+.hub-hero {
+  padding: 28px 0 14px;
+}
+
+.hub-hero-inner {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  align-items: stretch;
+}
+
+.hub-hero-inner > div,
+.hub-summary-card {
+  padding: 30px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.hub-kicker,
+.hub-eyebrow {
+  display: inline-flex;
+  margin-bottom: 14px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--detail-accent-bg);
+  color: var(--detail-accent-text);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.hub-hero h1 {
+  font-size: clamp(2rem, 4vw, 3.3rem);
+  margin-bottom: 14px;
+}
+
+.hub-hero p,
+.hub-summary-card p,
+.hub-card p,
+.hub-section-header p {
+  color: var(--muted);
+  line-height: 1.75;
+}
+
+.hub-summary-label {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--detail-accent-text);
+  font-weight: 700;
+}
+
+.hub-summary-card strong {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 1.5rem;
+}
+
+.hub-grid-section {
+  padding: 20px 0 0;
+}
+
+.hub-section-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: end;
+  margin-bottom: 24px;
+}
+
+.hub-section-header h2 {
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+}
+
+.hub-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.hub-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.hub-card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--detail-accent-text);
+  font-size: 0.9rem;
+}
+
+.hub-card h3 {
+  font-size: 1.35rem;
+}
+
+.hub-card-link {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: auto;
+  padding: 12px 16px;
+  border-radius: 999px;
+  background: var(--button-primary-bg);
+  color: var(--button-primary-text);
+  font-weight: 700;
+}
+
+.hub-card-link:hover,
+.hub-card-link:focus-visible {
+  background: var(--button-primary-hover-bg);
+  color: var(--button-primary-hover-text);
+}
+
+@media (max-width: 960px) {
+  .hub-hero-inner,
+  .hub-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hub-section-header {
+    flex-direction: column;
+    align-items: start;
+  }
+}
