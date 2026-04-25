@@ -1,0 +1,152 @@
+.company-login-main {
+  min-height: 100vh;
+  padding: calc(var(--site-header-height) + 64px) 0 48px;
+}
+
+.company-login-shell {
+  width: min(560px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 32px;
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.company-login-kicker {
+  display: inline-flex;
+  margin-bottom: 14px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--detail-accent-bg);
+  color: var(--detail-accent-text);
+  border: 1px solid var(--detail-accent-border);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.company-login-shell h1 {
+  margin-bottom: 24px;
+  color: var(--primary);
+  font-size: 2rem;
+}
+
+.company-login-form {
+  display: grid;
+  gap: 16px;
+}
+
+.company-login-form label {
+  display: grid;
+  gap: 8px;
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.company-login-form input,
+.company-login-form select {
+  width: 100%;
+  padding: 13px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-white);
+  color: var(--primary);
+}
+
+.company-autocomplete-label {
+  position: relative;
+}
+
+.company-autocomplete {
+  position: relative;
+  border-radius: 8px;
+  background: var(--surface-white);
+}
+
+.company-autocomplete input {
+  position: relative;
+  z-index: 1;
+  background: transparent;
+  line-height: 1.2;
+}
+
+.company-inline-measure {
+  position: absolute;
+  inset: auto auto auto -9999px;
+  visibility: hidden;
+  font: inherit;
+  line-height: 1.2;
+  white-space: pre;
+}
+
+.company-inline-completion {
+  position: absolute;
+  z-index: 0;
+  top: 50%;
+  left: calc(14px + var(--company-completion-offset, 0px));
+  transform: translateY(-50%);
+  color: var(--muted);
+  font: inherit;
+  line-height: 1.2;
+  pointer-events: none;
+  white-space: pre;
+}
+
+.company-suggestions {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: grid;
+  gap: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-white);
+  box-shadow: var(--shadow-soft);
+}
+
+.company-suggestions button {
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.company-suggestions button:hover,
+.company-suggestions button:focus-visible {
+  background: var(--detail-accent-bg);
+  color: var(--secondary);
+  outline: none;
+}
+
+.company-suggestions-empty {
+  padding: 10px 12px;
+  color: var(--muted);
+}
+
+.company-login-form button {
+  width: fit-content;
+  padding: var(--button-padding);
+}
+
+.company-login-form button:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
+.company-login-error {
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}

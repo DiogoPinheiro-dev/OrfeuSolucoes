@@ -1,6 +1,7 @@
 import { apolloClient } from "../../src/lib/apolloClient";
 import {
     CREATE_USER_MUTATION,
+    EMPRESAS_QUERY,
     LOGIN_MUTATION,
     LOGOUT_MUTATION,
     ME_QUERY
@@ -17,14 +18,15 @@ const extractErrorMessage = (error) => {
     return error?.message || "Erro inesperado ao comunicar com o servidor.";
 };
 
-export const login = async ({ email, password }) => {
+export const login = async ({ email, password, empresaId }) => {
     try {
         const response = await apolloClient.mutate({
             mutation: LOGIN_MUTATION,
             variables: {
                 input: {
                     email,
-                    senha: password
+                    senha: password,
+                    ...(empresaId ? { empresaId: Number(empresaId) } : {})
                 }
             }
         });
@@ -38,6 +40,19 @@ export const login = async ({ email, password }) => {
         setSession(payload.accessToken, payload.user);
 
         return payload.user;
+    } catch (error) {
+        throw new Error(extractErrorMessage(error));
+    }
+};
+
+export const getEmpresas = async () => {
+    try {
+        const response = await apolloClient.query({
+            query: EMPRESAS_QUERY,
+            fetchPolicy: "network-only"
+        });
+
+        return response?.data?.empresas ?? [];
     } catch (error) {
         throw new Error(extractErrorMessage(error));
     }

@@ -35,6 +35,14 @@ export const LOGIN_MUTATION = gql`
         nome
         email
         tipo
+        availableSolutions
+        empresa {
+          id
+          nome
+          acessoEcommerce
+          acessoProjetos
+          acessoHoras
+        }
       }
     }
   }
@@ -53,6 +61,14 @@ export const CREATE_USER_MUTATION = gql`
       nome
       email
       tipo
+      availableSolutions
+      empresa {
+        id
+        nome
+        acessoEcommerce
+        acessoProjetos
+        acessoHoras
+      }
     }
   }
 `;
@@ -64,6 +80,38 @@ export const ME_QUERY = gql`
       nome
       email
       tipo
+      availableSolutions
+      empresa {
+        id
+        nome
+        acessoEcommerce
+        acessoProjetos
+        acessoHoras
+      }
+    }
+  }
+`;
+
+export const EMPRESAS_QUERY = gql`
+  query Empresas {
+    empresas {
+      id
+      nome
+      acessoEcommerce
+      acessoProjetos
+      acessoHoras
+    }
+  }
+`;
+
+export const CREATE_EMPRESA_MUTATION = gql`
+  mutation CreateEmpresa($input: CreateEmpresaInput!) {
+    createEmpresa(input: $input) {
+      id
+      nome
+      acessoEcommerce
+      acessoProjetos
+      acessoHoras
     }
   }
 `;

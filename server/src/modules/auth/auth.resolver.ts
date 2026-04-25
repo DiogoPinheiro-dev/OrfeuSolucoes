@@ -19,7 +19,7 @@ export class AuthResolver {
     @Args('input') input: LoginInput,
     @Context() context: GraphQLContext
   ): Promise<AuthPayloadType> {
-    const result = await this.authService.login(input.email, input.senha);
+    const result = await this.authService.login(input.email, input.senha, input.empresaId);
     this.authService.attachAuthCookie(context.res, result.accessToken);
     return result;
   }
@@ -33,11 +33,30 @@ export class AuthResolver {
   @UseGuards(GqlAuthGuard)
   @Query(() => UserType)
   me(@CurrentUser() user: JwtPayload): UserType {
+    const tipo = (user.tipo as UserRole) ?? UserRole.USUARIO;
+    const availableSolutions =
+      user.availableSolutions ??
+      (tipo === UserRole.ADMIN
+        ? ['ecommerce', 'projetos', 'horas', 'configurador']
+        : tipo === UserRole.USUARIO
+          ? ['ecommerce']
+          : []);
+
     return {
       id: user.sub,
       email: user.email,
       nome: user.nome ?? null,
-      tipo: (user.tipo as UserRole) ?? UserRole.CLIENTE
+      tipo,
+      empresa: user.empresaId
+        ? {
+            id: user.empresaId,
+            nome: user.empresaNome ?? null,
+            acessoEcommerce: availableSolutions.includes('ecommerce'),
+            acessoProjetos: availableSolutions.includes('projetos'),
+            acessoHoras: availableSolutions.includes('horas')
+          }
+        : null,
+      availableSolutions
     };
   }
 }

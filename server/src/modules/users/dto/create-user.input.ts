@@ -16,7 +16,7 @@ export class CreateUserInput {
   @MinLength(6)
   senha!: string;
 
-  @Field(() => UserRole, { nullable: true, defaultValue: UserRole.CLIENTE })
+  @Field(() => UserRole, { nullable: true, defaultValue: UserRole.USUARIO })
   @IsOptional()
   tipo?: UserRole;
 }

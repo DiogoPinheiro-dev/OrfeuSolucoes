@@ -29,7 +29,7 @@ export class UsersService {
         nome: input.nome,
         email,
         senhaHash,
-        tipo: input.tipo ?? UserRole.CLIENTE
+        tipo: input.tipo ?? UserRole.USUARIO
       } as never
     })) as UsuarioWithRole;
 
@@ -61,19 +61,35 @@ export class UsersService {
   }
 
   toUserType(user: UsuarioWithRole): UserType {
+    const tipo = this.toGraphqlRole(user.tipo);
+
     return {
       id: user.id,
       nome: user.nome,
       email: user.email,
-      tipo: this.toGraphqlRole(user.tipo)
+      tipo,
+      empresa: null,
+      availableSolutions: this.resolveDefaultSolutions(tipo)
     };
   }
 
   private toGraphqlRole(role?: string): UserRole {
-    if (role === UserRole.FUNCIONARIO || role === UserRole.ADMIN) {
-      return role;
+    if (role === UserRole.CLIENTE || role === UserRole.USUARIO || role === UserRole.ADMIN) {
+      return role as UserRole;
     }
 
-    return UserRole.CLIENTE;
+    return UserRole.USUARIO;
+  }
+
+  private resolveDefaultSolutions(role: UserRole): string[] {
+    if (role === UserRole.ADMIN) {
+      return ['ecommerce', 'projetos', 'horas', 'configurador'];
+    }
+
+    if (role === UserRole.USUARIO) {
+      return ['ecommerce'];
+    }
+
+    return [];
   }
 }

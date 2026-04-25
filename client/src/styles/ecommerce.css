@@ -1,0 +1,40 @@
+.ecommerce-main {
+  min-height: 100vh;
+  padding: calc(var(--site-header-height) + 64px) 0 48px;
+}
+
+.ecommerce-hero {
+  width: min(920px, calc(100% - 32px));
+  margin: 0 auto;
+}
+
+.ecommerce-kicker {
+  display: inline-flex;
+  margin-bottom: 14px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--detail-accent-bg);
+  color: var(--detail-accent-text);
+  border: 1px solid var(--detail-accent-border);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ecommerce-hero h1 {
+  margin-bottom: 14px;
+  color: var(--primary);
+  font-size: 2.4rem;
+}
+
+.ecommerce-hero p {
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.ecommerce-hero button {
+  width: fit-content;
+  margin-top: 18px;
+  padding: var(--button-padding);
+}

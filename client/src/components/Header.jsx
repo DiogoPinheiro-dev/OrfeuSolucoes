@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
-import { ROLE_LABELS } from "../auth/hubConfig";
+import { ROLE_LABELS, USER_ROLE } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
 
 import logo from "../assets/logo.ico";
@@ -27,6 +27,8 @@ export default function Header() {
 
     const isHubView = location.pathname.startsWith("/hub");
     const isLandingView = location.pathname === "/";
+    const isEcommerceView = location.pathname === "/ecommerce";
+    const canShowEcommerceButton = !isAuthenticated || role === USER_ROLE.USUARIO;
 
     const closeMenu = () => setOpen(false);
 
@@ -61,7 +63,11 @@ export default function Header() {
     };
 
     const handleLogin = () => {
-        window.dispatchEvent(new Event("orfeu:openLogin"));
+        if (isEcommerceView) {
+            window.dispatchEvent(new Event("orfeu:openLogin"));
+        } else {
+            navigate("/login");
+        }
         closeMenu();
     };
 
@@ -133,16 +139,31 @@ export default function Header() {
                             )}
                         </>
                     ) : (
-                        LANDING_LINKS.filter((item) => !item.authOnly || isAuthenticated).map((item) => (
-                            <li key={item.id}>
-                                <button
-                                    className="nav-link px-2 nav-button"
-                                    onClick={() => scrollToSection(item.id)}
-                                >
-                                    {item.label}
-                                </button>
-                            </li>
-                        ))
+                        <>
+                            {LANDING_LINKS.filter((item) => !item.authOnly || isAuthenticated).map((item) => (
+                                <li key={item.id}>
+                                    <button
+                                        className="nav-link px-2 nav-button"
+                                        onClick={() => scrollToSection(item.id)}
+                                    >
+                                        {item.label}
+                                    </button>
+                                </li>
+                            ))}
+                        </>
+                    )}
+
+                    {canShowEcommerceButton && (
+                        <li className="mobile-ecommerce">
+                            <button
+                                onClick={() => {
+                                    navigate("/ecommerce");
+                                    closeMenu();
+                                }}
+                            >
+                                E-commerce
+                            </button>
+                        </li>
                     )}
 
                     {isAuthenticated ? (
@@ -151,7 +172,7 @@ export default function Header() {
                         </li>
                     ) : (
                         <li className="mobile-singup-login">
-                            <button onClick={handleLogin}>Cadastrar/Entrar</button>
+                            <button onClick={handleLogin}>Logar-se</button>
                         </li>
                     )}
                 </ul>
@@ -159,6 +180,11 @@ export default function Header() {
                 <div className="header-actions" aria-hidden={false}>
                     {isAuthenticated ? (
                         <>
+                            {canShowEcommerceButton && (
+                                <button onClick={() => navigate("/ecommerce")} className="btn header-ecommerce">
+                                    E-commerce
+                                </button>
+                            )}
                             {!isHubView && (
                                 <button onClick={() => navigate("/hub")} className="btn header-login">
                                     Acessar hub
@@ -169,7 +195,16 @@ export default function Header() {
                             </button>
                         </>
                     ) : (
-                        <button onClick={handleLogin} className="btn header-login">Cadastrar/Entrar</button>
+                        <>
+                            {canShowEcommerceButton && (
+                                <button onClick={() => navigate("/ecommerce")} className="btn header-ecommerce">
+                                    E-commerce
+                                </button>
+                            )}
+                            <button onClick={handleLogin} className="btn header-login">
+                                Logar-se
+                            </button>
+                        </>
                     )}
                 </div>
             </header>

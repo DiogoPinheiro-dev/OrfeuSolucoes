@@ -1,7 +1,7 @@
 .servico-card {
-  border: 1px solid rgba(26, 54, 93, 0.08);
+  border: 1px solid var(--line);
   background: var(--card-bg);
-  box-shadow: 0 4px 12px rgba(26, 54, 93, 0.05);
+  box-shadow: var(--shadow-soft);
   border-radius: 10px;
   transition: transform .12s ease, box-shadow .12s ease;
   display: flex;
@@ -11,7 +11,7 @@
 
 .servico-card:hover {
   transform: translateY(-6px);
-  box-shadow: 0 10px 30px rgba(15, 20, 25, 0.08);
+  box-shadow: var(--shadow);
 }
 
 .servico-card .card-body {

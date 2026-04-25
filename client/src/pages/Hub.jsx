@@ -2,14 +2,14 @@ import { Link } from "react-router-dom";
 
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import { ROLE_LABELS, getSolutionsForRole } from "../auth/hubConfig";
+import { ROLE_LABELS, getSolutionsForUser } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
 
 import "../styles/hub.css";
 
 export default function Hub() {
     const { user, role } = useAuth();
-    const solutions = getSolutionsForRole(role);
+    const solutions = getSolutionsForUser(user);
 
     return (
         <div className="page-wrapper hub-page">
@@ -26,6 +26,7 @@ export default function Hub() {
                         <div className="hub-summary-card">
                             <span className="hub-summary-label">Acesso ativo</span>
                             <strong>{ROLE_LABELS[role]}</strong>
+                            {user?.empresa?.nome && <p>{user.empresa.nome}</p>}
                             <p>{solutions.length} solucao(oes) disponivel(is) neste momento.</p>
                         </div>
                     </div>

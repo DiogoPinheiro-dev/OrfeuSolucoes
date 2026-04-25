@@ -12,7 +12,9 @@ model Usuario {
   nome      String? @map("Nome")
   email     String  @unique(map: "UX_Usuarios_Email") @map("Email")
   senhaHash String  @map("Senha")
-  tipo      String  @default("CLIENTE") @map("Tipo")
+  tipo      String  @default("USUARIO") @map("Tipo")
+
+  empresas EmpresaUsuario[]
 
   @@map("Usuarios")
 }
@@ -26,4 +28,33 @@ model Servico {
   vendas    Int?     @map("Vendas")
 
   @@map("Servicos")
+}
+
+model Empresa {
+  id              Int      @id @default(autoincrement()) @map("Id")
+  nome            String?  @map("Nome")
+  acessoEcommerce Boolean  @default(false) @map("AcessoEcommerce")
+  acessoProjetos  Boolean  @default(false) @map("AcessoProjetos")
+  acessoHoras     Boolean  @default(false) @map("AcessoHoras")
+  // cnpj        String?  @map("CNPJ")
+  // endereco    String?  @map("Endereco")
+  // telefone    String?  @map("Telefone")
+  // email       String?  @map("Email")
+  // descricao   String?  @map("Descricao")
+
+  usuarios EmpresaUsuario[]
+
+  @@map("Empresas")
+}
+
+model EmpresaUsuario {
+  id         Int      @id @default(autoincrement()) @map("Id")
+  empresaId  Int      @map("EmpresaId")
+  usuarioId  String   @db.UniqueIdentifier @map("UsuarioId")
+
+  empresa Empresa @relation(fields: [empresaId], references: [id])
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@unique([empresaId, usuarioId], map: "UX_EmpresaUsuarios_EmpresaId_UsuarioId")
+  @@map("EmpresaUsuarios")
 }

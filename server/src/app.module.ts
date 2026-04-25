@@ -7,6 +7,7 @@ import { join, resolve } from 'node:path';
 import { validateEnv } from './config/env.validation';
 import { HealthResolver } from './health.resolver';
 import { AuthModule } from './modules/auth/auth.module';
+import { EmpresasModule } from './modules/empresas/empresas.module';
 import { ServicosModule } from './modules/servicos/servicos.module';
 import { UsersModule } from './modules/users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -32,6 +33,7 @@ import { PrismaModule } from './prisma/prisma.module';
     }),
     PrismaModule,
     UsersModule,
+    EmpresasModule,
     AuthModule,
     ServicosModule
   ],

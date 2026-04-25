@@ -23,8 +23,8 @@
 }
 .cc-controls button {
   pointer-events: auto;
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(26, 54, 93, 0.1);
+  background: var(--surface-white);
+  border: 1px solid var(--line);
   padding: 0.35rem 0.6rem;
   border-radius: 8px;
   cursor: pointer;
@@ -35,7 +35,7 @@
   justify-content: center;
   font-size: 1.1rem;
   line-height: 1;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  box-shadow: var(--shadow-soft);
 }
 
 /* viewport reduzido para desktop e responsivo */
@@ -44,8 +44,8 @@
   width: 100%;
   height: 340px; /* reduzido (desktop) */
   background: var(--card-bg);
-  border: 1px solid rgba(26, 54, 93, 0.08);
-  box-shadow: 0 4px 12px rgba(26, 54, 93, 0.05);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-soft);
   padding: 0.75rem;
   border-radius: 8px;
   display: flex;
@@ -102,8 +102,8 @@
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary), rgba(0,0,0,0.08));
-  color: #fff;
+  background: linear-gradient(135deg, var(--primary), var(--button-soft-bg));
+  color: var(--text-on-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -129,7 +129,7 @@
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background: rgba(0,0,0,0.08);
+  background: var(--button-soft-bg);
   border: none;
   cursor: pointer;
   transition: transform 200ms;

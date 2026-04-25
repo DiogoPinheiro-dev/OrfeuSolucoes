@@ -4,9 +4,65 @@
     box-sizing: border-box;
 }
 
+:root {
+    --primary: #16324b;
+    --secondary: #27557a;
+    --accent: #7fa9c9;
+    --bg: #f4f8fb;
+    --muted: #587187;
+    --accent-green: #1f7a4b;
+    --surface-white: #ffffff;
+    --surface-soft: #f7fbfd;
+    --surface-muted: #eef5fb;
+    --page-bg-start: #f6fbff;
+    --page-bg-end: #edf4f9;
+    --surface-panel: rgba(255, 255, 255, 0.84);
+    --card-bg: rgba(255, 255, 255, 0.92);
+    --footer-bg: #e5eef5;
+    --text-on-primary: #ffffff;
+    --text-on-dark: #f7fcff;
+    --detail-accent-text: var(--accent-green);
+    --detail-accent-bg: #e9f1f8;
+    --detail-accent-border: rgba(39, 85, 122, 0.12);
+    --detail-accent-surface: rgba(255, 255, 255, 0.76);
+    --button-primary-bg: #17324d;
+    --button-primary-text: #ffffff;
+    --button-primary-border: transparent;
+    --button-primary-hover-bg: var(--accent-green);
+    --button-primary-hover-text: #ffffff;
+    --button-primary-hover-border: var(--accent-green);
+    --button-secondary-bg: rgba(255, 255, 255, 0.72);
+    --button-secondary-text: var(--primary);
+    --button-secondary-border: rgba(22, 50, 75, 0.12);
+    --button-soft-bg: rgba(22, 50, 75, 0.06);
+    --button-soft-hover-bg: rgba(22, 50, 75, 0.12);
+    --button-radius: 999px;
+    --button-padding: 12px 18px;
+    --button-shadow: 0 12px 24px rgba(23, 50, 77, 0.16);
+    --line: rgba(22, 50, 75, 0.1);
+    --line-strong: rgba(22, 50, 75, 0.14);
+    --shadow: 0 18px 45px rgba(15, 41, 67, 0.12);
+    --shadow-soft: 0 16px 35px rgba(18, 47, 77, 0.08);
+    --danger-bg: #fdeff2;
+    --danger-text: #8f2033;
+    --success-soft: #dff3e8;
+    --success-text: #1e6845;
+    --success-on-dark: #eefbf4;
+    --lm-bg: #ffffff;
+    --lm-overlay: rgba(20, 40, 65, 0.45);
+    --lm-border: rgba(42, 74, 110, 0.1);
+    --lm-primary: var(--primary);
+    --lm-accent: var(--accent);
+    --lm-muted: #718096;
+    --lm-radius: 24px;
+    --lm-gap: 0.9rem;
+    --site-header-height: 96px;
+    --site-header-height-mobile: 88px;
+}
+
 body {
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    color: #17324d;
+    color: var(--primary);
 }
 
 a {
@@ -16,6 +72,47 @@ a {
 
 button {
     font: inherit;
+    font-weight: 400;
+}
+
+.button-standard,
+.btn,
+.hero-btn-primary,
+.hub-card-link,
+.lm-btn-primary,
+.company-login-form button,
+.ecommerce-hero button {
+    border: 1px solid var(--button-primary-border);
+    border-radius: var(--button-radius);
+    background: var(--button-primary-bg);
+    color: var(--button-primary-text);
+    cursor: pointer;
+    font-weight: 400;
+    transition:
+        background-color 0.25s ease,
+        color 0.25s ease,
+        border-color 0.25s ease,
+        box-shadow 0.25s ease;
+}
+
+.button-standard:hover,
+.button-standard:focus-visible,
+.btn:hover,
+.btn:focus-visible,
+.hero-btn-primary:hover,
+.hero-btn-primary:focus-visible,
+.hub-card-link:hover,
+.hub-card-link:focus-visible,
+.lm-btn-primary:hover,
+.lm-btn-primary:focus-visible,
+.company-login-form button:hover,
+.company-login-form button:focus-visible,
+.ecommerce-hero button:hover,
+.ecommerce-hero button:focus-visible {
+    background: var(--button-primary-hover-bg);
+    color: var(--button-primary-hover-text);
+    border-color: var(--button-primary-hover-border);
+    outline: none;
 }
 
 .auth-loading-shell {
@@ -25,16 +122,16 @@ button {
     padding: 24px;
     background:
         radial-gradient(circle at top, rgba(73, 129, 191, 0.18), transparent 36%),
-        linear-gradient(180deg, #eff5fb 0%, #f8fbfd 100%);
+        linear-gradient(180deg, var(--detail-accent-bg) 0%, var(--surface-soft) 100%);
 }
 
 .auth-loading-card {
     width: min(100%, 560px);
     padding: 32px;
     border-radius: 28px;
-    background: rgba(255, 255, 255, 0.92);
-    border: 1px solid rgba(30, 65, 103, 0.12);
-    box-shadow: 0 24px 70px rgba(18, 47, 77, 0.12);
+    background: var(--card-bg);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow);
 }
 
 .auth-loading-card h2 {
@@ -42,7 +139,7 @@ button {
 }
 
 .auth-loading-card p {
-    color: #557089;
+    color: var(--muted);
 }
 
 .auth-loading-badge {
@@ -50,8 +147,8 @@ button {
     margin-bottom: 16px;
     padding: 6px 12px;
     border-radius: 999px;
-    background: #dbe8f6;
-    color: #1f446f;
+    background: var(--detail-accent-bg);
+    color: var(--secondary);
     font-size: 0.85rem;
     font-weight: 700;
     text-transform: uppercase;

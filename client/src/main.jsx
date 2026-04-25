@@ -7,6 +7,8 @@ import { apolloClient } from "./lib/apolloClient";
 import App from "./App.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
+import CompanyLogin from "./pages/CompanyLogin.jsx";
+import Ecommerce from "./pages/Ecommerce.jsx";
 import Home from "./pages/Home.jsx";
 import Hub from "./pages/Hub.jsx";
 import SolutionWorkspace from "./pages/SolutionWorkspace.jsx";
@@ -19,6 +21,14 @@ const router = createBrowserRouter([
             {
                 index: true,
                 element: <Home />
+            },
+            {
+                path: "login",
+                element: <CompanyLogin />
+            },
+            {
+                path: "ecommerce",
+                element: <Ecommerce />
             },
             {
                 element: <ProtectedRoute />,

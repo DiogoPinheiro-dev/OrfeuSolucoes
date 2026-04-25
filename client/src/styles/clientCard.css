@@ -39,8 +39,8 @@
   width: clamp(100px, 28vw, 200px);
   height: clamp(100px, 28vw, 200px);
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--primary), rgba(0,0,0,0.08));
-  color: #fff;
+  background: linear-gradient(135deg, var(--primary), var(--button-soft-bg));
+  color: var(--text-on-primary);
   display: flex;
   align-items: center;
   justify-content: center;

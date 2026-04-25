@@ -1,4 +1,5 @@
 import { Field, ObjectType } from '@nestjs/graphql';
+import { EmpresaType } from '../../empresas/dto/empresa.type';
 import { UserRole } from './user-role.enum';
 
 @ObjectType()
@@ -14,4 +15,10 @@ export class UserType {
 
   @Field(() => UserRole)
   tipo!: UserRole;
+
+  @Field(() => EmpresaType, { nullable: true })
+  empresa?: EmpresaType | null;
+
+  @Field(() => [String])
+  availableSolutions!: string[];
 }

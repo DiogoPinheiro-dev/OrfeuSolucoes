@@ -7,6 +7,13 @@ type AuthPayloadType {
   user: UserType!
 }
 
+input CreateEmpresaInput {
+  acessoEcommerce: Boolean = false
+  acessoHoras: Boolean = false
+  acessoProjetos: Boolean = false
+  nome: String
+}
+
 input CreateServicoInput {
   desconto: Float
   descricao: String
@@ -19,15 +26,25 @@ input CreateUserInput {
   email: String!
   nome: String
   senha: String!
-  tipo: UserRole = CLIENTE
+  tipo: UserRole = USUARIO
+}
+
+type EmpresaType {
+  acessoEcommerce: Boolean!
+  acessoHoras: Boolean!
+  acessoProjetos: Boolean!
+  id: Int!
+  nome: String
 }
 
 input LoginInput {
   email: String!
+  empresaId: Int
   senha: String!
 }
 
 type Mutation {
+  createEmpresa(input: CreateEmpresaInput!): EmpresaType!
   createServico(input: CreateServicoInput!): ServicoType!
   createUser(input: CreateUserInput!): UserType!
   deleteServico(id: Int!): Boolean!
@@ -37,6 +54,7 @@ type Mutation {
 }
 
 type Query {
+  empresas: [EmpresaType!]!
   health: String!
   me: UserType!
   servicos: [ServicoType!]!
@@ -65,11 +83,13 @@ input UpdateServicoInput {
 enum UserRole {
   ADMIN
   CLIENTE
-  FUNCIONARIO
+  USUARIO
 }
 
 type UserType {
+  availableSolutions: [String!]!
   email: String!
+  empresa: EmpresaType
   id: String!
   nome: String
   tipo: UserRole!

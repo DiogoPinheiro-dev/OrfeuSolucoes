@@ -85,7 +85,7 @@ export default function LoginModal({ open, onClose }) {
                     nome: form.fullName.trim(),
                     email: form.email.trim(),
                     password: form.password,
-                    tipo: USER_ROLE.CLIENTE
+                    tipo: USER_ROLE.USUARIO
                 });
             }
 
@@ -95,7 +95,7 @@ export default function LoginModal({ open, onClose }) {
             });
 
             onClose?.();
-            navigate("/hub");
+            navigate("/ecommerce");
         } catch (submitError) {
             setError(submitError.message || "Nao foi possivel autenticar.");
         } finally {
@@ -189,7 +189,7 @@ export default function LoginModal({ open, onClose }) {
 
                     {mode === "register" && (
                         <p className="lm-helper">
-                            Novos cadastros entram como cliente. Perfis internos podem ser habilitados depois pela empresa.
+                            Novos cadastros entram como usuario comum, com acesso apenas ao e-commerce.
                         </p>
                     )}
 

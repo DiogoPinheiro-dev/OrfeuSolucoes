@@ -17,7 +17,7 @@
   inset: 0;
   background-image: url("../assets/Banner_logo_orfeu_soluções.png");
   background-size: cover;
-  background-position: center top;
+  background-position: 60% center;
   background-repeat: no-repeat;
 }
 
@@ -75,30 +75,21 @@
 }
 
 .hero-btn {
-  padding: 14px 20px;
-  border-radius: 999px;
+  padding: var(--button-padding);
+  border-radius: var(--button-radius);
   border: 1px solid transparent;
   cursor: pointer;
-  font-weight: 700;
+  font-weight: 400;
 }
 
 .hero-btn-primary {
-  background: var(--button-primary-bg);
-  color: var(--button-primary-text);
-  box-shadow: 0 12px 24px rgba(23, 50, 77, 0.16);
-}
-
-.hero-btn-primary:hover,
-.hero-btn-primary:focus-visible {
-  background: var(--button-primary-hover-bg);
-  color: var(--button-primary-hover-text);
-  border-color: var(--button-primary-hover-border);
+  box-shadow: var(--button-shadow);
 }
 
 .hero-btn-secondary {
-  background: rgba(255, 255, 255, 0.72);
-  color: var(--primary);
-  border-color: rgba(22, 50, 75, 0.12);
+  background: var(--button-secondary-bg);
+  color: var(--button-secondary-text);
+  border-color: var(--button-secondary-border);
 }
 
 .section-heading {
@@ -115,7 +106,7 @@
 
 .section-heading-light h2,
 .section-heading-light .section-kicker {
-  color: #f7fcff;
+  color: var(--text-on-dark);
 }
 
 .highlight-grid,
@@ -171,7 +162,7 @@
 .features-table {
   width: 100%;
   border-collapse: collapse;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--card-bg);
   border: 1px solid var(--line);
   border-radius: 22px;
   overflow: hidden;
@@ -181,13 +172,13 @@
 .features-table th,
 .features-table td {
   padding: 16px 18px;
-  border-bottom: 1px solid rgba(22, 50, 75, 0.08);
+  border-bottom: 1px solid var(--line);
   text-align: left;
   vertical-align: middle;
 }
 
 .features-table thead th {
-  background: rgba(39, 85, 122, 0.08);
+  background: var(--detail-accent-bg);
   color: var(--primary);
   font-size: 0.95rem;
 }
@@ -207,18 +198,18 @@
 .pagination button {
   min-width: 44px;
   padding: 10px 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(22, 50, 75, 0.12);
-  background: rgba(255, 255, 255, 0.82);
+  border-radius: var(--button-radius);
+  border: 1px solid var(--button-secondary-border);
+  background: var(--button-secondary-bg);
   color: var(--primary);
   cursor: pointer;
-  font-weight: 700;
+  font-weight: 400;
 }
 
 .pagination button.active {
   background: var(--button-primary-bg);
   color: var(--button-primary-text);
-  border-color: transparent;
+  border-color: var(--button-primary-border);
 }
 
 .pagination button.active:hover,
@@ -258,8 +249,8 @@
 
   .hero::before {
     background-image: url("../assets/Banner_logo_orfeu_soluções.png");
-    background-size: cover;
-    background-position: center top;
+    background-size: auto 100%;
+    background-position: center center;
   }
 
   .hero h1 {

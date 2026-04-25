@@ -18,7 +18,7 @@
 .hub-summary-card {
   padding: 30px;
   border-radius: 28px;
-  background: rgba(255, 255, 255, 0.84);
+  background: var(--surface-panel);
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
 }
@@ -91,7 +91,7 @@
   gap: 14px;
   padding: 24px;
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.86);
+  background: var(--surface-panel);
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
 }
@@ -113,16 +113,7 @@
   width: fit-content;
   margin-top: auto;
   padding: 12px 16px;
-  border-radius: 999px;
-  background: var(--button-primary-bg);
-  color: var(--button-primary-text);
-  font-weight: 700;
-}
-
-.hub-card-link:hover,
-.hub-card-link:focus-visible {
-  background: var(--button-primary-hover-bg);
-  color: var(--button-primary-hover-text);
+  font-weight: 400;
 }
 
 @media (max-width: 960px) {

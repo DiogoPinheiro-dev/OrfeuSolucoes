@@ -9,7 +9,7 @@ import "../styles/workspace.css";
 
 export default function SolutionWorkspace() {
     const { slug } = useParams();
-    const { role } = useAuth();
+    const { user, role } = useAuth();
 
     const solution = getSolutionBySlug(slug);
 
@@ -17,9 +17,28 @@ export default function SolutionWorkspace() {
         return <Navigate to="/hub" replace />;
     }
 
-    if (!canAccessSolution(role, slug)) {
+    if (!canAccessSolution(user, slug)) {
         return <Navigate to="/hub" replace />;
     }
+
+    const workspacePanels = solution.areas ?? [
+        {
+            label: "Status do modulo",
+            title: "Base pronta para evolucao",
+            description: `Este espaco ja esta roteado e protegido por perfil. Agora voces podem desenvolver a experiencia real de ${solution.title} aqui dentro sem mexer na regra de acesso.`
+        },
+        {
+            label: "Perfil atual",
+            title: ROLE_LABELS[role],
+            description: "O acesso foi liberado porque esse modulo faz parte do conjunto de ferramentas disponiveis para o seu tipo de usuario."
+        },
+        {
+            label: "Proximo passo sugerido",
+            title: "Conectar o modulo a funcionalidades reais",
+            description: "Podemos seguir implementando cada area com dados reais, menu interno, permissoes mais granulares e integracao com o backend conforme a prioridade da empresa.",
+            wide: true
+        }
+    ];
 
     return (
         <div className="page-wrapper workspace-page">
@@ -40,32 +59,16 @@ export default function SolutionWorkspace() {
                     </section>
 
                     <section className="workspace-grid">
-                        <article className="workspace-panel">
-                            <span className="workspace-label">Status do modulo</span>
-                            <h2>Base pronta para evolucao</h2>
-                            <p>
-                                Este espaco ja esta roteado e protegido por perfil. Agora voces podem desenvolver a experiencia
-                                real de <strong>{solution.title}</strong> aqui dentro sem mexer na regra de acesso.
-                            </p>
-                        </article>
-
-                        <article className="workspace-panel">
-                            <span className="workspace-label">Perfil atual</span>
-                            <h2>{ROLE_LABELS[role]}</h2>
-                            <p>
-                                O acesso foi liberado porque esse modulo faz parte do conjunto de ferramentas disponiveis para
-                                o seu tipo de usuario.
-                            </p>
-                        </article>
-
-                        <article className="workspace-panel workspace-panel-wide">
-                            <span className="workspace-label">Proximo passo sugerido</span>
-                            <h2>Conectar o modulo a funcionalidades reais</h2>
-                            <p>
-                                Podemos seguir implementando cada area com dados reais, menu interno, permissoes mais granulares
-                                e integracao com o backend conforme a prioridade da empresa.
-                            </p>
-                        </article>
+                        {workspacePanels.map((panel) => (
+                            <article
+                                className={`workspace-panel ${panel.wide ? "workspace-panel-wide" : ""}`}
+                                key={panel.title}
+                            >
+                                <span className="workspace-label">{panel.label}</span>
+                                <h2>{panel.title}</h2>
+                                <p>{panel.description}</p>
+                            </article>
+                        ))}
                     </section>
                 </div>
             </main>
