@@ -11,6 +11,7 @@ import CompanyLogin from "./pages/CompanyLogin.jsx";
 import Ecommerce from "./pages/Ecommerce.jsx";
 import Home from "./pages/Home.jsx";
 import Hub from "./pages/Hub.jsx";
+import SolutionFeaturePage from "./pages/SolutionFeaturePage.jsx";
 import SolutionWorkspace from "./pages/SolutionWorkspace.jsx";
 
 const router = createBrowserRouter([
@@ -40,6 +41,10 @@ const router = createBrowserRouter([
                     {
                         path: "hub/:slug",
                         element: <SolutionWorkspace />
+                    },
+                    {
+                        path: "hub/:slug/:areaSlug",
+                        element: <SolutionFeaturePage />
                     }
                 ]
             }

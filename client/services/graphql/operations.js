@@ -65,11 +65,53 @@ export const CREATE_USER_MUTATION = gql`
       empresa {
         id
         nome
+      }
+      empresa {
+        id
+        nome
         acessoEcommerce
         acessoProjetos
         acessoHoras
       }
     }
+  }
+`;
+
+export const USERS_QUERY = gql`
+  query Users {
+    users {
+      id
+      nome
+      email
+      tipo
+      availableSolutions
+      empresa {
+        id
+        nome
+      }
+    }
+  }
+`;
+
+export const UPDATE_USER_MUTATION = gql`
+  mutation UpdateUser($input: UpdateUserInput!) {
+    updateUser(input: $input) {
+      id
+      nome
+      email
+      tipo
+      availableSolutions
+      empresa {
+        id
+        nome
+      }
+    }
+  }
+`;
+
+export const DELETE_USER_MUTATION = gql`
+  mutation DeleteUser($id: String!) {
+    deleteUser(id: $id)
   }
 `;
 

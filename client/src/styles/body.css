@@ -249,8 +249,8 @@
 
   .hero::before {
     background-image: url("../assets/Banner_logo_orfeu_soluções.png");
-    background-size: auto 100%;
-    background-position: center center;
+    background-size: cover cover;
+    background-position: 55% center;
   }
 
   .hero h1 {

@@ -1,0 +1,125 @@
+.user-management-error,
+.user-management-loading {
+  padding: 14px 16px;
+  border-radius: 14px;
+  margin-bottom: 16px;
+}
+
+.user-management-error {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+.user-management-loading {
+  background: var(--surface-muted);
+  color: var(--muted);
+}
+
+.crud-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(14, 32, 50, 0.35);
+  backdrop-filter: blur(4px);
+}
+
+.crud-modal {
+  width: min(100%, 560px);
+  max-height: calc(100vh - 36px);
+  overflow: auto;
+  border-radius: 22px;
+  background: var(--surface-white);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.crud-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 22px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.crud-modal-header span {
+  color: var(--detail-accent-text);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.crud-modal-header button {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--surface-soft);
+  color: var(--primary);
+  cursor: pointer;
+}
+
+.user-form {
+  display: grid;
+  gap: 14px;
+  padding: 20px 22px 22px;
+}
+
+.user-form label {
+  display: grid;
+  gap: 8px;
+  color: var(--primary);
+}
+
+.user-form small {
+  color: var(--muted);
+}
+
+.user-form input,
+.user-form select {
+  width: 100%;
+  padding: 12px 13px;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-white);
+  color: var(--primary);
+}
+
+.user-form input:disabled,
+.user-form select:disabled {
+  background: var(--surface-soft);
+  color: var(--muted);
+}
+
+.crud-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.crud-modal-actions button {
+  padding: 11px 16px;
+  border-radius: var(--button-radius);
+  border: 1px solid var(--button-secondary-border);
+  background: var(--surface-soft);
+  color: var(--primary);
+  cursor: pointer;
+}
+
+.crud-modal-actions button[type="submit"] {
+  background: var(--button-primary-bg);
+  color: var(--button-primary-text);
+  border-color: var(--button-primary-border);
+}
+
+.crud-modal-actions button:hover,
+.crud-modal-actions button:focus-visible {
+  background: var(--button-primary-hover-bg);
+  color: var(--button-primary-hover-text);
+  outline: none;
+}

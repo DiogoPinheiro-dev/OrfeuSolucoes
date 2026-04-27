@@ -2,7 +2,7 @@ import { Link, Navigate, useParams } from "react-router-dom";
 
 import Footer from "../components/Footer";
 import Header from "../components/Header";
-import { ROLE_LABELS, canAccessSolution, getSolutionBySlug } from "../auth/hubConfig";
+import { ROLE_LABELS, canAccessSolution, getAreaAnchor, getSolutionBySlug } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
 
 import "../styles/workspace.css";
@@ -60,14 +60,16 @@ export default function SolutionWorkspace() {
 
                     <section className="workspace-grid">
                         {workspacePanels.map((panel) => (
-                            <article
-                                className={`workspace-panel ${panel.wide ? "workspace-panel-wide" : ""}`}
+                            <Link
+                                className={`workspace-panel workspace-panel-link ${panel.wide ? "workspace-panel-wide" : ""}`}
+                                to={`/hub/${solution.slug}/${getAreaAnchor(panel.title)}`}
                                 key={panel.title}
                             >
                                 <span className="workspace-label">{panel.label}</span>
                                 <h2>{panel.title}</h2>
                                 <p>{panel.description}</p>
-                            </article>
+                                <strong>Acessar funcionalidade</strong>
+                            </Link>
                         ))}
                     </section>
                 </div>

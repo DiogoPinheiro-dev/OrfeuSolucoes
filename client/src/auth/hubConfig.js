@@ -18,7 +18,24 @@ export const HUB_SOLUTIONS = [
         eyebrow: "Comercial",
         status: "Disponivel",
         roles: [USER_ROLE.CLIENTE, USER_ROLE.USUARIO, USER_ROLE.ADMIN],
-        defaultAccess: true
+        defaultAccess: true,
+        areas: [
+            {
+                label: "Catalogo",
+                title: "Catalogo de produtos",
+                description: "Consulte produtos, servicos disponiveis e detalhes comerciais antes de iniciar um pedido."
+            },
+            {
+                label: "Pedidos",
+                title: "Meus pedidos",
+                description: "Acompanhe pedidos realizados, status de compra e historico comercial."
+            },
+            {
+                label: "Atendimento",
+                title: "Relacionamento comercial",
+                description: "Centralize contatos, solicitacoes e comunicacao com a equipe comercial."
+            }
+        ]
     },
     {
         slug: "projetos",
@@ -26,7 +43,24 @@ export const HUB_SOLUTIONS = [
         description: "Espaco para organizar backlog, entregas, marcos e comunicacao entre as equipes.",
         eyebrow: "Operacao",
         status: "Interno",
-        roles: [USER_ROLE.CLIENTE, USER_ROLE.ADMIN]
+        roles: [USER_ROLE.CLIENTE, USER_ROLE.ADMIN],
+        areas: [
+            {
+                label: "Backlog",
+                title: "Backlog de demandas",
+                description: "Organize demandas, prioridades e escopo planejado para cada projeto."
+            },
+            {
+                label: "Entregas",
+                title: "Marcos e entregas",
+                description: "Acompanhe etapas, entregaveis, prazos e progresso operacional."
+            },
+            {
+                label: "Comunicacao",
+                title: "Comunicacao do projeto",
+                description: "Registre alinhamentos, decisoes e historico de interacoes do projeto."
+            }
+        ]
     },
     {
         slug: "horas",
@@ -34,7 +68,24 @@ export const HUB_SOLUTIONS = [
         description: "Registro de apontamentos, horas alocadas por atividade e visibilidade do esforço da equipe.",
         eyebrow: "People Ops",
         status: "Interno",
-        roles: [USER_ROLE.CLIENTE, USER_ROLE.ADMIN]
+        roles: [USER_ROLE.CLIENTE, USER_ROLE.ADMIN],
+        areas: [
+            {
+                label: "Apontamentos",
+                title: "Registro de horas",
+                description: "Lance horas por atividade, projeto e periodo de execucao."
+            },
+            {
+                label: "Aprovacao",
+                title: "Aprovacao de apontamentos",
+                description: "Revise apontamentos, valide registros e acompanhe pendencias."
+            },
+            {
+                label: "Relatorios",
+                title: "Relatorios de horas",
+                description: "Visualize horas alocadas, esforco por projeto e indicadores de capacidade."
+            }
+        ]
     },
     {
         slug: "configurador",
@@ -90,6 +141,14 @@ export const getSolutionsForRole = (role) =>
 
 export const getSolutionBySlug = (slug) =>
     HUB_SOLUTIONS.find((solution) => solution.slug === slug);
+
+export const getAreaAnchor = (title = "") =>
+    title
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
 
 export const canAccessSolution = (userOrRole, slug) => {
     const solution = getSolutionBySlug(slug);

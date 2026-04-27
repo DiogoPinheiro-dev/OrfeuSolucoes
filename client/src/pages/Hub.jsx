@@ -1,5 +1,3 @@
-import { Link } from "react-router-dom";
-
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { ROLE_LABELS, getSolutionsForUser } from "../auth/hubConfig";
@@ -8,7 +6,7 @@ import { useAuth } from "../hooks/useAuth";
 import "../styles/hub.css";
 
 export default function Hub() {
-    const { user, role } = useAuth();
+    const { user } = useAuth();
     const solutions = getSolutionsForUser(user);
 
     return (
@@ -25,36 +23,8 @@ export default function Hub() {
 
                         <div className="hub-summary-card">
                             <span className="hub-summary-label">Acesso ativo</span>
-                            <strong>{ROLE_LABELS[role]}</strong>
                             {user?.empresa?.nome && <p>{user.empresa.nome}</p>}
                             <p>{solutions.length} solucao(oes) disponivel(is) neste momento.</p>
-                        </div>
-                    </div>
-                </section>
-
-                <section className="hub-grid-section">
-                    <div className="container">
-                        <div className="hub-section-header">
-                            <div>
-                                <span className="hub-eyebrow">Solucoes</span>
-                                <h2>Escolha por onde quer continuar</h2>
-                            </div>
-                        </div>
-
-                        <div className="hub-grid">
-                            {solutions.map((solution) => (
-                                <article className="hub-card" key={solution.slug}>
-                                    <div className="hub-card-top">
-                                        <span>{solution.eyebrow}</span>
-                                        <strong>{solution.status}</strong>
-                                    </div>
-                                    <h3>{solution.title}</h3>
-                                    <p>{solution.description}</p>
-                                    <Link to={`/hub/${solution.slug}`} className="hub-card-link">
-                                        Abrir modulo
-                                    </Link>
-                                </article>
-                            ))}
                         </div>
                     </div>
                 </section>

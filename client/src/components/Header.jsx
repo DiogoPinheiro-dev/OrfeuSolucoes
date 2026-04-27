@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { ChevronDown, ChevronRight, LogOut, UserRound } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
-import { ROLE_LABELS, USER_ROLE } from "../auth/hubConfig";
+import { ROLE_LABELS, USER_ROLE, getAreaAnchor, getSolutionsForUser } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
 
 import logo from "../assets/logo.ico";
@@ -21,14 +22,18 @@ const SCROLL_OFFSET = 75;
 export default function Header() {
     const location = useLocation();
     const navigate = useNavigate();
-    const { isAuthenticated, role, signOut } = useAuth();
+    const { isAuthenticated, role, signOut, user } = useAuth();
     const [open, setOpen] = useState(false);
     const [isPinned, setIsPinned] = useState(location.pathname !== "/");
+    const [expandedSolutions, setExpandedSolutions] = useState({});
 
     const isHubView = location.pathname.startsWith("/hub");
     const isLandingView = location.pathname === "/";
     const isEcommerceView = location.pathname === "/ecommerce";
     const canShowEcommerceButton = !isAuthenticated || role === USER_ROLE.USUARIO;
+    const hubSolutions = useMemo(() => getSolutionsForUser(user), [user]);
+    const hubLinkClass = (path) =>
+        `nav-link px-2 nav-button ${location.pathname === path ? "nav-button--active" : ""}`;
 
     const closeMenu = () => setOpen(false);
 
@@ -71,6 +76,39 @@ export default function Header() {
         closeMenu();
     };
 
+    const toggleSolution = (slug) => {
+        setExpandedSolutions((current) => ({
+            ...current,
+            [slug]: !current[slug]
+        }));
+    };
+
+    const userDisplayName = user?.nome || user?.email || "Usuario";
+    const userSubtitle = user?.empresa?.nome || ROLE_LABELS[role] || "Role";
+    const renderLogoutButton = () => (
+        <button
+            onClick={handleLogout}
+            className="header-icon-logout"
+            type="button"
+            aria-label="Sair"
+            title="Sair"
+        >
+            <LogOut aria-hidden="true" size={20} strokeWidth={2} />
+        </button>
+    );
+    const userCard = (
+        <div className="hub-user-card">
+            <span className="hub-user-avatar" aria-hidden="true">
+                <UserRound size={18} strokeWidth={2.2} />
+            </span>
+            <span className="hub-user-text">
+                <strong>{userDisplayName}</strong>
+                <small>{userSubtitle}</small>
+            </span>
+            {renderLogoutButton()}
+        </div>
+    );
+
     useEffect(() => {
         if (!isLandingView) {
             setIsPinned(true);
@@ -103,8 +141,25 @@ export default function Header() {
         };
     }, [isLandingView]);
 
+    useEffect(() => {
+        if (!isHubView) {
+            return;
+        }
+
+        const activeSolution = hubSolutions.find((solution) => location.pathname.startsWith(`/hub/${solution.slug}`));
+
+        if (!activeSolution?.areas?.length) {
+            return;
+        }
+
+        setExpandedSolutions((current) => ({
+            ...current,
+            [activeSolution.slug]: true
+        }));
+    }, [hubSolutions, isHubView, location.pathname]);
+
     return (
-        <div className={`site-header ${isPinned ? "site-header--pinned" : "site-header--overlay"}`}>
+        <div className={`site-header ${isHubView ? "site-header--hub-sidebar" : ""} ${isPinned ? "site-header--pinned" : "site-header--overlay"} ${open ? "site-header--menu-open" : ""}`}>
             <header className="header-main py-3 mb-4" role="navigation" aria-label="Main navigation">
                 <Link to="/" className="header-brand text-decoration-none" aria-label="Orfeu Solucoes">
                     <img src={logo} alt="Orfeu Solucoes" className="brand-logo" />
@@ -123,20 +178,60 @@ export default function Header() {
                     {isHubView ? (
                         <>
                             <li>
-                                <button className="nav-link px-2 nav-button" onClick={() => navigate("/hub")}>
+                                <Link className={hubLinkClass("/hub")} to="/hub" onClick={closeMenu}>
                                     Hub
-                                </button>
+                                </Link>
                             </li>
-                            <li>
-                                <button className="nav-link px-2 nav-button" onClick={() => navigate("/")}>
-                                    Home
-                                </button>
-                            </li>
-                            {role && (
-                                <li className="nav-role-chip">
-                                    <span>{ROLE_LABELS[role]}</span>
-                                </li>
-                            )}
+                            {hubSolutions.map((solution) => {
+                                const hasAreas = solution.areas?.length > 0;
+                                const expanded = !!expandedSolutions[solution.slug];
+                                const solutionPath = `/hub/${solution.slug}`;
+
+                                return (
+                                    <li className="hub-nav-item" key={solution.slug}>
+                                        <div className={`hub-nav-row ${hasAreas ? "" : "hub-nav-row--single"}`}>
+                                            <Link
+                                                className={hubLinkClass(solutionPath)}
+                                                to={solutionPath}
+                                                onClick={closeMenu}
+                                            >
+                                                {solution.title}
+                                            </Link>
+
+                                            {hasAreas && (
+                                                <button
+                                                    type="button"
+                                                    className="hub-submenu-toggle"
+                                                    onClick={() => toggleSolution(solution.slug)}
+                                                    aria-expanded={expanded}
+                                                    aria-label={`${expanded ? "Fechar" : "Abrir"} funcionalidades de ${solution.title}`}
+                                                >
+                                                    {expanded ? (
+                                                        <ChevronDown size={18} strokeWidth={2} aria-hidden="true" />
+                                                    ) : (
+                                                        <ChevronRight size={18} strokeWidth={2} aria-hidden="true" />
+                                                    )}
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {hasAreas && expanded && (
+                                            <ul className="hub-submenu list-unstyled">
+                                                {solution.areas.map((area) => (
+                                                    <li key={area.title}>
+                                                        <Link
+                                                            to={`${solutionPath}/${getAreaAnchor(area.title)}`}
+                                                            onClick={closeMenu}
+                                                        >
+                                                            {area.title}
+                                                        </Link>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </li>
+                                );
+                            })}
                         </>
                     ) : (
                         <>
@@ -167,8 +262,19 @@ export default function Header() {
                     )}
 
                     {isAuthenticated ? (
-                        <li className="mobile-logout">
-                            <button onClick={handleLogout}>Sair</button>
+                        <li className="mobile-auth-actions">
+                            {!isHubView && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        navigate("/hub");
+                                        closeMenu();
+                                    }}
+                                >
+                                    Acessar hub
+                                </button>
+                            )}
+                            {userCard}
                         </li>
                     ) : (
                         <li className="mobile-singup-login">
@@ -190,9 +296,7 @@ export default function Header() {
                                     Acessar hub
                                 </button>
                             )}
-                            <button onClick={handleLogout} className="btn btn-outline-secondary header-logout">
-                                Sair
-                            </button>
+                            {userCard}
                         </>
                     ) : (
                         <>

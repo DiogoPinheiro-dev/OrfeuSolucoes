@@ -3,6 +3,13 @@
   padding-top: 120px;
 }
 
+@media (min-width: 921px) {
+  .workspace-page .workspace-main,
+  .workspace-page footer.site-footer {
+    margin-left: 260px;
+  }
+}
+
 .workspace-shell {
   display: flex;
   flex-direction: column;
@@ -63,6 +70,30 @@
 
 .workspace-panel-wide {
   grid-column: 1 / -1;
+}
+
+.workspace-panel-link {
+  display: block;
+  color: inherit;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.workspace-panel-link:hover,
+.workspace-panel-link:focus-visible {
+  border-color: var(--accent-green);
+  box-shadow: var(--shadow);
+  outline: none;
+}
+
+.workspace-panel-link strong {
+  display: inline-flex;
+  margin-top: 16px;
+  color: var(--detail-accent-text);
+}
+
+.workspace-feature-crud {
+  overflow: hidden;
+  border-radius: 18px;
 }
 
 @media (max-width: 900px) {

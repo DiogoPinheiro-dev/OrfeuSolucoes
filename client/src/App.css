@@ -78,7 +78,6 @@ button {
 .button-standard,
 .btn,
 .hero-btn-primary,
-.hub-card-link,
 .lm-btn-primary,
 .company-login-form button,
 .ecommerce-hero button {
@@ -101,8 +100,6 @@ button {
 .btn:focus-visible,
 .hero-btn-primary:hover,
 .hero-btn-primary:focus-visible,
-.hub-card-link:hover,
-.hub-card-link:focus-visible,
 .lm-btn-primary:hover,
 .lm-btn-primary:focus-visible,
 .company-login-form button:hover,
