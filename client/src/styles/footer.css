@@ -23,7 +23,7 @@ footer.site-footer .text-muted {
 
 .footer-contacts {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(132px, max-content));
+  grid-template-columns: repeat(4, max-content);
   gap: 10px;
   align-items: center;
   justify-content: end;
@@ -33,10 +33,10 @@ footer.site-footer .text-muted {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-height: 44px;
+  width: 48px;
+  height: 48px;
   color: var(--primary);
-  padding: 10px 14px;
+  padding: 0;
   border-radius: var(--button-radius);
   border: 1px solid var(--button-secondary-border);
   background: var(--surface-soft);
@@ -49,8 +49,27 @@ footer.site-footer .text-muted {
   outline: none;
 }
 
-.footer-contacts .link-text {
-  white-space: nowrap;
+.footer-icon,
+.footer-icon > svg {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+
+.footer-contacts a[href*="mail.google.com"] {
+  color: #d93025;
+}
+
+.footer-contacts a[href*="linkedin"] {
+  color: #0a66c2;
+}
+
+.footer-contacts a[href*="instagram"] {
+  color: #c13584;
+}
+
+.footer-contacts a[href*="wa.me"] {
+  color: #25d366;
 }
 
 #contato,
@@ -73,13 +92,12 @@ footer.site-footer .text-muted {
 
   .footer-contacts {
     width: 100%;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    justify-content: stretch;
+    grid-template-columns: repeat(4, max-content);
+    justify-content: center;
   }
 
   .footer-contacts a {
-    width: 100%;
-    padding: 10px 12px;
+    width: 48px;
   }
 }
 
@@ -89,10 +107,10 @@ footer.site-footer .text-muted {
   }
 
   .footer-contacts {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(4, max-content);
   }
 
   .footer-contacts a {
-    justify-content: flex-start;
+    justify-content: center;
   }
 }

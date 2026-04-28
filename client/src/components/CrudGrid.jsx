@@ -1,3 +1,5 @@
+import { FaEdit, FaEye, FaPlus, FaTrashAlt } from "react-icons/fa";
+
 import "../styles/crudGrid.css";
 
 export default function CrudGrid({
@@ -12,9 +14,14 @@ export default function CrudGrid({
     onDelete,
     search,
     onSearchChange,
+    selectedIds = [],
+    onToggleSelect,
+    onToggleSelectAll,
     getRowId = (row) => row.id
 }) {
     const selectedRow = rows.find((row) => getRowId(row) === selectedId);
+    const selectedIdSet = new Set(selectedIds);
+    const allVisibleSelected = rows.length > 0 && rows.every((row) => selectedIdSet.has(getRowId(row)));
 
     return (
         <section className="crud-shell">
@@ -36,15 +43,17 @@ export default function CrudGrid({
             </header>
 
             <div className="crud-toolbar" aria-label="Acoes do cadastro">
-                <button type="button" onClick={onCreate}>+ Incluir</button>
-                <button type="button" onClick={() => selectedRow && onEdit(selectedRow)} disabled={!selectedRow}>
-                    Alterar
+                <button type="button" onClick={onCreate} aria-label="Incluir" title="Incluir">
+                    <FaPlus aria-hidden="true" />
                 </button>
-                <button type="button" onClick={() => selectedRow && onView(selectedRow)} disabled={!selectedRow}>
-                    Visualizar
+                <button type="button" onClick={() => selectedRow && onEdit(selectedRow)} disabled={!selectedRow} aria-label="Alterar" title="Alterar">
+                    <FaEdit aria-hidden="true" />
                 </button>
-                <button type="button" onClick={() => selectedRow && onDelete(selectedRow)} disabled={!selectedRow}>
-                    Deletar
+                <button type="button" onClick={() => selectedRow && onView(selectedRow)} disabled={!selectedRow} aria-label="Visualizar" title="Visualizar">
+                    <FaEye aria-hidden="true" />
+                </button>
+                <button type="button" onClick={() => onDelete(selectedIds)} disabled={selectedIds.length === 0} aria-label="Deletar selecionados" title="Deletar selecionados">
+                    <FaTrashAlt aria-hidden="true" />
                 </button>
             </div>
 
@@ -52,7 +61,14 @@ export default function CrudGrid({
                 <table className="crud-table">
                     <thead>
                         <tr>
-                            <th aria-label="Status"></th>
+                            <th aria-label="Selecionar registros">
+                                <input
+                                    type="checkbox"
+                                    checked={allVisibleSelected}
+                                    disabled={rows.length === 0 || !onToggleSelectAll}
+                                    onChange={(event) => onToggleSelectAll?.(event.target.checked, rows)}
+                                />
+                            </th>
                             {columns.map((column) => (
                                 <th key={column.key}>{column.label}</th>
                             ))}
@@ -73,7 +89,13 @@ export default function CrudGrid({
                                         tabIndex={0}
                                     >
                                         <td>
-                                            <span className="crud-status-dot" aria-hidden="true"></span>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedIdSet.has(rowId)}
+                                                aria-label={`Selecionar ${row.nome || row.email || "registro"}`}
+                                                onClick={(event) => event.stopPropagation()}
+                                                onChange={() => onToggleSelect?.(rowId)}
+                                            />
                                         </td>
                                         {columns.map((column) => (
                                             <td key={column.key}>{column.render ? column.render(row) : row[column.key]}</td>

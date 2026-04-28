@@ -81,7 +81,7 @@ export default function CompanyLogin() {
         .slice(0, 6);
 
     const firstSuggestion = empresaSuggestions[0] ?? null;
-    const firstSuggestionName = firstSuggestion?.nome || (firstSuggestion ? `Empresa ${firstSuggestion.id}` : "");
+    const firstSuggestionName = firstSuggestion?.nome;
     const canShowInlineCompletion =
         empresaBusca.trim().length > 0 &&
         firstSuggestionName &&

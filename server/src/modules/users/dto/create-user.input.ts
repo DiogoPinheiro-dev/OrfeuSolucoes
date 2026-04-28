@@ -1,5 +1,5 @@
 import { Field, InputType, Int } from '@nestjs/graphql';
-import { IsEmail, IsInt, IsOptional, MinLength } from 'class-validator';
+import { IsArray, IsEmail, IsInt, IsOptional, MinLength } from 'class-validator';
 import { UserRole } from './user-role.enum';
 
 @InputType()
@@ -20,8 +20,9 @@ export class CreateUserInput {
   @IsOptional()
   tipo?: UserRole;
 
-  @Field(() => Int, { nullable: true })
-  @IsInt()
+  @Field(() => [Int], { nullable: true })
+  @IsArray()
+  @IsInt({ each: true })
   @IsOptional()
-  empresaId?: number;
+  empresaIds?: number[];
 }

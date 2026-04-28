@@ -29,7 +29,7 @@ export const getUsers = async () => {
     }
 };
 
-export const createUser = async ({ nome, email, senha, tipo, empresaId }) => {
+export const createUser = async ({ nome, email, senha, tipo, empresaIds }) => {
     try {
         const response = await apolloClient.mutate({
             mutation: CREATE_USER_MUTATION,
@@ -39,7 +39,7 @@ export const createUser = async ({ nome, email, senha, tipo, empresaId }) => {
                     email,
                     senha,
                     tipo,
-                    ...(empresaId ? { empresaId: Number(empresaId) } : {})
+                    empresaIds: Array.isArray(empresaIds) ? empresaIds.map(Number) : []
                 }
             }
         });
@@ -50,14 +50,14 @@ export const createUser = async ({ nome, email, senha, tipo, empresaId }) => {
     }
 };
 
-export const updateUser = async ({ id, nome, email, senha, tipo, empresaId }) => {
+export const updateUser = async ({ id, nome, email, senha, tipo, empresaIds }) => {
     try {
         const input = {
             id,
             nome,
             email,
             tipo,
-            empresaId: empresaId ? Number(empresaId) : null
+            empresaIds: Array.isArray(empresaIds) ? empresaIds.map(Number) : []
         };
 
         if (senha) {

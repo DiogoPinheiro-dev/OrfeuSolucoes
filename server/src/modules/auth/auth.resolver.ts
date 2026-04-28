@@ -41,21 +41,23 @@ export class AuthResolver {
         : tipo === UserRole.USUARIO
           ? ['ecommerce']
           : []);
+    const empresa = user.empresaId
+      ? {
+          id: user.empresaId,
+          nome: user.empresaNome ?? null,
+          acessoEcommerce: availableSolutions.includes('ecommerce'),
+          acessoProjetos: availableSolutions.includes('projetos'),
+          acessoHoras: availableSolutions.includes('horas')
+        }
+      : null;
 
     return {
       id: user.sub,
       email: user.email,
       nome: user.nome ?? null,
       tipo,
-      empresa: user.empresaId
-        ? {
-            id: user.empresaId,
-            nome: user.empresaNome ?? null,
-            acessoEcommerce: availableSolutions.includes('ecommerce'),
-            acessoProjetos: availableSolutions.includes('projetos'),
-            acessoHoras: availableSolutions.includes('horas')
-          }
-        : null,
+      empresa,
+      empresas: empresa ? [empresa] : [],
       availableSolutions
     };
   }

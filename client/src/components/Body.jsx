@@ -6,7 +6,7 @@ import { useAuth } from "../hooks/useAuth";
 
 import "../styles/body.css";
 
-import ClientCarrosel from "./ClientCarrosel";
+import ClientLogoMarquee from "./ClientLogoMarquee";
 import ServicoCard from "./ServicoCard";
 
 const fallback = [
@@ -18,10 +18,10 @@ const fallback = [
 ];
 
 const clients = [
-    { id: "c1", logo: "../assets/clients/logo-alpha.png", nome: "Alpha Comercio" },
-    { id: "c2", logo: "../assets/clients/logo-beta.png", nome: "Beta Industria" },
-    { id: "c3", logo: "../assets/clients/logo-gamma.png", nome: "Gamma Servicos" },
-    { id: "c4", logo: "../assets/clients/logo-delta.png", nome: "Delta Solucoes" }
+    { id: 1, logo: "", nome: "Alpha Comercio" },
+    { id: 2, logo: "", nome: "Beta Industria" },
+    { id: 3, logo: "", nome: "Gamma Servicos" },
+    { id: 4, logo: "", nome: "Delta Solucoes" }
 ];
 
 function applyDescontos(list = []) {
@@ -203,10 +203,7 @@ export default function Body() {
             </section>
 
             <section id="clients" className="clients py-5">
-                <div className="container">
-                    <h3 className="mb-4">Nossos clientes</h3>
-                    <ClientCarrosel clients={clients} />
-                </div>
+                <ClientLogoMarquee clients={clients} />
             </section>
 
             {isAuthenticated && (

@@ -62,11 +62,7 @@ export const CREATE_USER_MUTATION = gql`
       email
       tipo
       availableSolutions
-      empresa {
-        id
-        nome
-      }
-      empresa {
+      empresas {
         id
         nome
         acessoEcommerce
@@ -85,7 +81,7 @@ export const USERS_QUERY = gql`
       email
       tipo
       availableSolutions
-      empresa {
+      empresas {
         id
         nome
       }
@@ -101,7 +97,7 @@ export const UPDATE_USER_MUTATION = gql`
       email
       tipo
       availableSolutions
-      empresa {
+      empresas {
         id
         nome
       }

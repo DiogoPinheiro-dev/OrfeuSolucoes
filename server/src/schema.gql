@@ -24,6 +24,7 @@ input CreateServicoInput {
 
 input CreateUserInput {
   email: String!
+  empresaIds: [Int!]
   nome: String
   senha: String!
   tipo: UserRole = USUARIO
@@ -48,9 +49,11 @@ type Mutation {
   createServico(input: CreateServicoInput!): ServicoType!
   createUser(input: CreateUserInput!): UserType!
   deleteServico(id: Int!): Boolean!
+  deleteUser(id: String!): Boolean!
   login(input: LoginInput!): AuthPayloadType!
   logout: Boolean!
   updateServico(input: UpdateServicoInput!): ServicoType!
+  updateUser(input: UpdateUserInput!): UserType!
 }
 
 type Query {
@@ -79,6 +82,15 @@ input UpdateServicoInput {
   vendas: Int
 }
 
+input UpdateUserInput {
+  email: String
+  empresaIds: [Int!]
+  id: ID!
+  nome: String
+  senha: String
+  tipo: UserRole
+}
+
 """Perfis de acesso disponiveis no hub"""
 enum UserRole {
   ADMIN
@@ -90,6 +102,7 @@ type UserType {
   availableSolutions: [String!]!
   email: String!
   empresa: EmpresaType
+  empresas: [EmpresaType!]!
   id: String!
   nome: String
   tipo: UserRole!

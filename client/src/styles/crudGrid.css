@@ -54,12 +54,21 @@
 }
 
 .crud-toolbar button {
-  padding: 9px 14px;
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
   border-radius: 10px;
   border: 1px solid var(--button-primary-border);
   background: var(--button-primary-bg);
   color: var(--button-primary-text);
   cursor: pointer;
+}
+
+.crud-toolbar button svg {
+  width: 17px;
+  height: 17px;
 }
 
 .crud-toolbar button:hover,
@@ -93,6 +102,19 @@
   white-space: nowrap;
 }
 
+.crud-table th:first-child,
+.crud-table td:first-child {
+  width: 48px;
+  text-align: center;
+}
+
+.crud-table input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--button-primary-bg);
+  cursor: pointer;
+}
+
 .crud-table th {
   background: #eceff2;
   color: var(--primary);
@@ -111,15 +133,6 @@
 .crud-table tbody tr.selected {
   background: #f24d4d;
   color: var(--button-primary-text);
-}
-
-.crud-status-dot {
-  display: inline-block;
-  width: 13px;
-  height: 13px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #c7ff9e, #42b934);
-  box-shadow: inset 0 0 0 1px rgba(22, 50, 75, 0.16);
 }
 
 .crud-empty {

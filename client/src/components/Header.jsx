@@ -11,9 +11,9 @@ import "../styles/header.css";
 
 const LANDING_LINKS = [
     { id: "highlights", label: "Destaques" },
-    { id: "features", label: "Servicos", authOnly: true },
     { id: "about-company", label: "Quem Somos" },
     { id: "clients", label: "Clientes" },
+    { id: "features", label: "Servicos", authOnly: true },
     { id: "contato", label: "Contato" }
 ];
 
@@ -32,8 +32,7 @@ export default function Header() {
     const isEcommerceView = location.pathname === "/ecommerce";
     const canShowEcommerceButton = !isAuthenticated || role === USER_ROLE.USUARIO;
     const hubSolutions = useMemo(() => getSolutionsForUser(user), [user]);
-    const hubLinkClass = (path) =>
-        `nav-link px-2 nav-button ${location.pathname === path ? "nav-button--active" : ""}`;
+    const hubLinkClass = (path) => `nav-link px-2 nav-button ${location.pathname === path ? "nav-button--active" : ""}`;
 
     const closeMenu = () => setOpen(false);
 
@@ -102,7 +101,7 @@ export default function Header() {
                 <UserRound size={18} strokeWidth={2.2} />
             </span>
             <span className="hub-user-text">
-                <strong>{userDisplayName}</strong>
+                {userDisplayName}
                 <small>{userSubtitle}</small>
             </span>
             {renderLogoutButton()}

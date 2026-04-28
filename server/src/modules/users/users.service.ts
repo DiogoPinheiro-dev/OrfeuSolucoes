@@ -10,6 +10,8 @@ import { UserType } from './dto/user.type';
 type UsuarioWithRole = Usuario & {
   tipo?: string;
   empresas?: (EmpresaUsuario & { empresa?: Empresa | null })[];
+  empresa?: Empresa | null;
+  empresasVinculadas?: Empresa[];
 };
 
 @Injectable()
@@ -25,6 +27,7 @@ export class UsersService {
     }
 
     const senhaHash = await hash(input.senha, 10);
+    const empresaIds = this.normalizeEmpresaIds(input.empresaIds);
 
     const user = (await this.prisma.usuario.create({
       data: {
@@ -32,39 +35,32 @@ export class UsersService {
         email,
         senhaHash,
         tipo: input.tipo ?? UserRole.USUARIO,
-        ...(input.empresaId
+        ...(empresaIds.length
           ? {
               empresas: {
-                create: {
-                  empresaId: input.empresaId
-                }
+                create: empresaIds.map((empresaId) => ({ empresaId }))
               }
             }
           : {})
       } as never,
-      include: {
-        empresas: {
-          include: { empresa: true },
-          take: 1
-        }
-      } as never
     })) as UsuarioWithRole;
 
-    return this.toUserType(user);
+    return this.toUserType(await this.attachEmpresas(user));
   }
 
   async findAll(): Promise<UserType[]> {
     const users = (await this.prisma.usuario.findMany({
-      orderBy: { email: 'asc' },
-      include: {
-        empresas: {
-          include: { empresa: true },
-          take: 1
-        }
-      } as never
+      orderBy: { email: 'asc' }
     })) as UsuarioWithRole[];
 
-    return users.map((user) => this.toUserType(user));
+    const empresasByUsuarioId = await this.findEmpresasByUsuarioIds(users.map((user) => user.id));
+
+    return users.map((user) =>
+      this.toUserType({
+        ...user,
+        empresasVinculadas: empresasByUsuarioId.get(user.id) ?? []
+      })
+    );
   }
 
   async update(input: UpdateUserInput): Promise<UserType> {
@@ -101,43 +97,28 @@ export class UsersService {
 
     const user = (await this.prisma.usuario.update({
       where: { id: input.id },
-      data: data as never,
-      include: {
-        empresas: {
-          include: { empresa: true },
-          take: 1
-        }
-      } as never
+      data: data as never
     })) as UsuarioWithRole;
 
-    if (input.empresaId !== undefined) {
+    if (input.empresaIds !== undefined) {
+      const empresaIds = this.normalizeEmpresaIds(input.empresaIds);
+
       await this.prisma.empresaUsuario.deleteMany({
         where: { usuarioId: input.id }
       });
 
-      if (input.empresaId) {
-        await this.prisma.empresaUsuario.create({
-          data: {
+      if (empresaIds.length) {
+        await this.prisma.empresaUsuario.createMany({
+          data: empresaIds.map((empresaId) => ({
             usuarioId: input.id,
-            empresaId: input.empresaId
-          }
+            empresaId
+          }))
         });
       }
-
-      return this.toUserType(
-        (await this.prisma.usuario.findUnique({
-          where: { id: input.id },
-          include: {
-            empresas: {
-              include: { empresa: true },
-              take: 1
-            }
-          } as never
-        })) as UsuarioWithRole
-      );
+      return this.toUserType(await this.attachEmpresas(user));
     }
 
-    return this.toUserType(user);
+    return this.toUserType(await this.attachEmpresas(user));
   }
 
   async remove(id: string): Promise<boolean> {
@@ -173,7 +154,15 @@ export class UsersService {
 
   toUserType(user: UsuarioWithRole): UserType {
     const tipo = this.toGraphqlRole(user.tipo);
-    const empresa = user.empresas?.[0]?.empresa;
+    const empresas = user.empresasVinculadas ?? user.empresas?.map((vinculo) => vinculo.empresa).filter((empresa): empresa is Empresa => !!empresa) ?? [];
+    const empresa = user.empresa ?? empresas[0] ?? null;
+    const empresasType = empresas.map((empresaVinculada) => ({
+      id: empresaVinculada.id,
+      nome: empresaVinculada.nome ?? null,
+      acessoEcommerce: empresaVinculada.acessoEcommerce ?? false,
+      acessoProjetos: empresaVinculada.acessoProjetos ?? false,
+      acessoHoras: empresaVinculada.acessoHoras ?? false
+    }));
 
     return {
       id: user.id,
@@ -189,6 +178,7 @@ export class UsersService {
             acessoHoras: empresa.acessoHoras ?? false
           }
         : null,
+      empresas: empresasType,
       availableSolutions: this.resolveDefaultSolutions(tipo)
     };
   }
@@ -211,5 +201,52 @@ export class UsersService {
     }
 
     return [];
+  }
+
+  private async attachEmpresas(user: UsuarioWithRole): Promise<UsuarioWithRole> {
+    const empresasByUsuarioId = await this.findEmpresasByUsuarioIds([user.id]);
+
+    return {
+      ...user,
+      empresasVinculadas: empresasByUsuarioId.get(user.id) ?? []
+    };
+  }
+
+  private async findEmpresasByUsuarioIds(usuarioIds: string[]): Promise<Map<string, Empresa[]>> {
+    if (!usuarioIds.length) {
+      return new Map();
+    }
+
+    const vinculos = (await this.prisma.empresaUsuario.findMany({
+      where: {
+        usuarioId: {
+          in: usuarioIds
+        }
+      },
+      include: {
+        empresa: true
+      },
+      orderBy: {
+        id: 'asc'
+      }
+    })) as (EmpresaUsuario & { empresa: Empresa })[];
+
+    return vinculos.reduce((empresasByUsuarioId, vinculo) => {
+      if (vinculo.empresa) {
+        const empresas = empresasByUsuarioId.get(vinculo.usuarioId) ?? [];
+        empresas.push(vinculo.empresa);
+        empresasByUsuarioId.set(vinculo.usuarioId, empresas);
+      }
+
+      return empresasByUsuarioId;
+    }, new Map<string, Empresa[]>());
+  }
+
+  private normalizeEmpresaIds(empresaIds?: number[] | null): number[] {
+    if (!empresaIds?.length) {
+      return [];
+    }
+
+    return [...new Set(empresaIds.filter((empresaId) => Number.isInteger(empresaId) && empresaId > 0))];
   }
 }

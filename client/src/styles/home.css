@@ -91,11 +91,6 @@ body {
   color: color-mix(in srgb, var(--accent-green) 25%, var(--text-on-primary));
 }
 
-.clients h3 {
-  font-size: clamp(1.6rem, 2.6vw, 2.2rem);
-  color: var(--primary);
-}
-
 @media (max-width: 768px) {
   .py-5 {
     padding-top: 3.5rem;

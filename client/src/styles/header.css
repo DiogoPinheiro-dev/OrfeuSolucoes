@@ -181,15 +181,15 @@
   line-height: 1.2;
 }
 
-.hub-user-text strong,
+.hub-user-text,
 .hub-user-text small {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.hub-user-text strong {
-  color: var(--detail-accent-text);
+.hub-user-text {
+  color: var(--button-primary-text);
   font-size: 0.88rem;
 }
 

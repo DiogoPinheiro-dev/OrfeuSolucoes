@@ -101,19 +101,20 @@
   right: 0;
   z-index: 20;
   display: grid;
-  gap: 4px;
+  gap: 2px;
   max-height: 220px;
   overflow-y: auto;
-  padding: 8px;
+  padding: 6px;
   border: 1px solid var(--line);
   border-radius: 14px;
   background: var(--surface-white);
   box-shadow: var(--shadow-soft);
 }
 
-.company-suggestions button {
+.company-login-form .company-suggestions button {
+  display: block;
   width: 100%;
-  padding: 10px 12px;
+  padding: 14px 18px;
   border: 0;
   border-radius: 10px;
   background: transparent;
@@ -122,10 +123,10 @@
   cursor: pointer;
 }
 
-.company-suggestions button:hover,
-.company-suggestions button:focus-visible {
-  background: var(--detail-accent-bg);
-  color: var(--secondary);
+.company-login-form .company-suggestions button:hover,
+.company-login-form .company-suggestions button:focus-visible {
+  background: var(--button-primary-bg);
+  color: var(--button-primary-text);
   outline: none;
 }
 

@@ -19,6 +19,9 @@ export class UserType {
   @Field(() => EmpresaType, { nullable: true })
   empresa?: EmpresaType | null;
 
+  @Field(() => [EmpresaType])
+  empresas!: EmpresaType[];
+
   @Field(() => [String])
   availableSolutions!: string[];
 }
