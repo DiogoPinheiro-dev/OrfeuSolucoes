@@ -74,6 +74,8 @@ export const LOGIN_COMPANIES_MUTATION = gql`
       acessoEcommerce
       acessoProjetos
       acessoHoras
+      solucaoIds
+      funcionalidadeIds
     }
   }
 `;
@@ -280,6 +282,8 @@ export const EMPRESAS_QUERY = gql`
       acessoEcommerce
       acessoProjetos
       acessoHoras
+      solucaoIds
+      funcionalidadeIds
     }
   }
 `;
@@ -292,6 +296,8 @@ export const CREATE_EMPRESA_MUTATION = gql`
       acessoEcommerce
       acessoProjetos
       acessoHoras
+      solucaoIds
+      funcionalidadeIds
     }
   }
 `;
@@ -304,6 +310,8 @@ export const UPDATE_EMPRESA_MUTATION = gql`
       acessoEcommerce
       acessoProjetos
       acessoHoras
+      solucaoIds
+      funcionalidadeIds
     }
   }
 `;
@@ -328,6 +336,8 @@ export const GRUPOS_USUARIOS_QUERY = gql`
       podeIncluir
       podeAlterar
       podeExcluir
+      solucaoIds
+      funcionalidadeIds
     }
   }
 `;
@@ -346,6 +356,8 @@ export const CREATE_GRUPO_USUARIO_MUTATION = gql`
       podeIncluir
       podeAlterar
       podeExcluir
+      solucaoIds
+      funcionalidadeIds
     }
   }
 `;
@@ -364,6 +376,8 @@ export const UPDATE_GRUPO_USUARIO_MUTATION = gql`
       podeIncluir
       podeAlterar
       podeExcluir
+      solucaoIds
+      funcionalidadeIds
     }
   }
 `;
@@ -371,5 +385,61 @@ export const UPDATE_GRUPO_USUARIO_MUTATION = gql`
 export const DELETE_GRUPO_USUARIO_MUTATION = gql`
   mutation DeleteGrupoUsuario($id: Int!) {
     deleteGrupoUsuario(id: $id)
+  }
+`;
+
+export const MY_HUB_NAVIGATION_QUERY = gql`
+  query MyHubNavigation {
+    myHubNavigation {
+      id
+      slug
+      nome
+      descricao
+      eyebrow
+      status
+      ordem
+      ativo
+      exibirNoHub
+      somenteAdminSistema
+      funcionalidades {
+        id
+        slug
+        titulo
+        label
+        descricao
+        ordem
+        ativo
+        registryKey
+        somenteAdminSistema
+      }
+    }
+  }
+`;
+
+export const SOLUCOES_QUERY = gql`
+  query Solucoes {
+    solucoes {
+      id
+      slug
+      nome
+      descricao
+      eyebrow
+      status
+      ordem
+      ativo
+      exibirNoHub
+      somenteAdminSistema
+      funcionalidades {
+        id
+        slug
+        titulo
+        label
+        descricao
+        ordem
+        ativo
+        registryKey
+        somenteAdminSistema
+      }
+    }
   }
 `;

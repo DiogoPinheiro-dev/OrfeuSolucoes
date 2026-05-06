@@ -36,6 +36,8 @@ model GrupoUsuario {
   podeExcluir    Boolean @default(false) @map("PodeExcluir")
 
   usuarios Usuario[]
+  solucoes GrupoSolucao[]
+  funcionalidades GrupoFuncionalidade[]
 
   @@map("GruposUsuarios")
 }
@@ -64,8 +66,97 @@ model Empresa {
   // descricao   String?  @map("Descricao")
 
   usuarios EmpresaUsuario[]
+  solucoes EmpresaSolucao[]
+  funcionalidades EmpresaFuncionalidade[]
 
   @@map("Empresas")
+}
+
+model Solucao {
+  id                  Int      @id @default(autoincrement()) @map("Id")
+  slug                String   @unique(map: "UX_Solucoes_Slug") @map("Slug")
+  nome                String   @map("Nome")
+  descricao           String?  @map("Descricao")
+  eyebrow             String?  @map("Eyebrow")
+  status              String?  @map("Status")
+  ordem               Int      @default(0) @map("Ordem")
+  ativo               Boolean  @default(true) @map("Ativo")
+  exibirNoHub         Boolean  @default(true) @map("ExibirNoHub")
+  somenteAdminSistema Boolean  @default(false) @map("SomenteAdminSistema")
+
+  funcionalidades Funcionalidade[]
+  grupos GrupoSolucao[]
+  empresas EmpresaSolucao[]
+
+  @@map("Solucoes")
+}
+
+model Funcionalidade {
+  id                  Int      @id @default(autoincrement()) @map("Id")
+  solucaoId           Int      @map("SolucaoId")
+  slug                String   @map("Slug")
+  titulo              String   @map("Titulo")
+  label               String?  @map("Label")
+  descricao           String?  @map("Descricao")
+  ordem               Int      @default(0) @map("Ordem")
+  ativo               Boolean  @default(true) @map("Ativo")
+  registryKey         String?  @map("RegistryKey")
+  somenteAdminSistema Boolean  @default(false) @map("SomenteAdminSistema")
+
+  solucao Solucao @relation(fields: [solucaoId], references: [id], onDelete: Cascade)
+  grupos GrupoFuncionalidade[]
+  empresas EmpresaFuncionalidade[]
+
+  @@unique([solucaoId, slug], map: "UX_Funcionalidades_SolucaoId_Slug")
+  @@map("Funcionalidades")
+}
+
+model GrupoSolucao {
+  id        Int @id @default(autoincrement()) @map("Id")
+  grupoId   Int @map("GrupoId")
+  solucaoId Int @map("SolucaoId")
+
+  grupo GrupoUsuario @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+  solucao Solucao @relation(fields: [solucaoId], references: [id], onDelete: Cascade)
+
+  @@unique([grupoId, solucaoId], map: "UX_GrupoSolucoes_GrupoId_SolucaoId")
+  @@map("GrupoSolucoes")
+}
+
+model EmpresaSolucao {
+  id        Int @id @default(autoincrement()) @map("Id")
+  empresaId Int @map("EmpresaId")
+  solucaoId Int @map("SolucaoId")
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  solucao Solucao @relation(fields: [solucaoId], references: [id], onDelete: Cascade)
+
+  @@unique([empresaId, solucaoId], map: "UX_EmpresaSolucoes_EmpresaId_SolucaoId")
+  @@map("EmpresaSolucoes")
+}
+
+model GrupoFuncionalidade {
+  id               Int @id @default(autoincrement()) @map("Id")
+  grupoId          Int @map("GrupoId")
+  funcionalidadeId Int @map("FuncionalidadeId")
+
+  grupo GrupoUsuario @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+  funcionalidade Funcionalidade @relation(fields: [funcionalidadeId], references: [id], onDelete: Cascade)
+
+  @@unique([grupoId, funcionalidadeId], map: "UX_GrupoFuncionalidades_GrupoId_FuncionalidadeId")
+  @@map("GrupoFuncionalidades")
+}
+
+model EmpresaFuncionalidade {
+  id               Int @id @default(autoincrement()) @map("Id")
+  empresaId         Int @map("EmpresaId")
+  funcionalidadeId Int @map("FuncionalidadeId")
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  funcionalidade Funcionalidade @relation(fields: [funcionalidadeId], references: [id], onDelete: Cascade)
+
+  @@unique([empresaId, funcionalidadeId], map: "UX_EmpresaFuncionalidades_EmpresaId_FuncionalidadeId")
+  @@map("EmpresaFuncionalidades")
 }
 
 model EmpresaUsuario {

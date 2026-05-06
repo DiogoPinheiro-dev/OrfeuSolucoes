@@ -1,13 +1,13 @@
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import { getSolutionsForUser } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
+import { useHubNavigation } from "../hooks/useHubNavigation";
 
 import "../styles/hub.css";
 
 export default function Hub() {
     const { user } = useAuth();
-    const solutions = getSolutionsForUser(user);
+    const { error, loading, solutions } = useHubNavigation();
 
     return (
         <div className="page-wrapper hub-page">
@@ -24,7 +24,11 @@ export default function Hub() {
                         <div className="hub-summary-card">
                             <span className="hub-summary-label">Acesso ativo</span>
                             {user?.empresa?.nome && <p>{user.empresa.nome}</p>}
-                            <p>{solutions.length} solucao(oes) disponivel(is) neste momento.</p>
+                            <p>
+                                {loading
+                                    ? "Carregando solucoes..."
+                                    : error || `${solutions.length} solucao(oes) disponivel(is) neste momento.`}
+                            </p>
                         </div>
                     </div>
                 </section>

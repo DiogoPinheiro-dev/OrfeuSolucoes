@@ -4,20 +4,39 @@ import Footer from "../components/Footer";
 import Header from "../components/Header";
 import { canAccessSolution, getAreaAnchor, getSolutionBySlug, getUserGroupLabel } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
+import { useHubNavigation } from "../hooks/useHubNavigation";
 
 import "../styles/workspace.css";
 
 export default function SolutionWorkspace() {
     const { slug } = useParams();
     const { user } = useAuth();
+    const { loading, solutions } = useHubNavigation();
 
-    const solution = getSolutionBySlug(slug);
+    const solution = getSolutionBySlug(solutions, slug);
+
+    if (loading) {
+        return (
+            <div className="page-wrapper workspace-page">
+                <Header />
+                <main className="workspace-main">
+                    <div className="container workspace-shell">
+                        <section className="workspace-panel workspace-panel-wide">
+                            <span className="workspace-label">Hub</span>
+                            <h2>Carregando solucoes...</h2>
+                        </section>
+                    </div>
+                </main>
+                <Footer />
+            </div>
+        );
+    }
 
     if (!solution) {
         return <Navigate to="/hub" replace />;
     }
 
-    if (!canAccessSolution(user, slug)) {
+    if (!canAccessSolution(solutions, slug)) {
         return <Navigate to="/hub" replace />;
     }
 
@@ -62,7 +81,7 @@ export default function SolutionWorkspace() {
                         {workspacePanels.map((panel) => (
                             <Link
                                 className={`workspace-panel workspace-panel-link ${panel.wide ? "workspace-panel-wide" : ""}`}
-                                to={`/hub/${solution.slug}/${getAreaAnchor(panel.title)}`}
+                                to={`/hub/${solution.slug}/${panel.slug || getAreaAnchor(panel.title)}`}
                                 key={panel.title}
                             >
                                 <span className="workspace-label">{panel.label}</span>

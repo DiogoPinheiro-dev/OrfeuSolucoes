@@ -263,7 +263,9 @@ export class UsersService {
       nome: empresaVinculada.nome ?? null,
       acessoEcommerce: empresaVinculada.acessoEcommerce ?? false,
       acessoProjetos: empresaVinculada.acessoProjetos ?? false,
-      acessoHoras: empresaVinculada.acessoHoras ?? false
+      acessoHoras: empresaVinculada.acessoHoras ?? false,
+      solucaoIds: [],
+      funcionalidadeIds: []
     }));
 
     return {
@@ -277,7 +279,9 @@ export class UsersService {
             nome: empresa.nome ?? null,
             acessoEcommerce: empresa.acessoEcommerce ?? false,
             acessoProjetos: empresa.acessoProjetos ?? false,
-            acessoHoras: empresa.acessoHoras ?? false
+            acessoHoras: empresa.acessoHoras ?? false,
+            solucaoIds: [],
+            funcionalidadeIds: []
           }
         : null,
       empresas: empresasType,
@@ -293,7 +297,9 @@ export class UsersService {
             podeVisualizar: isAdminGroup || (user.grupo.podeVisualizar ?? true),
             podeIncluir: isAdminGroup || (user.grupo.podeIncluir ?? false),
             podeAlterar: isAdminGroup || (user.grupo.podeAlterar ?? false),
-            podeExcluir: isAdminGroup || (user.grupo.podeExcluir ?? false)
+            podeExcluir: isAdminGroup || (user.grupo.podeExcluir ?? false),
+            solucaoIds: [],
+            funcionalidadeIds: []
           }
         : null,
       podeVisualizar: isAdminGroup || (user.grupo?.podeVisualizar ?? false),

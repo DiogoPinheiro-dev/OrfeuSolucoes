@@ -1,5 +1,5 @@
-import { Field, InputType } from '@nestjs/graphql';
-import { IsBoolean, IsOptional, IsString } from 'class-validator';
+import { Field, InputType, Int } from '@nestjs/graphql';
+import { IsArray, IsBoolean, IsInt, IsOptional, IsString } from 'class-validator';
 
 @InputType()
 export class CreateEmpresaInput {
@@ -22,4 +22,16 @@ export class CreateEmpresaInput {
   @IsOptional()
   @IsBoolean()
   acessoHoras?: boolean;
+
+  @Field(() => [Int], { nullable: true })
+  @IsArray()
+  @IsInt({ each: true })
+  @IsOptional()
+  solucaoIds?: number[];
+
+  @Field(() => [Int], { nullable: true })
+  @IsArray()
+  @IsInt({ each: true })
+  @IsOptional()
+  funcionalidadeIds?: number[];
 }

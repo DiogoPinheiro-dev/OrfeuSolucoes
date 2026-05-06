@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { createEmpresa, deleteEmpresa, getEmpresas, updateEmpresa } from "../../services/Empresas/EmpresaService";
+import { getSolucoes } from "../../services/Solucoes/SolucaoService";
 import { getUsers } from "../../services/Users/UserService";
 import { isGroupAdmin } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
@@ -12,8 +13,8 @@ import "../styles/companyManagement.css";
 const initialForm = {
     id: "",
     nome: "",
-    acessoProjetos: false,
-    acessoHoras: false
+    solucaoIds: [],
+    funcionalidadeIds: []
 };
 
 const booleanLabel = (value) => (value ? "Sim" : "Nao");
@@ -21,6 +22,7 @@ const booleanLabel = (value) => (value ? "Sim" : "Nao");
 export default function CompanyManagement() {
     const { user: currentUser } = useAuth();
     const [empresas, setEmpresas] = useState([]);
+    const [solucoes, setSolucoes] = useState([]);
     const [users, setUsers] = useState([]);
     const [selectedId, setSelectedId] = useState("");
     const [selectedIds, setSelectedIds] = useState([]);
@@ -38,9 +40,10 @@ export default function CompanyManagement() {
         setLoading(true);
 
         try {
-            const [empresasResponse, usersResponse] = await Promise.all([getEmpresas(), getUsers()]);
+            const [empresasResponse, usersResponse, solucoesResponse] = await Promise.all([getEmpresas(), getUsers(), getSolucoes()]);
             setEmpresas(empresasResponse);
             setUsers(usersResponse);
+            setSolucoes(solucoesResponse.filter((solucao) => !solucao.somenteAdminSistema));
         } catch (loadError) {
             setError(loadError.message || "Nao foi possivel carregar empresas.");
         } finally {
@@ -60,7 +63,7 @@ export default function CompanyManagement() {
         }
 
         return empresas.filter((empresa) =>
-            [empresa.nome, booleanLabel(empresa.acessoProjetos), booleanLabel(empresa.acessoHoras)]
+            [empresa.nome]
                 .filter(Boolean)
                 .some((value) => value.toLowerCase().includes(term))
         );
@@ -104,8 +107,8 @@ export default function CompanyManagement() {
             if (modalMode === "create") {
                 await createEmpresa({
                     nome: form.nome.trim(),
-                    acessoProjetos: form.acessoProjetos,
-                    acessoHoras: form.acessoHoras
+                    solucaoIds: form.solucaoIds,
+                    funcionalidadeIds: form.funcionalidadeIds
                 });
             }
 
@@ -113,8 +116,8 @@ export default function CompanyManagement() {
                 await updateEmpresa({
                     id: form.id,
                     nome: form.nome.trim(),
-                    acessoProjetos: form.acessoProjetos,
-                    acessoHoras: form.acessoHoras
+                    solucaoIds: form.solucaoIds,
+                    funcionalidadeIds: form.funcionalidadeIds
                 });
             }
 
@@ -182,6 +185,32 @@ export default function CompanyManagement() {
         });
     };
 
+    const toggleSolucao = (solucao) => {
+        setForm((current) => {
+            const selected = current.solucaoIds.includes(solucao.id);
+            const funcionalidadeIds = solucao.funcionalidades?.map((funcionalidade) => funcionalidade.id) || [];
+
+            return {
+                ...current,
+                solucaoIds: selected
+                    ? current.solucaoIds.filter((id) => id !== solucao.id)
+                    : [...current.solucaoIds, solucao.id],
+                funcionalidadeIds: selected
+                    ? current.funcionalidadeIds.filter((id) => !funcionalidadeIds.includes(id))
+                    : [...new Set([...current.funcionalidadeIds, ...funcionalidadeIds])]
+            };
+        });
+    };
+
+    const toggleFuncionalidade = (funcionalidadeId) => {
+        setForm((current) => ({
+            ...current,
+            funcionalidadeIds: current.funcionalidadeIds.includes(funcionalidadeId)
+                ? current.funcionalidadeIds.filter((id) => id !== funcionalidadeId)
+                : [...current.funcionalidadeIds, funcionalidadeId]
+        }));
+    };
+
     const readonly = modalMode === "view";
     const currentUserIsAdmin = isGroupAdmin(currentUser);
     const linkedUsers = useMemo(() => {
@@ -207,8 +236,11 @@ export default function CompanyManagement() {
                     title="Cadastro de empresas"
                     columns={[
                         { key: "nome", label: "Nome", render: (empresa) => empresa.nome || "-" },
-                        { key: "acessoProjetos", label: "Projetos", render: (empresa) => booleanLabel(empresa.acessoProjetos) },
-                        { key: "acessoHoras", label: "Horas", render: (empresa) => booleanLabel(empresa.acessoHoras) }
+                        ...solucoes.map((solucao) => ({
+                            key: `solucao-${solucao.id}`,
+                            label: solucao.nome,
+                            render: (empresa) => booleanLabel(empresa.solucaoIds?.includes(solucao.id))
+                        }))
                     ]}
                     rows={filteredEmpresas}
                     selectedId={selectedId}
@@ -248,28 +280,43 @@ export default function CompanyManagement() {
                             </label>
 
                             <div className="company-access-grid">
-                                <label>
-                                    <input
-                                        name="acessoProjetos"
-                                        type="checkbox"
-                                        checked={form.acessoProjetos}
-                                        onChange={handleChange}
-                                        disabled={readonly || saving}
-                                    />
-                                    Acesso a projetos
-                                </label>
-
-                                <label>
-                                    <input
-                                        name="acessoHoras"
-                                        type="checkbox"
-                                        checked={form.acessoHoras}
-                                        onChange={handleChange}
-                                        disabled={readonly || saving}
-                                    />
-                                    Acesso a horas
-                                </label>
+                                {solucoes.map((solucao) => (
+                                    <label key={solucao.id}>
+                                        <input
+                                            type="checkbox"
+                                            checked={form.solucaoIds.includes(solucao.id)}
+                                            onChange={() => toggleSolucao(solucao)}
+                                            disabled={readonly || saving}
+                                        />
+                                        {solucao.nome}
+                                    </label>
+                                ))}
                             </div>
+
+                            <section className="user-company-section" aria-label="Funcionalidades da empresa">
+                                <div className="user-company-header">
+                                    <div>
+                                        <span>Funcionalidades</span>
+                                        <strong>Areas contratadas pela empresa</strong>
+                                    </div>
+                                </div>
+
+                                <div className="user-permissions-grid">
+                                    {solucoes.flatMap((solucao) =>
+                                        (solucao.funcionalidades || []).map((funcionalidade) => (
+                                            <label key={funcionalidade.id} className="user-permission-option">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={form.funcionalidadeIds.includes(funcionalidade.id)}
+                                                    onChange={() => toggleFuncionalidade(funcionalidade.id)}
+                                                    disabled={readonly || saving || !form.solucaoIds.includes(solucao.id)}
+                                                />
+                                                {funcionalidade.titulo}
+                                            </label>
+                                        ))
+                                    )}
+                                </div>
+                            </section>
 
                             {readonly && (
                                 <section className="company-linked-users" aria-label="Usuarios vinculados a empresa">

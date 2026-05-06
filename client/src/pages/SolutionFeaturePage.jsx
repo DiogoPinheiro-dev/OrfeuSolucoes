@@ -1,37 +1,55 @@
 import { Link, Navigate, useParams } from "react-router-dom";
 
-import { canAccessSolution, getAreaAnchor, getSolutionBySlug } from "../auth/hubConfig";
+import { FEATURE_COMPONENT_REGISTRY, canAccessSolution, getFeatureBySlug, getSolutionBySlug } from "../auth/hubConfig";
 import CompanyManagement from "../components/CompanyManagement";
 import Footer from "../components/Footer";
 import GroupManagement from "../components/GroupManagement";
 import Header from "../components/Header";
 import UserManagement from "../components/UserManagement";
-import { useAuth } from "../hooks/useAuth";
+import { useHubNavigation } from "../hooks/useHubNavigation";
 
 import "../styles/workspace.css";
 
 export default function SolutionFeaturePage() {
     const { slug, areaSlug } = useParams();
-    const { user } = useAuth();
-    const solution = getSolutionBySlug(slug);
+    const { loading, solutions } = useHubNavigation();
+    const solution = getSolutionBySlug(solutions, slug);
+
+    if (loading) {
+        return (
+            <div className="page-wrapper workspace-page">
+                <Header />
+                <main className="workspace-main">
+                    <div className="container workspace-shell">
+                        <section className="workspace-panel workspace-panel-wide">
+                            <span className="workspace-label">Hub</span>
+                            <h2>Carregando funcionalidade...</h2>
+                        </section>
+                    </div>
+                </main>
+                <Footer />
+            </div>
+        );
+    }
 
     if (!solution) {
         return <Navigate to="/hub" replace />;
     }
 
-    if (!canAccessSolution(user, slug)) {
+    if (!canAccessSolution(solutions, slug)) {
         return <Navigate to="/hub" replace />;
     }
 
-    const area = solution.areas?.find((item) => getAreaAnchor(item.title) === areaSlug);
+    const area = getFeatureBySlug(solution, areaSlug);
 
     if (!area) {
         return <Navigate to={`/hub/${solution.slug}`} replace />;
     }
 
-    const isUserManagement = solution.slug === "configurador" && getAreaAnchor(area.title) === "cadastro-de-usuarios";
-    const isCompanyManagement = solution.slug === "configurador" && getAreaAnchor(area.title) === "cadastro-de-empresas";
-    const isGroupManagement = solution.slug === "configurador" && getAreaAnchor(area.title) === "cadastro-de-grupos";
+    const componentKey = FEATURE_COMPONENT_REGISTRY[area.registryKey];
+    const isUserManagement = componentKey === "user-management";
+    const isCompanyManagement = componentKey === "company-management";
+    const isGroupManagement = componentKey === "group-management";
 
     return (
         <div className="page-wrapper workspace-page">

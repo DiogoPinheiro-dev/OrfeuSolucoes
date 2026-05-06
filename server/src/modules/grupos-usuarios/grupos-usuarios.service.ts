@@ -1,6 +1,7 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { compare, hash } from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
+import { SolucoesService } from '../solucoes/solucoes.service';
 import { CreateGrupoUsuarioInput } from './dto/create-grupo-usuario.input';
 import { GrupoUsuarioType } from './dto/grupo-usuario.type';
 import { UpdateGrupoUsuarioInput } from './dto/update-grupo-usuario.input';
@@ -17,11 +18,16 @@ type GrupoUsuarioRecord = {
   podeIncluir?: boolean;
   podeAlterar?: boolean;
   podeExcluir?: boolean;
+  solucaoIds?: number[];
+  funcionalidadeIds?: number[];
 };
 
 @Injectable()
 export class GruposUsuariosService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly solucoesService: SolucoesService
+  ) {}
 
   async ensureInitialSetup(): Promise<void> {
     const [gruposCount, usuariosCount, empresasCount] = await Promise.all([
@@ -112,6 +118,7 @@ export class GruposUsuariosService {
     });
 
     await this.ensureInitialAdminPasswordPolicy();
+    await this.ensureInitialAdminSolutionAccess();
   }
 
   private async ensureInitialAdminPasswordPolicy(): Promise<void> {
@@ -157,12 +164,39 @@ export class GruposUsuariosService {
     });
   }
 
+  private async ensureInitialAdminSolutionAccess(): Promise<void> {
+    const admin = await this.prisma.usuario.findFirst({
+      where: {
+        login: 'admin',
+        email: 'admin@admin.com',
+        grupoId: { not: null }
+      } as never,
+      select: {
+        grupoId: true
+      } as never
+    }) as unknown as { grupoId: number | null } | null;
+
+    if (!admin?.grupoId) {
+      return;
+    }
+
+    const solucoes = await this.solucoesService.findAll();
+    const adminSolucoes = solucoes.filter((solucao) => solucao.slug === 'configurador' || !solucao.somenteAdminSistema);
+    const adminFuncionalidades = adminSolucoes.flatMap((solucao) => solucao.funcionalidades);
+
+    await this.solucoesService.syncGroupAccess(
+      admin.grupoId,
+      adminSolucoes.map((solucao) => solucao.id),
+      adminFuncionalidades.map((funcionalidade) => funcionalidade.id)
+    );
+  }
+
   async findAll(): Promise<GrupoUsuarioType[]> {
     const grupos = (await (this.prisma as never as { grupoUsuario: { findMany: Function } }).grupoUsuario.findMany({
       orderBy: { nome: 'asc' }
     })) as GrupoUsuarioRecord[];
 
-    return grupos.map((grupo) => this.toType(grupo));
+    return Promise.all(grupos.map((grupo) => this.toType(grupo)));
   }
 
   async findById(id?: number | null): Promise<GrupoUsuarioType | null> {
@@ -202,6 +236,8 @@ export class GruposUsuariosService {
       }
     })) as GrupoUsuarioRecord;
 
+    await this.solucoesService.syncGroupAccess(created.id, input.solucaoIds ?? [], input.funcionalidadeIds ?? []);
+
     return this.toType(created);
   }
 
@@ -230,6 +266,10 @@ export class GruposUsuariosService {
       }
     })) as GrupoUsuarioRecord;
 
+    if (input.solucaoIds !== undefined || input.funcionalidadeIds !== undefined) {
+      await this.solucoesService.syncGroupAccess(input.id, input.solucaoIds ?? [], input.funcionalidadeIds ?? []);
+    }
+
     return this.toType(updated);
   }
 
@@ -251,7 +291,9 @@ export class GruposUsuariosService {
     return true;
   }
 
-  toType(grupo: GrupoUsuarioRecord): GrupoUsuarioType {
+  async toType(grupo: GrupoUsuarioRecord): Promise<GrupoUsuarioType> {
+    const access = await this.solucoesService.findGroupAccess(grupo.id);
+
     return {
       id: grupo.id,
       nome: grupo.nome,
@@ -263,7 +305,9 @@ export class GruposUsuariosService {
       podeVisualizar: grupo.podeVisualizar ?? true,
       podeIncluir: grupo.podeIncluir ?? false,
       podeAlterar: grupo.podeAlterar ?? false,
-      podeExcluir: grupo.podeExcluir ?? false
+      podeExcluir: grupo.podeExcluir ?? false,
+      solucaoIds: access.solucaoIds,
+      funcionalidadeIds: access.funcionalidadeIds
     };
   }
 }

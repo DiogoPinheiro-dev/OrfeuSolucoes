@@ -70,7 +70,9 @@ export class AuthResolver {
           nome: user.empresaNome ?? null,
           acessoEcommerce: resolvedSolutions.includes('ecommerce'),
           acessoProjetos: resolvedSolutions.includes('projetos'),
-          acessoHoras: resolvedSolutions.includes('horas')
+          acessoHoras: resolvedSolutions.includes('horas'),
+          solucaoIds: [],
+          funcionalidadeIds: []
         }
       : null;
 
@@ -80,7 +82,9 @@ export class AuthResolver {
           podeVisualizar: user.grupo.podeVisualizar ?? user.podeVisualizar ?? false,
           podeIncluir: user.grupo.podeIncluir ?? user.podeIncluir ?? false,
           podeAlterar: user.grupo.podeAlterar ?? user.podeAlterar ?? false,
-          podeExcluir: user.grupo.podeExcluir ?? user.podeExcluir ?? false
+          podeExcluir: user.grupo.podeExcluir ?? user.podeExcluir ?? false,
+          solucaoIds: [],
+          funcionalidadeIds: []
         }
       : null;
 

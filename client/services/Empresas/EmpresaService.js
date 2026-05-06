@@ -31,9 +31,10 @@ export const getEmpresas = async () => {
 
 export const createEmpresa = async ({
     nome,
-    acessoEcommerce,
     acessoProjetos,
-    acessoHoras
+    acessoHoras,
+    solucaoIds,
+    funcionalidadeIds
 }) => {
     try {
         const response = await apolloClient.mutate({
@@ -41,9 +42,10 @@ export const createEmpresa = async ({
             variables: {
                 input: {
                     nome,
-                    acessoEcommerce,
                     acessoProjetos,
-                    acessoHoras
+                    acessoHoras,
+                    solucaoIds,
+                    funcionalidadeIds
                 }
             }
         });
@@ -54,7 +56,7 @@ export const createEmpresa = async ({
     }
 };
 
-export const updateEmpresa = async ({ id, nome, acessoEcommerce, acessoProjetos, acessoHoras }) => {
+export const updateEmpresa = async ({ id, nome, acessoProjetos, acessoHoras, solucaoIds, funcionalidadeIds }) => {
     try {
         const response = await apolloClient.mutate({
             mutation: UPDATE_EMPRESA_MUTATION,
@@ -62,9 +64,10 @@ export const updateEmpresa = async ({ id, nome, acessoEcommerce, acessoProjetos,
                 input: {
                     id: Number(id),
                     nome,
-                    acessoEcommerce,
                     acessoProjetos,
-                    acessoHoras
+                    acessoHoras,
+                    solucaoIds,
+                    funcionalidadeIds
                 }
             }
         });

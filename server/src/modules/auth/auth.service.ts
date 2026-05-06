@@ -5,6 +5,7 @@ import { compare } from 'bcrypt';
 import { Response } from 'express';
 import { EmpresaType } from '../empresas/dto/empresa.type';
 import { EmpresaRecord, EmpresasService } from '../empresas/empresas.service';
+import { SolucoesService } from '../solucoes/solucoes.service';
 import { UsersService } from '../users/users.service';
 import { AuthPayloadType } from './dto/auth-payload.type';
 
@@ -13,6 +14,7 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly empresasService: EmpresasService,
+    private readonly solucoesService: SolucoesService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService
   ) {}
@@ -31,8 +33,8 @@ export class AuthService {
     }
 
     const userType = this.usersService.toUserType(user);
-    const availableSolutions = this.resolveAvailableSolutions(userType, empresa);
-    const empresaType: EmpresaType | null = empresa ? this.empresasService.toEmpresaType(empresa) : null;
+    const availableSolutions = await this.solucoesService.resolveAvailableSolutionSlugs(userType, empresa?.id ?? null);
+    const empresaType: EmpresaType | null = empresa ? await this.empresasService.toEmpresaType(empresa) : null;
 
     const payload = {
       sub: user.id,
@@ -95,8 +97,8 @@ export class AuthService {
 
     const userType = await this.usersService.findTypeById(userId);
     const empresa = empresaId ? await this.empresasService.findById(empresaId) : null;
-    const empresaType: EmpresaType | null = empresa ? this.empresasService.toEmpresaType(empresa) : null;
-    const availableSolutions = this.resolveAvailableSolutions(userType, empresa);
+    const empresaType: EmpresaType | null = empresa ? await this.empresasService.toEmpresaType(empresa) : null;
+    const availableSolutions = await this.solucoesService.resolveAvailableSolutionSlugs(userType, empresa?.id ?? null);
     const payload = {
       sub: userType.id,
       email: userType.email,
@@ -141,94 +143,4 @@ export class AuthService {
     return user;
   }
 
-  private resolveAvailableSolutions(
-    user?: {
-      login?: string | null;
-      grupo?: {
-        acessoEcommerce?: boolean;
-        acessoProjetos?: boolean;
-        acessoHoras?: boolean;
-        acessoConfigurador?: boolean;
-      } | null;
-    } | null,
-    empresa?: EmpresaRecord | null
-  ): string[] {
-    const groupSolutions = this.resolveGroupSolutions(user);
-    const companySolutions = this.resolveCompanySolutions(empresa);
-
-    if (!empresa) {
-      return groupSolutions;
-    }
-
-    return groupSolutions.filter((solution) =>
-      solution === 'configurador' ? this.isSystemAdmin(user) : companySolutions.includes(solution)
-    );
-  }
-
-  private resolveCompanySolutions(empresa?: EmpresaRecord | null): string[] {
-    if (!empresa) {
-      return [];
-    }
-
-    return [
-      empresa.acessoEcommerce ? 'ecommerce' : null,
-      empresa.acessoProjetos ? 'projetos' : null,
-      empresa.acessoHoras ? 'horas' : null
-    ].filter((solution): solution is string => !!solution);
-  }
-
-  private resolveGroupSolutions(
-    user?: {
-      login?: string | null;
-      grupo?: {
-        acessoEcommerce?: boolean;
-        acessoProjetos?: boolean;
-        acessoHoras?: boolean;
-        acessoConfigurador?: boolean;
-      } | null;
-    } | null
-  ): string[] {
-    const grupo = user?.grupo;
-    const canAccessConfigurador = this.isSystemAdmin(user);
-
-    if (this.hasFullGroupAccess(grupo)) {
-      return [
-        'ecommerce',
-        'projetos',
-        'horas',
-        canAccessConfigurador ? 'configurador' : null
-      ].filter((solution): solution is string => !!solution);
-    }
-
-    if (!grupo) {
-      return ['ecommerce'];
-    }
-
-    return [
-      grupo.acessoEcommerce ? 'ecommerce' : null,
-      grupo.acessoProjetos ? 'projetos' : null,
-      grupo.acessoHoras ? 'horas' : null,
-      grupo.acessoConfigurador && canAccessConfigurador ? 'configurador' : null
-    ].filter((solution): solution is string => !!solution);
-  }
-
-  private isSystemAdmin(user?: { login?: string | null } | null): boolean {
-    return user?.login?.toLowerCase() === 'admin';
-  }
-
-  private hasFullGroupAccess(
-    grupo?: {
-      acessoEcommerce?: boolean;
-      acessoProjetos?: boolean;
-      acessoHoras?: boolean;
-      acessoConfigurador?: boolean;
-    } | null
-  ): boolean {
-    return !!(
-      grupo?.acessoEcommerce &&
-      grupo.acessoProjetos &&
-      grupo.acessoHoras &&
-      grupo.acessoConfigurador
-    );
-  }
 }

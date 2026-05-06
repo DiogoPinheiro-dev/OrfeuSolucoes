@@ -15,7 +15,21 @@ input CreateEmpresaInput {
   acessoEcommerce: Boolean = false
   acessoHoras: Boolean = false
   acessoProjetos: Boolean = false
+  funcionalidadeIds: [Int!]
   nome: String
+  solucaoIds: [Int!]
+}
+
+input CreateFuncionalidadeInput {
+  ativo: Boolean = true
+  descricao: String
+  label: String
+  ordem: Int = 0
+  registryKey: String
+  slug: String!
+  solucaoId: Int!
+  somenteAdminSistema: Boolean = false
+  titulo: String!
 }
 
 input CreateGrupoUsuarioInput {
@@ -24,11 +38,13 @@ input CreateGrupoUsuarioInput {
   acessoHoras: Boolean = false
   acessoProjetos: Boolean = false
   descricao: String
+  funcionalidadeIds: [Int!]
   nome: String!
   podeAlterar: Boolean = false
   podeExcluir: Boolean = false
   podeIncluir: Boolean = false
   podeVisualizar: Boolean = true
+  solucaoIds: [Int!]
 }
 
 input CreateServicoInput {
@@ -37,6 +53,18 @@ input CreateServicoInput {
   titulo: String
   valor: Float
   vendas: Int
+}
+
+input CreateSolucaoInput {
+  ativo: Boolean = true
+  descricao: String
+  exibirNoHub: Boolean = true
+  eyebrow: String
+  nome: String!
+  ordem: Int = 0
+  slug: String!
+  somenteAdminSistema: Boolean = false
+  status: String
 }
 
 input CreateUserInput {
@@ -52,8 +80,22 @@ type EmpresaType {
   acessoEcommerce: Boolean!
   acessoHoras: Boolean!
   acessoProjetos: Boolean!
+  funcionalidadeIds: [Int!]!
   id: Int!
   nome: String
+  solucaoIds: [Int!]!
+}
+
+type FuncionalidadeType {
+  ativo: Boolean!
+  descricao: String
+  id: Int!
+  label: String
+  ordem: Float!
+  registryKey: String
+  slug: String!
+  somenteAdminSistema: Boolean!
+  titulo: String!
 }
 
 type GrupoUsuarioType {
@@ -62,12 +104,14 @@ type GrupoUsuarioType {
   acessoHoras: Boolean!
   acessoProjetos: Boolean!
   descricao: String
+  funcionalidadeIds: [Int!]!
   id: Int!
   nome: String!
   podeAlterar: Boolean!
   podeExcluir: Boolean!
   podeIncluir: Boolean!
   podeVisualizar: Boolean!
+  solucaoIds: [Int!]!
 }
 
 input LoginCompaniesInput {
@@ -84,19 +128,25 @@ input LoginInput {
 type Mutation {
   changePassword(input: ChangePasswordInput!): AuthPayloadType!
   createEmpresa(input: CreateEmpresaInput!): EmpresaType!
+  createFuncionalidade(input: CreateFuncionalidadeInput!): FuncionalidadeType!
   createGrupoUsuario(input: CreateGrupoUsuarioInput!): GrupoUsuarioType!
   createServico(input: CreateServicoInput!): ServicoType!
+  createSolucao(input: CreateSolucaoInput!): SolucaoType!
   createUser(input: CreateUserInput!): UserType!
   deleteEmpresa(id: Int!): Boolean!
+  deleteFuncionalidade(id: Int!): Boolean!
   deleteGrupoUsuario(id: Int!): Boolean!
   deleteServico(id: Int!): Boolean!
+  deleteSolucao(id: Int!): Boolean!
   deleteUser(id: String!): Boolean!
   login(input: LoginInput!): AuthPayloadType!
   loginCompanies(input: LoginCompaniesInput!): [EmpresaType!]!
   logout: Boolean!
   updateEmpresa(input: UpdateEmpresaInput!): EmpresaType!
+  updateFuncionalidade(input: UpdateFuncionalidadeInput!): FuncionalidadeType!
   updateGrupoUsuario(input: UpdateGrupoUsuarioInput!): GrupoUsuarioType!
   updateServico(input: UpdateServicoInput!): ServicoType!
+  updateSolucao(input: UpdateSolucaoInput!): SolucaoType!
   updateUser(input: UpdateUserInput!): UserType!
 }
 
@@ -105,7 +155,9 @@ type Query {
   gruposUsuarios: [GrupoUsuarioType!]!
   health: String!
   me: UserType!
+  myHubNavigation: [SolucaoType!]!
   servicos: [ServicoType!]!
+  solucoes: [SolucaoType!]!
   users: [UserType!]!
 }
 
@@ -118,12 +170,41 @@ type ServicoType {
   vendas: Int
 }
 
+type SolucaoType {
+  ativo: Boolean!
+  descricao: String
+  exibirNoHub: Boolean!
+  eyebrow: String
+  funcionalidades: [FuncionalidadeType!]!
+  id: Int!
+  nome: String!
+  ordem: Float!
+  slug: String!
+  somenteAdminSistema: Boolean!
+  status: String
+}
+
 input UpdateEmpresaInput {
   acessoEcommerce: Boolean
   acessoHoras: Boolean
   acessoProjetos: Boolean
+  funcionalidadeIds: [Int!]
   id: Int!
   nome: String
+  solucaoIds: [Int!]
+}
+
+input UpdateFuncionalidadeInput {
+  ativo: Boolean
+  descricao: String
+  id: Int!
+  label: String
+  ordem: Int
+  registryKey: String
+  slug: String
+  solucaoId: Int
+  somenteAdminSistema: Boolean
+  titulo: String
 }
 
 input UpdateGrupoUsuarioInput {
@@ -132,12 +213,14 @@ input UpdateGrupoUsuarioInput {
   acessoHoras: Boolean
   acessoProjetos: Boolean
   descricao: String
+  funcionalidadeIds: [Int!]
   id: Int!
   nome: String
   podeAlterar: Boolean
   podeExcluir: Boolean
   podeIncluir: Boolean
   podeVisualizar: Boolean
+  solucaoIds: [Int!]
 }
 
 input UpdateServicoInput {
@@ -147,6 +230,19 @@ input UpdateServicoInput {
   titulo: String
   valor: Float
   vendas: Int
+}
+
+input UpdateSolucaoInput {
+  ativo: Boolean
+  descricao: String
+  exibirNoHub: Boolean
+  eyebrow: String
+  id: Int!
+  nome: String
+  ordem: Int
+  slug: String
+  somenteAdminSistema: Boolean
+  status: String
 }
 
 input UpdateUserInput {

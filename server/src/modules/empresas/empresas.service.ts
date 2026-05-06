@@ -1,6 +1,7 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { JwtPayload } from '../auth/strategies/jwt-payload.type';
+import { SolucoesService } from '../solucoes/solucoes.service';
 import { CreateEmpresaInput } from './dto/create-empresa.input';
 import { EmpresaType } from './dto/empresa.type';
 import { UpdateEmpresaInput } from './dto/update-empresa.input';
@@ -15,7 +16,10 @@ export type EmpresaRecord = {
 
 @Injectable()
 export class EmpresasService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly solucoesService: SolucoesService
+  ) {}
 
   async create(input: CreateEmpresaInput, admin: JwtPayload): Promise<EmpresaType> {
     this.assertAdmin(admin, 'cadastrar empresas');
@@ -49,6 +53,8 @@ export class EmpresasService {
       return createdEmpresa;
     })) as EmpresaRecord;
 
+    await this.solucoesService.syncCompanyAccess(empresa.id, input.solucaoIds ?? [], input.funcionalidadeIds ?? []);
+
     return this.toEmpresaType(empresa);
   }
 
@@ -59,7 +65,7 @@ export class EmpresasService {
       orderBy: { nome: 'asc' }
     })) as EmpresaRecord[];
 
-    return empresas.map((empresa) => this.toEmpresaType(empresa));
+    return Promise.all(empresas.map((empresa) => this.toEmpresaType(empresa)));
   }
 
   async findById(id: number): Promise<EmpresaRecord> {
@@ -83,10 +89,10 @@ export class EmpresasService {
       orderBy: { id: 'asc' }
     });
 
-    return vinculos
+    return Promise.all(vinculos
       .map((vinculo) => vinculo.empresa)
       .filter(Boolean)
-      .map((empresa) => this.toEmpresaType(empresa as EmpresaRecord));
+      .map((empresa) => this.toEmpresaType(empresa as EmpresaRecord)));
   }
 
   async update(input: UpdateEmpresaInput, admin: JwtPayload): Promise<EmpresaType> {
@@ -103,6 +109,10 @@ export class EmpresasService {
         ...(input.acessoHoras !== undefined ? { acessoHoras: input.acessoHoras } : {})
       }
     })) as EmpresaRecord;
+
+    if (input.solucaoIds !== undefined || input.funcionalidadeIds !== undefined) {
+      await this.solucoesService.syncCompanyAccess(input.id, input.solucaoIds ?? [], input.funcionalidadeIds ?? []);
+    }
 
     return this.toEmpresaType(empresa);
   }
@@ -168,13 +178,17 @@ export class EmpresasService {
     return !!vinculo;
   }
 
-  toEmpresaType(empresa: EmpresaRecord): EmpresaType {
+  async toEmpresaType(empresa: EmpresaRecord): Promise<EmpresaType> {
+    const access = await this.solucoesService.findCompanyAccess(empresa.id);
+
     return {
       id: empresa.id,
       nome: empresa.nome ?? null,
       acessoEcommerce: empresa.acessoEcommerce ?? false,
       acessoProjetos: empresa.acessoProjetos ?? false,
-      acessoHoras: empresa.acessoHoras ?? false
+      acessoHoras: empresa.acessoHoras ?? false,
+      solucaoIds: access.solucaoIds,
+      funcionalidadeIds: access.funcionalidadeIds
     };
   }
 

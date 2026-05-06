@@ -34,4 +34,10 @@ export class GrupoUsuarioType {
 
   @Field()
   podeExcluir!: boolean;
+
+  @Field(() => [Int])
+  solucaoIds!: number[];
+
+  @Field(() => [Int])
+  funcionalidadeIds!: number[];
 }

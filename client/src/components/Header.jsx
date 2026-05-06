@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, LogOut, UserRound } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
-import { getAreaAnchor, getSolutionsForUser, getUserGroupLabel } from "../auth/hubConfig";
+import { getUserGroupLabel } from "../auth/hubConfig";
+import { useHubNavigation } from "../hooks/useHubNavigation";
 import { useAuth } from "../hooks/useAuth";
 
 import logo from "../assets/logo.ico";
@@ -26,12 +27,12 @@ export default function Header() {
     const [open, setOpen] = useState(false);
     const [isPinned, setIsPinned] = useState(location.pathname !== "/");
     const [expandedSolutions, setExpandedSolutions] = useState({});
+    const { solutions: hubSolutions } = useHubNavigation();
 
     const isHubView = location.pathname.startsWith("/hub");
     const isLandingView = location.pathname === "/";
     const isEcommerceView = location.pathname === "/ecommerce";
     const canShowEcommerceButton = !isAuthenticated || (user?.availableSolutions || []).length === 1 && user?.availableSolutions?.includes("ecommerce");
-    const hubSolutions = useMemo(() => getSolutionsForUser(user), [user]);
     const hubLinkClass = (path) => `nav-link px-2 nav-button ${location.pathname === path ? "nav-button--active" : ""}`;
 
     const closeMenu = () => setOpen(false);
@@ -219,7 +220,7 @@ export default function Header() {
                                                 {solution.areas.map((area) => (
                                                     <li key={area.title}>
                                                         <Link
-                                                            to={`${solutionPath}/${getAreaAnchor(area.title)}`}
+                                                            to={`${solutionPath}/${area.slug}`}
                                                             onClick={closeMenu}
                                                         >
                                                             {area.title}
