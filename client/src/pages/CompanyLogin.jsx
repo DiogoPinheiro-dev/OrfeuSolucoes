@@ -1,9 +1,10 @@
-import { useLayoutEffect, useRef, useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { getEmpresas } from "../../services/Auth/AuthService";
+import { getLoginCompanies } from "../../services/Auth/AuthService";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
+import PasswordInput from "../components/PasswordInput";
 import { useAuth } from "../hooks/useAuth";
 
 import "../styles/companyLogin.css";
@@ -11,48 +12,17 @@ import "../styles/companyLogin.css";
 export default function CompanyLogin() {
     const navigate = useNavigate();
     const { signIn } = useAuth();
-    const empresaMeasureRef = useRef(null);
 
-    const [empresas, setEmpresas] = useState([]);
-    const [loadingEmpresas, setLoadingEmpresas] = useState(true);
-    const [empresaBusca, setEmpresaBusca] = useState("");
-    const [completionOffset, setCompletionOffset] = useState(0);
-    const [showEmpresaSuggestions, setShowEmpresaSuggestions] = useState(false);
+    const [companies, setCompanies] = useState([]);
+    const [selectedCompanyId, setSelectedCompanyId] = useState("");
+    const [credentialsValidated, setCredentialsValidated] = useState(false);
+    const [loadingCompanies, setLoadingCompanies] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
     const [form, setForm] = useState({
-        empresaId: "",
-        email: "",
+        loginOrEmail: "",
         password: ""
     });
-
-    useEffect(() => {
-        let active = true;
-
-        const loadEmpresas = async () => {
-            try {
-                const response = await getEmpresas();
-
-                if (active) {
-                    setEmpresas(response);
-                }
-            } catch (loadError) {
-                if (active) {
-                    setError(loadError.message || "Nao foi possivel carregar as empresas.");
-                }
-            } finally {
-                if (active) {
-                    setLoadingEmpresas(false);
-                }
-            }
-        };
-
-        void loadEmpresas();
-
-        return () => {
-            active = false;
-        };
-    }, []);
 
     const handleChange = (event) => {
         setForm((current) => ({
@@ -61,84 +31,51 @@ export default function CompanyLogin() {
         }));
     };
 
-    const normalize = (value = "") =>
-        value
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .toLowerCase()
-            .trim();
+    const resetCompanyStep = () => {
+        setCompanies([]);
+        setSelectedCompanyId("");
+        setCredentialsValidated(false);
+    };
 
-    const empresaSuggestions = empresas
-        .filter((empresa) => {
-            const term = normalize(empresaBusca);
+    const handleCredentialsSubmit = async (event) => {
+        event.preventDefault();
+        setError("");
 
-            if (!term) {
-                return true;
+        if (!form.loginOrEmail.trim() || !form.password) {
+            setError("Informe login ou email e senha.");
+            return;
+        }
+
+        setLoadingCompanies(true);
+        resetCompanyStep();
+
+        try {
+            const linkedCompanies = await getLoginCompanies({
+                loginOrEmail: form.loginOrEmail.trim(),
+                password: form.password
+            });
+
+            if (!linkedCompanies.length) {
+                setError("Este usuario nao possui empresas vinculadas.");
+                return;
             }
 
-            return normalize(empresa.nome || `Empresa ${empresa.id}`).includes(term);
-        })
-        .slice(0, 6);
-
-    const firstSuggestion = empresaSuggestions[0] ?? null;
-    const firstSuggestionName = firstSuggestion?.nome;
-    const canShowInlineCompletion =
-        empresaBusca.trim().length > 0 &&
-        firstSuggestionName &&
-        normalize(firstSuggestionName).startsWith(normalize(empresaBusca)) &&
-        normalize(firstSuggestionName) !== normalize(empresaBusca);
-    const inlineCompletionText = canShowInlineCompletion
-        ? firstSuggestionName.slice(empresaBusca.length)
-        : "";
-
-    useLayoutEffect(() => {
-        if (!empresaMeasureRef.current) {
-            setCompletionOffset(0);
-            return;
+            setCompanies(linkedCompanies);
+            setSelectedCompanyId(String(linkedCompanies[0].id));
+            setCredentialsValidated(true);
+        } catch (submitError) {
+            setError(submitError.message || "Nao foi possivel validar as credenciais.");
+        } finally {
+            setLoadingCompanies(false);
         }
-
-        setCompletionOffset(empresaMeasureRef.current.offsetWidth);
-    }, [empresaBusca]);
-
-    const selectEmpresa = (empresa) => {
-        setEmpresaBusca(empresa.nome || `Empresa ${empresa.id}`);
-        setForm((current) => ({
-            ...current,
-            empresaId: String(empresa.id)
-        }));
-        setShowEmpresaSuggestions(false);
-        setError("");
     };
 
-    const handleEmpresaSearch = (event) => {
-        setEmpresaBusca(event.target.value);
-        setForm((current) => ({
-            ...current,
-            empresaId: ""
-        }));
-        setShowEmpresaSuggestions(true);
-    };
-
-    const handleEmpresaKeyDown = (event) => {
-        if (event.key !== "Tab" || !canShowInlineCompletion || !firstSuggestion) {
-            return;
-        }
-
-        event.preventDefault();
-        selectEmpresa(firstSuggestion);
-    };
-
-    const handleSubmit = async (event) => {
+    const handleCompanySubmit = async (event) => {
         event.preventDefault();
         setError("");
 
-        const exactEmpresa = empresas.find((empresa) =>
-            normalize(empresa.nome || `Empresa ${empresa.id}`) === normalize(empresaBusca)
-        );
-        const empresaId = form.empresaId || (exactEmpresa?.id ? String(exactEmpresa.id) : "");
-
-        if (!empresaId || !form.email || !form.password) {
-            setError("Selecione a empresa e informe email e senha.");
+        if (!selectedCompanyId) {
+            setError("Selecione a empresa para continuar.");
             return;
         }
 
@@ -146,9 +83,9 @@ export default function CompanyLogin() {
 
         try {
             await signIn({
-                email: form.email.trim(),
+                loginOrEmail: form.loginOrEmail.trim(),
                 password: form.password,
-                empresaId: Number(empresaId)
+                empresaId: Number(selectedCompanyId)
             });
             navigate("/hub");
         } catch (submitError) {
@@ -165,98 +102,85 @@ export default function CompanyLogin() {
             <main className="company-login-main">
                 <section className="company-login-shell">
                     <span className="company-login-kicker">Acesso corporativo</span>
-                    <h1>Selecione a empresa para continuar</h1>
+                    <h1>{credentialsValidated ? "Selecione a empresa" : "Entre com seu login"}</h1>
+                    <p className="company-login-helper">
+                        {credentialsValidated
+                            ? "Mostramos apenas as empresas vinculadas ao seu usuario."
+                            : "Informe seu login ou email para validarmos seu acesso antes da escolha da empresa."}
+                    </p>
 
-                    <form className="company-login-form" onSubmit={handleSubmit}>
-                        <label className="company-autocomplete-label">
-                            Empresa
-                            <div className="company-autocomplete">
+                    {!credentialsValidated ? (
+                        <form className="company-login-form" onSubmit={handleCredentialsSubmit}>
+                            <label>
+                                Login ou email
                                 <input
-                                    name="empresaBusca"
+                                    name="loginOrEmail"
                                     type="text"
-                                    value={empresaBusca}
-                                    onChange={handleEmpresaSearch}
-                                    onKeyDown={handleEmpresaKeyDown}
-                                    onFocus={() => setShowEmpresaSuggestions(true)}
-                                    onBlur={() => {
-                                        window.setTimeout(() => setShowEmpresaSuggestions(false), 120);
-                                    }}
-                                    disabled={loadingEmpresas || submitting}
-                                    placeholder={loadingEmpresas ? "Carregando empresas..." : "Digite o nome da empresa"}
-                                    autoComplete="off"
-                                    role="combobox"
-                                    aria-expanded={showEmpresaSuggestions}
-                                    aria-controls="company-suggestions"
-                                    aria-autocomplete="list"
+                                    value={form.loginOrEmail}
+                                    onChange={handleChange}
+                                    disabled={loadingCompanies}
+                                    autoComplete="username"
                                     required
                                 />
-                                <span className="company-inline-measure" ref={empresaMeasureRef} aria-hidden="true">
-                                    {empresaBusca}
-                                </span>
-                                {inlineCompletionText && (
-                                    <span
-                                        className="company-inline-completion"
-                                        style={{ "--company-completion-offset": `${completionOffset}px` }}
-                                        aria-hidden="true"
-                                    >
-                                        {inlineCompletionText}
-                                    </span>
-                                )}
+                            </label>
 
-                                {showEmpresaSuggestions && !loadingEmpresas && (
-                                    <div className="company-suggestions" id="company-suggestions" role="listbox">
-                                        {empresaSuggestions.length > 0 ? (
-                                            empresaSuggestions.map((empresa) => (
-                                                <button
-                                                    key={empresa.id}
-                                                    type="button"
-                                                    role="option"
-                                                    onMouseDown={(event) => event.preventDefault()}
-                                                    onClick={() => selectEmpresa(empresa)}
-                                                >
-                                                    {empresa.nome || `Empresa ${empresa.id}`}
-                                                </button>
-                                            ))
-                                        ) : (
-                                            <span className="company-suggestions-empty">
-                                                Nenhuma empresa encontrada.
-                                            </span>
-                                        )}
-                                    </div>
-                                )}
+                            <label>
+                                Senha
+                                <PasswordInput
+                                    name="password"
+                                    value={form.password}
+                                    onChange={handleChange}
+                                    disabled={loadingCompanies}
+                                    autoComplete="current-password"
+                                    required
+                                />
+                            </label>
+
+                            {error && <div className="company-login-error" role="alert">{error}</div>}
+
+                            <button type="submit" disabled={loadingCompanies}>
+                                {loadingCompanies ? "Validando..." : "Continuar"}
+                            </button>
+                        </form>
+                    ) : (
+                        <form className="company-login-form" onSubmit={handleCompanySubmit}>
+                            <div className="company-login-companies" role="radiogroup" aria-label="Empresas vinculadas">
+                                {companies.map((company) => (
+                                    <label className="company-login-company" key={company.id}>
+                                        <input
+                                            type="radio"
+                                            name="empresaId"
+                                            value={company.id}
+                                            checked={selectedCompanyId === String(company.id)}
+                                            onChange={(event) => setSelectedCompanyId(event.target.value)}
+                                            disabled={submitting}
+                                        />
+                                        <span>
+                                            <strong>{company.nome || `Empresa ${company.id}`}</strong>
+                                            <small>
+                                                {[
+                                                    company.acessoEcommerce ? "E-commerce" : null,
+                                                    company.acessoProjetos ? "Projetos" : null,
+                                                    company.acessoHoras ? "Horas" : null
+                                                ].filter(Boolean).join(" | ") || "Sem solucoes contratadas"}
+                                            </small>
+                                        </span>
+                                    </label>
+                                ))}
                             </div>
-                        </label>
 
-                        <label>
-                            Email
-                            <input
-                                name="email"
-                                type="email"
-                                value={form.email}
-                                onChange={handleChange}
-                                disabled={submitting}
-                                required
-                            />
-                        </label>
+                            {error && <div className="company-login-error" role="alert">{error}</div>}
 
-                        <label>
-                            Senha
-                            <input
-                                name="password"
-                                type="password"
-                                value={form.password}
-                                onChange={handleChange}
-                                disabled={submitting}
-                                required
-                            />
-                        </label>
-
-                        {error && <div className="company-login-error" role="alert">{error}</div>}
-
-                        <button type="submit" disabled={submitting || loadingEmpresas}>
-                            {submitting ? "Validando..." : "Entrar"}
-                        </button>
-                    </form>
+                            <div className="company-login-actions">
+                                <button type="button" onClick={resetCompanyStep} disabled={submitting}>
+                                    Voltar
+                                </button>
+                                <button type="submit" disabled={submitting}>
+                                    {submitting ? "Entrando..." : "Acessar hub"}
+                                </button>
+                            </div>
+                        </form>
+                    )}
                 </section>
             </main>
 

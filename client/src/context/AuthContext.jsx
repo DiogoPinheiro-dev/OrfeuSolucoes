@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { getCurrentUser, login as loginRequest, logout as logoutRequest } from "../../services/Auth/AuthService";
+import { changePassword as changePasswordRequest, getCurrentUser, login as loginRequest, logout as logoutRequest } from "../../services/Auth/AuthService";
 import { clearSession, getSessionUser, getToken, setSession } from "../../services/Auth/session";
 import { AuthContext } from "./auth-context";
 
@@ -69,13 +69,20 @@ export function AuthProvider({ children }) {
         return currentUser;
     };
 
+    const changePassword = async (novaSenha) => {
+        const updatedUser = await changePasswordRequest({ novaSenha });
+        setUser(updatedUser);
+        return updatedUser;
+    };
+
     const value = {
         user,
-        role: user?.tipo ?? null,
+        role: user?.grupo?.nome ?? null,
         isAuthenticated: !!user,
         bootstrapping,
         signIn,
         signOut,
+        changePassword,
         refreshUser
     };
 

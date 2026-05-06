@@ -10,13 +10,34 @@ datasource db {
 model Usuario {
   id        String  @id @default(uuid()) @db.UniqueIdentifier @map("Id")
   nome      String? @map("Nome")
+  login     String? @map("Login")
   email     String  @unique(map: "UX_Usuarios_Email") @map("Email")
   senhaHash String  @map("Senha")
-  tipo      String  @default("USUARIO") @map("Tipo")
+  grupoId   Int?    @map("GrupoId")
+  deveAlterarSenha Boolean @default(false) @map("DeveAlterarSenha")
 
   empresas EmpresaUsuario[]
+  grupo    GrupoUsuario? @relation(fields: [grupoId], references: [id])
 
   @@map("Usuarios")
+}
+
+model GrupoUsuario {
+  id              Int     @id @default(autoincrement()) @map("Id")
+  nome            String  @unique(map: "UX_GruposUsuarios_Nome") @map("Nome")
+  descricao       String? @map("Descricao")
+  acessoEcommerce Boolean @default(false) @map("AcessoEcommerce")
+  acessoProjetos  Boolean @default(false) @map("AcessoProjetos")
+  acessoHoras     Boolean @default(false) @map("AcessoHoras")
+  acessoConfigurador Boolean @default(false) @map("AcessoConfigurador")
+  podeVisualizar Boolean @default(true) @map("PodeVisualizar")
+  podeIncluir    Boolean @default(false) @map("PodeIncluir")
+  podeAlterar    Boolean @default(false) @map("PodeAlterar")
+  podeExcluir    Boolean @default(false) @map("PodeExcluir")
+
+  usuarios Usuario[]
+
+  @@map("GruposUsuarios")
 }
 
 model Servico {

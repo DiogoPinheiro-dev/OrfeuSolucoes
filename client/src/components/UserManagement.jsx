@@ -1,41 +1,46 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { getEmpresas } from "../../services/Auth/AuthService";
+import { getGruposUsuarios } from "../../services/GruposUsuarios/GrupoUsuarioService";
 import { createUser, deleteUser, getUsers, updateUser } from "../../services/Users/UserService";
-import { USER_ROLE } from "../auth/hubConfig";
+import { isGroupAdmin, isSystemAdmin } from "../auth/hubConfig";
+import { useAuth } from "../hooks/useAuth";
+import ConfirmDialog from "./ConfirmDialog";
 import CrudGrid from "./CrudGrid";
+import PasswordInput from "./PasswordInput";
 
 import "../styles/userManagement.css";
 
 const initialForm = {
     id: "",
     nome: "",
+    login: "",
     email: "",
     senha: "",
-    tipo: USER_ROLE.USUARIO,
+    grupoId: "",
     empresaIds: []
 };
 
 const EMPRESAS_PAGE_SIZE = 5;
 
-const roleLabels = {
-    [USER_ROLE.ADMIN]: "Administrador",
-    [USER_ROLE.CLIENTE]: "Cliente",
-    [USER_ROLE.USUARIO]: "Usuario"
-};
+const isProtectedAdminUser = (user) => isSystemAdmin(user);
 
 export default function UserManagement() {
+    const { user: currentUser } = useAuth();
     const [users, setUsers] = useState([]);
     const [empresas, setEmpresas] = useState([]);
+    const [grupos, setGrupos] = useState([]);
     const [selectedId, setSelectedId] = useState("");
     const [selectedIds, setSelectedIds] = useState([]);
     const [search, setSearch] = useState("");
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [gridBusy, setGridBusy] = useState(false);
     const [error, setError] = useState("");
     const [modalMode, setModalMode] = useState(null);
     const [form, setForm] = useState(initialForm);
     const [empresasPage, setEmpresasPage] = useState(1);
+    const [pendingDelete, setPendingDelete] = useState(null);
 
     const loadUsers = async () => {
         setError("");
@@ -52,9 +57,11 @@ export default function UserManagement() {
 
     const loadEmpresas = async () => {
         try {
-            setEmpresas(await getEmpresas());
+            const [empresasResponse, gruposResponse] = await Promise.all([getEmpresas(), getGruposUsuarios()]);
+            setEmpresas(empresasResponse);
+            setGrupos(gruposResponse);
         } catch (loadError) {
-            setError(loadError.message || "Nao foi possivel carregar empresas.");
+            setError(loadError.message || "Nao foi possivel carregar empresas e grupos.");
         }
     };
 
@@ -63,19 +70,26 @@ export default function UserManagement() {
         void loadEmpresas();
     }, []);
 
+    const currentUserIsAdmin = isGroupAdmin(currentUser);
+
+    const visibleUsers = useMemo(
+        () => currentUserIsAdmin ? users : users.filter((user) => !isGroupAdmin(user)),
+        [currentUserIsAdmin, users]
+    );
+
     const filteredUsers = useMemo(() => {
         const term = search.toLowerCase().trim();
 
         if (!term) {
-            return users;
+            return visibleUsers;
         }
 
-        return users.filter((user) =>
-            [user.nome, user.email, roleLabels[user.tipo], ...(user.empresas || []).map((empresa) => empresa.nome)]
+        return visibleUsers.filter((user) =>
+            [user.nome, user.login, user.email, user.grupo?.nome, ...(user.empresas || []).map((empresa) => empresa.nome)]
                 .filter(Boolean)
                 .some((value) => value.toLowerCase().includes(term))
         );
-    }, [search, users]);
+    }, [search, visibleUsers]);
 
     const openModal = (mode, user = null) => {
         setError("");
@@ -86,6 +100,7 @@ export default function UserManagement() {
                 ? {
                     ...initialForm,
                     ...user,
+                    grupoId: user.grupo?.id ? String(user.grupo.id) : "",
                     empresaIds: (user.empresas || []).map((empresa) => Number(empresa.id)),
                     senha: ""
                 }
@@ -101,9 +116,11 @@ export default function UserManagement() {
     };
 
     const handleChange = (event) => {
+        const { checked, name, type, value } = event.target;
+
         setForm((current) => ({
             ...current,
-            [event.target.name]: event.target.value
+            [name]: type === "checkbox" ? checked : value
         }));
     };
 
@@ -129,22 +146,26 @@ export default function UserManagement() {
             if (modalMode === "create") {
                 await createUser({
                     nome: form.nome.trim(),
+                    login: form.login.trim(),
                     email: form.email.trim(),
                     senha: form.senha,
-                    tipo: form.tipo,
+                    grupoId: form.grupoId ? Number(form.grupoId) : null,
                     empresaIds: form.empresaIds
                 });
             }
 
             if (modalMode === "edit") {
-                await updateUser({
+                const payload = {
                     id: form.id,
                     nome: form.nome.trim(),
+                    login: form.login.trim(),
                     email: form.email.trim(),
                     senha: form.senha,
-                    tipo: form.tipo,
+                    grupoId: form.grupoId ? Number(form.grupoId) : null,
                     empresaIds: form.empresaIds
-                });
+                };
+
+                await updateUser(payload);
             }
 
             closeModal();
@@ -158,18 +179,31 @@ export default function UserManagement() {
 
     const handleDelete = async (user) => {
         const idsToDelete = Array.isArray(user) ? user : [user.id];
-        const total = idsToDelete.length;
-        const confirmed = window.confirm(
-            total === 1
-                ? "Deseja deletar o usuario selecionado?"
-                : `Deseja deletar ${total} usuarios selecionados?`
-        );
+        const deleteUsers = users.filter((item) => idsToDelete.includes(item.id));
 
-        if (!confirmed) {
+        if (deleteUsers.some(isProtectedAdminUser)) {
+            setError("O usuario administrador inicial nao pode ser excluido.");
             return;
         }
 
+        setPendingDelete({
+            ids: idsToDelete,
+            label: deleteUsers.length === 1
+                ? deleteUsers[0].nome || deleteUsers[0].email || "usuario selecionado"
+                : `${deleteUsers.length} usuarios selecionados`
+        });
+    };
+
+    const confirmDelete = async () => {
+        if (!pendingDelete) {
+            return;
+        }
+
+        const idsToDelete = pendingDelete.ids;
+
         setError("");
+        setPendingDelete(null);
+        setGridBusy(true);
 
         try {
             await Promise.all(idsToDelete.map((id) => deleteUser(id)));
@@ -178,10 +212,18 @@ export default function UserManagement() {
             await loadUsers();
         } catch (deleteError) {
             setError(deleteError.message || "Nao foi possivel deletar o usuario.");
+        } finally {
+            setGridBusy(false);
         }
     };
 
     const toggleSelectedUser = (userId) => {
+        const user = users.find((item) => item.id === userId);
+
+        if (isProtectedAdminUser(user)) {
+            return;
+        }
+
         setSelectedIds((current) =>
             current.includes(userId)
                 ? current.filter((id) => id !== userId)
@@ -190,7 +232,7 @@ export default function UserManagement() {
     };
 
     const toggleVisibleUsers = (checked, visibleUsers) => {
-        const visibleIds = visibleUsers.map((user) => user.id);
+        const visibleIds = visibleUsers.filter((user) => !isProtectedAdminUser(user)).map((user) => user.id);
 
         setSelectedIds((current) => {
             if (!checked) {
@@ -202,6 +244,7 @@ export default function UserManagement() {
     };
 
     const readonly = modalMode === "view";
+    const editingProtectedAdmin = isProtectedAdminUser(form);
     const empresasTotalPages = Math.max(1, Math.ceil(empresas.length / EMPRESAS_PAGE_SIZE));
     const empresasStart = (empresasPage - 1) * EMPRESAS_PAGE_SIZE;
     const visibleEmpresas = empresas.slice(empresasStart, empresasStart + EMPRESAS_PAGE_SIZE);
@@ -217,8 +260,9 @@ export default function UserManagement() {
                     title="Cadastro de usuarios"
                     columns={[
                         { key: "nome", label: "Nome", render: (user) => user.nome || "-" },
+                        { key: "login", label: "Login", render: (user) => user.login || "-" },
                         { key: "email", label: "Email" },
-                        { key: "tipo", label: "Tipo", render: (user) => roleLabels[user.tipo] || user.tipo },
+                        { key: "grupo", label: "Grupo", render: (user) => user.grupo?.nome || "Sem grupo" },
                         {
                             key: "empresas",
                             label: "Empresas",
@@ -234,12 +278,25 @@ export default function UserManagement() {
                     selectedIds={selectedIds}
                     onToggleSelect={toggleSelectedUser}
                     onToggleSelectAll={toggleVisibleUsers}
+                    isRowSelectable={(user) => !isProtectedAdminUser(user)}
                     onCreate={() => openModal("create")}
-                    onEdit={(user) => openModal("edit", user)}
+                    onEdit={(user) => {
+                        if (isProtectedAdminUser(user)) {
+                            setError("O usuario administrador inicial nao pode ser alterado.");
+                            return;
+                        }
+
+                        openModal("edit", user);
+                    }}
                     onView={(user) => openModal("view", user)}
                     onDelete={handleDelete}
                     search={search}
                     onSearchChange={setSearch}
+                    busy={gridBusy}
+                    canCreate={!!currentUser?.podeIncluir}
+                    canEdit={!!currentUser?.podeAlterar}
+                    canView={currentUser?.podeVisualizar !== false}
+                    canDelete={!!currentUser?.podeExcluir}
                 />
             )}
 
@@ -257,7 +314,18 @@ export default function UserManagement() {
                         <form className="user-form" onSubmit={handleSubmit}>
                             <label>
                                 Nome
-                                <input name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || saving} />
+                                <input name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || saving || editingProtectedAdmin} />
+                            </label>
+
+                            <label>
+                                Login
+                                <input
+                                    name="login"
+                                    value={form.login || ""}
+                                    onChange={handleChange}
+                                    disabled={readonly || saving || editingProtectedAdmin}
+                                    required={!editingProtectedAdmin}
+                                />
                             </label>
 
                             <label>
@@ -275,9 +343,8 @@ export default function UserManagement() {
                             {!readonly && (
                                 <label>
                                     Senha {modalMode === "edit" && <small>preencha apenas para alterar</small>}
-                                    <input
+                                    <PasswordInput
                                         name="senha"
-                                        type="password"
                                         value={form.senha}
                                         onChange={handleChange}
                                         disabled={saving}
@@ -288,11 +355,14 @@ export default function UserManagement() {
                             )}
 
                             <label>
-                                Tipo
-                                <select name="tipo" value={form.tipo} onChange={handleChange} disabled={readonly || saving}>
-                                    <option value={USER_ROLE.USUARIO}>Usuario</option>
-                                    <option value={USER_ROLE.CLIENTE}>Cliente</option>
-                                    <option value={USER_ROLE.ADMIN}>Administrador</option>
+                                Grupo
+                                <select name="grupoId" value={form.grupoId || ""} onChange={handleChange} disabled={readonly || saving || editingProtectedAdmin}>
+                                    <option value="">Sem grupo</option>
+                                    {grupos.map((grupo) => (
+                                        <option key={grupo.id} value={grupo.id}>
+                                            {grupo.nome}
+                                        </option>
+                                    ))}
                                 </select>
                             </label>
 
@@ -308,7 +378,7 @@ export default function UserManagement() {
                                     </div>
                                 </div>
 
-                                {readonly ? (
+                                {readonly || editingProtectedAdmin ? (
                                     <div className="user-company-list">
                                         {empresasSelecionadas.length ? (
                                             empresasSelecionadas.map((empresa) => (
@@ -382,6 +452,15 @@ export default function UserManagement() {
                     </div>
                 </div>
             )}
+
+            <ConfirmDialog
+                open={!!pendingDelete}
+                title="Confirmar exclusao"
+                message={`Tem certeza que quer deletar ${pendingDelete?.label || "o usuario selecionado"}?`}
+                onCancel={() => setPendingDelete(null)}
+                onConfirm={confirmDelete}
+                loading={false}
+            />
         </>
     );
 }

@@ -7,11 +7,28 @@ type AuthPayloadType {
   user: UserType!
 }
 
+input ChangePasswordInput {
+  novaSenha: String!
+}
+
 input CreateEmpresaInput {
   acessoEcommerce: Boolean = false
   acessoHoras: Boolean = false
   acessoProjetos: Boolean = false
   nome: String
+}
+
+input CreateGrupoUsuarioInput {
+  acessoConfigurador: Boolean = false
+  acessoEcommerce: Boolean = false
+  acessoHoras: Boolean = false
+  acessoProjetos: Boolean = false
+  descricao: String
+  nome: String!
+  podeAlterar: Boolean = false
+  podeExcluir: Boolean = false
+  podeIncluir: Boolean = false
+  podeVisualizar: Boolean = true
 }
 
 input CreateServicoInput {
@@ -25,9 +42,10 @@ input CreateServicoInput {
 input CreateUserInput {
   email: String!
   empresaIds: [Int!]
+  grupoId: Int
+  login: String
   nome: String
   senha: String!
-  tipo: UserRole = USUARIO
 }
 
 type EmpresaType {
@@ -38,26 +56,53 @@ type EmpresaType {
   nome: String
 }
 
+type GrupoUsuarioType {
+  acessoConfigurador: Boolean!
+  acessoEcommerce: Boolean!
+  acessoHoras: Boolean!
+  acessoProjetos: Boolean!
+  descricao: String
+  id: Int!
+  nome: String!
+  podeAlterar: Boolean!
+  podeExcluir: Boolean!
+  podeIncluir: Boolean!
+  podeVisualizar: Boolean!
+}
+
+input LoginCompaniesInput {
+  loginOrEmail: String!
+  senha: String!
+}
+
 input LoginInput {
-  email: String!
   empresaId: Int
+  loginOrEmail: String!
   senha: String!
 }
 
 type Mutation {
+  changePassword(input: ChangePasswordInput!): AuthPayloadType!
   createEmpresa(input: CreateEmpresaInput!): EmpresaType!
+  createGrupoUsuario(input: CreateGrupoUsuarioInput!): GrupoUsuarioType!
   createServico(input: CreateServicoInput!): ServicoType!
   createUser(input: CreateUserInput!): UserType!
+  deleteEmpresa(id: Int!): Boolean!
+  deleteGrupoUsuario(id: Int!): Boolean!
   deleteServico(id: Int!): Boolean!
   deleteUser(id: String!): Boolean!
   login(input: LoginInput!): AuthPayloadType!
+  loginCompanies(input: LoginCompaniesInput!): [EmpresaType!]!
   logout: Boolean!
+  updateEmpresa(input: UpdateEmpresaInput!): EmpresaType!
+  updateGrupoUsuario(input: UpdateGrupoUsuarioInput!): GrupoUsuarioType!
   updateServico(input: UpdateServicoInput!): ServicoType!
   updateUser(input: UpdateUserInput!): UserType!
 }
 
 type Query {
   empresas: [EmpresaType!]!
+  gruposUsuarios: [GrupoUsuarioType!]!
   health: String!
   me: UserType!
   servicos: [ServicoType!]!
@@ -73,6 +118,28 @@ type ServicoType {
   vendas: Int
 }
 
+input UpdateEmpresaInput {
+  acessoEcommerce: Boolean
+  acessoHoras: Boolean
+  acessoProjetos: Boolean
+  id: Int!
+  nome: String
+}
+
+input UpdateGrupoUsuarioInput {
+  acessoConfigurador: Boolean
+  acessoEcommerce: Boolean
+  acessoHoras: Boolean
+  acessoProjetos: Boolean
+  descricao: String
+  id: Int!
+  nome: String
+  podeAlterar: Boolean
+  podeExcluir: Boolean
+  podeIncluir: Boolean
+  podeVisualizar: Boolean
+}
+
 input UpdateServicoInput {
   desconto: Float
   descricao: String
@@ -85,25 +152,25 @@ input UpdateServicoInput {
 input UpdateUserInput {
   email: String
   empresaIds: [Int!]
+  grupoId: Int
   id: ID!
+  login: String
   nome: String
   senha: String
-  tipo: UserRole
-}
-
-"""Perfis de acesso disponiveis no hub"""
-enum UserRole {
-  ADMIN
-  CLIENTE
-  USUARIO
 }
 
 type UserType {
   availableSolutions: [String!]!
+  deveAlterarSenha: Boolean!
   email: String!
   empresa: EmpresaType
   empresas: [EmpresaType!]!
+  grupo: GrupoUsuarioType
   id: String!
+  login: String
   nome: String
-  tipo: UserRole!
+  podeAlterar: Boolean!
+  podeExcluir: Boolean!
+  podeIncluir: Boolean!
+  podeVisualizar: Boolean!
 }

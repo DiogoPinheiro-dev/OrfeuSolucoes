@@ -29,16 +29,17 @@ export const getUsers = async () => {
     }
 };
 
-export const createUser = async ({ nome, email, senha, tipo, empresaIds }) => {
+export const createUser = async ({ nome, login, email, senha, empresaIds, grupoId }) => {
     try {
         const response = await apolloClient.mutate({
             mutation: CREATE_USER_MUTATION,
             variables: {
                 input: {
                     nome,
+                    login,
                     email,
                     senha,
-                    tipo,
+                    grupoId: grupoId ? Number(grupoId) : null,
                     empresaIds: Array.isArray(empresaIds) ? empresaIds.map(Number) : []
                 }
             }
@@ -50,13 +51,14 @@ export const createUser = async ({ nome, email, senha, tipo, empresaIds }) => {
     }
 };
 
-export const updateUser = async ({ id, nome, email, senha, tipo, empresaIds }) => {
+export const updateUser = async ({ id, nome, login, email, senha, empresaIds, grupoId }) => {
     try {
         const input = {
             id,
             nome,
+            login,
             email,
-            tipo,
+            grupoId: grupoId ? Number(grupoId) : null,
             empresaIds: Array.isArray(empresaIds) ? empresaIds.map(Number) : []
         };
 

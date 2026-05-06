@@ -2,14 +2,14 @@ import { Link, Navigate, useParams } from "react-router-dom";
 
 import Footer from "../components/Footer";
 import Header from "../components/Header";
-import { ROLE_LABELS, canAccessSolution, getAreaAnchor, getSolutionBySlug } from "../auth/hubConfig";
+import { canAccessSolution, getAreaAnchor, getSolutionBySlug, getUserGroupLabel } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
 
 import "../styles/workspace.css";
 
 export default function SolutionWorkspace() {
     const { slug } = useParams();
-    const { user, role } = useAuth();
+    const { user } = useAuth();
 
     const solution = getSolutionBySlug(slug);
 
@@ -25,12 +25,12 @@ export default function SolutionWorkspace() {
         {
             label: "Status do modulo",
             title: "Base pronta para evolucao",
-            description: `Este espaco ja esta roteado e protegido por perfil. Agora voces podem desenvolver a experiencia real de ${solution.title} aqui dentro sem mexer na regra de acesso.`
+            description: `Este espaco ja esta roteado e protegido por grupo. Agora voces podem desenvolver a experiencia real de ${solution.title} aqui dentro sem mexer na regra de acesso.`
         },
         {
-            label: "Perfil atual",
-            title: ROLE_LABELS[role],
-            description: "O acesso foi liberado porque esse modulo faz parte do conjunto de ferramentas disponiveis para o seu tipo de usuario."
+            label: "Grupo atual",
+            title: getUserGroupLabel(user),
+            description: "O acesso foi liberado porque esse modulo faz parte das solucoes disponiveis para o grupo do usuario."
         },
         {
             label: "Proximo passo sugerido",

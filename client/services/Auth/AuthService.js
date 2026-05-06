@@ -1,7 +1,9 @@
 import { apolloClient } from "../../src/lib/apolloClient";
 import {
+    CHANGE_PASSWORD_MUTATION,
     CREATE_USER_MUTATION,
     EMPRESAS_QUERY,
+    LOGIN_COMPANIES_MUTATION,
     LOGIN_MUTATION,
     LOGOUT_MUTATION,
     ME_QUERY
@@ -18,13 +20,13 @@ const extractErrorMessage = (error) => {
     return error?.message || "Erro inesperado ao comunicar com o servidor.";
 };
 
-export const login = async ({ email, password, empresaId }) => {
+export const login = async ({ loginOrEmail, email, password, empresaId }) => {
     try {
         const response = await apolloClient.mutate({
             mutation: LOGIN_MUTATION,
             variables: {
                 input: {
-                    email,
+                    loginOrEmail: (loginOrEmail || email || "").trim(),
                     senha: password,
                     ...(empresaId ? { empresaId: Number(empresaId) } : {})
                 }
@@ -45,6 +47,24 @@ export const login = async ({ email, password, empresaId }) => {
     }
 };
 
+export const getLoginCompanies = async ({ loginOrEmail, password }) => {
+    try {
+        const response = await apolloClient.mutate({
+            mutation: LOGIN_COMPANIES_MUTATION,
+            variables: {
+                input: {
+                    loginOrEmail: loginOrEmail.trim(),
+                    senha: password
+                }
+            }
+        });
+
+        return response?.data?.loginCompanies ?? [];
+    } catch (error) {
+        throw new Error(extractErrorMessage(error));
+    }
+};
+
 export const getEmpresas = async () => {
     try {
         const response = await apolloClient.query({
@@ -58,16 +78,16 @@ export const getEmpresas = async () => {
     }
 };
 
-export const register = async ({ nome, email, password, tipo }) => {
+export const register = async ({ nome, login, email, password }) => {
     try {
         const response = await apolloClient.mutate({
             mutation: CREATE_USER_MUTATION,
             variables: {
                 input: {
                     nome,
+                    login,
                     email,
-                    senha: password,
-                    tipo
+                    senha: password
                 }
             }
         });
@@ -86,6 +106,28 @@ export const getCurrentUser = async () => {
         });
 
         return response?.data?.me ?? null;
+    } catch (error) {
+        throw new Error(extractErrorMessage(error));
+    }
+};
+
+export const changePassword = async ({ novaSenha }) => {
+    try {
+        const response = await apolloClient.mutate({
+            mutation: CHANGE_PASSWORD_MUTATION,
+            variables: {
+                input: { novaSenha }
+            }
+        });
+        const payload = response?.data?.changePassword;
+
+        if (!payload?.accessToken) {
+            throw new Error("Sessao atualizada nao retornada.");
+        }
+
+        setSession(payload.accessToken, payload.user);
+
+        return payload.user;
     } catch (error) {
         throw new Error(extractErrorMessage(error));
     }

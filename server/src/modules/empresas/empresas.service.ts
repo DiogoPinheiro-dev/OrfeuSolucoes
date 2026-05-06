@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { JwtPayload } from '../auth/strategies/jwt-payload.type';
 import { CreateEmpresaInput } from './dto/create-empresa.input';
 import { EmpresaType } from './dto/empresa.type';
+import { UpdateEmpresaInput } from './dto/update-empresa.input';
 
 export type EmpresaRecord = {
   id: number;
@@ -17,29 +18,44 @@ export class EmpresasService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(input: CreateEmpresaInput, admin: JwtPayload): Promise<EmpresaType> {
-    if (admin.tipo !== 'ADMIN') {
-      throw new ForbiddenException('Apenas administradores podem cadastrar empresas.');
-    }
+    this.assertAdmin(admin, 'cadastrar empresas');
 
-    const empresa = (await (this.prisma as any).empresa.create({
-      data: {
-        nome: input.nome ?? null,
-        acessoEcommerce: input.acessoEcommerce ?? false,
-        acessoProjetos: input.acessoProjetos ?? false,
-        acessoHoras: input.acessoHoras ?? false,
-        usuarios: {
-          create: {
-            usuarioId: admin.sub
-          }
+    const empresa = (await this.prisma.$transaction(async (tx) => {
+      const systemAdmins = await tx.usuario.findMany({
+        where: {
+          login: 'admin'
+        } as never,
+        select: { id: true }
+      });
+
+      const createdEmpresa = await tx.empresa.create({
+        data: {
+          nome: input.nome ?? null,
+          acessoEcommerce: input.acessoEcommerce ?? false,
+          acessoProjetos: input.acessoProjetos ?? false,
+          acessoHoras: input.acessoHoras ?? false
         }
+      });
+
+      if (systemAdmins.length) {
+        await tx.empresaUsuario.createMany({
+          data: systemAdmins.map((systemAdmin) => ({
+            empresaId: createdEmpresa.id,
+            usuarioId: systemAdmin.id
+          }))
+        });
       }
+
+      return createdEmpresa;
     })) as EmpresaRecord;
 
     return this.toEmpresaType(empresa);
   }
 
   async findAll(): Promise<EmpresaType[]> {
-    const empresas = (await (this.prisma as any).empresa.findMany({
+    await this.ensureAdminLinkedToAllCompanies();
+
+    const empresas = (await this.prisma.empresa.findMany({
       orderBy: { nome: 'asc' }
     })) as EmpresaRecord[];
 
@@ -47,19 +63,102 @@ export class EmpresasService {
   }
 
   async findById(id: number): Promise<EmpresaRecord> {
-    const empresa = (await (this.prisma as any).empresa.findUnique({
+    const empresa = (await this.prisma.empresa.findUnique({
       where: { id }
     })) as EmpresaRecord | null;
 
     if (!empresa) {
-      throw new NotFoundException('Empresa não encontrada.');
+      throw new NotFoundException('Empresa nao encontrada.');
     }
 
     return empresa;
   }
 
+  async findByUserId(usuarioId: string): Promise<EmpresaType[]> {
+    await this.ensureAdminLinkedToAllCompanies();
+
+    const vinculos = await this.prisma.empresaUsuario.findMany({
+      where: { usuarioId },
+      include: { empresa: true },
+      orderBy: { id: 'asc' }
+    });
+
+    return vinculos
+      .map((vinculo) => vinculo.empresa)
+      .filter(Boolean)
+      .map((empresa) => this.toEmpresaType(empresa as EmpresaRecord));
+  }
+
+  async update(input: UpdateEmpresaInput, admin: JwtPayload): Promise<EmpresaType> {
+    this.assertAdmin(admin, 'alterar empresas');
+
+    await this.findById(input.id);
+
+    const empresa = (await this.prisma.empresa.update({
+      where: { id: input.id },
+      data: {
+        ...(input.nome !== undefined ? { nome: input.nome ?? null } : {}),
+        ...(input.acessoEcommerce !== undefined ? { acessoEcommerce: input.acessoEcommerce } : {}),
+        ...(input.acessoProjetos !== undefined ? { acessoProjetos: input.acessoProjetos } : {}),
+        ...(input.acessoHoras !== undefined ? { acessoHoras: input.acessoHoras } : {})
+      }
+    })) as EmpresaRecord;
+
+    return this.toEmpresaType(empresa);
+  }
+
+  async remove(id: number, admin: JwtPayload): Promise<boolean> {
+    this.assertAdmin(admin, 'remover empresas');
+
+    await this.findById(id);
+
+    await this.prisma.$transaction(async (tx) => {
+      const vinculos = (await tx.empresaUsuario.findMany({
+        where: { empresaId: id },
+        include: { usuario: { include: { grupo: true } } } as never
+      })) as unknown as Array<{
+        usuarioId: string;
+        usuario: {
+          grupo?: {
+            acessoEcommerce?: boolean;
+            acessoProjetos?: boolean;
+            acessoHoras?: boolean;
+            acessoConfigurador?: boolean;
+          } | null;
+        };
+      }>;
+      const usuariosParaRemover: string[] = [];
+
+      for (const vinculo of vinculos) {
+        const outrosVinculos = await tx.empresaUsuario.count({
+          where: {
+            usuarioId: vinculo.usuarioId,
+            empresaId: { not: id }
+          }
+        });
+
+        if (outrosVinculos === 0 && !this.hasFullGroupAccess(vinculo.usuario.grupo)) {
+          usuariosParaRemover.push(vinculo.usuarioId);
+        }
+      }
+
+      await tx.empresaUsuario.deleteMany({ where: { empresaId: id } });
+      await tx.empresa.delete({ where: { id } });
+
+      if (usuariosParaRemover.length) {
+        await tx.usuario.deleteMany({
+          where: {
+            id: { in: usuariosParaRemover }
+          }
+        });
+      }
+    });
+
+    return true;
+  }
+
   async userBelongsToCompany(usuarioId: string, empresaId: number): Promise<boolean> {
-    const vinculo = await (this.prisma as any).empresaUsuario.findFirst({
+    const vinculo = await this.prisma.empresaUsuario.findFirst({
       where: {
         empresaId,
         usuarioId
@@ -77,5 +176,67 @@ export class EmpresasService {
       acessoProjetos: empresa.acessoProjetos ?? false,
       acessoHoras: empresa.acessoHoras ?? false
     };
+  }
+
+  private assertAdmin(user: JwtPayload, action: string): void {
+    if (user.login?.toLowerCase() !== 'admin') {
+      throw new ForbiddenException(`Apenas o usuario administrador inicial pode ${action}.`);
+    }
+  }
+
+  private async ensureAdminLinkedToAllCompanies(): Promise<void> {
+    const admins = await this.prisma.usuario.findMany({
+      where: {
+        login: 'admin'
+      } as never,
+      select: { id: true }
+    });
+
+    if (!admins.length) {
+      return;
+    }
+
+    const empresas = await this.prisma.empresa.findMany({ select: { id: true } });
+
+    if (!empresas.length) {
+      return;
+    }
+
+    const adminIds = admins.map((admin) => admin.id);
+    const vinculos = await this.prisma.empresaUsuario.findMany({
+      where: { usuarioId: { in: adminIds } },
+      select: { empresaId: true, usuarioId: true }
+    });
+    const linkedKeys = new Set(vinculos.map((vinculo) => `${vinculo.usuarioId}:${vinculo.empresaId}`));
+    const missingLinks = adminIds.flatMap((usuarioId) =>
+      empresas
+        .map((empresa) => empresa.id)
+        .filter((empresaId) => !linkedKeys.has(`${usuarioId}:${empresaId}`))
+        .map((empresaId) => ({ empresaId, usuarioId }))
+    );
+
+    if (!missingLinks.length) {
+      return;
+    }
+
+    await this.prisma.empresaUsuario.createMany({
+      data: missingLinks
+    });
+  }
+
+  private hasFullGroupAccess(
+    grupo?: {
+      acessoEcommerce?: boolean;
+      acessoProjetos?: boolean;
+      acessoHoras?: boolean;
+      acessoConfigurador?: boolean;
+    } | null
+  ): boolean {
+    return !!(
+      grupo?.acessoEcommerce &&
+      grupo.acessoProjetos &&
+      grupo.acessoHoras &&
+      grupo.acessoConfigurador
+    );
   }
 }

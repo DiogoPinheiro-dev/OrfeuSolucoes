@@ -1,7 +1,9 @@
 import { Link, Navigate, useParams } from "react-router-dom";
 
 import { canAccessSolution, getAreaAnchor, getSolutionBySlug } from "../auth/hubConfig";
+import CompanyManagement from "../components/CompanyManagement";
 import Footer from "../components/Footer";
+import GroupManagement from "../components/GroupManagement";
 import Header from "../components/Header";
 import UserManagement from "../components/UserManagement";
 import { useAuth } from "../hooks/useAuth";
@@ -28,6 +30,8 @@ export default function SolutionFeaturePage() {
     }
 
     const isUserManagement = solution.slug === "configurador" && getAreaAnchor(area.title) === "cadastro-de-usuarios";
+    const isCompanyManagement = solution.slug === "configurador" && getAreaAnchor(area.title) === "cadastro-de-empresas";
+    const isGroupManagement = solution.slug === "configurador" && getAreaAnchor(area.title) === "cadastro-de-grupos";
 
     return (
         <div className="page-wrapper workspace-page">
@@ -43,9 +47,9 @@ export default function SolutionFeaturePage() {
                         <strong>{area.title}</strong>
                     </div>
 
-                    {isUserManagement ? (
+                    {isUserManagement || isCompanyManagement || isGroupManagement ? (
                         <section className="workspace-feature-crud">
-                            <UserManagement />
+                            {isUserManagement ? <UserManagement /> : isCompanyManagement ? <CompanyManagement /> : <GroupManagement />}
                         </section>
                     ) : (
                         <section className="workspace-panel workspace-panel-wide">

@@ -1,11 +1,13 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, Context, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { GraphQLContext } from '../../common/types/graphql-context.type';
-import { UserRole } from '../users/dto/user-role.enum';
 import { UserType } from '../users/dto/user.type';
+import { EmpresaType } from '../empresas/dto/empresa.type';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { AuthPayloadType } from './dto/auth-payload.type';
+import { ChangePasswordInput } from './dto/change-password.input';
+import { LoginCompaniesInput } from './dto/login-companies.input';
 import { LoginInput } from './dto/login.input';
 import { GqlAuthGuard } from './guards/gql-auth.guard';
 import { JwtPayload } from './strategies/jwt-payload.type';
@@ -19,9 +21,14 @@ export class AuthResolver {
     @Args('input') input: LoginInput,
     @Context() context: GraphQLContext
   ): Promise<AuthPayloadType> {
-    const result = await this.authService.login(input.email, input.senha, input.empresaId);
+    const result = await this.authService.login(input.loginOrEmail, input.senha, input.empresaId);
     this.authService.attachAuthCookie(context.res, result.accessToken);
     return result;
+  }
+
+  @Mutation(() => [EmpresaType])
+  loginCompanies(@Args('input') input: LoginCompaniesInput): Promise<EmpresaType[]> {
+    return this.authService.findLoginCompanies(input.loginOrEmail, input.senha);
   }
 
   @Mutation(() => Boolean)
@@ -31,34 +38,66 @@ export class AuthResolver {
   }
 
   @UseGuards(GqlAuthGuard)
+  @Mutation(() => AuthPayloadType)
+  changePassword(
+    @Args('input') input: ChangePasswordInput,
+    @CurrentUser() user: JwtPayload,
+    @Context() context: GraphQLContext
+  ): Promise<AuthPayloadType> {
+    return this.authService.changePassword(user.sub, input.novaSenha, user.empresaId).then((result) => {
+      this.authService.attachAuthCookie(context.res, result.accessToken);
+      return result;
+    });
+  }
+
+  @UseGuards(GqlAuthGuard)
   @Query(() => UserType)
   me(@CurrentUser() user: JwtPayload): UserType {
-    const tipo = (user.tipo as UserRole) ?? UserRole.USUARIO;
-    const availableSolutions =
+    const isSystemAdmin = user.login?.toLowerCase() === 'admin';
+    const tokenSolutions =
       user.availableSolutions ??
-      (tipo === UserRole.ADMIN
-        ? ['ecommerce', 'projetos', 'horas', 'configurador']
-        : tipo === UserRole.USUARIO
-          ? ['ecommerce']
-          : []);
+      [
+        user.grupo?.acessoEcommerce ? 'ecommerce' : null,
+        user.grupo?.acessoProjetos ? 'projetos' : null,
+        user.grupo?.acessoHoras ? 'horas' : null,
+        user.grupo?.acessoConfigurador && isSystemAdmin ? 'configurador' : null
+      ].filter((solution): solution is string => !!solution);
+    const availableSolutions = tokenSolutions.filter((solution) => solution !== 'configurador' || isSystemAdmin);
+    const resolvedSolutions = availableSolutions;
     const empresa = user.empresaId
       ? {
           id: user.empresaId,
           nome: user.empresaNome ?? null,
-          acessoEcommerce: availableSolutions.includes('ecommerce'),
-          acessoProjetos: availableSolutions.includes('projetos'),
-          acessoHoras: availableSolutions.includes('horas')
+          acessoEcommerce: resolvedSolutions.includes('ecommerce'),
+          acessoProjetos: resolvedSolutions.includes('projetos'),
+          acessoHoras: resolvedSolutions.includes('horas')
+        }
+      : null;
+
+    const grupo = user.grupo
+      ? {
+          ...user.grupo,
+          podeVisualizar: user.grupo.podeVisualizar ?? user.podeVisualizar ?? false,
+          podeIncluir: user.grupo.podeIncluir ?? user.podeIncluir ?? false,
+          podeAlterar: user.grupo.podeAlterar ?? user.podeAlterar ?? false,
+          podeExcluir: user.grupo.podeExcluir ?? user.podeExcluir ?? false
         }
       : null;
 
     return {
       id: user.sub,
       email: user.email,
+      login: user.login ?? null,
       nome: user.nome ?? null,
-      tipo,
       empresa,
       empresas: empresa ? [empresa] : [],
-      availableSolutions
+      grupo,
+      podeVisualizar: user.podeVisualizar ?? true,
+      podeIncluir: user.podeIncluir ?? false,
+      podeAlterar: user.podeAlterar ?? false,
+      podeExcluir: user.podeExcluir ?? false,
+      deveAlterarSenha: user.deveAlterarSenha ?? false,
+      availableSolutions: resolvedSolutions
     };
   }
 }

@@ -86,6 +86,40 @@
 .crud-table-wrap {
   width: 100%;
   overflow: auto;
+  position: relative;
+}
+
+.crud-grid-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  min-height: 220px;
+  background: color-mix(in srgb, var(--surface-white) 82%, transparent);
+  backdrop-filter: blur(2px);
+  color: var(--primary);
+}
+
+.crud-grid-loading span {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 4px solid var(--line);
+  border-top-color: var(--button-primary-bg);
+  animation: crud-grid-spin 0.8s linear infinite;
+}
+
+.crud-grid-loading p {
+  margin: 0;
+  font-weight: 700;
+}
+
+@keyframes crud-grid-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .crud-table {

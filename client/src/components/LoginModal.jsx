@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { register } from "../../services/Auth/AuthService";
-import { USER_ROLE } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
+import PasswordInput from "./PasswordInput";
 
 import "../styles/loginModal.css";
 
@@ -18,7 +18,8 @@ export default function LoginModal({ open, onClose }) {
     const [form, setForm] = useState({
         email: "",
         password: "",
-        fullName: ""
+        fullName: "",
+        login: ""
     });
 
     useEffect(() => {
@@ -57,12 +58,12 @@ export default function LoginModal({ open, onClose }) {
 
     const validate = () => {
         if (!form.email || !form.password) {
-            setError("Preencha email e senha.");
+            setError("Preencha login ou email e senha.");
             return false;
         }
 
-        if (mode === "register" && !form.fullName.trim()) {
-            setError("Preencha o nome completo para cadastro.");
+        if (mode === "register" && (!form.fullName.trim() || !form.login.trim())) {
+            setError("Preencha nome completo e login para cadastro.");
             return false;
         }
 
@@ -83,14 +84,14 @@ export default function LoginModal({ open, onClose }) {
             if (mode === "register") {
                 await register({
                     nome: form.fullName.trim(),
+                    login: form.login.trim(),
                     email: form.email.trim(),
-                    password: form.password,
-                    tipo: USER_ROLE.USUARIO
+                    password: form.password
                 });
             }
 
             await signIn({
-                email: form.email.trim(),
+                loginOrEmail: form.email.trim(),
                 password: form.password
             });
 
@@ -152,10 +153,10 @@ export default function LoginModal({ open, onClose }) {
 
                 <form className="lm-form" onSubmit={onSubmit}>
                     <label className="lm-label">
-                        Email
+                        {mode === "login" ? "Login ou email" : "Email"}
                         <input
                             name="email"
-                            type="email"
+                            type={mode === "login" ? "text" : "email"}
                             value={form.email}
                             onChange={handleChange}
                             required
@@ -176,11 +177,23 @@ export default function LoginModal({ open, onClose }) {
                         </label>
                     )}
 
+                    {mode === "register" && (
+                        <label className="lm-label">
+                            Login
+                            <input
+                                name="login"
+                                type="text"
+                                value={form.login}
+                                onChange={handleChange}
+                                required
+                            />
+                        </label>
+                    )}
+
                     <label className="lm-label">
                         Senha
-                        <input
+                        <PasswordInput
                             name="password"
-                            type="password"
                             value={form.password}
                             onChange={handleChange}
                             required

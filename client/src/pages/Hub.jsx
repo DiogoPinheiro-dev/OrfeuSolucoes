@@ -1,6 +1,6 @@
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import { ROLE_LABELS, getSolutionsForUser } from "../auth/hubConfig";
+import { getSolutionsForUser } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
 
 import "../styles/hub.css";

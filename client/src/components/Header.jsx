@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, LogOut, UserRound } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
-import { ROLE_LABELS, USER_ROLE, getAreaAnchor, getSolutionsForUser } from "../auth/hubConfig";
+import { getAreaAnchor, getSolutionsForUser, getUserGroupLabel } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
 
 import logo from "../assets/logo.ico";
@@ -22,7 +22,7 @@ const SCROLL_OFFSET = 75;
 export default function Header() {
     const location = useLocation();
     const navigate = useNavigate();
-    const { isAuthenticated, role, signOut, user } = useAuth();
+    const { isAuthenticated, signOut, user } = useAuth();
     const [open, setOpen] = useState(false);
     const [isPinned, setIsPinned] = useState(location.pathname !== "/");
     const [expandedSolutions, setExpandedSolutions] = useState({});
@@ -30,7 +30,7 @@ export default function Header() {
     const isHubView = location.pathname.startsWith("/hub");
     const isLandingView = location.pathname === "/";
     const isEcommerceView = location.pathname === "/ecommerce";
-    const canShowEcommerceButton = !isAuthenticated || role === USER_ROLE.USUARIO;
+    const canShowEcommerceButton = !isAuthenticated || (user?.availableSolutions || []).length === 1 && user?.availableSolutions?.includes("ecommerce");
     const hubSolutions = useMemo(() => getSolutionsForUser(user), [user]);
     const hubLinkClass = (path) => `nav-link px-2 nav-button ${location.pathname === path ? "nav-button--active" : ""}`;
 
@@ -83,7 +83,7 @@ export default function Header() {
     };
 
     const userDisplayName = user?.nome || user?.email || "Usuario";
-    const userSubtitle = user?.empresa?.nome || ROLE_LABELS[role] || "Role";
+    const userSubtitle = user?.empresa?.nome || getUserGroupLabel(user);
     const renderLogoutButton = () => (
         <button
             onClick={handleLogout}

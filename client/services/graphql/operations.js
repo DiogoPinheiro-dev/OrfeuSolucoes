@@ -33,9 +33,27 @@ export const LOGIN_MUTATION = gql`
       user {
         id
         nome
+        login
         email
-        tipo
+        podeVisualizar
+        podeIncluir
+        podeAlterar
+        podeExcluir
+        deveAlterarSenha
         availableSolutions
+        grupo {
+          id
+          nome
+          descricao
+          acessoEcommerce
+          acessoProjetos
+          acessoHoras
+          acessoConfigurador
+          podeVisualizar
+          podeIncluir
+          podeAlterar
+          podeExcluir
+        }
         empresa {
           id
           nome
@@ -48,9 +66,61 @@ export const LOGIN_MUTATION = gql`
   }
 `;
 
+export const LOGIN_COMPANIES_MUTATION = gql`
+  mutation LoginCompanies($input: LoginCompaniesInput!) {
+    loginCompanies(input: $input) {
+      id
+      nome
+      acessoEcommerce
+      acessoProjetos
+      acessoHoras
+    }
+  }
+`;
+
 export const LOGOUT_MUTATION = gql`
   mutation Logout {
     logout
+  }
+`;
+
+export const CHANGE_PASSWORD_MUTATION = gql`
+  mutation ChangePassword($input: ChangePasswordInput!) {
+    changePassword(input: $input) {
+      accessToken
+      user {
+        id
+        nome
+        login
+        email
+        podeVisualizar
+        podeIncluir
+        podeAlterar
+        podeExcluir
+        deveAlterarSenha
+        availableSolutions
+        grupo {
+          id
+          nome
+          descricao
+          acessoEcommerce
+          acessoProjetos
+          acessoHoras
+          acessoConfigurador
+          podeVisualizar
+          podeIncluir
+          podeAlterar
+          podeExcluir
+        }
+        empresa {
+          id
+          nome
+          acessoEcommerce
+          acessoProjetos
+          acessoHoras
+        }
+      }
+    }
   }
 `;
 
@@ -59,9 +129,27 @@ export const CREATE_USER_MUTATION = gql`
     createUser(input: $input) {
       id
       nome
+      login
       email
-      tipo
+      podeVisualizar
+      podeIncluir
+      podeAlterar
+      podeExcluir
+      deveAlterarSenha
       availableSolutions
+      grupo {
+        id
+        nome
+        descricao
+        acessoEcommerce
+        acessoProjetos
+        acessoHoras
+        acessoConfigurador
+        podeVisualizar
+        podeIncluir
+        podeAlterar
+        podeExcluir
+      }
       empresas {
         id
         nome
@@ -78,9 +166,27 @@ export const USERS_QUERY = gql`
     users {
       id
       nome
+      login
       email
-      tipo
+      podeVisualizar
+      podeIncluir
+      podeAlterar
+      podeExcluir
+      deveAlterarSenha
       availableSolutions
+      grupo {
+        id
+        nome
+        descricao
+        acessoEcommerce
+        acessoProjetos
+        acessoHoras
+        acessoConfigurador
+        podeVisualizar
+        podeIncluir
+        podeAlterar
+        podeExcluir
+      }
       empresas {
         id
         nome
@@ -94,9 +200,27 @@ export const UPDATE_USER_MUTATION = gql`
     updateUser(input: $input) {
       id
       nome
+      login
       email
-      tipo
+      podeVisualizar
+      podeIncluir
+      podeAlterar
+      podeExcluir
+      deveAlterarSenha
       availableSolutions
+      grupo {
+        id
+        nome
+        descricao
+        acessoEcommerce
+        acessoProjetos
+        acessoHoras
+        acessoConfigurador
+        podeVisualizar
+        podeIncluir
+        podeAlterar
+        podeExcluir
+      }
       empresas {
         id
         nome
@@ -116,9 +240,27 @@ export const ME_QUERY = gql`
     me {
       id
       nome
+      login
       email
-      tipo
+      podeVisualizar
+      podeIncluir
+      podeAlterar
+      podeExcluir
+      deveAlterarSenha
       availableSolutions
+      grupo {
+        id
+        nome
+        descricao
+        acessoEcommerce
+        acessoProjetos
+        acessoHoras
+        acessoConfigurador
+        podeVisualizar
+        podeIncluir
+        podeAlterar
+        podeExcluir
+      }
       empresa {
         id
         nome
@@ -151,5 +293,83 @@ export const CREATE_EMPRESA_MUTATION = gql`
       acessoProjetos
       acessoHoras
     }
+  }
+`;
+
+export const UPDATE_EMPRESA_MUTATION = gql`
+  mutation UpdateEmpresa($input: UpdateEmpresaInput!) {
+    updateEmpresa(input: $input) {
+      id
+      nome
+      acessoEcommerce
+      acessoProjetos
+      acessoHoras
+    }
+  }
+`;
+
+export const DELETE_EMPRESA_MUTATION = gql`
+  mutation DeleteEmpresa($id: Int!) {
+    deleteEmpresa(id: $id)
+  }
+`;
+
+export const GRUPOS_USUARIOS_QUERY = gql`
+  query GruposUsuarios {
+    gruposUsuarios {
+      id
+      nome
+      descricao
+      acessoEcommerce
+      acessoProjetos
+      acessoHoras
+      acessoConfigurador
+      podeVisualizar
+      podeIncluir
+      podeAlterar
+      podeExcluir
+    }
+  }
+`;
+
+export const CREATE_GRUPO_USUARIO_MUTATION = gql`
+  mutation CreateGrupoUsuario($input: CreateGrupoUsuarioInput!) {
+    createGrupoUsuario(input: $input) {
+      id
+      nome
+      descricao
+      acessoEcommerce
+      acessoProjetos
+      acessoHoras
+      acessoConfigurador
+      podeVisualizar
+      podeIncluir
+      podeAlterar
+      podeExcluir
+    }
+  }
+`;
+
+export const UPDATE_GRUPO_USUARIO_MUTATION = gql`
+  mutation UpdateGrupoUsuario($input: UpdateGrupoUsuarioInput!) {
+    updateGrupoUsuario(input: $input) {
+      id
+      nome
+      descricao
+      acessoEcommerce
+      acessoProjetos
+      acessoHoras
+      acessoConfigurador
+      podeVisualizar
+      podeIncluir
+      podeAlterar
+      podeExcluir
+    }
+  }
+`;
+
+export const DELETE_GRUPO_USUARIO_MUTATION = gql`
+  mutation DeleteGrupoUsuario($id: Int!) {
+    deleteGrupoUsuario(id: $id)
   }
 `;

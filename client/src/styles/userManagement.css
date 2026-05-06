@@ -180,6 +180,28 @@
   border: 1px solid var(--line);
 }
 
+.user-permissions-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.user-form .user-permission-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-white);
+}
+
+.user-form .user-permission-option input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--button-primary-bg);
+}
+
 .user-company-pagination {
   display: flex;
   align-items: center;
@@ -250,5 +272,9 @@
 @media (max-width: 560px) {
   .user-company-row {
     grid-template-columns: 84px minmax(0, 1fr);
+  }
+
+  .user-permissions-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

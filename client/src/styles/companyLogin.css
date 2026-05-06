@@ -28,9 +28,15 @@
 }
 
 .company-login-shell h1 {
-  margin-bottom: 24px;
+  margin-bottom: 10px;
   color: var(--primary);
   font-size: 2rem;
+}
+
+.company-login-helper {
+  margin: 0 0 24px;
+  color: var(--muted);
+  line-height: 1.6;
 }
 
 .company-login-form {
@@ -143,6 +149,44 @@
 .company-login-form button:disabled {
   opacity: 0.65;
   cursor: default;
+}
+
+.company-login-companies {
+  display: grid;
+  gap: 10px;
+}
+
+.company-login-company {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-white);
+  cursor: pointer;
+}
+
+.company-login-company:has(input:checked) {
+  border-color: var(--button-primary-bg);
+  box-shadow: 0 0 0 3px var(--detail-accent-bg);
+}
+
+.company-login-company span {
+  display: grid;
+  gap: 4px;
+}
+
+.company-login-company small {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.company-login-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .company-login-error {

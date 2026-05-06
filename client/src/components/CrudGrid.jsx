@@ -17,11 +17,18 @@ export default function CrudGrid({
     selectedIds = [],
     onToggleSelect,
     onToggleSelectAll,
+    busy = false,
+    canCreate = true,
+    canEdit = true,
+    canView = true,
+    canDelete = true,
+    isRowSelectable = () => true,
     getRowId = (row) => row.id
 }) {
     const selectedRow = rows.find((row) => getRowId(row) === selectedId);
     const selectedIdSet = new Set(selectedIds);
-    const allVisibleSelected = rows.length > 0 && rows.every((row) => selectedIdSet.has(getRowId(row)));
+    const selectableRows = rows.filter((row) => isRowSelectable(row));
+    const allVisibleSelected = selectableRows.length > 0 && selectableRows.every((row) => selectedIdSet.has(getRowId(row)));
 
     return (
         <section className="crud-shell">
@@ -43,21 +50,27 @@ export default function CrudGrid({
             </header>
 
             <div className="crud-toolbar" aria-label="Acoes do cadastro">
-                <button type="button" onClick={onCreate} aria-label="Incluir" title="Incluir">
+                <button type="button" onClick={onCreate} disabled={!canCreate} aria-label="Incluir" title="Incluir">
                     <FaPlus aria-hidden="true" />
                 </button>
-                <button type="button" onClick={() => selectedRow && onEdit(selectedRow)} disabled={!selectedRow} aria-label="Alterar" title="Alterar">
+                <button type="button" onClick={() => selectedRow && onEdit(selectedRow)} disabled={!selectedRow || !canEdit} aria-label="Alterar" title="Alterar">
                     <FaEdit aria-hidden="true" />
                 </button>
-                <button type="button" onClick={() => selectedRow && onView(selectedRow)} disabled={!selectedRow} aria-label="Visualizar" title="Visualizar">
+                <button type="button" onClick={() => selectedRow && onView(selectedRow)} disabled={!selectedRow || !canView} aria-label="Visualizar" title="Visualizar">
                     <FaEye aria-hidden="true" />
                 </button>
-                <button type="button" onClick={() => onDelete(selectedIds)} disabled={selectedIds.length === 0} aria-label="Deletar selecionados" title="Deletar selecionados">
+                <button type="button" onClick={() => onDelete(selectedIds)} disabled={selectedIds.length === 0 || !canDelete} aria-label="Deletar selecionados" title="Deletar selecionados">
                     <FaTrashAlt aria-hidden="true" />
                 </button>
             </div>
 
             <div className="crud-table-wrap">
+                {busy && (
+                    <div className="crud-grid-loading" role="status" aria-live="polite">
+                        <span aria-hidden="true"></span>
+                        <p>Processando...</p>
+                    </div>
+                )}
                 <table className="crud-table">
                     <thead>
                         <tr>
@@ -65,8 +78,8 @@ export default function CrudGrid({
                                 <input
                                     type="checkbox"
                                     checked={allVisibleSelected}
-                                    disabled={rows.length === 0 || !onToggleSelectAll}
-                                    onChange={(event) => onToggleSelectAll?.(event.target.checked, rows)}
+                                    disabled={selectableRows.length === 0 || !onToggleSelectAll}
+                                    onChange={(event) => onToggleSelectAll?.(event.target.checked, selectableRows)}
                                 />
                             </th>
                             {columns.map((column) => (
@@ -79,13 +92,14 @@ export default function CrudGrid({
                             rows.map((row) => {
                                 const rowId = getRowId(row);
                                 const selected = rowId === selectedId;
+                                const selectable = isRowSelectable(row);
 
                                 return (
                                     <tr
                                         key={rowId}
                                         className={selected ? "selected" : ""}
                                         onClick={() => onSelect(rowId)}
-                                        onDoubleClick={() => onView(row)}
+                                        onDoubleClick={() => canView && onView(row)}
                                         tabIndex={0}
                                     >
                                         <td>
@@ -93,8 +107,9 @@ export default function CrudGrid({
                                                 type="checkbox"
                                                 checked={selectedIdSet.has(rowId)}
                                                 aria-label={`Selecionar ${row.nome || row.email || "registro"}`}
+                                                disabled={!selectable}
                                                 onClick={(event) => event.stopPropagation()}
-                                                onChange={() => onToggleSelect?.(rowId)}
+                                                onChange={() => selectable && onToggleSelect?.(rowId)}
                                             />
                                         </td>
                                         {columns.map((column) => (
