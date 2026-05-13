@@ -1,12 +1,19 @@
 import { useEffect, useState } from "react";
 
-import { changePassword as changePasswordRequest, getCurrentUser, login as loginRequest, logout as logoutRequest } from "../../services/Auth/AuthService";
+import {
+    changePassword as changePasswordRequest,
+    getCurrentUser,
+    login as loginRequest,
+    logout as logoutRequest,
+    switchCompany as switchCompanyRequest
+} from "../../services/Auth/AuthService";
 import { clearSession, getSessionUser, getToken, setSession } from "../../services/Auth/session";
 import { AuthContext } from "./auth-context";
 
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(getSessionUser());
     const [bootstrapping, setBootstrapping] = useState(true);
+    const [switchingCompany, setSwitchingCompany] = useState(false);
 
     useEffect(() => {
         let active = true;
@@ -75,15 +82,29 @@ export function AuthProvider({ children }) {
         return updatedUser;
     };
 
+    const switchCompany = async (empresaId) => {
+        setSwitchingCompany(true);
+
+        try {
+            const updatedUser = await switchCompanyRequest({ empresaId });
+            setUser(updatedUser);
+            return updatedUser;
+        } finally {
+            setSwitchingCompany(false);
+        }
+    };
+
     const value = {
         user,
         role: user?.grupo?.nome ?? null,
         isAuthenticated: !!user,
         bootstrapping,
+        switchingCompany,
         signIn,
         signOut,
         changePassword,
-        refreshUser
+        refreshUser,
+        switchCompany
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -23,15 +23,17 @@ const SCROLL_OFFSET = 75;
 export default function Header() {
     const location = useLocation();
     const navigate = useNavigate();
-    const { isAuthenticated, signOut, user } = useAuth();
+    const { isAuthenticated, signOut, switchCompany, switchingCompany, user } = useAuth();
     const [open, setOpen] = useState(false);
     const [isPinned, setIsPinned] = useState(location.pathname !== "/");
     const [expandedSolutions, setExpandedSolutions] = useState({});
+    const [selectedCompanyId, setSelectedCompanyId] = useState(user?.empresa?.id ? String(user.empresa.id) : "");
     const { solutions: hubSolutions } = useHubNavigation();
 
     const isHubView = location.pathname.startsWith("/hub");
     const isLandingView = location.pathname === "/";
     const isEcommerceView = location.pathname === "/ecommerce";
+    const canSwitchCompany = isHubView && (user?.empresas?.length || 0) > 1;
     const canShowEcommerceButton = !isAuthenticated || (user?.availableSolutions || []).length === 1 && user?.availableSolutions?.includes("ecommerce");
     const hubLinkClass = (path) => `nav-link px-2 nav-button ${location.pathname === path ? "nav-button--active" : ""}`;
 
@@ -84,7 +86,27 @@ export default function Header() {
     };
 
     const userDisplayName = user?.nome || user?.email || "Usuario";
-    const userSubtitle = user?.empresa?.nome || getUserGroupLabel(user);
+    const userSubtitle = canSwitchCompany ? getUserGroupLabel(user) : user?.empresa?.nome || getUserGroupLabel(user);
+
+    const handleCompanyChange = async (event) => {
+        const nextCompanyId = event.target.value;
+
+        setSelectedCompanyId(nextCompanyId);
+
+        if (!nextCompanyId || nextCompanyId === String(user?.empresa?.id)) {
+            return;
+        }
+
+        try {
+            await switchCompany(Number(nextCompanyId));
+            closeMenu();
+            navigate("/hub");
+        } catch (error) {
+            setSelectedCompanyId(user?.empresa?.id ? String(user.empresa.id) : "");
+            window.alert(error.message || "Nao foi possivel trocar a empresa ativa.");
+        }
+    };
+
     const renderLogoutButton = () => (
         <button
             onClick={handleLogout}
@@ -104,6 +126,22 @@ export default function Header() {
             <span className="hub-user-text">
                 {userDisplayName}
                 <small>{userSubtitle}</small>
+                {canSwitchCompany && (
+                    <label className="hub-company-switcher">
+                        <select
+                            value={selectedCompanyId}
+                            onChange={handleCompanyChange}
+                            disabled={switchingCompany}
+                            aria-label="Trocar empresa ativa"
+                        >
+                            {user.empresas.map((company) => (
+                                <option key={company.id} value={company.id}>
+                                    {company.nome || `Empresa ${company.id}`}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
+                )}
             </span>
             {renderLogoutButton()}
         </div>
@@ -157,6 +195,10 @@ export default function Header() {
             [activeSolution.slug]: true
         }));
     }, [hubSolutions, isHubView, location.pathname]);
+
+    useEffect(() => {
+        setSelectedCompanyId(user?.empresa?.id ? String(user.empresa.id) : "");
+    }, [user?.empresa?.id]);
 
     return (
         <div className={`site-header ${isHubView ? "site-header--hub-sidebar" : ""} ${isPinned ? "site-header--pinned" : "site-header--overlay"} ${open ? "site-header--menu-open" : ""}`}>

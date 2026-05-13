@@ -5,7 +5,7 @@ import { normalizeSolutions } from "../auth/hubConfig";
 import { useAuth } from "./useAuth";
 
 export function useHubNavigation() {
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, user } = useAuth();
     const [solutions, setSolutions] = useState([]);
     const [loading, setLoading] = useState(isAuthenticated);
     const [error, setError] = useState("");
@@ -49,7 +49,7 @@ export function useHubNavigation() {
         return () => {
             active = false;
         };
-    }, [isAuthenticated]);
+    }, [isAuthenticated, user?.empresa?.id]);
 
     return { error, loading, solutions };
 }

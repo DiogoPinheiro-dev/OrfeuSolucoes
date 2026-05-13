@@ -6,7 +6,8 @@ import {
     LOGIN_COMPANIES_MUTATION,
     LOGIN_MUTATION,
     LOGOUT_MUTATION,
-    ME_QUERY
+    ME_QUERY,
+    SWITCH_COMPANY_MUTATION
 } from "../graphql/operations";
 import { clearSession, setSession } from "./session";
 
@@ -126,6 +127,31 @@ export const changePassword = async ({ novaSenha }) => {
         }
 
         setSession(payload.accessToken, payload.user);
+
+        return payload.user;
+    } catch (error) {
+        throw new Error(extractErrorMessage(error));
+    }
+};
+
+export const switchCompany = async ({ empresaId }) => {
+    try {
+        const response = await apolloClient.mutate({
+            mutation: SWITCH_COMPANY_MUTATION,
+            variables: {
+                input: {
+                    empresaId: Number(empresaId)
+                }
+            }
+        });
+        const payload = response?.data?.switchCompany;
+
+        if (!payload?.accessToken) {
+            throw new Error("Sessao atualizada nao retornada.");
+        }
+
+        setSession(payload.accessToken, payload.user);
+        await apolloClient.clearStore();
 
         return payload.user;
     } catch (error) {

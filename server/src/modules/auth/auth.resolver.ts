@@ -9,6 +9,7 @@ import { AuthPayloadType } from './dto/auth-payload.type';
 import { ChangePasswordInput } from './dto/change-password.input';
 import { LoginCompaniesInput } from './dto/login-companies.input';
 import { LoginInput } from './dto/login.input';
+import { SwitchCompanyInput } from './dto/switch-company.input';
 import { GqlAuthGuard } from './guards/gql-auth.guard';
 import { JwtPayload } from './strategies/jwt-payload.type';
 
@@ -51,57 +52,21 @@ export class AuthResolver {
   }
 
   @UseGuards(GqlAuthGuard)
+  @Mutation(() => AuthPayloadType)
+  switchCompany(
+    @Args('input') input: SwitchCompanyInput,
+    @CurrentUser() user: JwtPayload,
+    @Context() context: GraphQLContext
+  ): Promise<AuthPayloadType> {
+    return this.authService.switchCompany(user.sub, input.empresaId).then((result) => {
+      this.authService.attachAuthCookie(context.res, result.accessToken);
+      return result;
+    });
+  }
+
+  @UseGuards(GqlAuthGuard)
   @Query(() => UserType)
-  me(@CurrentUser() user: JwtPayload): UserType {
-    const isSystemAdmin = user.login?.toLowerCase() === 'admin';
-    const tokenSolutions =
-      user.availableSolutions ??
-      [
-        user.grupo?.acessoEcommerce ? 'ecommerce' : null,
-        user.grupo?.acessoProjetos ? 'projetos' : null,
-        user.grupo?.acessoHoras ? 'horas' : null,
-        user.grupo?.acessoConfigurador && isSystemAdmin ? 'configurador' : null
-      ].filter((solution): solution is string => !!solution);
-    const availableSolutions = tokenSolutions.filter((solution) => solution !== 'configurador' || isSystemAdmin);
-    const resolvedSolutions = availableSolutions;
-    const empresa = user.empresaId
-      ? {
-          id: user.empresaId,
-          nome: user.empresaNome ?? null,
-          acessoEcommerce: resolvedSolutions.includes('ecommerce'),
-          acessoProjetos: resolvedSolutions.includes('projetos'),
-          acessoHoras: resolvedSolutions.includes('horas'),
-          solucaoIds: [],
-          funcionalidadeIds: []
-        }
-      : null;
-
-    const grupo = user.grupo
-      ? {
-          ...user.grupo,
-          podeVisualizar: user.grupo.podeVisualizar ?? user.podeVisualizar ?? false,
-          podeIncluir: user.grupo.podeIncluir ?? user.podeIncluir ?? false,
-          podeAlterar: user.grupo.podeAlterar ?? user.podeAlterar ?? false,
-          podeExcluir: user.grupo.podeExcluir ?? user.podeExcluir ?? false,
-          solucaoIds: [],
-          funcionalidadeIds: []
-        }
-      : null;
-
-    return {
-      id: user.sub,
-      email: user.email,
-      login: user.login ?? null,
-      nome: user.nome ?? null,
-      empresa,
-      empresas: empresa ? [empresa] : [],
-      grupo,
-      podeVisualizar: user.podeVisualizar ?? true,
-      podeIncluir: user.podeIncluir ?? false,
-      podeAlterar: user.podeAlterar ?? false,
-      podeExcluir: user.podeExcluir ?? false,
-      deveAlterarSenha: user.deveAlterarSenha ?? false,
-      availableSolutions: resolvedSolutions
-    };
+  me(@CurrentUser() user: JwtPayload): Promise<UserType> {
+    return this.authService.me(user);
   }
 }

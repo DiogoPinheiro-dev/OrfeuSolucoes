@@ -61,6 +61,13 @@ export const LOGIN_MUTATION = gql`
           acessoProjetos
           acessoHoras
         }
+        empresas {
+          id
+          nome
+          acessoEcommerce
+          acessoProjetos
+          acessoHoras
+        }
       }
     }
   }
@@ -115,6 +122,60 @@ export const CHANGE_PASSWORD_MUTATION = gql`
           podeExcluir
         }
         empresa {
+          id
+          nome
+          acessoEcommerce
+          acessoProjetos
+          acessoHoras
+        }
+        empresas {
+          id
+          nome
+          acessoEcommerce
+          acessoProjetos
+          acessoHoras
+        }
+      }
+    }
+  }
+`;
+
+export const SWITCH_COMPANY_MUTATION = gql`
+  mutation SwitchCompany($input: SwitchCompanyInput!) {
+    switchCompany(input: $input) {
+      accessToken
+      user {
+        id
+        nome
+        login
+        email
+        podeVisualizar
+        podeIncluir
+        podeAlterar
+        podeExcluir
+        deveAlterarSenha
+        availableSolutions
+        grupo {
+          id
+          nome
+          descricao
+          acessoEcommerce
+          acessoProjetos
+          acessoHoras
+          acessoConfigurador
+          podeVisualizar
+          podeIncluir
+          podeAlterar
+          podeExcluir
+        }
+        empresa {
+          id
+          nome
+          acessoEcommerce
+          acessoProjetos
+          acessoHoras
+        }
+        empresas {
           id
           nome
           acessoEcommerce
@@ -264,6 +325,13 @@ export const ME_QUERY = gql`
         podeExcluir
       }
       empresa {
+        id
+        nome
+        acessoEcommerce
+        acessoProjetos
+        acessoHoras
+      }
+      empresas {
         id
         nome
         acessoEcommerce

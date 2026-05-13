@@ -142,6 +142,7 @@ type Mutation {
   login(input: LoginInput!): AuthPayloadType!
   loginCompanies(input: LoginCompaniesInput!): [EmpresaType!]!
   logout: Boolean!
+  switchCompany(input: SwitchCompanyInput!): AuthPayloadType!
   updateEmpresa(input: UpdateEmpresaInput!): EmpresaType!
   updateFuncionalidade(input: UpdateFuncionalidadeInput!): FuncionalidadeType!
   updateGrupoUsuario(input: UpdateGrupoUsuarioInput!): GrupoUsuarioType!
@@ -182,6 +183,10 @@ type SolucaoType {
   slug: String!
   somenteAdminSistema: Boolean!
   status: String
+}
+
+input SwitchCompanyInput {
+  empresaId: Int!
 }
 
 input UpdateEmpresaInput {
