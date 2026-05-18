@@ -1,5 +1,11 @@
 import { apolloClient } from "../../src/lib/apolloClient";
-import { MY_HUB_NAVIGATION_QUERY, SOLUCOES_QUERY } from "../graphql/operations";
+import {
+    CREATE_FUNCIONALIDADE_MUTATION,
+    DELETE_FUNCIONALIDADE_MUTATION,
+    MY_HUB_NAVIGATION_QUERY,
+    SOLUCOES_QUERY,
+    UPDATE_FUNCIONALIDADE_MUTATION
+} from "../graphql/operations";
 
 const extractErrorMessage = (error) => {
     const gqlError = error?.graphQLErrors?.[0]?.message;
@@ -28,6 +34,50 @@ export const getSolucoes = async () => {
         });
 
         return response?.data?.solucoes ?? [];
+    } catch (error) {
+        throw new Error(extractErrorMessage(error));
+    }
+};
+
+export const createFuncionalidade = async (input) => {
+    try {
+        const response = await apolloClient.mutate({
+            mutation: CREATE_FUNCIONALIDADE_MUTATION,
+            variables: { input }
+        });
+
+        return response?.data?.createFuncionalidade;
+    } catch (error) {
+        throw new Error(extractErrorMessage(error));
+    }
+};
+
+export const updateFuncionalidade = async (input) => {
+    try {
+        const response = await apolloClient.mutate({
+            mutation: UPDATE_FUNCIONALIDADE_MUTATION,
+            variables: {
+                input: {
+                    ...input,
+                    id: Number(input.id)
+                }
+            }
+        });
+
+        return response?.data?.updateFuncionalidade;
+    } catch (error) {
+        throw new Error(extractErrorMessage(error));
+    }
+};
+
+export const deleteFuncionalidade = async (id) => {
+    try {
+        const response = await apolloClient.mutate({
+            mutation: DELETE_FUNCIONALIDADE_MUTATION,
+            variables: { id: Number(id) }
+        });
+
+        return response?.data?.deleteFuncionalidade;
     } catch (error) {
         throw new Error(extractErrorMessage(error));
     }

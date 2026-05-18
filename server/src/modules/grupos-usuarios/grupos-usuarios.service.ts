@@ -1,7 +1,7 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { compare, hash } from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
-import { SolucoesService } from '../solucoes/solucoes.service';
+import { FuncionalidadePermissao, SolucoesService } from '../solucoes/solucoes.service';
 import { CreateGrupoUsuarioInput } from './dto/create-grupo-usuario.input';
 import { GrupoUsuarioType } from './dto/grupo-usuario.type';
 import { UpdateGrupoUsuarioInput } from './dto/update-grupo-usuario.input';
@@ -20,6 +20,7 @@ type GrupoUsuarioRecord = {
   podeExcluir?: boolean;
   solucaoIds?: number[];
   funcionalidadeIds?: number[];
+  funcionalidadePermissoes?: FuncionalidadePermissao[];
 };
 
 @Injectable()
@@ -187,7 +188,14 @@ export class GruposUsuariosService {
     await this.solucoesService.syncGroupAccess(
       admin.grupoId,
       adminSolucoes.map((solucao) => solucao.id),
-      adminFuncionalidades.map((funcionalidade) => funcionalidade.id)
+      adminFuncionalidades.map((funcionalidade) => funcionalidade.id),
+      adminFuncionalidades.map((funcionalidade) => ({
+        funcionalidadeId: funcionalidade.id,
+        podeVisualizar: true,
+        podeIncluir: true,
+        podeAlterar: true,
+        podeExcluir: true
+      }))
     );
   }
 
@@ -236,7 +244,12 @@ export class GruposUsuariosService {
       }
     })) as GrupoUsuarioRecord;
 
-    await this.solucoesService.syncGroupAccess(created.id, input.solucaoIds ?? [], input.funcionalidadeIds ?? []);
+    await this.solucoesService.syncGroupAccess(
+      created.id,
+      input.solucaoIds ?? [],
+      input.funcionalidadeIds ?? [],
+      this.resolveFuncionalidadePermissoes(input.funcionalidadeIds ?? [], input.funcionalidadePermissoes, input)
+    );
 
     return this.toType(created);
   }
@@ -266,8 +279,15 @@ export class GruposUsuariosService {
       }
     })) as GrupoUsuarioRecord;
 
-    if (input.solucaoIds !== undefined || input.funcionalidadeIds !== undefined) {
-      await this.solucoesService.syncGroupAccess(input.id, input.solucaoIds ?? [], input.funcionalidadeIds ?? []);
+    if (input.solucaoIds !== undefined || input.funcionalidadeIds !== undefined || input.funcionalidadePermissoes !== undefined) {
+      const funcionalidadeIds = input.funcionalidadeIds ?? input.funcionalidadePermissoes?.map((permissao) => permissao.funcionalidadeId) ?? [];
+
+      await this.solucoesService.syncGroupAccess(
+        input.id,
+        input.solucaoIds ?? [],
+        funcionalidadeIds,
+        this.resolveFuncionalidadePermissoes(funcionalidadeIds, input.funcionalidadePermissoes, { ...current, ...input })
+      );
     }
 
     return this.toType(updated);
@@ -307,7 +327,35 @@ export class GruposUsuariosService {
       podeAlterar: grupo.podeAlterar ?? false,
       podeExcluir: grupo.podeExcluir ?? false,
       solucaoIds: access.solucaoIds,
-      funcionalidadeIds: access.funcionalidadeIds
+      funcionalidadeIds: access.funcionalidadeIds,
+      funcionalidadePermissoes: access.funcionalidadePermissoes
     };
+  }
+
+  private resolveFuncionalidadePermissoes(
+    funcionalidadeIds: number[],
+    permissoes: FuncionalidadePermissao[] | undefined,
+    defaults: {
+      podeVisualizar?: boolean;
+      podeIncluir?: boolean;
+      podeAlterar?: boolean;
+      podeExcluir?: boolean;
+    }
+  ): FuncionalidadePermissao[] {
+    const permissoesByFuncionalidadeId = new Map(
+      (permissoes ?? []).map((permissao) => [permissao.funcionalidadeId, permissao])
+    );
+
+    return [...new Set(funcionalidadeIds)].map((funcionalidadeId) => {
+      const permissao = permissoesByFuncionalidadeId.get(funcionalidadeId);
+
+      return {
+        funcionalidadeId,
+        podeVisualizar: permissao?.podeVisualizar ?? defaults.podeVisualizar ?? true,
+        podeIncluir: permissao?.podeIncluir ?? defaults.podeIncluir ?? false,
+        podeAlterar: permissao?.podeAlterar ?? defaults.podeAlterar ?? false,
+        podeExcluir: permissao?.podeExcluir ?? defaults.podeExcluir ?? false
+      };
+    });
   }
 }

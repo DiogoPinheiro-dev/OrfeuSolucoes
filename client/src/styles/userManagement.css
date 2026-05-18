@@ -78,8 +78,7 @@
   color: var(--muted);
 }
 
-.user-form input,
-.user-form select {
+.user-form input {
   width: 100%;
   padding: 12px 13px;
   border-radius: 10px;
@@ -88,8 +87,7 @@
   color: var(--primary);
 }
 
-.user-form input:disabled,
-.user-form select:disabled {
+.user-form input:disabled {
   background: var(--surface-soft);
   color: var(--muted);
 }
@@ -202,6 +200,44 @@
   accent-color: var(--button-primary-bg);
 }
 
+.user-feature-permissions {
+  display: grid;
+  gap: 10px;
+}
+
+.user-feature-permission-row {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-white);
+}
+
+.user-form .user-feature-permission-row .user-permission-option {
+  padding: 0;
+  border: 0;
+}
+
+.user-feature-permission-row strong,
+.user-feature-permission-row small {
+  display: block;
+}
+
+.user-feature-crud-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.user-feature-crud-options .user-permission-option {
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+
 .user-company-pagination {
   display: flex;
   align-items: center;
@@ -275,6 +311,10 @@
   }
 
   .user-permissions-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .user-feature-crud-options {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

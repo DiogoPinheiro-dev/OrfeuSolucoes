@@ -5,6 +5,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { getUserGroupLabel } from "../auth/hubConfig";
 import { useHubNavigation } from "../hooks/useHubNavigation";
 import { useAuth } from "../hooks/useAuth";
+import CustomDropdown from "./CustomDropdown";
 
 import logo from "../assets/logo.ico";
 
@@ -118,31 +119,33 @@ export default function Header() {
             <LogOut aria-hidden="true" size={20} strokeWidth={2} />
         </button>
     );
+
+    const companySwitcher = canSwitchCompany && (
+        <label className="hub-company-switcher">
+            <CustomDropdown
+                className="custom-dropdown--hub"
+                value={selectedCompanyId}
+                onChange={handleCompanyChange}
+                disabled={switchingCompany}
+                ariaLabel="Trocar empresa ativa"
+                options={user.empresas.map((company) => ({
+                    value: company.id,
+                    label: company.nome || `Empresa ${company.id}`
+                }))}
+            />
+        </label>
+    );
+    
     const userCard = (
         <div className="hub-user-card">
             <span className="hub-user-avatar" aria-hidden="true">
                 <UserRound size={18} strokeWidth={2.2} />
             </span>
             <span className="hub-user-text">
-                {userDisplayName}
+                <strong>{userDisplayName}</strong>
                 <small>{userSubtitle}</small>
-                {canSwitchCompany && (
-                    <label className="hub-company-switcher">
-                        <select
-                            value={selectedCompanyId}
-                            onChange={handleCompanyChange}
-                            disabled={switchingCompany}
-                            aria-label="Trocar empresa ativa"
-                        >
-                            {user.empresas.map((company) => (
-                                <option key={company.id} value={company.id}>
-                                    {company.nome || `Empresa ${company.id}`}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-                )}
             </span>
+            {companySwitcher}
             {renderLogoutButton()}
         </div>
     );
@@ -206,6 +209,12 @@ export default function Header() {
                 <Link to="/" className="header-brand text-decoration-none" aria-label="Orfeu Solucoes">
                     <img src={logo} alt="Orfeu Solucoes" className="brand-logo" />
                 </Link>
+
+                {isHubView && isAuthenticated && (
+                    <div className="mobile-hub-profile">
+                        {userCard}
+                    </div>
+                )}
 
                 <button
                     className="mobile-toggle"

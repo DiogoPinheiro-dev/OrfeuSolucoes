@@ -3,10 +3,11 @@ import { useEffect, useMemo, useState } from "react";
 import { getEmpresas } from "../../services/Auth/AuthService";
 import { getGruposUsuarios } from "../../services/GruposUsuarios/GrupoUsuarioService";
 import { createUser, deleteUser, getUsers, updateUser } from "../../services/Users/UserService";
-import { isGroupAdmin, isSystemAdmin } from "../auth/hubConfig";
+import { canUseFeatureAction, isGroupAdmin, isSystemAdmin } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
 import ConfirmDialog from "./ConfirmDialog";
 import CrudGrid from "./CrudGrid";
+import CustomDropdown from "./CustomDropdown";
 import PasswordInput from "./PasswordInput";
 
 import "../styles/userManagement.css";
@@ -25,7 +26,7 @@ const EMPRESAS_PAGE_SIZE = 5;
 
 const isProtectedAdminUser = (user) => isSystemAdmin(user);
 
-export default function UserManagement() {
+export default function UserManagement({ permissions }) {
     const { user: currentUser } = useAuth();
     const [users, setUsers] = useState([]);
     const [empresas, setEmpresas] = useState([]);
@@ -293,10 +294,10 @@ export default function UserManagement() {
                     search={search}
                     onSearchChange={setSearch}
                     busy={gridBusy}
-                    canCreate={!!currentUser?.podeIncluir}
-                    canEdit={!!currentUser?.podeAlterar}
-                    canView={currentUser?.podeVisualizar !== false}
-                    canDelete={!!currentUser?.podeExcluir}
+                    canCreate={canUseFeatureAction(currentUser, permissions, "incluir")}
+                    canEdit={canUseFeatureAction(currentUser, permissions, "alterar")}
+                    canView={canUseFeatureAction(currentUser, permissions, "visualizar")}
+                    canDelete={canUseFeatureAction(currentUser, permissions, "excluir")}
                 />
             )}
 
@@ -356,14 +357,20 @@ export default function UserManagement() {
 
                             <label>
                                 Grupo
-                                <select name="grupoId" value={form.grupoId || ""} onChange={handleChange} disabled={readonly || saving || editingProtectedAdmin}>
-                                    <option value="">Sem grupo</option>
-                                    {grupos.map((grupo) => (
-                                        <option key={grupo.id} value={grupo.id}>
-                                            {grupo.nome}
-                                        </option>
-                                    ))}
-                                </select>
+                                <CustomDropdown
+                                    name="grupoId"
+                                    value={form.grupoId || ""}
+                                    onChange={handleChange}
+                                    disabled={readonly || saving || editingProtectedAdmin}
+                                    ariaLabel="Selecionar grupo do usuario"
+                                    options={[
+                                        { value: "", label: "Sem grupo" },
+                                        ...grupos.map((grupo) => ({
+                                            value: grupo.id,
+                                            label: grupo.nome
+                                        }))
+                                    ]}
+                                />
                             </label>
 
                             <section className="user-company-section" aria-label="Empresas vinculadas ao usuario">

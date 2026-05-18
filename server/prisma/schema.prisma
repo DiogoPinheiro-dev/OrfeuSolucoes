@@ -139,6 +139,10 @@ model GrupoFuncionalidade {
   id               Int @id @default(autoincrement()) @map("Id")
   grupoId          Int @map("GrupoId")
   funcionalidadeId Int @map("FuncionalidadeId")
+  podeVisualizar   Boolean @default(true) @map("PodeVisualizar")
+  podeIncluir      Boolean @default(false) @map("PodeIncluir")
+  podeAlterar      Boolean @default(false) @map("PodeAlterar")
+  podeExcluir      Boolean @default(false) @map("PodeExcluir")
 
   grupo GrupoUsuario @relation(fields: [grupoId], references: [id], onDelete: Cascade)
   funcionalidade Funcionalidade @relation(fields: [funcionalidadeId], references: [id], onDelete: Cascade)

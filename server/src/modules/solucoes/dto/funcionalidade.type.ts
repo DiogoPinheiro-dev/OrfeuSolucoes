@@ -28,4 +28,16 @@ export class FuncionalidadeType {
 
   @Field()
   somenteAdminSistema!: boolean;
+
+  @Field()
+  podeVisualizar!: boolean;
+
+  @Field()
+  podeIncluir!: boolean;
+
+  @Field()
+  podeAlterar!: boolean;
+
+  @Field()
+  podeExcluir!: boolean;
 }

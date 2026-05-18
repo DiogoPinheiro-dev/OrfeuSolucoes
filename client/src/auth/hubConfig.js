@@ -1,7 +1,8 @@
 export const FEATURE_COMPONENT_REGISTRY = {
     "configurador.cadastro-de-usuarios": "user-management",
     "configurador.cadastro-de-grupos": "group-management",
-    "configurador.cadastro-de-empresas": "company-management"
+    "configurador.cadastro-de-empresas": "company-management",
+    "configurador.cadastro-de-funcionalidades": "feature-management"
 };
 
 export const normalizeSolutions = (solutions = []) =>
@@ -18,7 +19,11 @@ export const normalizeSolutions = (solutions = []) =>
             label: feature.label,
             title: feature.titulo,
             description: feature.descricao,
-            registryKey: feature.registryKey
+            registryKey: feature.registryKey,
+            podeVisualizar: feature.podeVisualizar !== false,
+            podeIncluir: !!feature.podeIncluir,
+            podeAlterar: !!feature.podeAlterar,
+            podeExcluir: !!feature.podeExcluir
         }))
     }));
 
@@ -52,3 +57,28 @@ export const canAccessSolution = (solutions, slug) =>
 
 export const getUserGroupLabel = (user) =>
     user?.grupo?.nome || "Sem grupo";
+
+export const canUseFeatureAction = (user, feature, action) => {
+    if (isSystemAdmin(user)) {
+        return true;
+    }
+
+    const permissionKey = {
+        visualizar: "podeVisualizar",
+        incluir: "podeIncluir",
+        alterar: "podeAlterar",
+        excluir: "podeExcluir"
+    }[action];
+
+    if (!permissionKey) {
+        return false;
+    }
+
+    if (!feature) {
+        return permissionKey === "podeVisualizar"
+            ? user?.podeVisualizar !== false
+            : !!user?.[permissionKey];
+    }
+
+    return feature?.[permissionKey] !== false && (permissionKey === "podeVisualizar" || !!feature?.[permissionKey]);
+};

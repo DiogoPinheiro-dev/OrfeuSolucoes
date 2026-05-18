@@ -406,6 +406,13 @@ export const GRUPOS_USUARIOS_QUERY = gql`
       podeExcluir
       solucaoIds
       funcionalidadeIds
+      funcionalidadePermissoes {
+        funcionalidadeId
+        podeVisualizar
+        podeIncluir
+        podeAlterar
+        podeExcluir
+      }
     }
   }
 `;
@@ -426,6 +433,13 @@ export const CREATE_GRUPO_USUARIO_MUTATION = gql`
       podeExcluir
       solucaoIds
       funcionalidadeIds
+      funcionalidadePermissoes {
+        funcionalidadeId
+        podeVisualizar
+        podeIncluir
+        podeAlterar
+        podeExcluir
+      }
     }
   }
 `;
@@ -446,6 +460,13 @@ export const UPDATE_GRUPO_USUARIO_MUTATION = gql`
       podeExcluir
       solucaoIds
       funcionalidadeIds
+      funcionalidadePermissoes {
+        funcionalidadeId
+        podeVisualizar
+        podeIncluir
+        podeAlterar
+        podeExcluir
+      }
     }
   }
 `;
@@ -479,6 +500,10 @@ export const MY_HUB_NAVIGATION_QUERY = gql`
         ativo
         registryKey
         somenteAdminSistema
+        podeVisualizar
+        podeIncluir
+        podeAlterar
+        podeExcluir
       }
     }
   }
@@ -507,7 +532,57 @@ export const SOLUCOES_QUERY = gql`
         ativo
         registryKey
         somenteAdminSistema
+        podeVisualizar
+        podeIncluir
+        podeAlterar
+        podeExcluir
       }
     }
+  }
+`;
+
+export const CREATE_FUNCIONALIDADE_MUTATION = gql`
+  mutation CreateFuncionalidade($input: CreateFuncionalidadeInput!) {
+    createFuncionalidade(input: $input) {
+      id
+      slug
+      titulo
+      label
+      descricao
+      ordem
+      ativo
+      registryKey
+      somenteAdminSistema
+      podeVisualizar
+      podeIncluir
+      podeAlterar
+      podeExcluir
+    }
+  }
+`;
+
+export const UPDATE_FUNCIONALIDADE_MUTATION = gql`
+  mutation UpdateFuncionalidade($input: UpdateFuncionalidadeInput!) {
+    updateFuncionalidade(input: $input) {
+      id
+      slug
+      titulo
+      label
+      descricao
+      ordem
+      ativo
+      registryKey
+      somenteAdminSistema
+      podeVisualizar
+      podeIncluir
+      podeAlterar
+      podeExcluir
+    }
+  }
+`;
+
+export const DELETE_FUNCIONALIDADE_MUTATION = gql`
+  mutation DeleteFuncionalidade($id: Int!) {
+    deleteFuncionalidade(id: $id)
   }
 `;

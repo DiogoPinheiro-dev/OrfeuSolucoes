@@ -299,7 +299,8 @@ export class UsersService {
             podeAlterar: isAdminGroup || (user.grupo.podeAlterar ?? false),
             podeExcluir: isAdminGroup || (user.grupo.podeExcluir ?? false),
             solucaoIds: [],
-            funcionalidadeIds: []
+            funcionalidadeIds: [],
+            funcionalidadePermissoes: []
           }
         : null,
       podeVisualizar: isAdminGroup || (user.grupo?.podeVisualizar ?? false),

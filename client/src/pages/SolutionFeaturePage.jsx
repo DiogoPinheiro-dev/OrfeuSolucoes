@@ -2,6 +2,7 @@ import { Link, Navigate, useParams } from "react-router-dom";
 
 import { FEATURE_COMPONENT_REGISTRY, canAccessSolution, getFeatureBySlug, getSolutionBySlug } from "../auth/hubConfig";
 import CompanyManagement from "../components/CompanyManagement";
+import FeatureManagement from "../components/FeatureManagement";
 import Footer from "../components/Footer";
 import GroupManagement from "../components/GroupManagement";
 import Header from "../components/Header";
@@ -50,6 +51,7 @@ export default function SolutionFeaturePage() {
     const isUserManagement = componentKey === "user-management";
     const isCompanyManagement = componentKey === "company-management";
     const isGroupManagement = componentKey === "group-management";
+    const isFeatureManagement = componentKey === "feature-management";
 
     return (
         <div className="page-wrapper workspace-page">
@@ -65,9 +67,17 @@ export default function SolutionFeaturePage() {
                         <strong>{area.title}</strong>
                     </div>
 
-                    {isUserManagement || isCompanyManagement || isGroupManagement ? (
+                    {isUserManagement || isCompanyManagement || isGroupManagement || isFeatureManagement ? (
                         <section className="workspace-feature-crud">
-                            {isUserManagement ? <UserManagement /> : isCompanyManagement ? <CompanyManagement /> : <GroupManagement />}
+                            {isUserManagement ? (
+                                <UserManagement permissions={area} />
+                            ) : isCompanyManagement ? (
+                                <CompanyManagement permissions={area} />
+                            ) : isGroupManagement ? (
+                                <GroupManagement permissions={area} />
+                            ) : (
+                                <FeatureManagement permissions={area} />
+                            )}
                         </section>
                     ) : (
                         <section className="workspace-panel workspace-panel-wide">

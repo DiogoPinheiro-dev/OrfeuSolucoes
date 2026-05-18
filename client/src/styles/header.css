@@ -31,14 +31,14 @@
 .header-main {
   position: relative;
   z-index: 2;
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 24px;
+  gap: clamp(12px, 2vw, 24px);
   min-height: var(--site-header-height);
   width: 100%;
   margin: 0;
-  padding: 16px 24px;
+  padding: 16px clamp(16px, 4vw, 48px);
   box-sizing: border-box;
   border-radius: 0;
   pointer-events: auto;
@@ -54,12 +54,13 @@
 .header-brand {
   display: inline-flex;
   align-items: center;
+  min-width: 0;
   z-index: 1;
 }
 
 .brand-logo {
-  width: 50px;
-  height: 50px;
+  width: clamp(38px, 4vw, 50px);
+  height: clamp(38px, 4vw, 50px);
   object-fit: contain;
 }
 
@@ -73,17 +74,17 @@
 }
 
 .nav-links {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  position: static;
+  left: auto;
+  transform: none;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: clamp(2px, 0.8vw, 10px);
   margin: 0;
-  flex: none;
+  min-width: 0;
   justify-content: center;
-  width: max-content;
-  max-width: calc(100% - 360px);
+  width: 100%;
+  max-width: none;
 }
 
 .nav-button,
@@ -93,8 +94,9 @@
   color: var(--primary);
   cursor: pointer;
   font-weight: 400;
-  padding: 10px 14px;
+  padding: 10px clamp(8px, 1vw, 14px);
   border-radius: var(--button-radius);
+  white-space: nowrap;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
@@ -120,16 +122,19 @@
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: flex-end;
+  gap: clamp(8px, 1vw, 12px);
+  min-width: 0;
   z-index: 1;
 }
 
 .header-actions .btn {
   border: 1px solid var(--button-primary-border);
   border-radius: var(--button-radius);
-  padding: 10px 16px;
+  padding: 10px clamp(12px, 1.2vw, 16px);
   cursor: pointer;
   font-weight: 400;
+  white-space: nowrap;
   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
@@ -157,32 +162,45 @@
 .mobile-auth-actions .hub-user-card {
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr) 34px;
+  grid-template-areas:
+    "avatar text logout"
+    "company company company";
   align-items: center;
   gap: 8px;
-  min-width: 190px;
+  min-width: 0;
+  width: min(236px, 28vw);
   padding: 6px 8px;
   border-radius: 16px;
   background: var(--button-primary-bg);
 }
 
+.mobile-auth-actions .hub-user-card {
+  width: 100%;
+}
+
 .hub-user-avatar {
+  grid-area: avatar;
   display: inline-grid;
   place-items: center;
   width: 34px;
   height: 34px;
+  align-self: center;
   border-radius: 10px;
   background: var(--accent-green);
   color: var(--button-primary-text);
 }
 
 .hub-user-text {
+  grid-area: text;
   display: grid;
   min-width: 0;
   line-height: 1.2;
+  row-gap: 1px;
 }
 
-.hub-user-text,
+.hub-user-text strong,
 .hub-user-text small {
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -193,50 +211,31 @@
   font-size: 0.88rem;
 }
 
+.hub-user-text strong {
+  min-width: 0;
+  color: var(--button-primary-text);
+  font: inherit;
+}
+
 .hub-user-text small {
   color: color-mix(in srgb, var(--accent-green) 42%, var(--button-primary-text));
   font-size: 0.76rem;
 }
 
 .hub-company-switcher {
+  grid-area: company;
   display: block;
-  margin-top: 6px;
-}
-
-.hub-company-switcher select {
-  width: 100%;
-  min-width: 0;
-  border: 1px solid color-mix(in srgb, var(--button-primary-text) 22%, transparent);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--button-primary-bg) 72%, white 28%);
-  color: var(--button-primary-text);
-  padding: 6px 10px;
-  font-size: 0.78rem;
-  font-weight: 500;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  appearance: none;
-}
-
-.hub-company-switcher select option {
-  background: #f4f8fc;
-  color: #16324a;
-}
-
-.hub-company-switcher select:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--accent-green) 45%, white);
-  outline-offset: 1px;
-}
-
-.hub-company-switcher select:disabled {
-  opacity: 0.7;
-  cursor: wait;
+  margin-top: 2px;
 }
 
 .header-icon-logout {
+  grid-area: logout;
   display: inline-grid;
   place-items: center;
   width: 30px;
   height: 30px;
+  align-self: center;
+  justify-self: end;
   border: 0;
   border-radius: 12px;
   background: transparent;
@@ -275,7 +274,8 @@
 
 .mobile-auth-actions,
 .mobile-singup-login,
-.mobile-ecommerce {
+.mobile-ecommerce,
+.mobile-hub-profile {
   display: none;
 }
 
@@ -284,6 +284,55 @@
 }
 
 @media (min-width: 921px) {
+  .header-actions .hub-user-card {
+    width: clamp(176px, 18vw, 236px);
+  }
+
+  @media (max-width: 1120px) {
+    .header-main {
+      padding-inline: 16px;
+      gap: 10px;
+    }
+
+    .nav-button,
+    .nav-links .nav-link {
+      padding-inline: 8px;
+      font-size: 0.92rem;
+    }
+
+    .header-actions .btn {
+      padding-inline: 12px;
+      font-size: 0.92rem;
+    }
+
+    .header-actions .hub-user-card {
+      grid-template-columns: 34px minmax(0, 1fr) 30px;
+      width: clamp(168px, 17vw, 210px);
+    }
+  }
+
+  @media (max-width: 1010px) {
+    .nav-links {
+      justify-content: flex-start;
+      overflow: hidden;
+    }
+
+    .nav-links li {
+      min-width: 0;
+    }
+
+    .nav-button,
+    .nav-links .nav-link {
+      max-width: 118px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .header-actions .hub-user-card {
+      width: 168px;
+    }
+  }
+
   .site-header--hub-sidebar {
     right: auto;
     width: 260px;
@@ -295,6 +344,7 @@
   }
 
   .site-header--hub-sidebar .header-main {
+    display: flex;
     min-height: 100vh;
     height: 100%;
     max-height: 100vh;
@@ -454,6 +504,7 @@
 
   .site-header--hub-sidebar .hub-user-card {
     min-width: 0;
+    width: 100%;
   }
 
   .site-header--hub-sidebar .header-icon-logout {
@@ -464,6 +515,113 @@
 }
 
 @media (max-width: 920px) {
+  .site-header--hub-sidebar {
+    width: auto;
+    height: 100vh;
+    pointer-events: none;
+  }
+
+  .site-header--hub-sidebar .header-main {
+    position: fixed;
+    inset: 0 auto 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 14px;
+    width: 76px;
+    min-height: 100vh;
+    height: 100vh;
+    padding: 18px 10px;
+    overflow: hidden;
+    background: var(--surface-white);
+    border: 0;
+    border-right: 1px solid var(--line);
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: none;
+    transition: width 0.28s ease, padding 0.28s ease;
+  }
+
+  .site-header--hub-sidebar.site-header--menu-open .header-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 44px;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    align-items: start;
+  }
+
+  .site-header--hub-sidebar.site-header--menu-open .header-main {
+    width: min(288px, 86vw);
+    padding: 18px 14px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .site-header--hub-sidebar .header-brand {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .site-header--hub-sidebar.site-header--menu-open .header-brand {
+    justify-content: flex-start;
+    align-self: center;
+  }
+
+  .site-header--hub-sidebar .brand-logo {
+    width: 42px;
+    height: 42px;
+  }
+
+  .site-header--hub-sidebar .mobile-toggle {
+    justify-content: center;
+    justify-self: auto;
+    width: 44px;
+    height: 44px;
+    margin: 0;
+    border-radius: 10px;
+    color: var(--primary);
+    background: var(--surface-soft);
+  }
+
+  .site-header--hub-sidebar.site-header--menu-open .mobile-toggle {
+    justify-self: end;
+    align-self: center;
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .site-header--hub-sidebar .mobile-hub-profile {
+    display: none;
+  }
+
+  .site-header--hub-sidebar.site-header--menu-open .mobile-hub-profile {
+    display: none;
+  }
+
+  .site-header--hub-sidebar .nav-links {
+    grid-column: auto;
+    width: 100%;
+    padding-top: 0;
+  }
+
+  .site-header--hub-sidebar .nav-links.open {
+    display: flex;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .site-header--hub-sidebar .menu-overlay {
+    display: block;
+    background: rgba(14, 32, 50, 0.14);
+  }
+
+  .workspace-page .workspace-main,
+  .hub-page .hub-main {
+    padding-left: 76px;
+    padding-top: 32px;
+  }
+
   .site-header--menu-open .nav-button,
   .site-header--menu-open .nav-links .nav-link {
     background: rgba(255, 255, 255, 0.08);
@@ -489,13 +647,54 @@
 
   .header-main {
     position: relative;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
     min-height: var(--site-header-height-mobile);
     padding: 14px 18px;
   }
 
+  .mobile-hub-profile {
+    display: none;
+  }
+
+  .site-header--hub-sidebar .mobile-hub-profile {
+    display: none;
+    justify-content: center;
+    min-width: 0;
+  }
+
+  .site-header--hub-sidebar .mobile-hub-profile .hub-user-card {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr) 34px;
+    grid-template-areas:
+      "avatar text logout"
+      "company company company";
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 0;
+    padding: 6px 8px;
+    border-radius: 10px;
+    background: var(--button-primary-bg);
+    border: 0;
+  }
+
+  .site-header--hub-sidebar .mobile-hub-profile .hub-company-switcher {
+    display: block;
+    margin-top: 2px;
+    min-width: 0;
+  }
+
+  .site-header--hub-sidebar .mobile-hub-profile .custom-dropdown--hub .custom-dropdown__button {
+    min-height: 0;
+    padding: 6px 9px 6px 10px;
+    border-radius: 8px;
+  }
+
   .mobile-toggle {
     display: inline-flex;
+    justify-self: end;
     margin-left: auto;
   }
 
@@ -508,6 +707,7 @@
     left: auto;
     transform: none;
     display: none;
+    grid-column: 1 / -1;
     width: 100%;
     max-width: none;
     flex-direction: column;
@@ -524,14 +724,17 @@
   .nav-links .nav-link {
     width: 100%;
     text-align: left;
-    padding: 12px 14px;
-    border-radius: 14px;
+    padding: 13px 16px;
+    border-radius: var(--button-radius);
+    border: 1px solid rgba(255, 255, 255, 0.14);
     background: rgba(255, 255, 255, 0.08);
+    color: var(--text-on-dark);
+    font-weight: 500;
   }
 
   .hub-nav-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 42px;
+    grid-template-columns: minmax(0, 1fr) 44px;
     gap: 6px;
     align-items: center;
   }
@@ -544,9 +747,9 @@
     display: inline-grid;
     place-items: center;
     width: 100%;
-    height: 44px;
-    border: 0;
-    border-radius: 14px;
+    height: 52px;
+    border: 1px solid transparent;
+    border-radius: var(--button-radius);
     background: rgba(255, 255, 255, 0.08);
     color: inherit;
     cursor: pointer;
@@ -585,18 +788,23 @@
   .mobile-auth-actions {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
     gap: 8px;
   }
 
   .mobile-auth-actions .hub-user-card {
-    grid-column: 1 / -1;
     min-width: 0;
-    padding: 10px 12px;
-    border-radius: 14px;
-    background: var(--surface-soft);
-    border: 1px solid var(--line);
+    width: 100%;
+    min-height: 52px;
+    height: 100%;
+    padding: 8px 10px;
+    border-radius: var(--button-radius);
+    background: var(--button-primary-bg);
+    border: 1px solid var(--button-primary-border);
+    color: var(--button-primary-text);
   }
 
+  .mobile-auth-actions .hub-user-card:only-child,
   .mobile-auth-actions > button:only-child {
     grid-column: 1 / -1;
   }
@@ -605,13 +813,27 @@
   .mobile-singup-login button,
   .mobile-ecommerce button {
     width: 100%;
+    min-height: 52px;
     padding: 12px 16px;
-    border-radius: 14px;
+    border-radius: var(--button-radius);
     border: 1px solid var(--button-primary-border);
     font-weight: 400;
     cursor: pointer;
     background: var(--button-primary-bg);
     color: var(--button-primary-text);
+  }
+
+  .mobile-auth-actions > button {
+    align-self: stretch;
+    height: 100%;
+  }
+
+  .mobile-auth-actions .hub-user-text strong {
+    color: var(--button-primary-text);
+  }
+
+  .mobile-auth-actions .hub-user-text small {
+    color: color-mix(in srgb, var(--accent-green) 42%, var(--button-primary-text));
   }
 
   .mobile-auth-actions .header-icon-logout {
@@ -622,7 +844,8 @@
     height: 34px;
     border: 0;
     background: transparent;
-    color: #ff4b3e;
+    color: var(--accent-green);
+    min-height: 34px;
   }
 
   .mobile-auth-actions button:hover,
@@ -637,6 +860,11 @@
     outline: none;
   }
 
+  .site-header--pinned.site-header--menu-open .nav-button,
+  .site-header--pinned.site-header--menu-open .nav-links .nav-link {
+    border-color: var(--line);
+  }
+
   .menu-overlay {
     display: block;
     position: fixed;
@@ -645,5 +873,64 @@
     backdrop-filter: blur(2px);
     z-index: 1;
     pointer-events: auto;
+  }
+}
+
+@media (max-width: 620px) {
+  .mobile-auth-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 920px) {
+  .site-header--hub-sidebar .nav-links {
+    gap: 10px;
+  }
+
+  .site-header--hub-sidebar .hub-nav-row .nav-button,
+  .site-header--hub-sidebar .hub-nav-row .nav-link {
+    min-height: 52px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .site-header--hub-sidebar .mobile-auth-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+  }
+
+  .site-header--hub-sidebar .mobile-auth-actions > .hub-user-card {
+    display: grid;
+  }
+
+  .site-header--hub-sidebar .mobile-auth-actions > button {
+    min-height: 48px;
+  }
+
+  .site-header--hub-sidebar .mobile-auth-actions .hub-user-card {
+    grid-template-columns: 34px minmax(0, 1fr) 34px;
+    grid-template-areas:
+      "avatar text logout"
+      "company company company";
+    min-height: 0;
+    padding: 8px;
+    border-radius: 10px;
+  }
+
+  .site-header--hub-sidebar .hub-company-switcher {
+    margin-top: 4px;
+  }
+
+  .site-header--hub-sidebar .custom-dropdown--hub .custom-dropdown__button {
+    min-height: 42px;
+    border-radius: 10px;
+  }
+
+  .site-header--hub-sidebar .hub-submenu {
+    margin: 4px 0 0 12px;
+    padding-left: 10px;
   }
 }

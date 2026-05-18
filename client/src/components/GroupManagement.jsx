@@ -10,6 +10,7 @@ import { getSolucoes } from "../../services/Solucoes/SolucaoService";
 import ConfirmDialog from "./ConfirmDialog";
 import CrudGrid from "./CrudGrid";
 import { useAuth } from "../hooks/useAuth";
+import { canUseFeatureAction } from "../auth/hubConfig";
 
 import "../styles/userManagement.css";
 
@@ -19,6 +20,7 @@ const initialForm = {
     descricao: "",
     solucaoIds: [],
     funcionalidadeIds: [],
+    funcionalidadePermissoes: [],
     podeVisualizar: true,
     podeIncluir: false,
     podeAlterar: false,
@@ -27,7 +29,38 @@ const initialForm = {
 
 const booleanLabel = (value) => (value ? "Sim" : "Nao");
 
-export default function GroupManagement() {
+const permissionActions = [
+    ["podeVisualizar", "Visualizar"],
+    ["podeIncluir", "Incluir"],
+    ["podeAlterar", "Alterar"],
+    ["podeExcluir", "Excluir"]
+];
+
+const defaultPermission = (funcionalidadeId) => ({
+    funcionalidadeId,
+    podeVisualizar: true,
+    podeIncluir: false,
+    podeAlterar: false,
+    podeExcluir: false
+});
+
+const normalizeGroupForm = (group) => ({
+    ...initialForm,
+    ...group,
+    solucaoIds: group?.solucaoIds ?? [],
+    funcionalidadeIds: group?.funcionalidadeIds ?? [],
+    funcionalidadePermissoes: group?.funcionalidadePermissoes?.length
+        ? group.funcionalidadePermissoes
+        : (group?.funcionalidadeIds ?? []).map((funcionalidadeId) => ({
+            funcionalidadeId,
+            podeVisualizar: group?.podeVisualizar ?? true,
+            podeIncluir: group?.podeIncluir ?? false,
+            podeAlterar: group?.podeAlterar ?? false,
+            podeExcluir: group?.podeExcluir ?? false
+        }))
+});
+
+export default function GroupManagement({ permissions }) {
     const { user: currentUser } = useAuth();
     const [groups, setGroups] = useState([]);
     const [solucoes, setSolucoes] = useState([]);
@@ -78,7 +111,7 @@ export default function GroupManagement() {
     const openModal = (mode, group = null) => {
         setError("");
         setModalMode(mode);
-        setForm(group ? { ...initialForm, ...group } : initialForm);
+        setForm(group ? normalizeGroupForm(group) : initialForm);
     };
 
     const closeModal = () => {
@@ -106,6 +139,9 @@ export default function GroupManagement() {
             descricao: form.descricao.trim(),
             solucaoIds: form.solucaoIds,
             funcionalidadeIds: form.funcionalidadeIds,
+            funcionalidadePermissoes: form.funcionalidadePermissoes.filter((permissao) =>
+                form.funcionalidadeIds.includes(permissao.funcionalidadeId)
+            ),
             podeVisualizar: form.podeVisualizar,
             podeIncluir: form.podeIncluir,
             podeAlterar: form.podeAlterar,
@@ -153,18 +189,63 @@ export default function GroupManagement() {
                     : [...current.solucaoIds, solucao.id],
                 funcionalidadeIds: selected
                     ? current.funcionalidadeIds.filter((id) => !funcionalidadeIds.includes(id))
-                    : [...new Set([...current.funcionalidadeIds, ...funcionalidadeIds])]
+                    : [...new Set([...current.funcionalidadeIds, ...funcionalidadeIds])],
+                funcionalidadePermissoes: selected
+                    ? current.funcionalidadePermissoes.filter((permissao) => !funcionalidadeIds.includes(permissao.funcionalidadeId))
+                    : [
+                        ...current.funcionalidadePermissoes,
+                        ...funcionalidadeIds
+                            .filter((funcionalidadeId) => !current.funcionalidadePermissoes.some((permissao) => permissao.funcionalidadeId === funcionalidadeId))
+                            .map(defaultPermission)
+                    ]
             };
         });
     };
 
     const toggleFuncionalidade = (funcionalidadeId) => {
+        setForm((current) => {
+            const selected = current.funcionalidadeIds.includes(funcionalidadeId);
+
+            return {
+                ...current,
+                funcionalidadeIds: selected
+                    ? current.funcionalidadeIds.filter((id) => id !== funcionalidadeId)
+                    : [...current.funcionalidadeIds, funcionalidadeId],
+                funcionalidadePermissoes: selected
+                    ? current.funcionalidadePermissoes.filter((permissao) => permissao.funcionalidadeId !== funcionalidadeId)
+                    : current.funcionalidadePermissoes.some((permissao) => permissao.funcionalidadeId === funcionalidadeId)
+                        ? current.funcionalidadePermissoes
+                        : [...current.funcionalidadePermissoes, defaultPermission(funcionalidadeId)]
+            };
+        });
+    };
+
+    const toggleFuncionalidadePermissao = (funcionalidadeId, permissionName) => {
         setForm((current) => ({
             ...current,
-            funcionalidadeIds: current.funcionalidadeIds.includes(funcionalidadeId)
-                ? current.funcionalidadeIds.filter((id) => id !== funcionalidadeId)
-                : [...current.funcionalidadeIds, funcionalidadeId]
+            funcionalidadePermissoes: current.funcionalidadePermissoes.map((permissao) =>
+                permissao.funcionalidadeId === funcionalidadeId
+                    ? { ...permissao, [permissionName]: !permissao[permissionName] }
+                    : permissao
+            )
         }));
+    };
+
+    const getFuncionalidadePermissao = (funcionalidadeId) =>
+        form.funcionalidadePermissoes.find((permissao) => permissao.funcionalidadeId === funcionalidadeId) ?? defaultPermission(funcionalidadeId);
+
+    const summarizeGroupPermissions = (group) => {
+        const total = group.funcionalidadePermissoes?.length ?? group.funcionalidadeIds?.length ?? 0;
+
+        if (!total) {
+            return "Sem rotinas";
+        }
+
+        const full = (group.funcionalidadePermissoes ?? []).filter((permissao) =>
+            permissao.podeVisualizar && permissao.podeIncluir && permissao.podeAlterar && permissao.podeExcluir
+        ).length;
+
+        return `${total} rotina(s), ${full} com CRUD completo`;
     };
 
     const confirmDelete = async () => {
@@ -226,10 +307,7 @@ export default function GroupManagement() {
                             label: solucao.nome,
                             render: (group) => booleanLabel(group.solucaoIds?.includes(solucao.id))
                         })),
-                        { key: "podeVisualizar", label: "Visualizar", render: (group) => booleanLabel(group.podeVisualizar) },
-                        { key: "podeIncluir", label: "Incluir", render: (group) => booleanLabel(group.podeIncluir) },
-                        { key: "podeAlterar", label: "Alterar", render: (group) => booleanLabel(group.podeAlterar) },
-                        { key: "podeExcluir", label: "Excluir", render: (group) => booleanLabel(group.podeExcluir) }
+                        { key: "permissoes", label: "Permissoes", render: summarizeGroupPermissions }
                     ]}
                     rows={filteredGroups}
                     selectedId={selectedId}
@@ -245,10 +323,10 @@ export default function GroupManagement() {
                     search={search}
                     onSearchChange={setSearch}
                     busy={gridBusy}
-                    canCreate={!!currentUser?.podeIncluir}
-                    canEdit={!!currentUser?.podeAlterar}
-                    canView={currentUser?.podeVisualizar !== false}
-                    canDelete={!!currentUser?.podeExcluir}
+                    canCreate={canUseFeatureAction(currentUser, permissions, "incluir")}
+                    canEdit={canUseFeatureAction(currentUser, permissions, "alterar")}
+                    canView={canUseFeatureAction(currentUser, permissions, "visualizar")}
+                    canDelete={canUseFeatureAction(currentUser, permissions, "excluir")}
                 />
             )}
 
@@ -301,53 +379,49 @@ export default function GroupManagement() {
                                 <div className="user-company-header">
                                     <div>
                                         <span>Funcionalidades</span>
-                                        <strong>Areas liberadas dentro das solucoes</strong>
+                                        <strong>Acoes liberadas por rotina</strong>
                                     </div>
                                 </div>
 
-                                <div className="user-permissions-grid">
-                                    {solucoes.flatMap((solucao) =>
-                                        (solucao.funcionalidades || []).map((funcionalidade) => (
-                                            <label key={funcionalidade.id} className="user-permission-option">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={form.funcionalidadeIds.includes(funcionalidade.id)}
-                                                    onChange={() => toggleFuncionalidade(funcionalidade.id)}
-                                                    disabled={readonly || saving || !form.solucaoIds.includes(solucao.id)}
-                                                />
-                                                {funcionalidade.titulo}
-                                            </label>
-                                        ))
+                                <div className="user-feature-permissions">
+                                    {solucoes.filter((solucao) => form.solucaoIds.includes(solucao.id)).flatMap((solucao) =>
+                                        (solucao.funcionalidades || []).map((funcionalidade) => {
+                                            const selected = form.funcionalidadeIds.includes(funcionalidade.id);
+                                            const permissao = getFuncionalidadePermissao(funcionalidade.id);
+                                            const disabled = readonly || saving;
+
+                                            return (
+                                                <div key={funcionalidade.id} className="user-feature-permission-row">
+                                                    <label className="user-permission-option">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selected}
+                                                            onChange={() => toggleFuncionalidade(funcionalidade.id)}
+                                                            disabled={disabled}
+                                                        />
+                                                        <span>
+                                                            <strong>{funcionalidade.titulo}</strong>
+                                                            <small>{solucao.nome}</small>
+                                                        </span>
+                                                    </label>
+
+                                                    <div className="user-feature-crud-options">
+                                                        {permissionActions.map(([name, label]) => (
+                                                            <label key={name} className="user-permission-option">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={!!permissao[name]}
+                                                                    onChange={() => toggleFuncionalidadePermissao(funcionalidade.id, name)}
+                                                                    disabled={disabled || !selected}
+                                                                />
+                                                                {label}
+                                                            </label>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
                                     )}
-                                </div>
-                            </section>
-
-                            <section className="user-company-section" aria-label="Permissoes de CRUD do grupo">
-                                <div className="user-company-header">
-                                    <div>
-                                        <span>Permissoes CRUD</span>
-                                        <strong>Acoes liberadas para usuarios deste grupo</strong>
-                                    </div>
-                                </div>
-
-                                <div className="user-permissions-grid">
-                                    {[
-                                        ["podeVisualizar", "Visualizar"],
-                                        ["podeIncluir", "Incluir"],
-                                        ["podeAlterar", "Alterar"],
-                                        ["podeExcluir", "Excluir"]
-                                    ].map(([name, label]) => (
-                                        <label key={name} className="user-permission-option">
-                                            <input
-                                                type="checkbox"
-                                                name={name}
-                                                checked={!!form[name]}
-                                                onChange={handleChange}
-                                                disabled={readonly || saving}
-                                            />
-                                            {label}
-                                        </label>
-                                    ))}
                                 </div>
                             </section>
 

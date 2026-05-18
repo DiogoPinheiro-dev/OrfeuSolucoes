@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createEmpresa, deleteEmpresa, getEmpresas, updateEmpresa } from "../../services/Empresas/EmpresaService";
 import { getSolucoes } from "../../services/Solucoes/SolucaoService";
 import { getUsers } from "../../services/Users/UserService";
-import { isGroupAdmin } from "../auth/hubConfig";
+import { canUseFeatureAction, isGroupAdmin } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
 import ConfirmDialog from "./ConfirmDialog";
 import CrudGrid from "./CrudGrid";
@@ -19,7 +19,7 @@ const initialForm = {
 
 const booleanLabel = (value) => (value ? "Sim" : "Nao");
 
-export default function CompanyManagement() {
+export default function CompanyManagement({ permissions }) {
     const { user: currentUser } = useAuth();
     const [empresas, setEmpresas] = useState([]);
     const [solucoes, setSolucoes] = useState([]);
@@ -255,10 +255,10 @@ export default function CompanyManagement() {
                     search={search}
                     onSearchChange={setSearch}
                     busy={gridBusy}
-                    canCreate={!!currentUser?.podeIncluir}
-                    canEdit={!!currentUser?.podeAlterar}
-                    canView={currentUser?.podeVisualizar !== false}
-                    canDelete={!!currentUser?.podeExcluir}
+                    canCreate={canUseFeatureAction(currentUser, permissions, "incluir")}
+                    canEdit={canUseFeatureAction(currentUser, permissions, "alterar")}
+                    canView={canUseFeatureAction(currentUser, permissions, "visualizar")}
+                    canDelete={canUseFeatureAction(currentUser, permissions, "excluir")}
                 />
             )}
 

@@ -39,6 +39,7 @@ input CreateGrupoUsuarioInput {
   acessoProjetos: Boolean = false
   descricao: String
   funcionalidadeIds: [Int!]
+  funcionalidadePermissoes: [FuncionalidadePermissaoInput!]
   nome: String!
   podeAlterar: Boolean = false
   podeExcluir: Boolean = false
@@ -86,12 +87,32 @@ type EmpresaType {
   solucaoIds: [Int!]!
 }
 
+input FuncionalidadePermissaoInput {
+  funcionalidadeId: Int!
+  podeAlterar: Boolean = false
+  podeExcluir: Boolean = false
+  podeIncluir: Boolean = false
+  podeVisualizar: Boolean = true
+}
+
+type FuncionalidadePermissaoType {
+  funcionalidadeId: Int!
+  podeAlterar: Boolean!
+  podeExcluir: Boolean!
+  podeIncluir: Boolean!
+  podeVisualizar: Boolean!
+}
+
 type FuncionalidadeType {
   ativo: Boolean!
   descricao: String
   id: Int!
   label: String
   ordem: Float!
+  podeAlterar: Boolean!
+  podeExcluir: Boolean!
+  podeIncluir: Boolean!
+  podeVisualizar: Boolean!
   registryKey: String
   slug: String!
   somenteAdminSistema: Boolean!
@@ -105,6 +126,7 @@ type GrupoUsuarioType {
   acessoProjetos: Boolean!
   descricao: String
   funcionalidadeIds: [Int!]!
+  funcionalidadePermissoes: [FuncionalidadePermissaoType!]!
   id: Int!
   nome: String!
   podeAlterar: Boolean!
@@ -219,6 +241,7 @@ input UpdateGrupoUsuarioInput {
   acessoProjetos: Boolean
   descricao: String
   funcionalidadeIds: [Int!]
+  funcionalidadePermissoes: [FuncionalidadePermissaoInput!]
   id: Int!
   nome: String
   podeAlterar: Boolean

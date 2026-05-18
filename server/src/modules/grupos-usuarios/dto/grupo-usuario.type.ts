@@ -1,4 +1,5 @@
 import { Field, Int, ObjectType } from '@nestjs/graphql';
+import { FuncionalidadePermissaoType } from './funcionalidade-permissao.type';
 
 @ObjectType()
 export class GrupoUsuarioType {
@@ -40,4 +41,7 @@ export class GrupoUsuarioType {
 
   @Field(() => [Int])
   funcionalidadeIds!: number[];
+
+  @Field(() => [FuncionalidadePermissaoType])
+  funcionalidadePermissoes!: FuncionalidadePermissaoType[];
 }

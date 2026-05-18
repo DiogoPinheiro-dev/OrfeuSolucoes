@@ -33,6 +33,25 @@ type FuncionalidadeRecord = {
   ativo: boolean;
   registryKey?: string | null;
   somenteAdminSistema: boolean;
+  podeVisualizar?: boolean;
+  podeIncluir?: boolean;
+  podeAlterar?: boolean;
+  podeExcluir?: boolean;
+};
+
+export type FuncionalidadePermissao = {
+  funcionalidadeId: number;
+  podeVisualizar?: boolean;
+  podeIncluir?: boolean;
+  podeAlterar?: boolean;
+  podeExcluir?: boolean;
+};
+
+type GrupoAccessDefaults = {
+  podeVisualizar?: boolean | null;
+  podeIncluir?: boolean | null;
+  podeAlterar?: boolean | null;
+  podeExcluir?: boolean | null;
 };
 
 @Injectable()
@@ -42,7 +61,7 @@ export class SolucoesService {
   async myHubNavigation(user: JwtPayload): Promise<SolucaoType[]> {
     const solucoes = await this.findAll();
     const groupSolutionIds = await this.findGroupSolutionIds(user.grupo?.id);
-    const groupFeatureIds = await this.findGroupFeatureIds(user.grupo?.id);
+    const groupFeaturePermissions = await this.findGroupFeaturePermissions(user.grupo?.id);
     const companySolutionIds = await this.findCompanySolutionIds(user.empresaId);
     const companyFeatureIds = await this.findCompanyFeatureIds(user.empresaId);
     const isSystemAdmin = this.isSystemAdmin(user);
@@ -65,7 +84,22 @@ export class SolucoesService {
               return isSystemAdmin;
             }
 
-            return groupFeatureIds.has(funcionalidade.id) && companyFeatureIds.has(funcionalidade.id);
+            const permissao = groupFeaturePermissions.get(funcionalidade.id);
+
+            return !!permissao?.podeVisualizar && companyFeatureIds.has(funcionalidade.id);
+          })
+          .map((funcionalidade) => {
+            if (isSystemAdmin) {
+              return this.withPermissions(funcionalidade, {
+                funcionalidadeId: funcionalidade.id,
+                podeVisualizar: true,
+                podeIncluir: true,
+                podeAlterar: true,
+                podeExcluir: true
+              });
+            }
+
+            return this.withPermissions(funcionalidade, groupFeaturePermissions.get(funcionalidade.id));
           })
       }));
   }
@@ -168,6 +202,8 @@ export class SolucoesService {
       }
     })) as FuncionalidadeRecord;
 
+    await this.syncNewFuncionalidadeAccess(created);
+
     return this.toFuncionalidadeType(created);
   }
 
@@ -193,6 +229,10 @@ export class SolucoesService {
       }
     })) as FuncionalidadeRecord;
 
+    if (input.solucaoId !== undefined) {
+      await this.resyncFuncionalidadeAccess(updated);
+    }
+
     return this.toFuncionalidadeType(updated);
   }
 
@@ -202,9 +242,17 @@ export class SolucoesService {
     return true;
   }
 
-  async syncGroupAccess(grupoId: number, solucaoIds: number[] = [], funcionalidadeIds: number[] = []): Promise<void> {
+  async syncGroupAccess(
+    grupoId: number,
+    solucaoIds: number[] = [],
+    funcionalidadeIds: number[] = [],
+    funcionalidadePermissoes: FuncionalidadePermissao[] = []
+  ): Promise<void> {
     await (this.prisma as never as { grupoSolucao: { deleteMany: Function; createMany: Function }; grupoFuncionalidade: { deleteMany: Function; createMany: Function } }).grupoSolucao.deleteMany({ where: { grupoId } });
     await (this.prisma as never as { grupoFuncionalidade: { deleteMany: Function; createMany: Function } }).grupoFuncionalidade.deleteMany({ where: { grupoId } });
+    const permissoesByFuncionalidadeId = new Map(
+      funcionalidadePermissoes.map((permissao) => [permissao.funcionalidadeId, permissao])
+    );
 
     if (solucaoIds.length) {
       await (this.prisma as never as { grupoSolucao: { createMany: Function } }).grupoSolucao.createMany({
@@ -214,7 +262,18 @@ export class SolucoesService {
 
     if (funcionalidadeIds.length) {
       await (this.prisma as never as { grupoFuncionalidade: { createMany: Function } }).grupoFuncionalidade.createMany({
-        data: [...new Set(funcionalidadeIds)].map((funcionalidadeId) => ({ grupoId, funcionalidadeId }))
+        data: [...new Set(funcionalidadeIds)].map((funcionalidadeId) => {
+          const permissao = permissoesByFuncionalidadeId.get(funcionalidadeId);
+
+          return {
+            grupoId,
+            funcionalidadeId,
+            podeVisualizar: permissao?.podeVisualizar ?? true,
+            podeIncluir: permissao?.podeIncluir ?? false,
+            podeAlterar: permissao?.podeAlterar ?? false,
+            podeExcluir: permissao?.podeExcluir ?? false
+          };
+        })
       });
     }
   }
@@ -236,15 +295,31 @@ export class SolucoesService {
     }
   }
 
-  async findGroupAccess(grupoId: number): Promise<{ solucaoIds: number[]; funcionalidadeIds: number[] }> {
+  async findGroupAccess(grupoId: number): Promise<{ solucaoIds: number[]; funcionalidadeIds: number[]; funcionalidadePermissoes: Required<FuncionalidadePermissao>[] }> {
     const [solucoes, funcionalidades] = await Promise.all([
       (this.prisma as never as { grupoSolucao: { findMany: Function } }).grupoSolucao.findMany({ where: { grupoId }, select: { solucaoId: true } }),
-      (this.prisma as never as { grupoFuncionalidade: { findMany: Function } }).grupoFuncionalidade.findMany({ where: { grupoId }, select: { funcionalidadeId: true } })
+      (this.prisma as never as { grupoFuncionalidade: { findMany: Function } }).grupoFuncionalidade.findMany({
+        where: { grupoId },
+        select: {
+          funcionalidadeId: true,
+          podeVisualizar: true,
+          podeIncluir: true,
+          podeAlterar: true,
+          podeExcluir: true
+        }
+      })
     ]);
 
     return {
       solucaoIds: (solucoes as { solucaoId: number }[]).map((item) => item.solucaoId),
-      funcionalidadeIds: (funcionalidades as { funcionalidadeId: number }[]).map((item) => item.funcionalidadeId)
+      funcionalidadeIds: (funcionalidades as { funcionalidadeId: number }[]).map((item) => item.funcionalidadeId),
+      funcionalidadePermissoes: (funcionalidades as Required<FuncionalidadePermissao>[]).map((item) => ({
+        funcionalidadeId: item.funcionalidadeId,
+        podeVisualizar: item.podeVisualizar,
+        podeIncluir: item.podeIncluir,
+        podeAlterar: item.podeAlterar,
+        podeExcluir: item.podeExcluir
+      }))
     };
   }
 
@@ -284,6 +359,25 @@ export class SolucoesService {
     })) as { funcionalidadeId: number }[];
 
     return new Set(rows.map((row) => row.funcionalidadeId));
+  }
+
+  private async findGroupFeaturePermissions(grupoId?: number | null): Promise<Map<number, Required<FuncionalidadePermissao>>> {
+    if (!grupoId) {
+      return new Map();
+    }
+
+    const rows = (await (this.prisma as never as { grupoFuncionalidade: { findMany: Function } }).grupoFuncionalidade.findMany({
+      where: { grupoId },
+      select: {
+        funcionalidadeId: true,
+        podeVisualizar: true,
+        podeIncluir: true,
+        podeAlterar: true,
+        podeExcluir: true
+      }
+    })) as Required<FuncionalidadePermissao>[];
+
+    return new Map(rows.map((row) => [row.funcionalidadeId, row]));
   }
 
   private async findCompanySolutionIds(empresaId?: number | null): Promise<Set<number>> {
@@ -362,7 +456,69 @@ export class SolucoesService {
       ordem: funcionalidade.ordem,
       ativo: funcionalidade.ativo,
       registryKey: funcionalidade.registryKey ?? null,
-      somenteAdminSistema: funcionalidade.somenteAdminSistema
+      somenteAdminSistema: funcionalidade.somenteAdminSistema,
+      podeVisualizar: funcionalidade.podeVisualizar ?? true,
+      podeIncluir: funcionalidade.podeIncluir ?? false,
+      podeAlterar: funcionalidade.podeAlterar ?? false,
+      podeExcluir: funcionalidade.podeExcluir ?? false
     };
+  }
+
+  private withPermissions(funcionalidade: FuncionalidadeType, permissao?: FuncionalidadePermissao): FuncionalidadeType {
+    return {
+      ...funcionalidade,
+      podeVisualizar: permissao?.podeVisualizar ?? true,
+      podeIncluir: permissao?.podeIncluir ?? false,
+      podeAlterar: permissao?.podeAlterar ?? false,
+      podeExcluir: permissao?.podeExcluir ?? false
+    };
+  }
+
+  private async syncNewFuncionalidadeAccess(funcionalidade: FuncionalidadeRecord): Promise<void> {
+    const [grupos, empresas] = await Promise.all([
+      (this.prisma as never as { grupoSolucao: { findMany: Function } }).grupoSolucao.findMany({
+        where: { solucaoId: funcionalidade.solucaoId },
+        include: { grupo: true }
+      }),
+      (this.prisma as never as { empresaSolucao: { findMany: Function } }).empresaSolucao.findMany({
+        where: { solucaoId: funcionalidade.solucaoId },
+        select: { empresaId: true }
+      })
+    ]);
+
+    if ((grupos as { grupoId: number; grupo?: GrupoAccessDefaults }[]).length) {
+      await (this.prisma as never as { grupoFuncionalidade: { createMany: Function } }).grupoFuncionalidade.createMany({
+        data: (grupos as { grupoId: number; grupo?: GrupoAccessDefaults }[]).map((item) => ({
+          grupoId: item.grupoId,
+          funcionalidadeId: funcionalidade.id,
+          podeVisualizar: item.grupo?.podeVisualizar ?? true,
+          podeIncluir: item.grupo?.podeIncluir ?? false,
+          podeAlterar: item.grupo?.podeAlterar ?? false,
+          podeExcluir: item.grupo?.podeExcluir ?? false
+        }))
+      });
+    }
+
+    if ((empresas as { empresaId: number }[]).length) {
+      await (this.prisma as never as { empresaFuncionalidade: { createMany: Function } }).empresaFuncionalidade.createMany({
+        data: (empresas as { empresaId: number }[]).map((item) => ({
+          empresaId: item.empresaId,
+          funcionalidadeId: funcionalidade.id
+        }))
+      });
+    }
+  }
+
+  private async resyncFuncionalidadeAccess(funcionalidade: FuncionalidadeRecord): Promise<void> {
+    await Promise.all([
+      (this.prisma as never as { grupoFuncionalidade: { deleteMany: Function } }).grupoFuncionalidade.deleteMany({
+        where: { funcionalidadeId: funcionalidade.id }
+      }),
+      (this.prisma as never as { empresaFuncionalidade: { deleteMany: Function } }).empresaFuncionalidade.deleteMany({
+        where: { funcionalidadeId: funcionalidade.id }
+      })
+    ]);
+
+    await this.syncNewFuncionalidadeAccess(funcionalidade);
   }
 }
