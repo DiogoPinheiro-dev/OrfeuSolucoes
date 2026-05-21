@@ -2,7 +2,7 @@ import "../styles/confirmDialog.css";
 
 export default function ConfirmDialog({
     open,
-    title = "Confirmar operacao",
+    title = "Confirmar operação",
     message,
     confirmLabel = "OK",
     cancelLabel = "Cancelar",

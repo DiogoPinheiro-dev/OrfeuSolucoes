@@ -34,7 +34,7 @@ export function useHubNavigation() {
                 }
             } catch (loadError) {
                 if (active) {
-                    setError(loadError.message || "Nao foi possivel carregar o hub.");
+                    setError(loadError.message || "Não foi possível carregar o hub.");
                     setSolutions([]);
                 }
             } finally {

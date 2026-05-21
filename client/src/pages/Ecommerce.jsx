@@ -30,7 +30,7 @@ export default function Ecommerce() {
                     <span className="ecommerce-kicker">E-commerce</span>
                     <h1>Portal comercial</h1>
                     {isAuthenticated ? (
-                        <p>Bem-vindo, {user?.nome || user?.email}. Seu acesso ao e-commerce esta ativo.</p>
+                        <p>Bem-vindo, {user?.nome || user?.email}. Seu acesso ao e-commerce está ativo.</p>
                     ) : (
                         <button onClick={() => setLoginOpen(true)}>Entrar no e-commerce</button>
                     )}

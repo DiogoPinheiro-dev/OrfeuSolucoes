@@ -13,9 +13,9 @@ import "../styles/header.css";
 
 const LANDING_LINKS = [
     { id: "highlights", label: "Destaques" },
-    { id: "about-company", label: "Quem Somos" },
+    { id: "about-company", label: "Quem somos" },
     { id: "clients", label: "Clientes" },
-    { id: "features", label: "Servicos", authOnly: true },
+    { id: "features", label: "Serviços", authOnly: true },
     { id: "contato", label: "Contato" }
 ];
 
@@ -86,7 +86,7 @@ export default function Header() {
         }));
     };
 
-    const userDisplayName = user?.nome || user?.email || "Usuario";
+    const userDisplayName = user?.nome || user?.email || "Usuário";
     const userSubtitle = canSwitchCompany ? getUserGroupLabel(user) : user?.empresa?.nome || getUserGroupLabel(user);
 
     const handleCompanyChange = async (event) => {
@@ -104,7 +104,7 @@ export default function Header() {
             navigate("/hub");
         } catch (error) {
             setSelectedCompanyId(user?.empresa?.id ? String(user.empresa.id) : "");
-            window.alert(error.message || "Nao foi possivel trocar a empresa ativa.");
+            window.alert(error.message || "Não foi possível trocar a empresa ativa.");
         }
     };
 
@@ -205,9 +205,9 @@ export default function Header() {
 
     return (
         <div className={`site-header ${isHubView ? "site-header--hub-sidebar" : ""} ${isPinned ? "site-header--pinned" : "site-header--overlay"} ${open ? "site-header--menu-open" : ""}`}>
-            <header className="header-main py-3 mb-4" role="navigation" aria-label="Main navigation">
-                <Link to="/" className="header-brand text-decoration-none" aria-label="Orfeu Solucoes">
-                    <img src={logo} alt="Orfeu Solucoes" className="brand-logo" />
+            <header className="header-main py-3 mb-4" role="navigation" aria-label="Navegação principal">
+                <Link to="/" className="header-brand text-decoration-none" aria-label="Orfeu Soluções">
+                    <img src={logo} alt="Orfeu Soluções" className="brand-logo" />
                 </Link>
 
                 {isHubView && isAuthenticated && (
@@ -329,7 +329,7 @@ export default function Header() {
                         </li>
                     ) : (
                         <li className="mobile-singup-login">
-                            <button onClick={handleLogin}>Logar-se</button>
+                            <button onClick={handleLogin}>Entrar</button>
                         </li>
                     )}
                 </ul>
@@ -357,7 +357,7 @@ export default function Header() {
                                 </button>
                             )}
                             <button onClick={handleLogin} className="btn header-login">
-                                Logar-se
+                                Entrar
                             </button>
                         </>
                     )}

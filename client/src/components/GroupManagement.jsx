@@ -28,7 +28,7 @@ const initialForm = {
     podeExcluir: false
 };
 
-const booleanLabel = (value) => (value ? "Sim" : "Nao");
+const booleanLabel = (value) => (value ? "Sim" : "Não");
 
 const legacyActionFields = {
     visualizar: "podeVisualizar",
@@ -104,7 +104,7 @@ export default function GroupManagement({ permissions }) {
             setGroups(groupsResponse);
             setSolucoes(solucoesResponse.filter((solucao) => !solucao.somenteAdminSistema));
         } catch (loadError) {
-            setError(loadError.message || "Nao foi possivel carregar grupos.");
+            setError(loadError.message || "Não foi possível carregar grupos.");
         } finally {
             setLoading(false);
         }
@@ -192,7 +192,7 @@ export default function GroupManagement({ permissions }) {
             closeModal();
             await loadGroups();
         } catch (saveError) {
-            setError(saveError.message || "Nao foi possivel salvar o grupo.");
+            setError(saveError.message || "Não foi possível salvar o grupo.");
         } finally {
             setSaving(false);
         }
@@ -321,7 +321,7 @@ export default function GroupManagement({ permissions }) {
             setSelectedIds([]);
             await loadGroups();
         } catch (deleteError) {
-            setError(deleteError.message || "Nao foi possivel deletar o grupo.");
+            setError(deleteError.message || "Não foi possível deletar o grupo.");
         } finally {
             setGridBusy(false);
         }
@@ -359,13 +359,13 @@ export default function GroupManagement({ permissions }) {
                     title="Cadastro de grupos"
                     columns={[
                         { key: "nome", label: "Nome", render: (group) => group.nome || "-" },
-                        { key: "descricao", label: "Descricao", render: (group) => group.descricao || "-" },
+                        { key: "descricao", label: "Descrição", render: (group) => group.descricao || "-" },
                         ...solucoes.map((solucao) => ({
                             key: `solucao-${solucao.id}`,
                             label: solucao.nome,
                             render: (group) => booleanLabel(group.solucaoIds?.includes(solucao.id))
                         })),
-                        { key: "permissoes", label: "Permissoes", render: summarizeGroupPermissions }
+                        { key: "permissoes", label: "Permissões", render: summarizeGroupPermissions }
                     ]}
                     rows={filteredGroups}
                     selectedId={selectedId}
@@ -391,7 +391,7 @@ export default function GroupManagement({ permissions }) {
             {modalMode && (
                 <CrudModal
                     mode={modalMode}
-                    title="Grupo de usuarios"
+                    title="Grupo de usuários"
                     ariaLabel="Cadastro de grupo"
                     onClose={closeModal}
                     onSubmit={handleSubmit}
@@ -409,11 +409,11 @@ export default function GroupManagement({ permissions }) {
                             <CrudModalTabs
                                 activeTab={activeTab}
                                 onChange={setActiveTab}
-                                ariaLabel="Secoes do grupo"
+                                ariaLabel="Seções do grupo"
                                 tabs={[
                                     { id: "main", label: "Dados do grupo" },
-                                    { id: "solutions", label: "Solucoes" },
-                                    { id: "features", label: "Permissoes por rotina" }
+                                    { id: "solutions", label: "Soluções" },
+                                    { id: "features", label: "Permissões por rotina" }
                                 ]}
                             />
 
@@ -424,7 +424,7 @@ export default function GroupManagement({ permissions }) {
                             </label>
 
                             <label>
-                                Descricao
+                                Descrição
                                 <input name="descricao" value={form.descricao || ""} onChange={handleChange} disabled={readonly || saving} />
                             </label>
                             </CrudModalTabPanel>
@@ -433,7 +433,7 @@ export default function GroupManagement({ permissions }) {
                                 <div className="user-company-header">
                                     <div>
                                         <span>Acessos do grupo</span>
-                                        <strong>Solucoes liberadas no hub</strong>
+                                        <strong>Soluções liberadas no hub</strong>
                                     </div>
                                 </div>
 
@@ -456,7 +456,7 @@ export default function GroupManagement({ permissions }) {
                                 <div className="user-company-header">
                                     <div>
                                         <span>Funcionalidades</span>
-                                        <strong>Acoes liberadas por rotina</strong>
+                                        <strong>Ações liberadas por rotina</strong>
                                     </div>
                                 </div>
 
@@ -512,8 +512,8 @@ export default function GroupManagement({ permissions }) {
 
             <ConfirmDialog
                 open={!!pendingDelete}
-                title="Confirmar exclusao"
-                message={`Tem certeza que quer deletar ${pendingDelete?.label || "o grupo selecionado"}?`}
+                title="Confirmar exclusão"
+                message={`Tem certeza que deseja deletar ${pendingDelete?.label || "o grupo selecionado"}?`}
                 onCancel={() => setPendingDelete(null)}
                 onConfirm={confirmDelete}
                 loading={false}

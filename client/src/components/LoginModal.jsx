@@ -58,7 +58,7 @@ export default function LoginModal({ open, onClose }) {
 
     const validate = () => {
         if (!form.email || !form.password) {
-            setError("Preencha login ou email e senha.");
+            setError("Preencha login ou e-mail e senha.");
             return false;
         }
 
@@ -98,7 +98,7 @@ export default function LoginModal({ open, onClose }) {
             onClose?.();
             navigate("/ecommerce");
         } catch (submitError) {
-            setError(submitError.message || "Nao foi possivel autenticar.");
+            setError(submitError.message || "Não foi possível autenticar.");
         } finally {
             setLoading(false);
         }
@@ -153,7 +153,7 @@ export default function LoginModal({ open, onClose }) {
 
                 <form className="lm-form" onSubmit={onSubmit}>
                     <label className="lm-label">
-                        {mode === "login" ? "Login ou email" : "Email"}
+                        {mode === "login" ? "Login ou e-mail" : "E-mail"}
                         <input
                             name="email"
                             type={mode === "login" ? "text" : "email"}
@@ -202,7 +202,7 @@ export default function LoginModal({ open, onClose }) {
 
                     {mode === "register" && (
                         <p className="lm-helper">
-                            Novos cadastros entram como usuario comum, com acesso apenas ao e-commerce.
+                            Novos cadastros entram como usuário comum, com acesso apenas ao e-commerce.
                         </p>
                     )}
 
@@ -224,7 +224,7 @@ export default function LoginModal({ open, onClose }) {
                                 setError("");
                             }}
                         >
-                            {mode === "login" ? "Quero me cadastrar" : "Ja tenho conta"}
+                            {mode === "login" ? "Quero me cadastrar" : "Já tenho conta"}
                         </button>
                     </div>
                 </form>

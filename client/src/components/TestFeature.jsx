@@ -16,8 +16,8 @@ export default function TestFeature({ permissions }) {
     const canRunTestAction = testAction ? canUseFeatureAction(user, permissions, testAction.chave) : false;
 
     const handleTestClick = () => {
-        setMessage("Botao clicado.");
-        window.alert("Botao clicado.");
+        setMessage("Botão clicado.");
+        window.alert("Botão clicado.");
     };
 
     return (
@@ -31,7 +31,7 @@ export default function TestFeature({ permissions }) {
                         {testAction.nome || "Teste"}
                     </button>
                 ) : (
-                    <p>Acao de teste nao configurada para esta funcionalidade.</p>
+                    <p>Ação de teste não configurada para esta funcionalidade.</p>
                 )}
 
                 {message && <strong role="status">{message}</strong>}

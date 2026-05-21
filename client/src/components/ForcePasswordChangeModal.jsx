@@ -12,7 +12,7 @@ const getPasswordPolicyIssues = (password) => {
     }
 
     if (normalizedPassword.toLowerCase() === "admin123" || normalizedPassword.toLowerCase() === "admin") {
-        issues.push("ser diferente da senha temporaria");
+        issues.push("ser diferente da senha temporária");
     }
 
     return issues;
@@ -43,7 +43,7 @@ export default function ForcePasswordChangeModal() {
         setError("");
 
         if (form.password !== form.confirmPassword) {
-            setError("As senhas digitadas nao sao iguais.");
+            setError("As senhas digitadas não são iguais.");
             return;
         }
 
@@ -60,7 +60,7 @@ export default function ForcePasswordChangeModal() {
             await changePassword(form.password);
             setForm({ password: "", confirmPassword: "" });
         } catch (changeError) {
-            setError(changeError.message || "Nao foi possivel alterar a senha.");
+            setError(changeError.message || "Não foi possível alterar a senha.");
         } finally {
             setSaving(false);
         }
@@ -68,11 +68,11 @@ export default function ForcePasswordChangeModal() {
 
     return (
         <div className="force-password-backdrop" role="presentation">
-            <form className="force-password-modal" onSubmit={handleSubmit} role="dialog" aria-modal="true" aria-label="Alteracao obrigatoria de senha">
+            <form className="force-password-modal" onSubmit={handleSubmit} role="dialog" aria-modal="true" aria-label="Alteração obrigatória de senha">
                 <span>Primeiro acesso</span>
-                <h2>Troque sua senha temporaria</h2>
+                <h2>Troque sua senha temporária</h2>
                 <p>
-                    O usuario administrador inicial foi criado com uma senha temporaria.
+                    O usuário administrador inicial foi criado com uma senha temporária.
                     Para continuar usando o sistema, defina uma senha mais segura.
                 </p>
 

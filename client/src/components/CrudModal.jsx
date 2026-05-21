@@ -36,7 +36,7 @@ export function CrudModal({
     );
 }
 
-export function CrudModalTabs({ tabs, activeTab, onChange, ariaLabel = "Secoes do cadastro" }) {
+export function CrudModalTabs({ tabs, activeTab, onChange, ariaLabel = "Seções do cadastro" }) {
     if (!tabs?.length) {
         return null;
     }

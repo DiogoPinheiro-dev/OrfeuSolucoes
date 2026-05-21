@@ -11,7 +11,7 @@ export default function ProtectedRoute() {
                 <div className="auth-loading-card">
                     <span className="auth-loading-badge">Orfeu Hub</span>
                     <h2>Validando seu acesso...</h2>
-                    <p>Estamos preparando suas permissoes e o ambiente certo para o seu perfil.</p>
+                    <p>Estamos preparando suas permissões e o ambiente certo para o seu perfil.</p>
                 </div>
             </div>
         );

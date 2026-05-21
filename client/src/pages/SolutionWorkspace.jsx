@@ -23,7 +23,7 @@ export default function SolutionWorkspace() {
                     <div className="container workspace-shell">
                         <section className="workspace-panel workspace-panel-wide">
                             <span className="workspace-label">Hub</span>
-                            <h2>Carregando solucoes...</h2>
+                            <h2>Carregando soluções...</h2>
                         </section>
                     </div>
                 </main>
@@ -42,19 +42,19 @@ export default function SolutionWorkspace() {
 
     const workspacePanels = solution.areas ?? [
         {
-            label: "Status do modulo",
-            title: "Base pronta para evolucao",
-            description: `Este espaco ja esta roteado e protegido por grupo. Agora voces podem desenvolver a experiencia real de ${solution.title} aqui dentro sem mexer na regra de acesso.`
+            label: "Status do módulo",
+            title: "Base pronta para evolução",
+            description: `Este espaço já está roteado e protegido por grupo. Agora vocês podem desenvolver a experiência real de ${solution.title} aqui dentro sem mexer na regra de acesso.`
         },
         {
             label: "Grupo atual",
             title: getUserGroupLabel(user),
-            description: "O acesso foi liberado porque esse modulo faz parte das solucoes disponiveis para o grupo do usuario."
+            description: "O acesso foi liberado porque esse módulo faz parte das soluções disponíveis para o grupo do usuário."
         },
         {
-            label: "Proximo passo sugerido",
-            title: "Conectar o modulo a funcionalidades reais",
-            description: "Podemos seguir implementando cada area com dados reais, menu interno, permissoes mais granulares e integracao com o backend conforme a prioridade da empresa.",
+            label: "Próximo passo sugerido",
+            title: "Conectar o módulo a funcionalidades reais",
+            description: "Podemos seguir implementando cada área com dados reais, menu interno, permissões mais granulares e integração com o backend conforme a prioridade da empresa.",
             wide: true
         }
     ];

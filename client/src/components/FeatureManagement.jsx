@@ -34,7 +34,7 @@ const initialForm = {
     ]
 };
 
-const booleanLabel = (value) => (value ? "Sim" : "Nao");
+const booleanLabel = (value) => (value ? "Sim" : "Não");
 
 const normalizeFeatureForm = (feature) => ({
     ...initialForm,
@@ -121,7 +121,7 @@ export default function FeatureManagement({ permissions }) {
         try {
             setSolucoes(await getSolucoes());
         } catch (loadError) {
-            setError(loadError.message || "Nao foi possivel carregar funcionalidades.");
+            setError(loadError.message || "Não foi possível carregar funcionalidades.");
         } finally {
             setLoading(false);
         }
@@ -186,13 +186,13 @@ export default function FeatureManagement({ permissions }) {
 
         if (!form.solucaoId || !form.titulo.trim() || !form.slug.trim()) {
             setActiveTab("main");
-            setError("Preencha solucao, titulo e slug da funcionalidade.");
+            setError("Preencha solução, título e slug da funcionalidade.");
             return;
         }
 
         if (form.acoes.some((acao) => !acao.chave.trim() || !acao.nome.trim())) {
             setActiveTab("actions");
-            setError("Preencha chave e nome de todas as acoes da funcionalidade.");
+            setError("Preencha chave e nome de todas as ações da funcionalidade.");
             return;
         }
 
@@ -212,7 +212,7 @@ export default function FeatureManagement({ permissions }) {
             closeModal();
             await loadSolucoes();
         } catch (saveError) {
-            setError(saveError.message || "Nao foi possivel salvar a funcionalidade.");
+            setError(saveError.message || "Não foi possível salvar a funcionalidade.");
         } finally {
             setSaving(false);
         }
@@ -244,7 +244,7 @@ export default function FeatureManagement({ permissions }) {
             setSelectedIds([]);
             await loadSolucoes();
         } catch (deleteError) {
-            setError(deleteError.message || "Nao foi possivel deletar a funcionalidade.");
+            setError(deleteError.message || "Não foi possível deletar a funcionalidade.");
         } finally {
             setGridBusy(false);
         }
@@ -282,9 +282,9 @@ export default function FeatureManagement({ permissions }) {
                 <CrudGrid
                     title="Cadastro de funcionalidades"
                     columns={[
-                        { key: "titulo", label: "Titulo", render: (feature) => feature.titulo || "-" },
+                        { key: "titulo", label: "Título", render: (feature) => feature.titulo || "-" },
                         { key: "slug", label: "Slug", render: (feature) => feature.slug || "-" },
-                        { key: "solucao", label: "Solucao", render: (feature) => feature.solucaoNome || "-" },
+                        { key: "solucao", label: "Solução", render: (feature) => feature.solucaoNome || "-" },
                         { key: "registryKey", label: "Rota", render: (feature) => feature.registryKey || "-" },
                         { key: "ordem", label: "Ordem" },
                         { key: "ativo", label: "Ativo", render: (feature) => booleanLabel(feature.ativo) },
@@ -330,26 +330,26 @@ export default function FeatureManagement({ permissions }) {
                     )}
                 >
                             <CrudModalTabs
-                                ariaLabel="Secoes da funcionalidade"
+                                ariaLabel="Seções da funcionalidade"
                                 activeTab={activeTab}
                                 onChange={setActiveTab}
                                 tabs={[
                                     { id: "main", label: "Dados principais" },
-                                    { id: "actions", label: "Acoes da funcionalidade" }
+                                    { id: "actions", label: "Ações da funcionalidade" }
                                 ]}
                             />
 
                             <CrudModalTabPanel active={activeTab === "main"}>
                                     <label>
-                                        Solucao
+                                        Solução
                                         <CustomDropdown
                                             name="solucaoId"
                                             value={form.solucaoId || ""}
                                             onChange={handleChange}
                                             disabled={readonly || saving}
-                                            ariaLabel="Selecionar solucao da funcionalidade"
+                                            ariaLabel="Selecionar solução da funcionalidade"
                                             options={[
-                                                { value: "", label: "Selecione uma solucao" },
+                                                { value: "", label: "Selecione uma solução" },
                                                 ...solucoes.map((solucao) => ({
                                                     value: solucao.id,
                                                     label: solucao.nome
@@ -359,7 +359,7 @@ export default function FeatureManagement({ permissions }) {
                                     </label>
 
                                     <label>
-                                        Titulo
+                                        Título
                                         <input name="titulo" value={form.titulo || ""} onChange={handleChange} disabled={readonly || saving} required />
                                     </label>
 
@@ -385,7 +385,7 @@ export default function FeatureManagement({ permissions }) {
                                     </label>
 
                                     <label>
-                                        Descricao
+                                        Descrição
                                         <input name="descricao" value={form.descricao || ""} onChange={handleChange} disabled={readonly || saving} />
                                     </label>
 
@@ -408,15 +408,15 @@ export default function FeatureManagement({ permissions }) {
                                     </section>
                             </CrudModalTabPanel>
 
-                            <CrudModalTabPanel active={activeTab === "actions"} className="user-company-section" aria-label="Acoes da funcionalidade">
+                            <CrudModalTabPanel active={activeTab === "actions"} className="user-company-section" aria-label="Ações da funcionalidade">
                                     <div className="user-company-header">
                                         <div>
-                                            <span>Acoes da funcionalidade</span>
-                                            <strong>Opcoes exibidas no grid de permissoes</strong>
+                                            <span>Ações da funcionalidade</span>
+                                            <strong>Opções exibidas no grid de permissões</strong>
                                         </div>
                                         {!readonly && (
                                             <button className="crud-inline-action" type="button" onClick={addAction} disabled={saving}>
-                                                Adicionar acao
+                                                Adicionar ação
                                             </button>
                                         )}
                                     </div>
@@ -455,7 +455,7 @@ export default function FeatureManagement({ permissions }) {
                                                 </div>
 
                                                 <label>
-                                                    Detalhe da acao customizada
+                                                    Detalhe da ação customizada
                                                     <input
                                                         value={acao.configuracao || ""}
                                                         onChange={(event) => handleActionChange(index, "configuracao", event.target.value)}
@@ -465,7 +465,7 @@ export default function FeatureManagement({ permissions }) {
                                                 </label>
 
                                                 <label>
-                                                    Descricao
+                                                    Descrição
                                                     <input
                                                         value={acao.descricao || ""}
                                                         onChange={(event) => handleActionChange(index, "descricao", event.target.value)}
@@ -490,7 +490,7 @@ export default function FeatureManagement({ permissions }) {
                                                             onChange={(event) => handleActionChange(index, "acaoPadrao", event.target.checked)}
                                                             disabled={readonly || saving}
                                                         />
-                                                        Padrao
+                                                    Padrão
                                                     </label>
                                                     {!readonly && !acao.acaoPadrao && (
                                                         <button className="crud-inline-action crud-inline-action--danger" type="button" onClick={() => removeAction(index)} disabled={saving}>
@@ -507,8 +507,8 @@ export default function FeatureManagement({ permissions }) {
 
             <ConfirmDialog
                 open={!!pendingDelete}
-                title="Confirmar exclusao"
-                message={`Tem certeza que quer deletar ${pendingDelete?.label || "a funcionalidade selecionada"}?`}
+                title="Confirmar exclusão"
+                message={`Tem certeza que deseja deletar ${pendingDelete?.label || "a funcionalidade selecionada"}?`}
                 onCancel={() => setPendingDelete(null)}
                 onConfirm={confirmDelete}
                 loading={false}

@@ -52,7 +52,7 @@ export default function UserManagement({ permissions }) {
         try {
             setUsers(await getUsers());
         } catch (loadError) {
-            setError(loadError.message || "Nao foi possivel carregar usuarios.");
+            setError(loadError.message || "Não foi possível carregar usuários.");
         } finally {
             setLoading(false);
         }
@@ -64,7 +64,7 @@ export default function UserManagement({ permissions }) {
             setEmpresas(empresasResponse);
             setGrupos(gruposResponse);
         } catch (loadError) {
-            setError(loadError.message || "Nao foi possivel carregar empresas e grupos.");
+            setError(loadError.message || "Não foi possível carregar empresas e grupos.");
         }
     };
 
@@ -148,7 +148,7 @@ export default function UserManagement({ permissions }) {
 
         if (!form.email.trim() || !form.login.trim() || (modalMode === "create" && !form.senha)) {
             setActiveTab("main");
-            setError("Preencha login, email e senha para salvar o usuario.");
+            setError("Preencha login, e-mail e senha para salvar o usuário.");
             return;
         }
 
@@ -183,7 +183,7 @@ export default function UserManagement({ permissions }) {
             closeModal();
             await loadUsers();
         } catch (saveError) {
-            setError(saveError.message || "Nao foi possivel salvar o usuario.");
+            setError(saveError.message || "Não foi possível salvar o usuário.");
         } finally {
             setSaving(false);
         }
@@ -194,15 +194,15 @@ export default function UserManagement({ permissions }) {
         const deleteUsers = users.filter((item) => idsToDelete.includes(item.id));
 
         if (deleteUsers.some(isProtectedAdminUser)) {
-            setError("O usuario administrador inicial nao pode ser excluido.");
+            setError("O usuário administrador inicial não pode ser excluído.");
             return;
         }
 
         setPendingDelete({
             ids: idsToDelete,
             label: deleteUsers.length === 1
-                ? deleteUsers[0].nome || deleteUsers[0].email || "usuario selecionado"
-                : `${deleteUsers.length} usuarios selecionados`
+                ? deleteUsers[0].nome || deleteUsers[0].email || "usuário selecionado"
+                : `${deleteUsers.length} usuários selecionados`
         });
     };
 
@@ -223,7 +223,7 @@ export default function UserManagement({ permissions }) {
             setSelectedIds([]);
             await loadUsers();
         } catch (deleteError) {
-            setError(deleteError.message || "Nao foi possivel deletar o usuario.");
+            setError(deleteError.message || "Não foi possível deletar o usuário.");
         } finally {
             setGridBusy(false);
         }
@@ -266,14 +266,14 @@ export default function UserManagement({ permissions }) {
         <>
             {error && <div className="user-management-error" role="alert">{error}</div>}
             {loading ? (
-                <div className="user-management-loading">Carregando usuarios...</div>
+                <div className="user-management-loading">Carregando usuários...</div>
             ) : (
                 <CrudGrid
-                    title="Cadastro de usuarios"
+                    title="Cadastro de usuários"
                     columns={[
                         { key: "nome", label: "Nome", render: (user) => user.nome || "-" },
                         { key: "login", label: "Login", render: (user) => user.login || "-" },
-                        { key: "email", label: "Email" },
+                        { key: "email", label: "E-mail" },
                         { key: "grupo", label: "Grupo", render: (user) => user.grupo?.nome || "Sem grupo" },
                         {
                             key: "empresas",
@@ -294,7 +294,7 @@ export default function UserManagement({ permissions }) {
                     onCreate={() => openModal("create")}
                     onEdit={(user) => {
                         if (isProtectedAdminUser(user)) {
-                            setError("O usuario administrador inicial nao pode ser alterado.");
+                            setError("O usuário administrador inicial não pode ser alterado.");
                             return;
                         }
 
@@ -315,8 +315,8 @@ export default function UserManagement({ permissions }) {
             {modalMode && (
                 <CrudModal
                     mode={modalMode}
-                    title="Usuario"
-                    ariaLabel="Cadastro de usuario"
+                    title="Usuário"
+                    ariaLabel="Cadastro de usuário"
                     onClose={closeModal}
                     onSubmit={handleSubmit}
                     actions={(
@@ -333,7 +333,7 @@ export default function UserManagement({ permissions }) {
                             <CrudModalTabs
                                 activeTab={activeTab}
                                 onChange={setActiveTab}
-                                ariaLabel="Secoes do usuario"
+                                ariaLabel="Seções do usuário"
                                 tabs={[
                                     { id: "main", label: "Dados de acesso" },
                                     { id: "companies", label: "Empresas vinculadas" }
@@ -358,7 +358,7 @@ export default function UserManagement({ permissions }) {
                             </label>
 
                             <label>
-                                Email
+                                E-mail
                                 <input
                                     name="email"
                                     type="email"
@@ -371,7 +371,7 @@ export default function UserManagement({ permissions }) {
 
                             {!readonly && (
                                 <label>
-                                    Senha {modalMode === "edit" && <small>preencha apenas para alterar</small>}
+                                    Senha {modalMode === "edit" && <small>preencha apenas para alterar.</small>}
                                     <PasswordInput
                                         name="senha"
                                         value={form.senha}
@@ -390,7 +390,7 @@ export default function UserManagement({ permissions }) {
                                     value={form.grupoId || ""}
                                     onChange={handleChange}
                                     disabled={readonly || saving || editingProtectedAdmin}
-                                    ariaLabel="Selecionar grupo do usuario"
+                                    ariaLabel="Selecionar grupo do usuário"
                                     options={[
                                         { value: "", label: "Sem grupo" },
                                         ...grupos.map((grupo) => ({
@@ -453,7 +453,7 @@ export default function UserManagement({ permissions }) {
                                             )}
                                         </div>
 
-                                        <div className="user-company-pagination" aria-label="Paginacao de empresas">
+                                        <div className="user-company-pagination" aria-label="Paginação de empresas">
                                             <button
                                                 type="button"
                                                 onClick={() => setEmpresasPage((page) => Math.max(1, page - 1))}
@@ -462,14 +462,14 @@ export default function UserManagement({ permissions }) {
                                                 Anterior
                                             </button>
                                             <span>
-                                                Pagina {empresasPage} de {empresasTotalPages}
+                                                Página {empresasPage} de {empresasTotalPages}
                                             </span>
                                             <button
                                                 type="button"
                                                 onClick={() => setEmpresasPage((page) => Math.min(empresasTotalPages, page + 1))}
                                                 disabled={empresasPage === empresasTotalPages}
                                             >
-                                                Proxima
+                                                Próxima
                                             </button>
                                         </div>
                                     </>
@@ -480,8 +480,8 @@ export default function UserManagement({ permissions }) {
 
             <ConfirmDialog
                 open={!!pendingDelete}
-                title="Confirmar exclusao"
-                message={`Tem certeza que quer deletar ${pendingDelete?.label || "o usuario selecionado"}?`}
+                title="Confirmar exclusão"
+                message={`Tem certeza que deseja deletar ${pendingDelete?.label || "o usuário selecionado"}?`}
                 onCancel={() => setPendingDelete(null)}
                 onConfirm={confirmDelete}
                 loading={false}

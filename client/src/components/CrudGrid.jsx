@@ -49,7 +49,7 @@ export default function CrudGrid({
                 </label>
             </header>
 
-            <div className="crud-toolbar" aria-label="Acoes do cadastro">
+            <div className="crud-toolbar" aria-label="Ações do cadastro">
                 <button type="button" onClick={onCreate} disabled={!canCreate} aria-label="Incluir" title="Incluir">
                     <FaPlus aria-hidden="true" />
                 </button>

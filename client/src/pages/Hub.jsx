@@ -26,8 +26,8 @@ export default function Hub() {
                             {user?.empresa?.nome && <p>{user.empresa.nome}</p>}
                             <p>
                                 {loading
-                                    ? "Carregando solucoes..."
-                                    : error || `${solutions.length} solucao(oes) disponivel(is) neste momento.`}
+                                    ? "Carregando soluções..."
+                                    : error || `${solutions.length} solução(ões) disponível(is) neste momento.`}
                             </p>
                         </div>
                     </div>

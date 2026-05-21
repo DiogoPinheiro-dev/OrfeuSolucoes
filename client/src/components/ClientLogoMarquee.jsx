@@ -50,7 +50,7 @@ export default function ClientLogoMarquee({ clients = [] }) {
     const marqueeClients = Array.from({ length: CLIENT_MARQUEE_REPETITIONS }, () => clients).flat();
 
     return (
-        <div className="clients-marquee" aria-label="Clientes atendidos pela Orfeu Solucoes">
+        <div className="clients-marquee" aria-label="Clientes atendidos pela Orfeu Soluções">
             <div className="clients-strip">
                 {[0, 1].map((groupIndex) => (
                     <div className="clients-strip-group" key={groupIndex}>

@@ -86,10 +86,10 @@ export default function SolutionFeaturePage() {
                     ) : (
                         <section className="workspace-panel workspace-panel-wide">
                             <span className="workspace-label">Funcionalidade</span>
-                            <h2>Base pronta para implementacao</h2>
+                            <h2>Base pronta para implementação</h2>
                             <p>
-                                Esta pagina ja esta roteada e protegida. Podemos conectar aqui os dados reais,
-                                formulÃ¡rios, permissoes e operacoes especificas de {area.title}.
+                                Esta página já está roteada e protegida. Podemos conectar aqui os dados reais,
+                                formulários, permissões e operações específicas de {area.title}.
                             </p>
                         </section>
                     )}

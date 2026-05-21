@@ -18,7 +18,7 @@ const initialForm = {
     funcionalidadeIds: []
 };
 
-const booleanLabel = (value) => (value ? "Sim" : "Nao");
+const booleanLabel = (value) => (value ? "Sim" : "Não");
 
 export default function CompanyManagement({ permissions }) {
     const { user: currentUser } = useAuth();
@@ -47,7 +47,7 @@ export default function CompanyManagement({ permissions }) {
             setUsers(usersResponse);
             setSolucoes(solucoesResponse.filter((solucao) => !solucao.somenteAdminSistema));
         } catch (loadError) {
-            setError(loadError.message || "Nao foi possivel carregar empresas.");
+            setError(loadError.message || "Não foi possível carregar empresas.");
         } finally {
             setLoading(false);
         }
@@ -135,7 +135,7 @@ export default function CompanyManagement({ permissions }) {
             closeModal();
             await loadEmpresas();
         } catch (saveError) {
-            setError(saveError.message || "Nao foi possivel salvar a empresa.");
+            setError(saveError.message || "Não foi possível salvar a empresa.");
         } finally {
             setSaving(false);
         }
@@ -170,7 +170,7 @@ export default function CompanyManagement({ permissions }) {
             setSelectedIds([]);
             await loadEmpresas();
         } catch (deleteError) {
-            setError(deleteError.message || "Nao foi possivel deletar a empresa.");
+            setError(deleteError.message || "Não foi possível deletar a empresa.");
         } finally {
             setGridBusy(false);
         }
@@ -295,12 +295,12 @@ export default function CompanyManagement({ permissions }) {
                             <CrudModalTabs
                                 activeTab={activeTab}
                                 onChange={setActiveTab}
-                                ariaLabel="Secoes da empresa"
+                                ariaLabel="Seções da empresa"
                                 tabs={[
                                     { id: "main", label: "Dados gerais" },
-                                    { id: "solutions", label: "Solucoes" },
+                                    { id: "solutions", label: "Soluções" },
                                     { id: "features", label: "Funcionalidades" },
-                                    ...(readonly ? [{ id: "users", label: "Usuarios vinculados" }] : [])
+                                    ...(readonly ? [{ id: "users", label: "Usuários vinculados" }] : [])
                                 ]}
                             />
 
@@ -331,7 +331,7 @@ export default function CompanyManagement({ permissions }) {
                                 <div className="user-company-header">
                                     <div>
                                         <span>Funcionalidades</span>
-                                        <strong>Areas contratadas pela empresa</strong>
+                                        <strong>Áreas contratadas pela empresa</strong>
                                     </div>
                                 </div>
 
@@ -354,11 +354,11 @@ export default function CompanyManagement({ permissions }) {
 
                             <CrudModalTabPanel active={readonly && activeTab === "users"} className="company-linked-users">
                                     <div className="company-linked-users-header">
-                                        <span>Usuarios vinculados</span>
+                                        <span>Usuários vinculados</span>
                                         <strong>
                                             {linkedUsers.length === 1
-                                                ? "1 usuario vinculado"
-                                                : `${linkedUsers.length} usuarios vinculados`}
+                                                ? "1 usuário vinculado"
+                                                : `${linkedUsers.length} usuários vinculados`}
                                         </strong>
                                     </div>
 
@@ -366,19 +366,19 @@ export default function CompanyManagement({ permissions }) {
                                         <div className="company-linked-users-list">
                                             <div className="company-linked-user company-linked-user-head">
                                                 <span>Nome</span>
-                                                <span>Email</span>
+                                                <span>E-mail</span>
                                                 <span>Tipo</span>
                                             </div>
                                             {linkedUsers.map((user) => (
                                                 <div className="company-linked-user" key={user.id}>
-                                                    <strong>{user.nome || "Usuario sem nome"}</strong>
+                                                    <strong>{user.nome || "Usuário sem nome"}</strong>
                                                     <span>{user.email}</span>
                                                     <small>{user.grupo?.nome || "Sem grupo"}</small>
                                                 </div>
                                             ))}
                                         </div>
                                     ) : (
-                                        <p className="company-linked-users-empty">Nenhum usuario vinculado a esta empresa.</p>
+                                        <p className="company-linked-users-empty">Nenhum usuário vinculado a esta empresa.</p>
                                     )}
                             </CrudModalTabPanel>
                 </CrudModal>
@@ -386,8 +386,8 @@ export default function CompanyManagement({ permissions }) {
 
             <ConfirmDialog
                 open={!!pendingDelete}
-                title="Confirmar exclusao"
-                message={`Tem certeza que quer deletar a ${pendingDelete?.label || "empresa selecionada"}?`}
+                title="Confirmar exclusão"
+                message={`Tem certeza que deseja deletar a ${pendingDelete?.label || "empresa selecionada"}?`}
                 onCancel={() => setPendingDelete(null)}
                 onConfirm={confirmDelete}
                 loading={false}

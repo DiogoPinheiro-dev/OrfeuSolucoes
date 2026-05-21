@@ -37,7 +37,7 @@ export const login = async ({ loginOrEmail, email, password, empresaId }) => {
         const payload = response?.data?.login;
 
         if (!payload?.accessToken) {
-            throw new Error("Token de autenticacao nao retornado.");
+            throw new Error("Token de autenticação não retornado.");
         }
 
         setSession(payload.accessToken, payload.user);
@@ -123,7 +123,7 @@ export const changePassword = async ({ novaSenha }) => {
         const payload = response?.data?.changePassword;
 
         if (!payload?.accessToken) {
-            throw new Error("Sessao atualizada nao retornada.");
+            throw new Error("Sessão atualizada não retornada.");
         }
 
         setSession(payload.accessToken, payload.user);
@@ -147,7 +147,7 @@ export const switchCompany = async ({ empresaId }) => {
         const payload = response?.data?.switchCompany;
 
         if (!payload?.accessToken) {
-            throw new Error("Sessao atualizada nao retornada.");
+            throw new Error("Sessão atualizada não retornada.");
         }
 
         setSession(payload.accessToken, payload.user);

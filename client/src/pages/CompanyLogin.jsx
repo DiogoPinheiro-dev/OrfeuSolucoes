@@ -42,7 +42,7 @@ export default function CompanyLogin() {
         setError("");
 
         if (!form.loginOrEmail.trim() || !form.password) {
-            setError("Informe login ou email e senha.");
+            setError("Informe login ou e-mail e senha.");
             return;
         }
 
@@ -56,7 +56,7 @@ export default function CompanyLogin() {
             });
 
             if (!linkedCompanies.length) {
-                setError("Este usuario nao possui empresas vinculadas.");
+                setError("Este usuário não possui empresas vinculadas.");
                 return;
             }
 
@@ -64,7 +64,7 @@ export default function CompanyLogin() {
             setSelectedCompanyId(String(linkedCompanies[0].id));
             setCredentialsValidated(true);
         } catch (submitError) {
-            setError(submitError.message || "Nao foi possivel validar as credenciais.");
+            setError(submitError.message || "Não foi possível validar as credenciais.");
         } finally {
             setLoadingCompanies(false);
         }
@@ -89,7 +89,7 @@ export default function CompanyLogin() {
             });
             navigate("/hub");
         } catch (submitError) {
-            setError(submitError.message || "Nao foi possivel autenticar nesta empresa.");
+            setError(submitError.message || "Não foi possível autenticar nesta empresa.");
         } finally {
             setSubmitting(false);
         }
@@ -105,14 +105,14 @@ export default function CompanyLogin() {
                     <h1>{credentialsValidated ? "Selecione a empresa" : "Entre com seu login"}</h1>
                     <p className="company-login-helper">
                         {credentialsValidated
-                            ? "Mostramos apenas as empresas vinculadas ao seu usuario."
-                            : "Informe seu login ou email para validarmos seu acesso antes da escolha da empresa."}
+                            ? "Mostramos apenas as empresas vinculadas ao seu usuário."
+                            : "Informe seu login ou e-mail para validarmos seu acesso antes da escolha da empresa."}
                     </p>
 
                     {!credentialsValidated ? (
                         <form className="company-login-form" onSubmit={handleCredentialsSubmit}>
                             <label>
-                                Login ou email
+                                Login ou e-mail
                                 <input
                                     name="loginOrEmail"
                                     type="text"
@@ -162,7 +162,7 @@ export default function CompanyLogin() {
                                                     company.acessoEcommerce ? "E-commerce" : null,
                                                     company.acessoProjetos ? "Projetos" : null,
                                                     company.acessoHoras ? "Horas" : null
-                                                ].filter(Boolean).join(" | ") || "Sem solucoes contratadas"}
+                                                ].filter(Boolean).join(" | ") || "Sem soluções contratadas"}
                                             </small>
                                         </span>
                                     </label>

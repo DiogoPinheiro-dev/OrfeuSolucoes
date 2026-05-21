@@ -10,18 +10,18 @@ import ClientLogoMarquee from "./ClientLogoMarquee";
 import ServicoCard from "./ServicoCard";
 
 const fallback = [
-    { id: 1, titulo: "Servico 1", descricao: "Descricao servico 1", valor: 3000, desconto: 0, vendas: 1000 },
-    { id: 2, titulo: "Servico 2", descricao: "Descricao servico 2", valor: 4000, desconto: 0, vendas: 2000 },
-    { id: 3, titulo: "Servico 3", descricao: "Descricao servico 3", valor: 5000, desconto: 50, vendas: 200 },
-    { id: 4, titulo: "Servico 4", descricao: "Descricao servico 4", valor: 1200, desconto: 10, vendas: 50 },
-    { id: 5, titulo: "Servico 5", descricao: "Descricao servico 5", valor: 2500, desconto: 30, vendas: 500 }
+    { id: 1, titulo: "Serviço 1", descricao: "Descrição serviço 1", valor: 3000, desconto: 0, vendas: 1000 },
+    { id: 2, titulo: "Serviço 2", descricao: "Descrição serviço 2", valor: 4000, desconto: 0, vendas: 2000 },
+    { id: 3, titulo: "Serviço 3", descricao: "Descrição serviço 3", valor: 5000, desconto: 50, vendas: 200 },
+    { id: 4, titulo: "Serviço 4", descricao: "Descrição serviço 4", valor: 1200, desconto: 10, vendas: 50 },
+    { id: 5, titulo: "Serviço 5", descricao: "Descrição serviço 5", valor: 2500, desconto: 30, vendas: 500 }
 ];
 
 const clients = [
-    { id: 1, logo: "", nome: "Alpha Comercio" },
-    { id: 2, logo: "", nome: "Beta Industria" },
-    { id: 3, logo: "", nome: "Gamma Servicos" },
-    { id: 4, logo: "", nome: "Delta Solucoes" }
+    { id: 1, logo: "", nome: "Alpha Comércio" },
+    { id: 2, logo: "", nome: "Beta Indústria" },
+    { id: 3, logo: "", nome: "Gamma Serviços" },
+    { id: 4, logo: "", nome: "Delta Soluções" }
 ];
 
 function applyDescontos(list = []) {
@@ -187,16 +187,16 @@ export default function Body() {
                     <h3 className="mb-3">Quem somos</h3>
                     <ul className="about-list">
                         <li>
-                            <strong>Implementacao e Otimizacao:</strong> Garantimos que seu Protheus funcione de forma eficiente e alinhado aos seus processos de negocio.
+                            <strong>Implementação e Otimização:</strong> Garantimos que seu Protheus funcione de forma eficiente e alinhado aos seus processos de negócio.
                         </li>
                         <li>
-                            <strong>Customizacao e Desenvolvimento ADVPL:</strong> Criamos solucoes sob medida, aderentes as suas necessidades especificas, com codigo limpo e performatico.
+                            <strong>Customização e Desenvolvimento ADVPL:</strong> Criamos soluções sob medida, aderentes às suas necessidades específicas, com código limpo e performático.
                         </li>
                         <li>
-                            <strong>Lideranca Tecnica e Gestao de Projetos:</strong> Conduzimos projetos de alta complexidade, gerenciando equipes e garantindo entregas de qualidade.
+                            <strong>Liderança Técnica e Gestão de Projetos:</strong> Conduzimos projetos de alta complexidade, gerenciando equipes e garantindo entregas de qualidade.
                         </li>
                         <li>
-                            <strong>Consultoria Estrategica:</strong> Auxiliamos na tomada de decisao sobre a evolucao do seu sistema, manutencao e suporte tecnico.
+                            <strong>Consultoria Estratégica:</strong> Auxiliamos na tomada de decisão sobre a evolução do seu sistema, manutenção e suporte técnico.
                         </li>
                     </ul>
                 </div>
@@ -209,15 +209,15 @@ export default function Body() {
             {isAuthenticated && (
                 <section id="features" className="features py-5">
                     <div className="container">
-                        <h3 className="mb-4">Todos os servicos</h3>
+                        <h3 className="mb-4">Todos os serviços</h3>
 
                         <div className="table-responsive">
                             {paginated.length > 0 ? (
                                 <table className="features-table">
                                     <thead>
                                         <tr>
-                                            <th>Servico</th>
-                                            <th>Descricao</th>
+                                            <th>Serviço</th>
+                                            <th>Descrição</th>
                                             <th>Valor</th>
                                             <th>Desconto</th>
                                             <th>Vendas</th>
@@ -236,7 +236,7 @@ export default function Body() {
                                     </tbody>
                                 </table>
                             ) : (
-                                <p>Nenhum servico encontrado.</p>
+                                <p>Nenhum serviço encontrado.</p>
                             )}
                         </div>
 
@@ -244,7 +244,7 @@ export default function Body() {
                             <button
                                 onClick={() => setPage((value) => Math.max(1, value - 1))}
                                 disabled={page === 1}
-                                aria-label="Pagina anterior"
+                                aria-label="Página anterior"
                             >
                                 Anterior
                             </button>
@@ -268,9 +268,9 @@ export default function Body() {
                             <button
                                 onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
                                 disabled={page === totalPages}
-                                aria-label="Proxima pagina"
+                                aria-label="Próxima página"
                             >
-                                Proxima
+                                Próxima
                             </button>
                         </div>
                     </div>
