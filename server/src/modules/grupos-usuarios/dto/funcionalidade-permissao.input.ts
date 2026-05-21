@@ -1,5 +1,7 @@
 import { Field, InputType, Int } from '@nestjs/graphql';
-import { IsBoolean, IsInt, IsOptional } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsArray, IsBoolean, IsInt, IsOptional, ValidateNested } from 'class-validator';
+import { FuncionalidadeAcaoPermissaoInput } from './funcionalidade-acao-permissao.input';
 
 @InputType()
 export class FuncionalidadePermissaoInput {
@@ -26,4 +28,11 @@ export class FuncionalidadePermissaoInput {
   @IsOptional()
   @IsBoolean()
   podeExcluir?: boolean;
+
+  @Field(() => [FuncionalidadeAcaoPermissaoInput], { nullable: true })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => FuncionalidadeAcaoPermissaoInput)
+  acoes?: FuncionalidadeAcaoPermissaoInput[];
 }

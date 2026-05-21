@@ -1,5 +1,7 @@
 import { Field, InputType, Int } from '@nestjs/graphql';
-import { IsBoolean, IsInt, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsArray, IsBoolean, IsInt, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { FuncionalidadeAcaoInput } from './funcionalidade-acao.input';
 
 @InputType()
 export class UpdateFuncionalidadeInput {
@@ -51,4 +53,11 @@ export class UpdateFuncionalidadeInput {
   @IsOptional()
   @IsBoolean()
   somenteAdminSistema?: boolean;
+
+  @Field(() => [FuncionalidadeAcaoInput], { nullable: true })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => FuncionalidadeAcaoInput)
+  acoes?: FuncionalidadeAcaoInput[];
 }

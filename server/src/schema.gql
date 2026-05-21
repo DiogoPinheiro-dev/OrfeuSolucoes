@@ -21,6 +21,7 @@ input CreateEmpresaInput {
 }
 
 input CreateFuncionalidadeInput {
+  acoes: [FuncionalidadeAcaoInput!]
   ativo: Boolean = true
   descricao: String
   label: String
@@ -87,7 +88,46 @@ type EmpresaType {
   solucaoIds: [Int!]!
 }
 
+input FuncionalidadeAcaoInput {
+  acaoPadrao: Boolean = false
+  ativo: Boolean = true
+  chave: String!
+  configuracao: String
+  descricao: String
+  id: Int
+  nome: String!
+  ordem: Int = 0
+}
+
+input FuncionalidadeAcaoPermissaoInput {
+  acaoId: Int!
+  chave: String
+  funcionalidadeId: Int!
+  permitido: Boolean = false
+}
+
+type FuncionalidadeAcaoPermissaoType {
+  acaoId: Int!
+  chave: String!
+  funcionalidadeId: Int!
+  permitido: Boolean!
+}
+
+type FuncionalidadeAcaoType {
+  acaoPadrao: Boolean!
+  ativo: Boolean!
+  chave: String!
+  configuracao: String
+  descricao: String
+  funcionalidadeId: Int!
+  id: Int!
+  nome: String!
+  ordem: Int!
+  permitido: Boolean!
+}
+
 input FuncionalidadePermissaoInput {
+  acoes: [FuncionalidadeAcaoPermissaoInput!]
   funcionalidadeId: Int!
   podeAlterar: Boolean = false
   podeExcluir: Boolean = false
@@ -96,6 +136,7 @@ input FuncionalidadePermissaoInput {
 }
 
 type FuncionalidadePermissaoType {
+  acoes: [FuncionalidadeAcaoPermissaoType!]!
   funcionalidadeId: Int!
   podeAlterar: Boolean!
   podeExcluir: Boolean!
@@ -104,6 +145,7 @@ type FuncionalidadePermissaoType {
 }
 
 type FuncionalidadeType {
+  acoes: [FuncionalidadeAcaoType!]!
   ativo: Boolean!
   descricao: String
   id: Int!
@@ -222,6 +264,7 @@ input UpdateEmpresaInput {
 }
 
 input UpdateFuncionalidadeInput {
+  acoes: [FuncionalidadeAcaoInput!]
   ativo: Boolean
   descricao: String
   id: Int!

@@ -328,7 +328,15 @@ export class GruposUsuariosService {
       podeExcluir: grupo.podeExcluir ?? false,
       solucaoIds: access.solucaoIds,
       funcionalidadeIds: access.funcionalidadeIds,
-      funcionalidadePermissoes: access.funcionalidadePermissoes
+      funcionalidadePermissoes: access.funcionalidadePermissoes.map((permissao) => ({
+        ...permissao,
+        acoes: permissao.acoes.map((acao) => ({
+          funcionalidadeId: acao.funcionalidadeId,
+          acaoId: acao.acaoId,
+          chave: acao.chave ?? '',
+          permitido: !!acao.permitido
+        }))
+      }))
     };
   }
 

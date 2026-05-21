@@ -412,6 +412,12 @@ export const GRUPOS_USUARIOS_QUERY = gql`
         podeIncluir
         podeAlterar
         podeExcluir
+        acoes {
+          funcionalidadeId
+          acaoId
+          chave
+          permitido
+        }
       }
     }
   }
@@ -439,6 +445,12 @@ export const CREATE_GRUPO_USUARIO_MUTATION = gql`
         podeIncluir
         podeAlterar
         podeExcluir
+        acoes {
+          funcionalidadeId
+          acaoId
+          chave
+          permitido
+        }
       }
     }
   }
@@ -466,6 +478,12 @@ export const UPDATE_GRUPO_USUARIO_MUTATION = gql`
         podeIncluir
         podeAlterar
         podeExcluir
+        acoes {
+          funcionalidadeId
+          acaoId
+          chave
+          permitido
+        }
       }
     }
   }
@@ -504,6 +522,18 @@ export const MY_HUB_NAVIGATION_QUERY = gql`
         podeIncluir
         podeAlterar
         podeExcluir
+        acoes {
+          id
+          funcionalidadeId
+          chave
+          nome
+          descricao
+          ordem
+          ativo
+          acaoPadrao
+          configuracao
+          permitido
+        }
       }
     }
   }
@@ -536,6 +566,18 @@ export const SOLUCOES_QUERY = gql`
         podeIncluir
         podeAlterar
         podeExcluir
+        acoes {
+          id
+          funcionalidadeId
+          chave
+          nome
+          descricao
+          ordem
+          ativo
+          acaoPadrao
+          configuracao
+          permitido
+        }
       }
     }
   }
@@ -557,6 +599,18 @@ export const CREATE_FUNCIONALIDADE_MUTATION = gql`
       podeIncluir
       podeAlterar
       podeExcluir
+      acoes {
+        id
+        funcionalidadeId
+        chave
+        nome
+        descricao
+        ordem
+        ativo
+        acaoPadrao
+        configuracao
+        permitido
+      }
     }
   }
 `;
@@ -577,6 +631,18 @@ export const UPDATE_FUNCIONALIDADE_MUTATION = gql`
       podeIncluir
       podeAlterar
       podeExcluir
+      acoes {
+        id
+        funcionalidadeId
+        chave
+        nome
+        descricao
+        ordem
+        ativo
+        acaoPadrao
+        configuracao
+        permitido
+      }
     }
   }
 `;

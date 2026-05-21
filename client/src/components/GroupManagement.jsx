@@ -9,6 +9,7 @@ import {
 import { getSolucoes } from "../../services/Solucoes/SolucaoService";
 import ConfirmDialog from "./ConfirmDialog";
 import CrudGrid from "./CrudGrid";
+import { CrudModal, CrudModalTabPanel, CrudModalTabs } from "./CrudModal";
 import { useAuth } from "../hooks/useAuth";
 import { canUseFeatureAction } from "../auth/hubConfig";
 
@@ -29,19 +30,36 @@ const initialForm = {
 
 const booleanLabel = (value) => (value ? "Sim" : "Nao");
 
-const permissionActions = [
-    ["podeVisualizar", "Visualizar"],
-    ["podeIncluir", "Incluir"],
-    ["podeAlterar", "Alterar"],
-    ["podeExcluir", "Excluir"]
+const legacyActionFields = {
+    visualizar: "podeVisualizar",
+    incluir: "podeIncluir",
+    alterar: "podeAlterar",
+    excluir: "podeExcluir"
+};
+
+const fallbackActions = [
+    { chave: "visualizar", nome: "Visualizar" },
+    { chave: "incluir", nome: "Incluir" },
+    { chave: "alterar", nome: "Alterar" },
+    { chave: "excluir", nome: "Excluir" }
 ];
 
-const defaultPermission = (funcionalidadeId) => ({
-    funcionalidadeId,
+const getFeatureActions = (funcionalidade) =>
+    (funcionalidade?.acoes?.length ? funcionalidade.acoes : fallbackActions)
+        .filter((acao) => acao.ativo !== false);
+
+const defaultPermission = (funcionalidade) => ({
+    funcionalidadeId: typeof funcionalidade === "number" ? funcionalidade : funcionalidade.id,
     podeVisualizar: true,
     podeIncluir: false,
     podeAlterar: false,
-    podeExcluir: false
+    podeExcluir: false,
+    acoes: getFeatureActions(funcionalidade).map((acao) => ({
+        funcionalidadeId: typeof funcionalidade === "number" ? funcionalidade : funcionalidade.id,
+        acaoId: acao.id,
+        chave: acao.chave,
+        permitido: acao.chave === "visualizar"
+    }))
 });
 
 const normalizeGroupForm = (group) => ({
@@ -56,7 +74,8 @@ const normalizeGroupForm = (group) => ({
             podeVisualizar: group?.podeVisualizar ?? true,
             podeIncluir: group?.podeIncluir ?? false,
             podeAlterar: group?.podeAlterar ?? false,
-            podeExcluir: group?.podeExcluir ?? false
+            podeExcluir: group?.podeExcluir ?? false,
+            acoes: []
         }))
 });
 
@@ -73,6 +92,7 @@ export default function GroupManagement({ permissions }) {
     const [error, setError] = useState("");
     const [modalMode, setModalMode] = useState(null);
     const [form, setForm] = useState(initialForm);
+    const [activeTab, setActiveTab] = useState("main");
     const [pendingDelete, setPendingDelete] = useState(null);
 
     const loadGroups = async () => {
@@ -111,6 +131,7 @@ export default function GroupManagement({ permissions }) {
     const openModal = (mode, group = null) => {
         setError("");
         setModalMode(mode);
+        setActiveTab("main");
         setForm(group ? normalizeGroupForm(group) : initialForm);
     };
 
@@ -118,6 +139,7 @@ export default function GroupManagement({ permissions }) {
         setModalMode(null);
         setForm(initialForm);
         setSaving(false);
+        setActiveTab("main");
     };
 
     const handleChange = (event) => {
@@ -131,17 +153,27 @@ export default function GroupManagement({ permissions }) {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-        setSaving(true);
         setError("");
+
+        if (!form.nome.trim()) {
+            setActiveTab("main");
+            setError("Preencha o nome do grupo.");
+            return;
+        }
+
+        setSaving(true);
 
         const payload = {
             nome: form.nome.trim(),
             descricao: form.descricao.trim(),
             solucaoIds: form.solucaoIds,
             funcionalidadeIds: form.funcionalidadeIds,
-            funcionalidadePermissoes: form.funcionalidadePermissoes.filter((permissao) =>
-                form.funcionalidadeIds.includes(permissao.funcionalidadeId)
-            ),
+            funcionalidadePermissoes: form.funcionalidadePermissoes
+                .filter((permissao) => form.funcionalidadeIds.includes(permissao.funcionalidadeId))
+                .map((permissao) => ({
+                    ...permissao,
+                    acoes: (permissao.acoes ?? []).filter((acao) => acao.acaoId)
+                })),
             podeVisualizar: form.podeVisualizar,
             podeIncluir: form.podeIncluir,
             podeAlterar: form.podeAlterar,
@@ -196,14 +228,15 @@ export default function GroupManagement({ permissions }) {
                         ...current.funcionalidadePermissoes,
                         ...funcionalidadeIds
                             .filter((funcionalidadeId) => !current.funcionalidadePermissoes.some((permissao) => permissao.funcionalidadeId === funcionalidadeId))
-                            .map(defaultPermission)
+                            .map((funcionalidadeId) => defaultPermission(solucao.funcionalidades.find((funcionalidade) => funcionalidade.id === funcionalidadeId) ?? funcionalidadeId))
                     ]
             };
         });
     };
 
-    const toggleFuncionalidade = (funcionalidadeId) => {
+    const toggleFuncionalidade = (funcionalidade) => {
         setForm((current) => {
+            const funcionalidadeId = funcionalidade.id;
             const selected = current.funcionalidadeIds.includes(funcionalidadeId);
 
             return {
@@ -215,19 +248,44 @@ export default function GroupManagement({ permissions }) {
                     ? current.funcionalidadePermissoes.filter((permissao) => permissao.funcionalidadeId !== funcionalidadeId)
                     : current.funcionalidadePermissoes.some((permissao) => permissao.funcionalidadeId === funcionalidadeId)
                         ? current.funcionalidadePermissoes
-                        : [...current.funcionalidadePermissoes, defaultPermission(funcionalidadeId)]
+                        : [...current.funcionalidadePermissoes, defaultPermission(funcionalidade)]
             };
         });
     };
 
-    const toggleFuncionalidadePermissao = (funcionalidadeId, permissionName) => {
+    const toggleFuncionalidadePermissao = (funcionalidade, acao) => {
+        const sameAction = (item) => acao.id ? item.acaoId === acao.id : item.chave === acao.chave;
+
         setForm((current) => ({
             ...current,
-            funcionalidadePermissoes: current.funcionalidadePermissoes.map((permissao) =>
-                permissao.funcionalidadeId === funcionalidadeId
-                    ? { ...permissao, [permissionName]: !permissao[permissionName] }
-                    : permissao
-            )
+            funcionalidadePermissoes: current.funcionalidadePermissoes.map((permissao) => {
+                if (permissao.funcionalidadeId !== funcionalidade.id) {
+                    return permissao;
+                }
+
+                const currentActions = permissao.acoes?.length
+                    ? permissao.acoes
+                    : defaultPermission(funcionalidade).acoes;
+                const exists = currentActions.some(sameAction);
+                const acoes = exists
+                    ? currentActions.map((item) =>
+                        sameAction(item)
+                            ? { ...item, acaoId: acao.id, chave: acao.chave, permitido: !item.permitido }
+                            : item
+                    )
+                    : [
+                        ...currentActions,
+                        { funcionalidadeId: funcionalidade.id, acaoId: acao.id, chave: acao.chave, permitido: true }
+                    ];
+                const toggled = acoes.find(sameAction);
+                const legacyField = legacyActionFields[acao.chave];
+
+                return {
+                    ...permissao,
+                    ...(legacyField ? { [legacyField]: !!toggled?.permitido } : {}),
+                    acoes
+                };
+            })
         }));
     };
 
@@ -331,17 +389,35 @@ export default function GroupManagement({ permissions }) {
             )}
 
             {modalMode && (
-                <div className="crud-modal-backdrop" role="presentation">
-                    <div className="crud-modal" role="dialog" aria-modal="true" aria-label="Cadastro de grupo">
-                        <header className="crud-modal-header">
-                            <div>
-                                <span>{modalMode === "create" ? "Incluir" : modalMode === "edit" ? "Alterar" : "Visualizar"}</span>
-                                <h3>Grupo de usuarios</h3>
-                            </div>
-                            <button type="button" onClick={closeModal} aria-label="Fechar">X</button>
-                        </header>
+                <CrudModal
+                    mode={modalMode}
+                    title="Grupo de usuarios"
+                    ariaLabel="Cadastro de grupo"
+                    onClose={closeModal}
+                    onSubmit={handleSubmit}
+                    actions={(
+                        <>
+                            <button type="button" onClick={closeModal}>Fechar</button>
+                            {!readonly && (
+                                <button type="submit" disabled={saving}>
+                                    {saving ? "Salvando..." : "Salvar"}
+                                </button>
+                            )}
+                        </>
+                    )}
+                >
+                            <CrudModalTabs
+                                activeTab={activeTab}
+                                onChange={setActiveTab}
+                                ariaLabel="Secoes do grupo"
+                                tabs={[
+                                    { id: "main", label: "Dados do grupo" },
+                                    { id: "solutions", label: "Solucoes" },
+                                    { id: "features", label: "Permissoes por rotina" }
+                                ]}
+                            />
 
-                        <form className="user-form" onSubmit={handleSubmit}>
+                            <CrudModalTabPanel active={activeTab === "main"}>
                             <label>
                                 Nome
                                 <input name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || saving} required />
@@ -351,8 +427,9 @@ export default function GroupManagement({ permissions }) {
                                 Descricao
                                 <input name="descricao" value={form.descricao || ""} onChange={handleChange} disabled={readonly || saving} />
                             </label>
+                            </CrudModalTabPanel>
 
-                            <section className="user-company-section" aria-label="Acessos do grupo">
+                            <CrudModalTabPanel active={activeTab === "solutions"} className="user-company-section">
                                 <div className="user-company-header">
                                     <div>
                                         <span>Acessos do grupo</span>
@@ -373,9 +450,9 @@ export default function GroupManagement({ permissions }) {
                                         </label>
                                     ))}
                                 </div>
-                            </section>
+                            </CrudModalTabPanel>
 
-                            <section className="user-company-section" aria-label="Funcionalidades do grupo">
+                            <CrudModalTabPanel active={activeTab === "features"} className="user-company-section">
                                 <div className="user-company-header">
                                     <div>
                                         <span>Funcionalidades</span>
@@ -396,7 +473,7 @@ export default function GroupManagement({ permissions }) {
                                                         <input
                                                             type="checkbox"
                                                             checked={selected}
-                                                            onChange={() => toggleFuncionalidade(funcionalidade.id)}
+                                                            onChange={() => toggleFuncionalidade(funcionalidade)}
                                                             disabled={disabled}
                                                         />
                                                         <span>
@@ -406,36 +483,31 @@ export default function GroupManagement({ permissions }) {
                                                     </label>
 
                                                     <div className="user-feature-crud-options">
-                                                        {permissionActions.map(([name, label]) => (
-                                                            <label key={name} className="user-permission-option">
+                                                        {getFeatureActions(funcionalidade).map((acao) => {
+                                                            const acaoPermissao = permissao.acoes?.find((item) => acao.id ? item.acaoId === acao.id : item.chave === acao.chave);
+                                                            const legacyField = legacyActionFields[acao.chave];
+                                                            const checked = acaoPermissao ? !!acaoPermissao.permitido : legacyField ? !!permissao[legacyField] : false;
+
+                                                            return (
+                                                            <label key={acao.id || acao.chave} className="user-permission-option">
                                                                 <input
                                                                     type="checkbox"
-                                                                    checked={!!permissao[name]}
-                                                                    onChange={() => toggleFuncionalidadePermissao(funcionalidade.id, name)}
+                                                                    checked={checked}
+                                                                    onChange={() => toggleFuncionalidadePermissao(funcionalidade, acao)}
                                                                     disabled={disabled || !selected}
                                                                 />
-                                                                {label}
+                                                                {acao.nome}
                                                             </label>
-                                                        ))}
+                                                            );
+                                                        })}
                                                     </div>
                                                 </div>
                                             );
                                         })
                                     )}
                                 </div>
-                            </section>
-
-                            <div className="crud-modal-actions">
-                                <button type="button" onClick={closeModal}>Fechar</button>
-                                {!readonly && (
-                                    <button type="submit" disabled={saving}>
-                                        {saving ? "Salvando..." : "Salvar"}
-                                    </button>
-                                )}
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                            </CrudModalTabPanel>
+                </CrudModal>
             )}
 
             <ConfirmDialog

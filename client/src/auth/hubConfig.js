@@ -2,7 +2,8 @@ export const FEATURE_COMPONENT_REGISTRY = {
     "configurador.cadastro-de-usuarios": "user-management",
     "configurador.cadastro-de-grupos": "group-management",
     "configurador.cadastro-de-empresas": "company-management",
-    "configurador.cadastro-de-funcionalidades": "feature-management"
+    "configurador.cadastro-de-funcionalidades": "feature-management",
+    "configurador.teste": "test-feature"
 };
 
 export const normalizeSolutions = (solutions = []) =>
@@ -23,7 +24,8 @@ export const normalizeSolutions = (solutions = []) =>
             podeVisualizar: feature.podeVisualizar !== false,
             podeIncluir: !!feature.podeIncluir,
             podeAlterar: !!feature.podeAlterar,
-            podeExcluir: !!feature.podeExcluir
+            podeExcluir: !!feature.podeExcluir,
+            acoes: feature.acoes || []
         }))
     }));
 
@@ -61,6 +63,12 @@ export const getUserGroupLabel = (user) =>
 export const canUseFeatureAction = (user, feature, action) => {
     if (isSystemAdmin(user)) {
         return true;
+    }
+
+    const dynamicAction = feature?.acoes?.find((item) => item.chave === action || item.configuracao === action);
+
+    if (dynamicAction) {
+        return !!dynamicAction.permitido;
     }
 
     const permissionKey = {

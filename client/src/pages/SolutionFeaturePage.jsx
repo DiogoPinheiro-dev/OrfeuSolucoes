@@ -6,6 +6,7 @@ import FeatureManagement from "../components/FeatureManagement";
 import Footer from "../components/Footer";
 import GroupManagement from "../components/GroupManagement";
 import Header from "../components/Header";
+import TestFeature from "../components/TestFeature";
 import UserManagement from "../components/UserManagement";
 import { useHubNavigation } from "../hooks/useHubNavigation";
 
@@ -47,11 +48,12 @@ export default function SolutionFeaturePage() {
         return <Navigate to={`/hub/${solution.slug}`} replace />;
     }
 
-    const componentKey = FEATURE_COMPONENT_REGISTRY[area.registryKey];
+    const componentKey = FEATURE_COMPONENT_REGISTRY[area.registryKey] || FEATURE_COMPONENT_REGISTRY[`${solution.slug}.${area.slug}`];
     const isUserManagement = componentKey === "user-management";
     const isCompanyManagement = componentKey === "company-management";
     const isGroupManagement = componentKey === "group-management";
     const isFeatureManagement = componentKey === "feature-management";
+    const isTestFeature = componentKey === "test-feature";
 
     return (
         <div className="page-wrapper workspace-page">
@@ -67,7 +69,7 @@ export default function SolutionFeaturePage() {
                         <strong>{area.title}</strong>
                     </div>
 
-                    {isUserManagement || isCompanyManagement || isGroupManagement || isFeatureManagement ? (
+                    {isUserManagement || isCompanyManagement || isGroupManagement || isFeatureManagement || isTestFeature ? (
                         <section className="workspace-feature-crud">
                             {isUserManagement ? (
                                 <UserManagement permissions={area} />
@@ -75,6 +77,8 @@ export default function SolutionFeaturePage() {
                                 <CompanyManagement permissions={area} />
                             ) : isGroupManagement ? (
                                 <GroupManagement permissions={area} />
+                            ) : isTestFeature ? (
+                                <TestFeature permissions={area} />
                             ) : (
                                 <FeatureManagement permissions={area} />
                             )}

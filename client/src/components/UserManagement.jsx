@@ -7,6 +7,7 @@ import { canUseFeatureAction, isGroupAdmin, isSystemAdmin } from "../auth/hubCon
 import { useAuth } from "../hooks/useAuth";
 import ConfirmDialog from "./ConfirmDialog";
 import CrudGrid from "./CrudGrid";
+import { CrudModal, CrudModalTabPanel, CrudModalTabs } from "./CrudModal";
 import CustomDropdown from "./CustomDropdown";
 import PasswordInput from "./PasswordInput";
 
@@ -40,6 +41,7 @@ export default function UserManagement({ permissions }) {
     const [error, setError] = useState("");
     const [modalMode, setModalMode] = useState(null);
     const [form, setForm] = useState(initialForm);
+    const [activeTab, setActiveTab] = useState("main");
     const [empresasPage, setEmpresasPage] = useState(1);
     const [pendingDelete, setPendingDelete] = useState(null);
 
@@ -95,6 +97,7 @@ export default function UserManagement({ permissions }) {
     const openModal = (mode, user = null) => {
         setError("");
         setModalMode(mode);
+        setActiveTab("main");
         setEmpresasPage(1);
         setForm(
             user
@@ -113,6 +116,7 @@ export default function UserManagement({ permissions }) {
         setModalMode(null);
         setForm(initialForm);
         setSaving(false);
+        setActiveTab("main");
         setEmpresasPage(1);
     };
 
@@ -140,8 +144,15 @@ export default function UserManagement({ permissions }) {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-        setSaving(true);
         setError("");
+
+        if (!form.email.trim() || !form.login.trim() || (modalMode === "create" && !form.senha)) {
+            setActiveTab("main");
+            setError("Preencha login, email e senha para salvar o usuario.");
+            return;
+        }
+
+        setSaving(true);
 
         try {
             if (modalMode === "create") {
@@ -302,17 +313,34 @@ export default function UserManagement({ permissions }) {
             )}
 
             {modalMode && (
-                <div className="crud-modal-backdrop" role="presentation">
-                    <div className="crud-modal" role="dialog" aria-modal="true" aria-label="Cadastro de usuario">
-                        <header className="crud-modal-header">
-                            <div>
-                                <span>{modalMode === "create" ? "Incluir" : modalMode === "edit" ? "Alterar" : "Visualizar"}</span>
-                                <h3>Usuario</h3>
-                            </div>
-                            <button type="button" onClick={closeModal} aria-label="Fechar">X</button>
-                        </header>
+                <CrudModal
+                    mode={modalMode}
+                    title="Usuario"
+                    ariaLabel="Cadastro de usuario"
+                    onClose={closeModal}
+                    onSubmit={handleSubmit}
+                    actions={(
+                        <>
+                            <button type="button" onClick={closeModal}>Fechar</button>
+                            {!readonly && (
+                                <button type="submit" disabled={saving}>
+                                    {saving ? "Salvando..." : "Salvar"}
+                                </button>
+                            )}
+                        </>
+                    )}
+                >
+                            <CrudModalTabs
+                                activeTab={activeTab}
+                                onChange={setActiveTab}
+                                ariaLabel="Secoes do usuario"
+                                tabs={[
+                                    { id: "main", label: "Dados de acesso" },
+                                    { id: "companies", label: "Empresas vinculadas" }
+                                ]}
+                            />
 
-                        <form className="user-form" onSubmit={handleSubmit}>
+                            <CrudModalTabPanel active={activeTab === "main"}>
                             <label>
                                 Nome
                                 <input name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || saving || editingProtectedAdmin} />
@@ -372,8 +400,9 @@ export default function UserManagement({ permissions }) {
                                     ]}
                                 />
                             </label>
+                            </CrudModalTabPanel>
 
-                            <section className="user-company-section" aria-label="Empresas vinculadas ao usuario">
+                            <CrudModalTabPanel active={activeTab === "companies"} className="user-company-section">
                                 <div className="user-company-header">
                                     <div>
                                         <span>Empresas vinculadas</span>
@@ -445,19 +474,8 @@ export default function UserManagement({ permissions }) {
                                         </div>
                                     </>
                                 )}
-                            </section>
-
-                            <div className="crud-modal-actions">
-                                <button type="button" onClick={closeModal}>Fechar</button>
-                                {!readonly && (
-                                    <button type="submit" disabled={saving}>
-                                        {saving ? "Salvando..." : "Salvar"}
-                                    </button>
-                                )}
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                            </CrudModalTabPanel>
+                </CrudModal>
             )}
 
             <ConfirmDialog

@@ -7,6 +7,7 @@ import { canUseFeatureAction, isGroupAdmin } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
 import ConfirmDialog from "./ConfirmDialog";
 import CrudGrid from "./CrudGrid";
+import { CrudModal, CrudModalTabPanel, CrudModalTabs } from "./CrudModal";
 
 import "../styles/companyManagement.css";
 
@@ -33,6 +34,7 @@ export default function CompanyManagement({ permissions }) {
     const [error, setError] = useState("");
     const [modalMode, setModalMode] = useState(null);
     const [form, setForm] = useState(initialForm);
+    const [activeTab, setActiveTab] = useState("main");
     const [pendingDelete, setPendingDelete] = useState(null);
 
     const loadEmpresas = async () => {
@@ -72,6 +74,7 @@ export default function CompanyManagement({ permissions }) {
     const openModal = (mode, empresa = null) => {
         setError("");
         setModalMode(mode);
+        setActiveTab("main");
         setForm(
             empresa
                 ? {
@@ -87,6 +90,7 @@ export default function CompanyManagement({ permissions }) {
         setModalMode(null);
         setForm(initialForm);
         setSaving(false);
+        setActiveTab("main");
     };
 
     const handleChange = (event) => {
@@ -100,8 +104,15 @@ export default function CompanyManagement({ permissions }) {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-        setSaving(true);
         setError("");
+
+        if (!form.nome.trim()) {
+            setActiveTab("main");
+            setError("Preencha o nome da empresa.");
+            return;
+        }
+
+        setSaving(true);
 
         try {
             if (modalMode === "create") {
@@ -263,22 +274,44 @@ export default function CompanyManagement({ permissions }) {
             )}
 
             {modalMode && (
-                <div className="crud-modal-backdrop" role="presentation">
-                    <div className="crud-modal" role="dialog" aria-modal="true" aria-label="Cadastro de empresa">
-                        <header className="crud-modal-header">
-                            <div>
-                                <span>{modalMode === "create" ? "Incluir" : modalMode === "edit" ? "Alterar" : "Visualizar"}</span>
-                                <h3>Empresa</h3>
-                            </div>
-                            <button type="button" onClick={closeModal} aria-label="Fechar">X</button>
-                        </header>
+                <CrudModal
+                    mode={modalMode}
+                    title="Empresa"
+                    ariaLabel="Cadastro de empresa"
+                    onClose={closeModal}
+                    onSubmit={handleSubmit}
+                    formClassName="company-form"
+                    actions={(
+                        <>
+                            <button type="button" onClick={closeModal}>Fechar</button>
+                            {!readonly && (
+                                <button type="submit" disabled={saving}>
+                                    {saving ? "Salvando..." : "Salvar"}
+                                </button>
+                            )}
+                        </>
+                    )}
+                >
+                            <CrudModalTabs
+                                activeTab={activeTab}
+                                onChange={setActiveTab}
+                                ariaLabel="Secoes da empresa"
+                                tabs={[
+                                    { id: "main", label: "Dados gerais" },
+                                    { id: "solutions", label: "Solucoes" },
+                                    { id: "features", label: "Funcionalidades" },
+                                    ...(readonly ? [{ id: "users", label: "Usuarios vinculados" }] : [])
+                                ]}
+                            />
 
-                        <form className="company-form" onSubmit={handleSubmit}>
+                            <CrudModalTabPanel active={activeTab === "main"}>
                             <label>
                                 Nome
                                 <input name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || saving} required />
                             </label>
+                            </CrudModalTabPanel>
 
+                            <CrudModalTabPanel active={activeTab === "solutions"}>
                             <div className="company-access-grid">
                                 {solucoes.map((solucao) => (
                                     <label key={solucao.id}>
@@ -292,8 +325,9 @@ export default function CompanyManagement({ permissions }) {
                                     </label>
                                 ))}
                             </div>
+                            </CrudModalTabPanel>
 
-                            <section className="user-company-section" aria-label="Funcionalidades da empresa">
+                            <CrudModalTabPanel active={activeTab === "features"} className="user-company-section">
                                 <div className="user-company-header">
                                     <div>
                                         <span>Funcionalidades</span>
@@ -316,10 +350,9 @@ export default function CompanyManagement({ permissions }) {
                                         ))
                                     )}
                                 </div>
-                            </section>
+                            </CrudModalTabPanel>
 
-                            {readonly && (
-                                <section className="company-linked-users" aria-label="Usuarios vinculados a empresa">
+                            <CrudModalTabPanel active={readonly && activeTab === "users"} className="company-linked-users">
                                     <div className="company-linked-users-header">
                                         <span>Usuarios vinculados</span>
                                         <strong>
@@ -347,20 +380,8 @@ export default function CompanyManagement({ permissions }) {
                                     ) : (
                                         <p className="company-linked-users-empty">Nenhum usuario vinculado a esta empresa.</p>
                                     )}
-                                </section>
-                            )}
-
-                            <div className="crud-modal-actions">
-                                <button type="button" onClick={closeModal}>Fechar</button>
-                                {!readonly && (
-                                    <button type="submit" disabled={saving}>
-                                        {saving ? "Salvando..." : "Salvar"}
-                                    </button>
-                                )}
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                            </CrudModalTabPanel>
+                </CrudModal>
             )}
 
             <ConfirmDialog

@@ -1,4 +1,5 @@
 import { Field, Int, ObjectType } from '@nestjs/graphql';
+import { FuncionalidadeAcaoType } from './funcionalidade-acao.type';
 
 @ObjectType()
 export class FuncionalidadeType {
@@ -40,4 +41,7 @@ export class FuncionalidadeType {
 
   @Field()
   podeExcluir!: boolean;
+
+  @Field(() => [FuncionalidadeAcaoType])
+  acoes!: FuncionalidadeAcaoType[];
 }

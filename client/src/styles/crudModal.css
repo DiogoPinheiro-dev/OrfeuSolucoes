@@ -1,0 +1,168 @@
+.crud-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(14, 32, 50, 0.35);
+  backdrop-filter: blur(4px);
+}
+
+.crud-modal {
+  width: min(100%, 720px);
+  max-height: calc(100vh - 36px);
+  overflow: auto;
+  border-radius: 22px;
+  background: var(--surface-white);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.crud-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 22px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.crud-modal-header span {
+  color: var(--detail-accent-text);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.crud-modal-header button {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--surface-soft);
+  color: var(--primary);
+  cursor: pointer;
+}
+
+.crud-modal-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+  -webkit-overflow-scrolling: touch;
+}
+
+.crud-modal-tabs::-webkit-scrollbar {
+  height: 6px;
+}
+
+.crud-modal-tabs::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--line-strong);
+}
+
+.crud-modal-tabs button {
+  flex: 1 0 max(180px, calc((100% - 8px) / 2));
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--primary);
+  cursor: pointer;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.crud-modal-tabs button.active {
+  border-color: var(--button-primary-border);
+  background: var(--button-primary-bg);
+  color: var(--button-primary-text);
+}
+
+.crud-modal-tabs button:hover,
+.crud-modal-tabs button:focus-visible {
+  border-color: var(--button-primary-border);
+  outline: none;
+}
+
+.crud-modal-tab-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.crud-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.crud-modal-actions button {
+  padding: 11px 16px;
+  border-radius: var(--button-radius);
+  border: 1px solid var(--button-secondary-border);
+  background: var(--surface-soft);
+  color: var(--primary);
+  cursor: pointer;
+}
+
+.crud-modal-actions button[type="submit"] {
+  background: var(--button-primary-bg);
+  color: var(--button-primary-text);
+  border-color: var(--button-primary-border);
+}
+
+.crud-modal-actions button:hover,
+.crud-modal-actions button:focus-visible {
+  background: var(--button-primary-hover-bg);
+  color: var(--button-primary-hover-text);
+  outline: none;
+}
+
+.crud-inline-action {
+  min-height: 40px;
+  padding: 10px 14px;
+  border-radius: var(--button-radius);
+  border: 1px solid var(--button-primary-border);
+  background: var(--button-primary-bg);
+  color: var(--button-primary-text);
+  cursor: pointer;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.crud-inline-action:hover,
+.crud-inline-action:focus-visible {
+  background: var(--button-primary-hover-bg);
+  color: var(--button-primary-hover-text);
+  border-color: var(--button-primary-hover-border);
+  outline: none;
+}
+
+.crud-inline-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.crud-inline-action--danger {
+  border-color: var(--danger-text);
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+.crud-inline-action--danger:hover,
+.crud-inline-action--danger:focus-visible {
+  border-color: var(--danger-text);
+  background: var(--danger-text);
+  color: var(--button-primary-text);
+}

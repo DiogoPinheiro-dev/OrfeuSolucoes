@@ -38,6 +38,7 @@ model GrupoUsuario {
   usuarios Usuario[]
   solucoes GrupoSolucao[]
   funcionalidades GrupoFuncionalidade[]
+  funcionalidadeAcoes GrupoFuncionalidadeAcao[]
 
   @@map("GruposUsuarios")
 }
@@ -106,6 +107,7 @@ model Funcionalidade {
   solucao Solucao @relation(fields: [solucaoId], references: [id], onDelete: Cascade)
   grupos GrupoFuncionalidade[]
   empresas EmpresaFuncionalidade[]
+  acoes FuncionalidadeAcao[]
 
   @@unique([solucaoId, slug], map: "UX_Funcionalidades_SolucaoId_Slug")
   @@map("Funcionalidades")
@@ -135,6 +137,24 @@ model EmpresaSolucao {
   @@map("EmpresaSolucoes")
 }
 
+model FuncionalidadeAcao {
+  id               Int     @id @default(autoincrement()) @map("Id")
+  funcionalidadeId Int     @map("FuncionalidadeId")
+  chave            String  @map("Chave")
+  nome             String  @map("Nome")
+  descricao        String? @map("Descricao")
+  ordem            Int     @default(0) @map("Ordem")
+  ativo            Boolean @default(true) @map("Ativo")
+  acaoPadrao       Boolean @default(false) @map("AcaoPadrao")
+  configuracao     String? @map("Configuracao")
+
+  funcionalidade Funcionalidade @relation(fields: [funcionalidadeId], references: [id], onDelete: Cascade)
+  grupos GrupoFuncionalidadeAcao[]
+
+  @@unique([funcionalidadeId, chave], map: "UX_FuncionalidadeAcoes_FuncionalidadeId_Chave")
+  @@map("FuncionalidadeAcoes")
+}
+
 model GrupoFuncionalidade {
   id               Int @id @default(autoincrement()) @map("Id")
   grupoId          Int @map("GrupoId")
@@ -149,6 +169,19 @@ model GrupoFuncionalidade {
 
   @@unique([grupoId, funcionalidadeId], map: "UX_GrupoFuncionalidades_GrupoId_FuncionalidadeId")
   @@map("GrupoFuncionalidades")
+}
+
+model GrupoFuncionalidadeAcao {
+  id                    Int     @id @default(autoincrement()) @map("Id")
+  grupoId               Int     @map("GrupoId")
+  funcionalidadeAcaoId  Int     @map("FuncionalidadeAcaoId")
+  permitido             Boolean @default(false) @map("Permitido")
+
+  grupo GrupoUsuario @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+  funcionalidadeAcao FuncionalidadeAcao @relation(fields: [funcionalidadeAcaoId], references: [id], onDelete: Cascade)
+
+  @@unique([grupoId, funcionalidadeAcaoId], map: "UX_GrupoFuncionalidadeAcoes_GrupoId_FuncionalidadeAcaoId")
+  @@map("GrupoFuncionalidadeAcoes")
 }
 
 model EmpresaFuncionalidade {

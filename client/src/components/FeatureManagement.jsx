@@ -10,6 +10,7 @@ import { canUseFeatureAction } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
 import ConfirmDialog from "./ConfirmDialog";
 import CrudGrid from "./CrudGrid";
+import { CrudModal, CrudModalTabPanel, CrudModalTabs } from "./CrudModal";
 import CustomDropdown from "./CustomDropdown";
 
 import "../styles/userManagement.css";
@@ -24,7 +25,13 @@ const initialForm = {
     ordem: 0,
     ativo: true,
     registryKey: "",
-    somenteAdminSistema: false
+    somenteAdminSistema: false,
+    acoes: [
+        { localKey: "default-visualizar", chave: "visualizar", nome: "Visualizar", ordem: 10, ativo: true, acaoPadrao: true, descricao: "", configuracao: "" },
+        { localKey: "default-incluir", chave: "incluir", nome: "Incluir", ordem: 20, ativo: true, acaoPadrao: true, descricao: "", configuracao: "" },
+        { localKey: "default-alterar", chave: "alterar", nome: "Alterar", ordem: 30, ativo: true, acaoPadrao: true, descricao: "", configuracao: "" },
+        { localKey: "default-excluir", chave: "excluir", nome: "Excluir", ordem: 40, ativo: true, acaoPadrao: true, descricao: "", configuracao: "" }
+    ]
 };
 
 const booleanLabel = (value) => (value ? "Sim" : "Nao");
@@ -33,7 +40,15 @@ const normalizeFeatureForm = (feature) => ({
     ...initialForm,
     ...feature,
     solucaoId: feature?.solucaoId ? String(feature.solucaoId) : "",
-    ordem: feature?.ordem ?? 0
+    ordem: feature?.ordem ?? 0,
+    acoes: feature?.acoes?.length
+        ? feature.acoes.map((acao) => ({
+            ...acao,
+            localKey: acao.id ? `acao-${acao.id}` : `acao-${crypto.randomUUID()}`,
+            descricao: acao.descricao || "",
+            configuracao: acao.configuracao || ""
+        }))
+        : initialForm.acoes
 });
 
 const flattenFeatures = (solucoes) =>
@@ -55,7 +70,17 @@ const normalizePayload = (form) => ({
     ordem: Number(form.ordem) || 0,
     ativo: !!form.ativo,
     registryKey: form.registryKey.trim() || null,
-    somenteAdminSistema: !!form.somenteAdminSistema
+    somenteAdminSistema: !!form.somenteAdminSistema,
+    acoes: form.acoes.map((acao) => ({
+        ...(acao.id ? { id: Number(acao.id) } : {}),
+        chave: acao.chave.trim().toLowerCase(),
+        nome: acao.nome.trim(),
+        descricao: acao.descricao?.trim() || null,
+        ordem: Number(acao.ordem) || 0,
+        ativo: !!acao.ativo,
+        acaoPadrao: !!acao.acaoPadrao,
+        configuracao: acao.configuracao?.trim() || null
+    })).filter((acao) => acao.chave && acao.nome)
 });
 
 export default function FeatureManagement({ permissions }) {
@@ -70,6 +95,7 @@ export default function FeatureManagement({ permissions }) {
     const [error, setError] = useState("");
     const [modalMode, setModalMode] = useState(null);
     const [form, setForm] = useState(initialForm);
+    const [activeTab, setActiveTab] = useState("main");
     const [pendingDelete, setPendingDelete] = useState(null);
 
     const features = useMemo(() => flattenFeatures(solucoes), [solucoes]);
@@ -109,12 +135,14 @@ export default function FeatureManagement({ permissions }) {
         setError("");
         setModalMode(mode);
         setForm(feature ? normalizeFeatureForm(feature) : initialForm);
+        setActiveTab("main");
     };
 
     const closeModal = () => {
         setModalMode(null);
         setForm(initialForm);
         setSaving(false);
+        setActiveTab("main");
     };
 
     const handleChange = (event) => {
@@ -126,10 +154,49 @@ export default function FeatureManagement({ permissions }) {
         }));
     };
 
+    const handleActionChange = (index, field, value) => {
+        setForm((current) => ({
+            ...current,
+            acoes: current.acoes.map((acao, actionIndex) =>
+                actionIndex === index ? { ...acao, [field]: value } : acao
+            )
+        }));
+    };
+
+    const addAction = () => {
+        setForm((current) => ({
+            ...current,
+            acoes: [
+                ...current.acoes,
+                { localKey: `acao-${crypto.randomUUID()}`, chave: "", nome: "", descricao: "", ordem: (current.acoes.length + 1) * 10, ativo: true, acaoPadrao: false, configuracao: "" }
+            ]
+        }));
+    };
+
+    const removeAction = (index) => {
+        setForm((current) => ({
+            ...current,
+            acoes: current.acoes.filter((acao, actionIndex) => actionIndex !== index || acao.acaoPadrao)
+        }));
+    };
+
     const handleSubmit = async (event) => {
         event.preventDefault();
-        setSaving(true);
         setError("");
+
+        if (!form.solucaoId || !form.titulo.trim() || !form.slug.trim()) {
+            setActiveTab("main");
+            setError("Preencha solucao, titulo e slug da funcionalidade.");
+            return;
+        }
+
+        if (form.acoes.some((acao) => !acao.chave.trim() || !acao.nome.trim())) {
+            setActiveTab("actions");
+            setError("Preencha chave e nome de todas as acoes da funcionalidade.");
+            return;
+        }
+
+        setSaving(true);
 
         const payload = normalizePayload(form);
 
@@ -245,95 +312,197 @@ export default function FeatureManagement({ permissions }) {
             )}
 
             {modalMode && (
-                <div className="crud-modal-backdrop" role="presentation">
-                    <div className="crud-modal" role="dialog" aria-modal="true" aria-label="Cadastro de funcionalidade">
-                        <header className="crud-modal-header">
-                            <div>
-                                <span>{modalMode === "create" ? "Incluir" : modalMode === "edit" ? "Alterar" : "Visualizar"}</span>
-                                <h3>Funcionalidade</h3>
-                            </div>
-                            <button type="button" onClick={closeModal} aria-label="Fechar">X</button>
-                        </header>
+                <CrudModal
+                    mode={modalMode}
+                    title="Funcionalidade"
+                    ariaLabel="Cadastro de funcionalidade"
+                    onClose={closeModal}
+                    onSubmit={handleSubmit}
+                    actions={(
+                        <>
+                            <button type="button" onClick={closeModal}>Fechar</button>
+                            {!readonly && (
+                                <button type="submit" disabled={saving || !form.solucaoId}>
+                                    {saving ? "Salvando..." : "Salvar"}
+                                </button>
+                            )}
+                        </>
+                    )}
+                >
+                            <CrudModalTabs
+                                ariaLabel="Secoes da funcionalidade"
+                                activeTab={activeTab}
+                                onChange={setActiveTab}
+                                tabs={[
+                                    { id: "main", label: "Dados principais" },
+                                    { id: "actions", label: "Acoes da funcionalidade" }
+                                ]}
+                            />
 
-                        <form className="user-form" onSubmit={handleSubmit}>
-                            <label>
-                                Solucao
-                                <CustomDropdown
-                                    name="solucaoId"
-                                    value={form.solucaoId || ""}
-                                    onChange={handleChange}
-                                    disabled={readonly || saving}
-                                    ariaLabel="Selecionar solucao da funcionalidade"
-                                    options={[
-                                        { value: "", label: "Selecione uma solucao" },
-                                        ...solucoes.map((solucao) => ({
-                                            value: solucao.id,
-                                            label: solucao.nome
-                                        }))
-                                    ]}
-                                />
-                            </label>
-
-                            <label>
-                                Titulo
-                                <input name="titulo" value={form.titulo || ""} onChange={handleChange} disabled={readonly || saving} required />
-                            </label>
-
-                            <label>
-                                Slug
-                                <input name="slug" value={form.slug || ""} onChange={handleChange} disabled={readonly || saving} required />
-                            </label>
-
-                            <label>
-                                Rota da funcionalidade
-                                <input
-                                    name="registryKey"
-                                    value={form.registryKey || ""}
-                                    onChange={handleChange}
-                                    disabled={readonly || saving}
-                                    placeholder={selectedSolution ? `${selectedSolution.slug}.${form.slug || "nova-rota"}` : "solucao.slug-da-funcionalidade"}
-                                />
-                            </label>
-
-                            <label>
-                                Label
-                                <input name="label" value={form.label || ""} onChange={handleChange} disabled={readonly || saving} />
-                            </label>
-
-                            <label>
-                                Descricao
-                                <input name="descricao" value={form.descricao || ""} onChange={handleChange} disabled={readonly || saving} />
-                            </label>
-
-                            <label>
-                                Ordem
-                                <input name="ordem" type="number" value={form.ordem ?? 0} onChange={handleChange} disabled={readonly || saving} />
-                            </label>
-
-                            <section className="user-company-section" aria-label="Status da funcionalidade">
-                                <div className="user-permissions-grid">
-                                    <label className="user-permission-option">
-                                        <input type="checkbox" name="ativo" checked={!!form.ativo} onChange={handleChange} disabled={readonly || saving} />
-                                        Ativo
+                            <CrudModalTabPanel active={activeTab === "main"}>
+                                    <label>
+                                        Solucao
+                                        <CustomDropdown
+                                            name="solucaoId"
+                                            value={form.solucaoId || ""}
+                                            onChange={handleChange}
+                                            disabled={readonly || saving}
+                                            ariaLabel="Selecionar solucao da funcionalidade"
+                                            options={[
+                                                { value: "", label: "Selecione uma solucao" },
+                                                ...solucoes.map((solucao) => ({
+                                                    value: solucao.id,
+                                                    label: solucao.nome
+                                                }))
+                                            ]}
+                                        />
                                     </label>
-                                    <label className="user-permission-option">
-                                        <input type="checkbox" name="somenteAdminSistema" checked={!!form.somenteAdminSistema} onChange={handleChange} disabled={readonly || saving} />
-                                        Somente admin
-                                    </label>
-                                </div>
-                            </section>
 
-                            <div className="crud-modal-actions">
-                                <button type="button" onClick={closeModal}>Fechar</button>
-                                {!readonly && (
-                                    <button type="submit" disabled={saving || !form.solucaoId}>
-                                        {saving ? "Salvando..." : "Salvar"}
-                                    </button>
-                                )}
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                                    <label>
+                                        Titulo
+                                        <input name="titulo" value={form.titulo || ""} onChange={handleChange} disabled={readonly || saving} required />
+                                    </label>
+
+                                    <label>
+                                        Slug
+                                        <input name="slug" value={form.slug || ""} onChange={handleChange} disabled={readonly || saving} required />
+                                    </label>
+
+                                    <label>
+                                        Rota da funcionalidade
+                                        <input
+                                            name="registryKey"
+                                            value={form.registryKey || ""}
+                                            onChange={handleChange}
+                                            disabled={readonly || saving}
+                                            placeholder={selectedSolution ? `${selectedSolution.slug}.${form.slug || "nova-rota"}` : "solucao.slug-da-funcionalidade"}
+                                        />
+                                    </label>
+
+                                    <label>
+                                        Label
+                                        <input name="label" value={form.label || ""} onChange={handleChange} disabled={readonly || saving} />
+                                    </label>
+
+                                    <label>
+                                        Descricao
+                                        <input name="descricao" value={form.descricao || ""} onChange={handleChange} disabled={readonly || saving} />
+                                    </label>
+
+                                    <label>
+                                        Ordem
+                                        <input name="ordem" type="number" value={form.ordem ?? 0} onChange={handleChange} disabled={readonly || saving} />
+                                    </label>
+
+                                    <section className="user-company-section" aria-label="Status da funcionalidade">
+                                        <div className="user-permissions-grid">
+                                            <label className="user-permission-option">
+                                                <input type="checkbox" name="ativo" checked={!!form.ativo} onChange={handleChange} disabled={readonly || saving} />
+                                                Ativo
+                                            </label>
+                                            <label className="user-permission-option">
+                                                <input type="checkbox" name="somenteAdminSistema" checked={!!form.somenteAdminSistema} onChange={handleChange} disabled={readonly || saving} />
+                                                Somente admin
+                                            </label>
+                                        </div>
+                                    </section>
+                            </CrudModalTabPanel>
+
+                            <CrudModalTabPanel active={activeTab === "actions"} className="user-company-section" aria-label="Acoes da funcionalidade">
+                                    <div className="user-company-header">
+                                        <div>
+                                            <span>Acoes da funcionalidade</span>
+                                            <strong>Opcoes exibidas no grid de permissoes</strong>
+                                        </div>
+                                        {!readonly && (
+                                            <button className="crud-inline-action" type="button" onClick={addAction} disabled={saving}>
+                                                Adicionar acao
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    <div className="user-feature-permissions">
+                                        {form.acoes.map((acao, index) => (
+                                            <div key={acao.localKey || acao.id || index} className="user-feature-permission-row">
+                                                <div className="user-feature-crud-options">
+                                                    <label>
+                                                        Chave
+                                                        <input
+                                                            value={acao.chave || ""}
+                                                            onChange={(event) => handleActionChange(index, "chave", event.target.value)}
+                                                            disabled={readonly || saving || acao.acaoPadrao}
+                                                            required
+                                                        />
+                                                    </label>
+                                                    <label>
+                                                        Nome
+                                                        <input
+                                                            value={acao.nome || ""}
+                                                            onChange={(event) => handleActionChange(index, "nome", event.target.value)}
+                                                            disabled={readonly || saving}
+                                                            required
+                                                        />
+                                                    </label>
+                                                    <label>
+                                                        Ordem
+                                                        <input
+                                                            type="number"
+                                                            value={acao.ordem ?? 0}
+                                                            onChange={(event) => handleActionChange(index, "ordem", event.target.value)}
+                                                            disabled={readonly || saving}
+                                                        />
+                                                    </label>
+                                                </div>
+
+                                                <label>
+                                                    Detalhe da acao customizada
+                                                    <input
+                                                        value={acao.configuracao || ""}
+                                                        onChange={(event) => handleActionChange(index, "configuracao", event.target.value)}
+                                                        disabled={readonly || saving}
+                                                        placeholder="Ex.: exportar-projetos, importar-csv, endpoint interno..."
+                                                    />
+                                                </label>
+
+                                                <label>
+                                                    Descricao
+                                                    <input
+                                                        value={acao.descricao || ""}
+                                                        onChange={(event) => handleActionChange(index, "descricao", event.target.value)}
+                                                        disabled={readonly || saving}
+                                                    />
+                                                </label>
+
+                                                <div className="user-permissions-grid">
+                                                    <label className="user-permission-option">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={!!acao.ativo}
+                                                            onChange={(event) => handleActionChange(index, "ativo", event.target.checked)}
+                                                            disabled={readonly || saving}
+                                                        />
+                                                        Ativa
+                                                    </label>
+                                                    <label className="user-permission-option">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={!!acao.acaoPadrao}
+                                                            onChange={(event) => handleActionChange(index, "acaoPadrao", event.target.checked)}
+                                                            disabled={readonly || saving}
+                                                        />
+                                                        Padrao
+                                                    </label>
+                                                    {!readonly && !acao.acaoPadrao && (
+                                                        <button className="crud-inline-action crud-inline-action--danger" type="button" onClick={() => removeAction(index)} disabled={saving}>
+                                                            Remover
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                            </CrudModalTabPanel>
+                </CrudModal>
             )}
 
             <ConfirmDialog

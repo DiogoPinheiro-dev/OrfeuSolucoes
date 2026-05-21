@@ -3,6 +3,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { JwtPayload } from '../auth/strategies/jwt-payload.type';
 import { CreateFuncionalidadeInput } from './dto/create-funcionalidade.input';
 import { CreateSolucaoInput } from './dto/create-solucao.input';
+import { FuncionalidadeAcaoInput } from './dto/funcionalidade-acao.input';
+import { FuncionalidadeAcaoType } from './dto/funcionalidade-acao.type';
 import { FuncionalidadeType } from './dto/funcionalidade.type';
 import { SolucaoType } from './dto/solucao.type';
 import { UpdateFuncionalidadeInput } from './dto/update-funcionalidade.input';
@@ -37,6 +39,20 @@ type FuncionalidadeRecord = {
   podeIncluir?: boolean;
   podeAlterar?: boolean;
   podeExcluir?: boolean;
+  acoes?: FuncionalidadeAcaoRecord[];
+};
+
+type FuncionalidadeAcaoRecord = {
+  id: number;
+  funcionalidadeId: number;
+  chave: string;
+  nome: string;
+  descricao?: string | null;
+  ordem: number;
+  ativo: boolean;
+  acaoPadrao: boolean;
+  configuracao?: string | null;
+  permitido?: boolean;
 };
 
 export type FuncionalidadePermissao = {
@@ -45,6 +61,14 @@ export type FuncionalidadePermissao = {
   podeIncluir?: boolean;
   podeAlterar?: boolean;
   podeExcluir?: boolean;
+  acoes?: FuncionalidadeAcaoPermissao[];
+};
+
+export type FuncionalidadeAcaoPermissao = {
+  funcionalidadeId: number;
+  acaoId: number;
+  chave?: string | null;
+  permitido?: boolean;
 };
 
 type GrupoAccessDefaults = {
@@ -52,6 +76,20 @@ type GrupoAccessDefaults = {
   podeIncluir?: boolean | null;
   podeAlterar?: boolean | null;
   podeExcluir?: boolean | null;
+};
+
+const DEFAULT_ACTIONS: FuncionalidadeAcaoInput[] = [
+  { chave: 'visualizar', nome: 'Visualizar', ordem: 10, ativo: true, acaoPadrao: true },
+  { chave: 'incluir', nome: 'Incluir', ordem: 20, ativo: true, acaoPadrao: true },
+  { chave: 'alterar', nome: 'Alterar', ordem: 30, ativo: true, acaoPadrao: true },
+  { chave: 'excluir', nome: 'Excluir', ordem: 40, ativo: true, acaoPadrao: true }
+];
+
+const LEGACY_ACTION_FIELDS: Record<string, keyof Pick<FuncionalidadePermissao, 'podeVisualizar' | 'podeIncluir' | 'podeAlterar' | 'podeExcluir'>> = {
+  visualizar: 'podeVisualizar',
+  incluir: 'podeIncluir',
+  alterar: 'podeAlterar',
+  excluir: 'podeExcluir'
 };
 
 @Injectable()
@@ -90,13 +128,7 @@ export class SolucoesService {
           })
           .map((funcionalidade) => {
             if (isSystemAdmin) {
-              return this.withPermissions(funcionalidade, {
-                funcionalidadeId: funcionalidade.id,
-                podeVisualizar: true,
-                podeIncluir: true,
-                podeAlterar: true,
-                podeExcluir: true
-              });
+              return this.withAllPermissions(funcionalidade);
             }
 
             return this.withPermissions(funcionalidade, groupFeaturePermissions.get(funcionalidade.id));
@@ -120,6 +152,9 @@ export class SolucoesService {
     const solucoes = (await (this.prisma as never as { solucao: { findMany: Function } }).solucao.findMany({
       include: {
         funcionalidades: {
+          include: {
+            acoes: { orderBy: [{ ordem: 'asc' }, { nome: 'asc' }] }
+          },
           orderBy: [{ ordem: 'asc' }, { titulo: 'asc' }]
         }
       },
@@ -151,7 +186,7 @@ export class SolucoesService {
         exibirNoHub: input.exibirNoHub ?? true,
         somenteAdminSistema: input.somenteAdminSistema ?? false
       },
-      include: { funcionalidades: true }
+      include: { funcionalidades: { include: { acoes: { orderBy: [{ ordem: 'asc' }, { nome: 'asc' }] } } } }
     })) as SolucaoRecord;
 
     return this.toType(created);
@@ -173,7 +208,7 @@ export class SolucoesService {
         ...(input.exibirNoHub !== undefined ? { exibirNoHub: input.exibirNoHub } : {}),
         ...(input.somenteAdminSistema !== undefined ? { somenteAdminSistema: input.somenteAdminSistema } : {})
       },
-      include: { funcionalidades: { orderBy: [{ ordem: 'asc' }, { titulo: 'asc' }] } }
+      include: { funcionalidades: { include: { acoes: { orderBy: [{ ordem: 'asc' }, { nome: 'asc' }] } }, orderBy: [{ ordem: 'asc' }, { titulo: 'asc' }] } }
     })) as SolucaoRecord;
 
     return this.toType(updated);
@@ -202,9 +237,10 @@ export class SolucoesService {
       }
     })) as FuncionalidadeRecord;
 
+    await this.syncFuncionalidadeAcoes(created.id, input.acoes);
     await this.syncNewFuncionalidadeAccess(created);
 
-    return this.toFuncionalidadeType(created);
+    return this.toFuncionalidadeType(await this.findFuncionalidadeRecord(created.id));
   }
 
   async updateFuncionalidade(input: UpdateFuncionalidadeInput): Promise<FuncionalidadeType> {
@@ -229,11 +265,15 @@ export class SolucoesService {
       }
     })) as FuncionalidadeRecord;
 
+    if (input.acoes !== undefined) {
+      await this.syncFuncionalidadeAcoes(input.id, input.acoes);
+    }
+
     if (input.solucaoId !== undefined) {
       await this.resyncFuncionalidadeAccess(updated);
     }
 
-    return this.toFuncionalidadeType(updated);
+    return this.toFuncionalidadeType(await this.findFuncionalidadeRecord(input.id));
   }
 
   async removeFuncionalidade(id: number): Promise<boolean> {
@@ -248,6 +288,7 @@ export class SolucoesService {
     funcionalidadeIds: number[] = [],
     funcionalidadePermissoes: FuncionalidadePermissao[] = []
   ): Promise<void> {
+    await (this.prisma as never as { grupoFuncionalidadeAcao: { deleteMany: Function } }).grupoFuncionalidadeAcao.deleteMany({ where: { grupoId } });
     await (this.prisma as never as { grupoSolucao: { deleteMany: Function; createMany: Function }; grupoFuncionalidade: { deleteMany: Function; createMany: Function } }).grupoSolucao.deleteMany({ where: { grupoId } });
     await (this.prisma as never as { grupoFuncionalidade: { deleteMany: Function; createMany: Function } }).grupoFuncionalidade.deleteMany({ where: { grupoId } });
     const permissoesByFuncionalidadeId = new Map(
@@ -263,7 +304,7 @@ export class SolucoesService {
     if (funcionalidadeIds.length) {
       await (this.prisma as never as { grupoFuncionalidade: { createMany: Function } }).grupoFuncionalidade.createMany({
         data: [...new Set(funcionalidadeIds)].map((funcionalidadeId) => {
-          const permissao = permissoesByFuncionalidadeId.get(funcionalidadeId);
+          const permissao = this.withLegacyPermissions(permissoesByFuncionalidadeId.get(funcionalidadeId));
 
           return {
             grupoId,
@@ -275,6 +316,8 @@ export class SolucoesService {
           };
         })
       });
+
+      await this.syncGroupActionPermissions(grupoId, [...new Set(funcionalidadeIds)], funcionalidadePermissoes);
     }
   }
 
@@ -296,7 +339,7 @@ export class SolucoesService {
   }
 
   async findGroupAccess(grupoId: number): Promise<{ solucaoIds: number[]; funcionalidadeIds: number[]; funcionalidadePermissoes: Required<FuncionalidadePermissao>[] }> {
-    const [solucoes, funcionalidades] = await Promise.all([
+    const [solucoes, funcionalidades, acoes] = await Promise.all([
       (this.prisma as never as { grupoSolucao: { findMany: Function } }).grupoSolucao.findMany({ where: { grupoId }, select: { solucaoId: true } }),
       (this.prisma as never as { grupoFuncionalidade: { findMany: Function } }).grupoFuncionalidade.findMany({
         where: { grupoId },
@@ -307,8 +350,35 @@ export class SolucoesService {
           podeAlterar: true,
           podeExcluir: true
         }
+      }),
+      (this.prisma as never as { grupoFuncionalidadeAcao: { findMany: Function } }).grupoFuncionalidadeAcao.findMany({
+        where: { grupoId },
+        select: {
+          permitido: true,
+          funcionalidadeAcao: {
+            select: {
+              id: true,
+              funcionalidadeId: true,
+              chave: true
+            }
+          }
+        }
       })
     ]);
+    const acoesByFuncionalidadeId = new Map<number, FuncionalidadeAcaoPermissao[]>();
+
+    for (const row of acoes as { permitido: boolean; funcionalidadeAcao: { id: number; funcionalidadeId: number; chave: string } }[]) {
+      const funcionalidadeId = row.funcionalidadeAcao.funcionalidadeId;
+      const current = acoesByFuncionalidadeId.get(funcionalidadeId) ?? [];
+
+      current.push({
+        funcionalidadeId,
+        acaoId: row.funcionalidadeAcao.id,
+        chave: row.funcionalidadeAcao.chave,
+        permitido: row.permitido
+      });
+      acoesByFuncionalidadeId.set(funcionalidadeId, current);
+    }
 
     return {
       solucaoIds: (solucoes as { solucaoId: number }[]).map((item) => item.solucaoId),
@@ -318,7 +388,8 @@ export class SolucoesService {
         podeVisualizar: item.podeVisualizar,
         podeIncluir: item.podeIncluir,
         podeAlterar: item.podeAlterar,
-        podeExcluir: item.podeExcluir
+        podeExcluir: item.podeExcluir,
+        acoes: acoesByFuncionalidadeId.get(item.funcionalidadeId) ?? []
       }))
     };
   }
@@ -366,18 +437,9 @@ export class SolucoesService {
       return new Map();
     }
 
-    const rows = (await (this.prisma as never as { grupoFuncionalidade: { findMany: Function } }).grupoFuncionalidade.findMany({
-      where: { grupoId },
-      select: {
-        funcionalidadeId: true,
-        podeVisualizar: true,
-        podeIncluir: true,
-        podeAlterar: true,
-        podeExcluir: true
-      }
-    })) as Required<FuncionalidadePermissao>[];
+    const access = await this.findGroupAccess(grupoId);
 
-    return new Map(rows.map((row) => [row.funcionalidadeId, row]));
+    return new Map(access.funcionalidadePermissoes.map((row) => [row.funcionalidadeId, this.withLegacyPermissions(row)]));
   }
 
   private async findCompanySolutionIds(empresaId?: number | null): Promise<Set<number>> {
@@ -422,12 +484,42 @@ export class SolucoesService {
     }
   }
 
+  private async findFuncionalidadeRecord(id: number): Promise<FuncionalidadeRecord> {
+    return (await (this.prisma as never as { funcionalidade: { findUniqueOrThrow: Function } }).funcionalidade.findUniqueOrThrow({
+      where: { id },
+      include: { acoes: { orderBy: [{ ordem: 'asc' }, { nome: 'asc' }] } }
+    })) as FuncionalidadeRecord;
+  }
+
   private normalizeSlug(slug: string): string {
     return slug.trim().toLowerCase();
   }
 
   private isSystemAdmin(user?: { login?: string | null } | null): boolean {
     return user?.login?.toLowerCase() === 'admin';
+  }
+
+  private normalizeActionKey(chave: string): string {
+    return chave.trim().toLowerCase();
+  }
+
+  private withLegacyPermissions(permissao?: FuncionalidadePermissao): Required<FuncionalidadePermissao> {
+    const actionValues = new Map((permissao?.acoes ?? []).map((acao) => [acao.chave, !!acao.permitido]));
+
+    return {
+      funcionalidadeId: permissao?.funcionalidadeId ?? 0,
+      podeVisualizar: actionValues.has('visualizar') ? !!actionValues.get('visualizar') : permissao?.podeVisualizar ?? true,
+      podeIncluir: actionValues.has('incluir') ? !!actionValues.get('incluir') : permissao?.podeIncluir ?? false,
+      podeAlterar: actionValues.has('alterar') ? !!actionValues.get('alterar') : permissao?.podeAlterar ?? false,
+      podeExcluir: actionValues.has('excluir') ? !!actionValues.get('excluir') : permissao?.podeExcluir ?? false,
+      acoes: permissao?.acoes ?? []
+    };
+  }
+
+  private legacyActionAllowed(chave: string, permissao: Required<FuncionalidadePermissao>): boolean {
+    const field = LEGACY_ACTION_FIELDS[chave];
+
+    return field ? !!permissao[field] : false;
   }
 
   private toType(solucao: SolucaoRecord): SolucaoType {
@@ -460,18 +552,202 @@ export class SolucoesService {
       podeVisualizar: funcionalidade.podeVisualizar ?? true,
       podeIncluir: funcionalidade.podeIncluir ?? false,
       podeAlterar: funcionalidade.podeAlterar ?? false,
-      podeExcluir: funcionalidade.podeExcluir ?? false
+      podeExcluir: funcionalidade.podeExcluir ?? false,
+      acoes: (funcionalidade.acoes ?? []).map((acao) => this.toFuncionalidadeAcaoType(acao))
     };
   }
 
   private withPermissions(funcionalidade: FuncionalidadeType, permissao?: FuncionalidadePermissao): FuncionalidadeType {
+    const normalizedPermission = this.withLegacyPermissions(permissao);
+    const acoesPermitidas = new Map((permissao?.acoes ?? []).map((acao) => [acao.acaoId, !!acao.permitido]));
+    const acoes = funcionalidade.acoes.map((acao) => ({
+      ...acao,
+      permitido: acoesPermitidas.has(acao.id)
+        ? !!acoesPermitidas.get(acao.id)
+        : this.legacyActionAllowed(acao.chave, normalizedPermission)
+    }));
+
     return {
       ...funcionalidade,
-      podeVisualizar: permissao?.podeVisualizar ?? true,
-      podeIncluir: permissao?.podeIncluir ?? false,
-      podeAlterar: permissao?.podeAlterar ?? false,
-      podeExcluir: permissao?.podeExcluir ?? false
+      podeVisualizar: normalizedPermission.podeVisualizar,
+      podeIncluir: normalizedPermission.podeIncluir,
+      podeAlterar: normalizedPermission.podeAlterar,
+      podeExcluir: normalizedPermission.podeExcluir,
+      acoes
     };
+  }
+
+  private withAllPermissions(funcionalidade: FuncionalidadeType): FuncionalidadeType {
+    return {
+      ...funcionalidade,
+      podeVisualizar: true,
+      podeIncluir: true,
+      podeAlterar: true,
+      podeExcluir: true,
+      acoes: funcionalidade.acoes.map((acao) => ({ ...acao, permitido: true }))
+    };
+  }
+
+  private toFuncionalidadeAcaoType(acao: FuncionalidadeAcaoRecord): FuncionalidadeAcaoType {
+    return {
+      id: acao.id,
+      funcionalidadeId: acao.funcionalidadeId,
+      chave: acao.chave,
+      nome: acao.nome,
+      descricao: acao.descricao ?? null,
+      ordem: acao.ordem,
+      ativo: acao.ativo,
+      acaoPadrao: acao.acaoPadrao,
+      configuracao: acao.configuracao ?? null,
+      permitido: acao.permitido ?? false
+    };
+  }
+
+  private normalizeActionInputs(acoes?: FuncionalidadeAcaoInput[]): FuncionalidadeAcaoInput[] {
+    const byKey = new Map<string, FuncionalidadeAcaoInput>();
+
+    for (const acao of [...DEFAULT_ACTIONS, ...(acoes ?? [])]) {
+      const chave = this.normalizeActionKey(acao.chave);
+
+      if (!chave) {
+        continue;
+      }
+
+      byKey.set(chave, {
+        ...acao,
+        chave,
+        nome: acao.nome.trim(),
+        descricao: acao.descricao?.trim() || null,
+        configuracao: acao.configuracao?.trim() || null,
+        ordem: acao.ordem ?? 0,
+        ativo: acao.ativo ?? true,
+        acaoPadrao: acao.acaoPadrao ?? DEFAULT_ACTIONS.some((item) => item.chave === chave)
+      });
+    }
+
+    return [...byKey.values()];
+  }
+
+  private async syncFuncionalidadeAcoes(funcionalidadeId: number, acoes?: FuncionalidadeAcaoInput[]): Promise<void> {
+    const normalized = this.normalizeActionInputs(acoes);
+    const submittedIds = normalized.map((acao) => acao.id).filter((id): id is number => !!id);
+
+    await (this.prisma as never as { funcionalidadeAcao: { deleteMany: Function } }).funcionalidadeAcao.deleteMany({
+      where: {
+        funcionalidadeId,
+        acaoPadrao: false,
+        ...(submittedIds.length ? { id: { notIn: submittedIds } } : {})
+      }
+    });
+
+    for (const acao of normalized) {
+      const data = {
+        funcionalidadeId,
+        chave: acao.chave,
+        nome: acao.nome,
+        descricao: acao.descricao ?? null,
+        ordem: acao.ordem ?? 0,
+        ativo: acao.ativo ?? true,
+        acaoPadrao: acao.acaoPadrao ?? false,
+        configuracao: acao.configuracao ?? null
+      };
+
+      if (acao.id) {
+        await (this.prisma as never as { funcionalidadeAcao: { update: Function } }).funcionalidadeAcao.update({
+          where: { id: acao.id },
+          data
+        });
+      } else {
+        await (this.prisma as never as { funcionalidadeAcao: { upsert: Function } }).funcionalidadeAcao.upsert({
+          where: { funcionalidadeId_chave: { funcionalidadeId, chave: acao.chave } },
+          update: data,
+          create: data
+        });
+      }
+    }
+
+    await this.syncMissingActionPermissionsForFeature(funcionalidadeId);
+  }
+
+  private async syncGroupActionPermissions(
+    grupoId: number,
+    funcionalidadeIds: number[],
+    funcionalidadePermissoes: FuncionalidadePermissao[]
+  ): Promise<void> {
+    const acoes = (await (this.prisma as never as { funcionalidadeAcao: { findMany: Function } }).funcionalidadeAcao.findMany({
+      where: { funcionalidadeId: { in: funcionalidadeIds }, ativo: true },
+      select: { id: true, funcionalidadeId: true, chave: true }
+    })) as Pick<FuncionalidadeAcaoRecord, 'id' | 'funcionalidadeId' | 'chave'>[];
+
+    if (!acoes.length) {
+      return;
+    }
+
+    const permissoesByFuncionalidadeId = new Map(
+      funcionalidadePermissoes.map((permissao) => [permissao.funcionalidadeId, this.withLegacyPermissions(permissao)])
+    );
+    const permittedByActionId = new Map(
+      funcionalidadePermissoes
+        .flatMap((permissao) => permissao.acoes ?? [])
+        .map((acao) => [acao.acaoId, !!acao.permitido])
+    );
+
+    await (this.prisma as never as { grupoFuncionalidadeAcao: { createMany: Function } }).grupoFuncionalidadeAcao.createMany({
+      data: acoes.map((acao) => {
+        const permissao = permissoesByFuncionalidadeId.get(acao.funcionalidadeId);
+
+        return {
+          grupoId,
+          funcionalidadeAcaoId: acao.id,
+          permitido: permittedByActionId.has(acao.id)
+            ? !!permittedByActionId.get(acao.id)
+            : this.legacyActionAllowed(acao.chave, permissao ?? this.withLegacyPermissions({ funcionalidadeId: acao.funcionalidadeId }))
+        };
+      })
+    });
+  }
+
+  private async syncMissingActionPermissionsForFeature(funcionalidadeId: number): Promise<void> {
+    const [grupos, acoes, existing] = await Promise.all([
+      (this.prisma as never as { grupoFuncionalidade: { findMany: Function } }).grupoFuncionalidade.findMany({
+        where: { funcionalidadeId },
+        select: {
+          grupoId: true,
+          podeVisualizar: true,
+          podeIncluir: true,
+          podeAlterar: true,
+          podeExcluir: true
+        }
+      }),
+      (this.prisma as never as { funcionalidadeAcao: { findMany: Function } }).funcionalidadeAcao.findMany({
+        where: { funcionalidadeId, ativo: true },
+        select: { id: true, chave: true }
+      }),
+      (this.prisma as never as { grupoFuncionalidadeAcao: { findMany: Function } }).grupoFuncionalidadeAcao.findMany({
+        where: { funcionalidadeAcao: { funcionalidadeId } },
+        select: { grupoId: true, funcionalidadeAcaoId: true }
+      })
+    ]);
+    const existingKeys = new Set((existing as { grupoId: number; funcionalidadeAcaoId: number }[]).map((item) => `${item.grupoId}:${item.funcionalidadeAcaoId}`));
+    const data = (grupos as (GrupoAccessDefaults & { grupoId: number })[]).flatMap((grupo) =>
+      (acoes as Pick<FuncionalidadeAcaoRecord, 'id' | 'chave'>[])
+        .filter((acao) => !existingKeys.has(`${grupo.grupoId}:${acao.id}`))
+        .map((acao) => ({
+          grupoId: grupo.grupoId,
+          funcionalidadeAcaoId: acao.id,
+          permitido: this.legacyActionAllowed(acao.chave, this.withLegacyPermissions({
+            funcionalidadeId,
+            podeVisualizar: grupo.podeVisualizar ?? true,
+            podeIncluir: grupo.podeIncluir ?? false,
+            podeAlterar: grupo.podeAlterar ?? false,
+            podeExcluir: grupo.podeExcluir ?? false
+          }))
+        }))
+    );
+
+    if (data.length) {
+      await (this.prisma as never as { grupoFuncionalidadeAcao: { createMany: Function } }).grupoFuncionalidadeAcao.createMany({ data });
+    }
   }
 
   private async syncNewFuncionalidadeAccess(funcionalidade: FuncionalidadeRecord): Promise<void> {
@@ -497,6 +773,8 @@ export class SolucoesService {
           podeExcluir: item.grupo?.podeExcluir ?? false
         }))
       });
+
+      await this.syncMissingActionPermissionsForFeature(funcionalidade.id);
     }
 
     if ((empresas as { empresaId: number }[]).length) {
@@ -511,6 +789,9 @@ export class SolucoesService {
 
   private async resyncFuncionalidadeAccess(funcionalidade: FuncionalidadeRecord): Promise<void> {
     await Promise.all([
+      (this.prisma as never as { grupoFuncionalidadeAcao: { deleteMany: Function } }).grupoFuncionalidadeAcao.deleteMany({
+        where: { funcionalidadeAcao: { funcionalidadeId: funcionalidade.id } }
+      }),
       (this.prisma as never as { grupoFuncionalidade: { deleteMany: Function } }).grupoFuncionalidade.deleteMany({
         where: { funcionalidadeId: funcionalidade.id }
       }),
