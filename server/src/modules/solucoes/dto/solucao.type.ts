@@ -18,9 +18,6 @@ export class SolucaoType {
   @Field(() => String, { nullable: true })
   eyebrow?: string | null;
 
-  @Field(() => String, { nullable: true })
-  status?: string | null;
-
   @Field()
   ordem!: number;
 

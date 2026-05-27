@@ -119,6 +119,7 @@ export class GruposUsuariosService {
     });
 
     await this.ensureInitialAdminPasswordPolicy();
+    await this.solucoesService.ensureDefaultConfiguradorFeatures();
     await this.ensureInitialAdminSolutionAccess();
   }
 

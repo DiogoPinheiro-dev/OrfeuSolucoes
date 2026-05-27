@@ -9,6 +9,7 @@ import {
 import { getSolucoes } from "../../services/Solucoes/SolucaoService";
 import ConfirmDialog from "./ConfirmDialog";
 import CrudGrid from "./CrudGrid";
+import { FieldHelpDialog, HelpButton } from "./FieldHelp";
 import { CrudModal, CrudModalTabPanel, CrudModalTabs } from "./CrudModal";
 import { useAuth } from "../hooks/useAuth";
 import { canUseFeatureAction } from "../auth/hubConfig";
@@ -44,6 +45,33 @@ const fallbackActions = [
     { chave: "excluir", nome: "Excluir" }
 ];
 
+const fieldHelp = {
+    nome: {
+        title: "Nome",
+        text: "Nome do grupo usado para identificar perfis de acesso, como Administradores, Comercial ou Operação."
+    },
+    descricao: {
+        title: "Descrição",
+        text: "Resumo opcional para explicar quem deve fazer parte deste grupo."
+    },
+    solucoes: {
+        title: "Soluções",
+        text: "Soluções do Hub que os usuários deste grupo poderão acessar."
+    },
+    funcionalidades: {
+        title: "Permissões por rotina",
+        text: "Define quais funcionalidades e ações cada usuário do grupo poderá usar dentro das soluções liberadas."
+    },
+    rotina: {
+        title: "Rotina",
+        text: "Marque a rotina para liberar seu acesso ao grupo. As ações abaixo detalham o que poderá ser feito dentro dela."
+    },
+    acao: {
+        title: "Ação",
+        text: "Permissão específica dentro da rotina, como visualizar, incluir, alterar ou excluir."
+    }
+};
+
 const getFeatureActions = (funcionalidade) =>
     (funcionalidade?.acoes?.length ? funcionalidade.acoes : fallbackActions)
         .filter((acao) => acao.ativo !== false);
@@ -60,6 +88,22 @@ const defaultPermission = (funcionalidade) => ({
         chave: acao.chave,
         permitido: acao.chave === "visualizar"
     }))
+});
+
+const normalizePermissionPayload = (permissao) => ({
+    funcionalidadeId: Number(permissao.funcionalidadeId),
+    podeVisualizar: !!permissao.podeVisualizar,
+    podeIncluir: !!permissao.podeIncluir,
+    podeAlterar: !!permissao.podeAlterar,
+    podeExcluir: !!permissao.podeExcluir,
+    acoes: (permissao.acoes ?? [])
+        .filter((acao) => acao.acaoId)
+        .map((acao) => ({
+            funcionalidadeId: Number(acao.funcionalidadeId ?? permissao.funcionalidadeId),
+            acaoId: Number(acao.acaoId),
+            chave: acao.chave || null,
+            permitido: !!acao.permitido
+        }))
 });
 
 const normalizeGroupForm = (group) => ({
@@ -94,6 +138,7 @@ export default function GroupManagement({ permissions }) {
     const [form, setForm] = useState(initialForm);
     const [activeTab, setActiveTab] = useState("main");
     const [pendingDelete, setPendingDelete] = useState(null);
+    const [activeHelp, setActiveHelp] = useState(null);
 
     const loadGroups = async () => {
         setError("");
@@ -140,6 +185,7 @@ export default function GroupManagement({ permissions }) {
         setForm(initialForm);
         setSaving(false);
         setActiveTab("main");
+        setActiveHelp(null);
     };
 
     const handleChange = (event) => {
@@ -170,10 +216,7 @@ export default function GroupManagement({ permissions }) {
             funcionalidadeIds: form.funcionalidadeIds,
             funcionalidadePermissoes: form.funcionalidadePermissoes
                 .filter((permissao) => form.funcionalidadeIds.includes(permissao.funcionalidadeId))
-                .map((permissao) => ({
-                    ...permissao,
-                    acoes: (permissao.acoes ?? []).filter((acao) => acao.acaoId)
-                })),
+                .map(normalizePermissionPayload),
             podeVisualizar: form.podeVisualizar,
             podeIncluir: form.podeIncluir,
             podeAlterar: form.podeAlterar,
@@ -418,21 +461,28 @@ export default function GroupManagement({ permissions }) {
                             />
 
                             <CrudModalTabPanel active={activeTab === "main"}>
-                            <label>
-                                Nome
-                                <input name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || saving} required />
-                            </label>
+                            <div className="field-help-field">
+                                <span className="field-help-label">
+                                    <label htmlFor="grupo-nome">Nome</label>
+                                    <HelpButton help={fieldHelp.nome} onHelp={setActiveHelp} />
+                                </span>
+                                <input id="grupo-nome" name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || saving} required />
+                            </div>
 
-                            <label>
-                                Descrição
-                                <input name="descricao" value={form.descricao || ""} onChange={handleChange} disabled={readonly || saving} />
-                            </label>
+                            <div className="field-help-field">
+                                <span className="field-help-label">
+                                    <label htmlFor="grupo-descricao">Descrição</label>
+                                    <HelpButton help={fieldHelp.descricao} onHelp={setActiveHelp} />
+                                </span>
+                                <input id="grupo-descricao" name="descricao" value={form.descricao || ""} onChange={handleChange} disabled={readonly || saving} />
+                            </div>
                             </CrudModalTabPanel>
 
                             <CrudModalTabPanel active={activeTab === "solutions"} className="user-company-section">
                                 <div className="user-company-header">
                                     <div>
                                         <span>Acessos do grupo</span>
+                                        <HelpButton help={fieldHelp.solucoes} onHelp={setActiveHelp} />
                                         <strong>Soluções liberadas no hub</strong>
                                     </div>
                                 </div>
@@ -456,6 +506,7 @@ export default function GroupManagement({ permissions }) {
                                 <div className="user-company-header">
                                     <div>
                                         <span>Funcionalidades</span>
+                                        <HelpButton help={fieldHelp.funcionalidades} onHelp={setActiveHelp} />
                                         <strong>Ações liberadas por rotina</strong>
                                     </div>
                                 </div>
@@ -480,6 +531,7 @@ export default function GroupManagement({ permissions }) {
                                                             <strong>{funcionalidade.titulo}</strong>
                                                             <small>{solucao.nome}</small>
                                                         </span>
+                                                        <HelpButton help={fieldHelp.rotina} onHelp={setActiveHelp} />
                                                     </label>
 
                                                     <div className="user-feature-crud-options">
@@ -497,6 +549,7 @@ export default function GroupManagement({ permissions }) {
                                                                     disabled={disabled || !selected}
                                                                 />
                                                                 {acao.nome}
+                                                                <HelpButton help={fieldHelp.acao} onHelp={setActiveHelp} />
                                                             </label>
                                                             );
                                                         })}
@@ -509,6 +562,8 @@ export default function GroupManagement({ permissions }) {
                             </CrudModalTabPanel>
                 </CrudModal>
             )}
+
+            <FieldHelpDialog help={activeHelp} onClose={() => setActiveHelp(null)} />
 
             <ConfirmDialog
                 open={!!pendingDelete}

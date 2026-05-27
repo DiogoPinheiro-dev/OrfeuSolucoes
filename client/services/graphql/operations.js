@@ -503,7 +503,6 @@ export const MY_HUB_NAVIGATION_QUERY = gql`
       nome
       descricao
       eyebrow
-      status
       ordem
       ativo
       exibirNoHub
@@ -547,7 +546,6 @@ export const SOLUCOES_QUERY = gql`
       nome
       descricao
       eyebrow
-      status
       ordem
       ativo
       exibirNoHub
@@ -580,6 +578,66 @@ export const SOLUCOES_QUERY = gql`
         }
       }
     }
+  }
+`;
+
+export const CREATE_SOLUCAO_MUTATION = gql`
+  mutation CreateSolucao($input: CreateSolucaoInput!) {
+    createSolucao(input: $input) {
+      id
+      slug
+      nome
+      descricao
+      eyebrow
+      ordem
+      ativo
+      exibirNoHub
+      somenteAdminSistema
+      funcionalidades {
+        id
+        slug
+        titulo
+        label
+        descricao
+        ordem
+        ativo
+        registryKey
+        somenteAdminSistema
+      }
+    }
+  }
+`;
+
+export const UPDATE_SOLUCAO_MUTATION = gql`
+  mutation UpdateSolucao($input: UpdateSolucaoInput!) {
+    updateSolucao(input: $input) {
+      id
+      slug
+      nome
+      descricao
+      eyebrow
+      ordem
+      ativo
+      exibirNoHub
+      somenteAdminSistema
+      funcionalidades {
+        id
+        slug
+        titulo
+        label
+        descricao
+        ordem
+        ativo
+        registryKey
+        somenteAdminSistema
+      }
+    }
+  }
+`;
+
+export const DELETE_SOLUCAO_MUTATION = gql`
+  mutation DeleteSolucao($id: Int!) {
+    deleteSolucao(id: $id)
   }
 `;
 

@@ -2,15 +2,13 @@ import { Link, Navigate, useParams } from "react-router-dom";
 
 import Footer from "../components/Footer";
 import Header from "../components/Header";
-import { canAccessSolution, getAreaAnchor, getSolutionBySlug, getUserGroupLabel } from "../auth/hubConfig";
-import { useAuth } from "../hooks/useAuth";
+import { canAccessSolution, getAreaAnchor, getSolutionBySlug } from "../auth/hubConfig";
 import { useHubNavigation } from "../hooks/useHubNavigation";
 
 import "../styles/workspace.css";
 
 export default function SolutionWorkspace() {
     const { slug } = useParams();
-    const { user } = useAuth();
     const { loading, solutions } = useHubNavigation();
 
     const solution = getSolutionBySlug(solutions, slug);
@@ -40,24 +38,8 @@ export default function SolutionWorkspace() {
         return <Navigate to="/hub" replace />;
     }
 
-    const workspacePanels = solution.areas ?? [
-        {
-            label: "Status do módulo",
-            title: "Base pronta para evolução",
-            description: `Este espaço já está roteado e protegido por grupo. Agora vocês podem desenvolver a experiência real de ${solution.title} aqui dentro sem mexer na regra de acesso.`
-        },
-        {
-            label: "Grupo atual",
-            title: getUserGroupLabel(user),
-            description: "O acesso foi liberado porque esse módulo faz parte das soluções disponíveis para o grupo do usuário."
-        },
-        {
-            label: "Próximo passo sugerido",
-            title: "Conectar o módulo a funcionalidades reais",
-            description: "Podemos seguir implementando cada área com dados reais, menu interno, permissões mais granulares e integração com o backend conforme a prioridade da empresa.",
-            wide: true
-        }
-    ];
+    const workspacePanels = solution.areas || [];
+    const hasAreas = workspacePanels.length > 0;
 
     return (
         <div className="page-wrapper workspace-page">
@@ -77,20 +59,30 @@ export default function SolutionWorkspace() {
                         <p>{solution.description}</p>
                     </section>
 
-                    <section className="workspace-grid">
-                        {workspacePanels.map((panel) => (
-                            <Link
-                                className={`workspace-panel workspace-panel-link ${panel.wide ? "workspace-panel-wide" : ""}`}
-                                to={`/hub/${solution.slug}/${panel.slug || getAreaAnchor(panel.title)}`}
-                                key={panel.title}
-                            >
-                                <span className="workspace-label">{panel.label}</span>
-                                <h2>{panel.title}</h2>
-                                <p>{panel.description}</p>
-                                <strong>Acessar funcionalidade</strong>
-                            </Link>
-                        ))}
-                    </section>
+                    {hasAreas ? (
+                        <section className="workspace-grid">
+                            {workspacePanels.map((panel) => (
+                                <Link
+                                    className={`workspace-panel workspace-panel-link ${panel.wide ? "workspace-panel-wide" : ""}`}
+                                    to={`/hub/${solution.slug}/${panel.slug || getAreaAnchor(panel.title)}`}
+                                    key={panel.title}
+                                >
+                                    <span className="workspace-label">{panel.label}</span>
+                                    <h2>{panel.title}</h2>
+                                    <p>{panel.description}</p>
+                                    <strong>Acessar funcionalidade</strong>
+                                </Link>
+                            ))}
+                        </section>
+                    ) : (
+                        <section className="workspace-panel workspace-panel-wide">
+                            <span className="workspace-label">{solution.eyebrow}</span>
+                            <h2>Nenhuma funcionalidade cadastrada</h2>
+                            <p className="workspace-empty-note">
+                                Cadastre funcionalidades para esta solução quando quiser disponibilizar telas específicas.
+                            </p>
+                        </section>
+                    )}
                 </div>
             </main>
 

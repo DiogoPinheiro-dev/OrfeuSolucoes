@@ -1,9 +1,13 @@
 import { apolloClient } from "../../src/lib/apolloClient";
+import { notifyHubNavigationChanged } from "../../src/auth/hubNavigationEvents";
 import {
+    CREATE_SOLUCAO_MUTATION,
     CREATE_FUNCIONALIDADE_MUTATION,
+    DELETE_SOLUCAO_MUTATION,
     DELETE_FUNCIONALIDADE_MUTATION,
     MY_HUB_NAVIGATION_QUERY,
     SOLUCOES_QUERY,
+    UPDATE_SOLUCAO_MUTATION,
     UPDATE_FUNCIONALIDADE_MUTATION
 } from "../graphql/operations";
 
@@ -39,6 +43,62 @@ export const getSolucoes = async () => {
     }
 };
 
+export const createSolucao = async (input) => {
+    try {
+        const response = await apolloClient.mutate({
+            mutation: CREATE_SOLUCAO_MUTATION,
+            variables: { input }
+        });
+
+        const solucao = response?.data?.createSolucao;
+
+        notifyHubNavigationChanged();
+
+        return solucao;
+    } catch (error) {
+        throw new Error(extractErrorMessage(error));
+    }
+};
+
+export const updateSolucao = async (input) => {
+    try {
+        const response = await apolloClient.mutate({
+            mutation: UPDATE_SOLUCAO_MUTATION,
+            variables: {
+                input: {
+                    ...input,
+                    id: Number(input.id)
+                }
+            }
+        });
+
+        const solucao = response?.data?.updateSolucao;
+
+        notifyHubNavigationChanged();
+
+        return solucao;
+    } catch (error) {
+        throw new Error(extractErrorMessage(error));
+    }
+};
+
+export const deleteSolucao = async (id) => {
+    try {
+        const response = await apolloClient.mutate({
+            mutation: DELETE_SOLUCAO_MUTATION,
+            variables: { id: Number(id) }
+        });
+
+        const deleted = response?.data?.deleteSolucao;
+
+        notifyHubNavigationChanged();
+
+        return deleted;
+    } catch (error) {
+        throw new Error(extractErrorMessage(error));
+    }
+};
+
 export const createFuncionalidade = async (input) => {
     try {
         const response = await apolloClient.mutate({
@@ -46,7 +106,11 @@ export const createFuncionalidade = async (input) => {
             variables: { input }
         });
 
-        return response?.data?.createFuncionalidade;
+        const funcionalidade = response?.data?.createFuncionalidade;
+
+        notifyHubNavigationChanged();
+
+        return funcionalidade;
     } catch (error) {
         throw new Error(extractErrorMessage(error));
     }
@@ -64,7 +128,11 @@ export const updateFuncionalidade = async (input) => {
             }
         });
 
-        return response?.data?.updateFuncionalidade;
+        const funcionalidade = response?.data?.updateFuncionalidade;
+
+        notifyHubNavigationChanged();
+
+        return funcionalidade;
     } catch (error) {
         throw new Error(extractErrorMessage(error));
     }
@@ -77,7 +145,11 @@ export const deleteFuncionalidade = async (id) => {
             variables: { id: Number(id) }
         });
 
-        return response?.data?.deleteFuncionalidade;
+        const deleted = response?.data?.deleteFuncionalidade;
+
+        notifyHubNavigationChanged();
+
+        return deleted;
     } catch (error) {
         throw new Error(extractErrorMessage(error));
     }

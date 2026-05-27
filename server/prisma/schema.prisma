@@ -79,7 +79,6 @@ model Solucao {
   nome                String   @map("Nome")
   descricao           String?  @map("Descricao")
   eyebrow             String?  @map("Eyebrow")
-  status              String?  @map("Status")
   ordem               Int      @default(0) @map("Ordem")
   ativo               Boolean  @default(true) @map("Ativo")
   exibirNoHub         Boolean  @default(true) @map("ExibirNoHub")

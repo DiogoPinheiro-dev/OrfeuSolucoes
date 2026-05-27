@@ -53,7 +53,11 @@ export class EmpresasService {
       return createdEmpresa;
     })) as EmpresaRecord;
 
-    await this.solucoesService.syncCompanyAccess(empresa.id, input.solucaoIds ?? [], input.funcionalidadeIds ?? []);
+    await this.solucoesService.syncCompanyAccess(
+      empresa.id,
+      input.solucaoIds ?? [],
+      await this.resolveFuncionalidadeIds(input.solucaoIds ?? [], input.funcionalidadeIds)
+    );
 
     return this.toEmpresaType(empresa);
   }
@@ -111,7 +115,11 @@ export class EmpresasService {
     })) as EmpresaRecord;
 
     if (input.solucaoIds !== undefined || input.funcionalidadeIds !== undefined) {
-      await this.solucoesService.syncCompanyAccess(input.id, input.solucaoIds ?? [], input.funcionalidadeIds ?? []);
+      await this.solucoesService.syncCompanyAccess(
+        input.id,
+        input.solucaoIds ?? [],
+        await this.resolveFuncionalidadeIds(input.solucaoIds ?? [], input.funcionalidadeIds)
+      );
     }
 
     return this.toEmpresaType(empresa);
@@ -196,6 +204,22 @@ export class EmpresasService {
     if (user.login?.toLowerCase() !== 'admin') {
       throw new ForbiddenException(`Apenas o usuario administrador inicial pode ${action}.`);
     }
+  }
+
+  private async resolveFuncionalidadeIds(solucaoIds: number[] = [], funcionalidadeIds?: number[]): Promise<number[]> {
+    if (funcionalidadeIds?.length) {
+      return funcionalidadeIds;
+    }
+
+    if (!solucaoIds.length) {
+      return [];
+    }
+
+    const solucoes = await this.solucoesService.findAll();
+
+    return solucoes
+      .filter((solucao) => solucaoIds.includes(solucao.id))
+      .flatMap((solucao) => solucao.funcionalidades.map((funcionalidade) => funcionalidade.id));
   }
 
   private async ensureAdminLinkedToAllCompanies(): Promise<void> {

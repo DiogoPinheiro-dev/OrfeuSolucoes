@@ -6,7 +6,7 @@ import FeatureManagement from "../components/FeatureManagement";
 import Footer from "../components/Footer";
 import GroupManagement from "../components/GroupManagement";
 import Header from "../components/Header";
-import TestFeature from "../components/TestFeature";
+import SolutionManagement from "../components/SolutionManagement";
 import UserManagement from "../components/UserManagement";
 import { useHubNavigation } from "../hooks/useHubNavigation";
 
@@ -52,8 +52,8 @@ export default function SolutionFeaturePage() {
     const isUserManagement = componentKey === "user-management";
     const isCompanyManagement = componentKey === "company-management";
     const isGroupManagement = componentKey === "group-management";
+    const isSolutionManagement = componentKey === "solution-management";
     const isFeatureManagement = componentKey === "feature-management";
-    const isTestFeature = componentKey === "test-feature";
 
     return (
         <div className="page-wrapper workspace-page">
@@ -69,30 +69,25 @@ export default function SolutionFeaturePage() {
                         <strong>{area.title}</strong>
                     </div>
 
-                    {isUserManagement || isCompanyManagement || isGroupManagement || isFeatureManagement || isTestFeature ? (
-                        <section className="workspace-feature-crud">
-                            {isUserManagement ? (
-                                <UserManagement permissions={area} />
-                            ) : isCompanyManagement ? (
-                                <CompanyManagement permissions={area} />
-                            ) : isGroupManagement ? (
-                                <GroupManagement permissions={area} />
-                            ) : isTestFeature ? (
-                                <TestFeature permissions={area} />
-                            ) : (
-                                <FeatureManagement permissions={area} />
-                            )}
-                        </section>
-                    ) : (
-                        <section className="workspace-panel workspace-panel-wide">
-                            <span className="workspace-label">Funcionalidade</span>
-                            <h2>Base pronta para implementação</h2>
-                            <p>
-                                Esta página já está roteada e protegida. Podemos conectar aqui os dados reais,
-                                formulários, permissões e operações específicas de {area.title}.
-                            </p>
-                        </section>
-                    )}
+                    <section className="workspace-feature-crud">
+                        {isUserManagement ? (
+                            <UserManagement permissions={area} />
+                        ) : isCompanyManagement ? (
+                            <CompanyManagement permissions={area} />
+                        ) : isGroupManagement ? (
+                            <GroupManagement permissions={area} />
+                        ) : isSolutionManagement ? (
+                            <SolutionManagement permissions={area} />
+                        ) : isFeatureManagement ? (
+                            <FeatureManagement permissions={area} />
+                        ) : (
+                            <section className="workspace-panel workspace-panel-wide">
+                                <span className="workspace-label">{area.label}</span>
+                                <h2>{area.title}</h2>
+                                <p>Funcionalidade sem tela vinculada no momento.</p>
+                            </section>
+                        )}
+                    </section>
                 </div>
             </main>
 

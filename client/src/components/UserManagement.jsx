@@ -7,6 +7,7 @@ import { canUseFeatureAction, isGroupAdmin, isSystemAdmin } from "../auth/hubCon
 import { useAuth } from "../hooks/useAuth";
 import ConfirmDialog from "./ConfirmDialog";
 import CrudGrid from "./CrudGrid";
+import { FieldHelpDialog, HelpButton } from "./FieldHelp";
 import { CrudModal, CrudModalTabPanel, CrudModalTabs } from "./CrudModal";
 import CustomDropdown from "./CustomDropdown";
 import PasswordInput from "./PasswordInput";
@@ -27,6 +28,33 @@ const EMPRESAS_PAGE_SIZE = 5;
 
 const isProtectedAdminUser = (user) => isSystemAdmin(user);
 
+const fieldHelp = {
+    nome: {
+        title: "Nome",
+        text: "Nome da pessoa exibido nos cadastros e nas telas administrativas."
+    },
+    login: {
+        title: "Login",
+        text: "Identificacao usada pelo usuario para entrar no sistema. Deve ser facil de reconhecer e unica."
+    },
+    email: {
+        title: "E-mail",
+        text: "Endereco de contato e identificacao do usuario. Tambem pode ser usado para acesso ao sistema."
+    },
+    senha: {
+        title: "Senha",
+        text: "Senha inicial do usuario. Em alteracoes, preencha somente quando precisar trocar a senha atual."
+    },
+    grupo: {
+        title: "Grupo",
+        text: "Define o conjunto de permissoes do usuario, incluindo solucoes, funcionalidades e acoes liberadas."
+    },
+    empresas: {
+        title: "Empresas vinculadas",
+        text: "Empresas que o usuario pode acessar. O usuario so trabalha com dados das empresas vinculadas a ele."
+    }
+};
+
 export default function UserManagement({ permissions }) {
     const { user: currentUser } = useAuth();
     const [users, setUsers] = useState([]);
@@ -44,6 +72,7 @@ export default function UserManagement({ permissions }) {
     const [activeTab, setActiveTab] = useState("main");
     const [empresasPage, setEmpresasPage] = useState(1);
     const [pendingDelete, setPendingDelete] = useState(null);
+    const [activeHelp, setActiveHelp] = useState(null);
 
     const loadUsers = async () => {
         setError("");
@@ -118,6 +147,7 @@ export default function UserManagement({ permissions }) {
         setSaving(false);
         setActiveTab("main");
         setEmpresasPage(1);
+        setActiveHelp(null);
     };
 
     const handleChange = (event) => {
@@ -341,25 +371,36 @@ export default function UserManagement({ permissions }) {
                             />
 
                             <CrudModalTabPanel active={activeTab === "main"}>
-                            <label>
-                                Nome
-                                <input name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || saving || editingProtectedAdmin} />
-                            </label>
+                            <div className="field-help-field">
+                                <span className="field-help-label">
+                                    <label htmlFor="usuario-nome">Nome</label>
+                                    <HelpButton help={fieldHelp.nome} onHelp={setActiveHelp} />
+                                </span>
+                                <input id="usuario-nome" name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || saving || editingProtectedAdmin} />
+                            </div>
 
-                            <label>
-                                Login
+                            <div className="field-help-field">
+                                <span className="field-help-label">
+                                    <label htmlFor="usuario-login">Login</label>
+                                    <HelpButton help={fieldHelp.login} onHelp={setActiveHelp} />
+                                </span>
                                 <input
+                                    id="usuario-login"
                                     name="login"
                                     value={form.login || ""}
                                     onChange={handleChange}
                                     disabled={readonly || saving || editingProtectedAdmin}
                                     required={!editingProtectedAdmin}
                                 />
-                            </label>
+                            </div>
 
-                            <label>
-                                E-mail
+                            <div className="field-help-field">
+                                <span className="field-help-label">
+                                    <label htmlFor="usuario-email">E-mail</label>
+                                    <HelpButton help={fieldHelp.email} onHelp={setActiveHelp} />
+                                </span>
                                 <input
+                                    id="usuario-email"
                                     name="email"
                                     type="email"
                                     value={form.email}
@@ -367,12 +408,17 @@ export default function UserManagement({ permissions }) {
                                     disabled={readonly || saving}
                                     required
                                 />
-                            </label>
+                            </div>
 
                             {!readonly && (
-                                <label>
-                                    Senha {modalMode === "edit" && <small>preencha apenas para alterar.</small>}
+                                <div className="field-help-field">
+                                    <span className="field-help-label">
+                                        <label htmlFor="usuario-senha">Senha</label>
+                                        <HelpButton help={fieldHelp.senha} onHelp={setActiveHelp} />
+                                        {modalMode === "edit" && <small>preencha apenas para alterar.</small>}
+                                    </span>
                                     <PasswordInput
+                                        id="usuario-senha"
                                         name="senha"
                                         value={form.senha}
                                         onChange={handleChange}
@@ -380,11 +426,14 @@ export default function UserManagement({ permissions }) {
                                         required={modalMode === "create"}
                                         minLength={6}
                                     />
-                                </label>
+                                </div>
                             )}
 
-                            <label>
-                                Grupo
+                            <div className="field-help-field">
+                                <span className="field-help-label">
+                                    <span>Grupo</span>
+                                    <HelpButton help={fieldHelp.grupo} onHelp={setActiveHelp} />
+                                </span>
                                 <CustomDropdown
                                     name="grupoId"
                                     value={form.grupoId || ""}
@@ -399,13 +448,14 @@ export default function UserManagement({ permissions }) {
                                         }))
                                     ]}
                                 />
-                            </label>
+                            </div>
                             </CrudModalTabPanel>
 
                             <CrudModalTabPanel active={activeTab === "companies"} className="user-company-section">
                                 <div className="user-company-header">
                                     <div>
                                         <span>Empresas vinculadas</span>
+                                        <HelpButton help={fieldHelp.empresas} onHelp={setActiveHelp} />
                                         <strong>
                                             {form.empresaIds.length === 1
                                                 ? "1 empresa selecionada"
@@ -477,6 +527,8 @@ export default function UserManagement({ permissions }) {
                             </CrudModalTabPanel>
                 </CrudModal>
             )}
+
+            <FieldHelpDialog help={activeHelp} onClose={() => setActiveHelp(null)} />
 
             <ConfirmDialog
                 open={!!pendingDelete}

@@ -27,11 +27,6 @@ export class UpdateSolucaoInput {
   @IsString()
   eyebrow?: string | null;
 
-  @Field(() => String, { nullable: true })
-  @IsOptional()
-  @IsString()
-  status?: string | null;
-
   @Field(() => Int, { nullable: true })
   @IsOptional()
   @IsInt()

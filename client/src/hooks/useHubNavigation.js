@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { getMyHubNavigation } from "../../services/Solucoes/SolucaoService";
 import { normalizeSolutions } from "../auth/hubConfig";
+import { HUB_NAVIGATION_CHANGED_EVENT } from "../auth/hubNavigationEvents";
 import { useAuth } from "./useAuth";
 
 export function useHubNavigation() {
@@ -44,10 +45,16 @@ export function useHubNavigation() {
             }
         };
 
+        const handleHubNavigationChanged = () => {
+            void loadNavigation();
+        };
+
         void loadNavigation();
+        window.addEventListener(HUB_NAVIGATION_CHANGED_EVENT, handleHubNavigationChanged);
 
         return () => {
             active = false;
+            window.removeEventListener(HUB_NAVIGATION_CHANGED_EVENT, handleHubNavigationChanged);
         };
     }, [isAuthenticated, user?.empresa?.id]);
 

@@ -96,6 +96,12 @@
   border-radius: 18px;
 }
 
+.workspace-empty-note {
+  margin: 12px 0 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
 @media (max-width: 900px) {
   .workspace-grid {
     grid-template-columns: 1fr;

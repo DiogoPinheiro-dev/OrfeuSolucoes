@@ -45,6 +45,109 @@
   color: var(--muted);
 }
 
+.field-help-field {
+  display: grid;
+  gap: 8px;
+  color: var(--primary);
+}
+
+.field-help-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+}
+
+.field-help-label label {
+  display: inline;
+}
+
+.field-help-button {
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  min-width: 18px;
+  max-width: 18px;
+  height: 18px;
+  min-height: 18px;
+  max-height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 800;
+  line-height: 1;
+  justify-self: start;
+  touch-action: manipulation;
+}
+
+.field-help-button:hover,
+.field-help-button:focus-visible {
+  color: var(--button-primary-bg);
+  outline: none;
+}
+
+.field-help-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2400;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(14, 32, 50, 0.22);
+}
+
+.field-help-dialog {
+  width: min(100%, 420px);
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface-white);
+  box-shadow: var(--shadow);
+}
+
+.field-help-dialog header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.field-help-dialog header span {
+  color: var(--detail-accent-text);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.field-help-dialog header button {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--surface-soft);
+  color: var(--primary);
+  cursor: pointer;
+}
+
+.field-help-dialog h4 {
+  margin: 0 0 8px;
+  color: var(--primary);
+}
+
+.field-help-dialog p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
 .user-company-section {
   display: grid;
   gap: 12px;

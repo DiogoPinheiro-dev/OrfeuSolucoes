@@ -1,4 +1,4 @@
-﻿import { UseGuards } from '@nestjs/common';
+import { UseGuards } from '@nestjs/common';
 import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
 import { CreateServicoInput } from './dto/create-servico.input';

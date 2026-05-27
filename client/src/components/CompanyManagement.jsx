@@ -7,9 +7,11 @@ import { canUseFeatureAction, isGroupAdmin } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
 import ConfirmDialog from "./ConfirmDialog";
 import CrudGrid from "./CrudGrid";
+import { FieldHelpDialog, HelpButton } from "./FieldHelp";
 import { CrudModal, CrudModalTabPanel, CrudModalTabs } from "./CrudModal";
 
 import "../styles/companyManagement.css";
+import "../styles/userManagement.css";
 
 const initialForm = {
     id: "",
@@ -19,6 +21,21 @@ const initialForm = {
 };
 
 const booleanLabel = (value) => (value ? "Sim" : "Não");
+
+const fieldHelp = {
+    nome: {
+        title: "Nome",
+        text: "Nome da empresa exibido nos cadastros, no seletor de empresa e nas telas administrativas."
+    },
+    solucoes: {
+        title: "Soluções",
+        text: "Define quais soluções a empresa contratou e pode acessar no Hub."
+    },
+    usuarios: {
+        title: "Usuários vinculados",
+        text: "Lista as pessoas que possuem acesso a esta empresa."
+    }
+};
 
 export default function CompanyManagement({ permissions }) {
     const { user: currentUser } = useAuth();
@@ -36,6 +53,12 @@ export default function CompanyManagement({ permissions }) {
     const [form, setForm] = useState(initialForm);
     const [activeTab, setActiveTab] = useState("main");
     const [pendingDelete, setPendingDelete] = useState(null);
+    const [activeHelp, setActiveHelp] = useState(null);
+
+    const getFuncionalidadeIdsBySolucaoIds = (solucaoIds) =>
+        solucoes
+            .filter((solucao) => solucaoIds.includes(solucao.id))
+            .flatMap((solucao) => solucao.funcionalidades?.map((funcionalidade) => funcionalidade.id) || []);
 
     const loadEmpresas = async () => {
         setError("");
@@ -91,6 +114,7 @@ export default function CompanyManagement({ permissions }) {
         setForm(initialForm);
         setSaving(false);
         setActiveTab("main");
+        setActiveHelp(null);
     };
 
     const handleChange = (event) => {
@@ -114,12 +138,14 @@ export default function CompanyManagement({ permissions }) {
 
         setSaving(true);
 
+        const funcionalidadeIds = getFuncionalidadeIdsBySolucaoIds(form.solucaoIds);
+
         try {
             if (modalMode === "create") {
                 await createEmpresa({
                     nome: form.nome.trim(),
                     solucaoIds: form.solucaoIds,
-                    funcionalidadeIds: form.funcionalidadeIds
+                    funcionalidadeIds
                 });
             }
 
@@ -128,7 +154,7 @@ export default function CompanyManagement({ permissions }) {
                     id: form.id,
                     nome: form.nome.trim(),
                     solucaoIds: form.solucaoIds,
-                    funcionalidadeIds: form.funcionalidadeIds
+                    funcionalidadeIds
                 });
             }
 
@@ -199,27 +225,16 @@ export default function CompanyManagement({ permissions }) {
     const toggleSolucao = (solucao) => {
         setForm((current) => {
             const selected = current.solucaoIds.includes(solucao.id);
-            const funcionalidadeIds = solucao.funcionalidades?.map((funcionalidade) => funcionalidade.id) || [];
+            const solucaoIds = selected
+                ? current.solucaoIds.filter((id) => id !== solucao.id)
+                : [...current.solucaoIds, solucao.id];
 
             return {
                 ...current,
-                solucaoIds: selected
-                    ? current.solucaoIds.filter((id) => id !== solucao.id)
-                    : [...current.solucaoIds, solucao.id],
-                funcionalidadeIds: selected
-                    ? current.funcionalidadeIds.filter((id) => !funcionalidadeIds.includes(id))
-                    : [...new Set([...current.funcionalidadeIds, ...funcionalidadeIds])]
+                solucaoIds,
+                funcionalidadeIds: getFuncionalidadeIdsBySolucaoIds(solucaoIds)
             };
         });
-    };
-
-    const toggleFuncionalidade = (funcionalidadeId) => {
-        setForm((current) => ({
-            ...current,
-            funcionalidadeIds: current.funcionalidadeIds.includes(funcionalidadeId)
-                ? current.funcionalidadeIds.filter((id) => id !== funcionalidadeId)
-                : [...current.funcionalidadeIds, funcionalidadeId]
-        }));
     };
 
     const readonly = modalMode === "view";
@@ -299,19 +314,25 @@ export default function CompanyManagement({ permissions }) {
                                 tabs={[
                                     { id: "main", label: "Dados gerais" },
                                     { id: "solutions", label: "Soluções" },
-                                    { id: "features", label: "Funcionalidades" },
                                     ...(readonly ? [{ id: "users", label: "Usuários vinculados" }] : [])
                                 ]}
                             />
 
                             <CrudModalTabPanel active={activeTab === "main"}>
-                            <label>
-                                Nome
-                                <input name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || saving} required />
-                            </label>
+                            <div className="field-help-field">
+                                <span className="field-help-label">
+                                    <label htmlFor="empresa-nome">Nome</label>
+                                    <HelpButton help={fieldHelp.nome} onHelp={setActiveHelp} />
+                                </span>
+                                <input id="empresa-nome" name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || saving} required />
+                            </div>
                             </CrudModalTabPanel>
 
                             <CrudModalTabPanel active={activeTab === "solutions"}>
+                            <div className="company-access-header">
+                                <span>Soluções</span>
+                                <HelpButton help={fieldHelp.solucoes} onHelp={setActiveHelp} />
+                            </div>
                             <div className="company-access-grid">
                                 {solucoes.map((solucao) => (
                                     <label key={solucao.id}>
@@ -327,34 +348,10 @@ export default function CompanyManagement({ permissions }) {
                             </div>
                             </CrudModalTabPanel>
 
-                            <CrudModalTabPanel active={activeTab === "features"} className="user-company-section">
-                                <div className="user-company-header">
-                                    <div>
-                                        <span>Funcionalidades</span>
-                                        <strong>Áreas contratadas pela empresa</strong>
-                                    </div>
-                                </div>
-
-                                <div className="user-permissions-grid">
-                                    {solucoes.flatMap((solucao) =>
-                                        (solucao.funcionalidades || []).map((funcionalidade) => (
-                                            <label key={funcionalidade.id} className="user-permission-option">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={form.funcionalidadeIds.includes(funcionalidade.id)}
-                                                    onChange={() => toggleFuncionalidade(funcionalidade.id)}
-                                                    disabled={readonly || saving || !form.solucaoIds.includes(solucao.id)}
-                                                />
-                                                {funcionalidade.titulo}
-                                            </label>
-                                        ))
-                                    )}
-                                </div>
-                            </CrudModalTabPanel>
-
                             <CrudModalTabPanel active={readonly && activeTab === "users"} className="company-linked-users">
                                     <div className="company-linked-users-header">
                                         <span>Usuários vinculados</span>
+                                        <HelpButton help={fieldHelp.usuarios} onHelp={setActiveHelp} />
                                         <strong>
                                             {linkedUsers.length === 1
                                                 ? "1 usuário vinculado"
@@ -384,6 +381,8 @@ export default function CompanyManagement({ permissions }) {
                 </CrudModal>
             )}
 
+            <FieldHelpDialog help={activeHelp} onClose={() => setActiveHelp(null)} />
+
             <ConfirmDialog
                 open={!!pendingDelete}
                 title="Confirmar exclusão"
@@ -395,3 +394,4 @@ export default function CompanyManagement({ permissions }) {
         </>
     );
 }
+

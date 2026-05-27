@@ -10,6 +10,7 @@ import { canUseFeatureAction } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
 import ConfirmDialog from "./ConfirmDialog";
 import CrudGrid from "./CrudGrid";
+import { FieldHelpDialog, HelpButton } from "./FieldHelp";
 import { CrudModal, CrudModalTabPanel, CrudModalTabs } from "./CrudModal";
 import CustomDropdown from "./CustomDropdown";
 
@@ -36,6 +37,73 @@ const initialForm = {
 
 const booleanLabel = (value) => (value ? "Sim" : "Não");
 
+const createLocalKey = () => {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+        return crypto.randomUUID();
+    }
+
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+};
+
+const fieldHelp = {
+    solucao: {
+        title: "Solução",
+        text: "Solução à qual esta funcionalidade pertence. Ela define onde a rotina aparece no Hub."
+    },
+    titulo: {
+        title: "Título",
+        text: "Nome da funcionalidade exibido para os usuários no menu e nas telas."
+    },
+    slug: {
+        title: "Identificador",
+        text: "Código curto usado pelo sistema para montar o endereço da funcionalidade. Use letras minúsculas, números e hifens."
+    },
+    registryKey: {
+        title: "Rota da funcionalidade",
+        text: "Caminho gerado automaticamente a partir da solução escolhida e do identificador da funcionalidade."
+    },
+    label: {
+        title: "Label",
+        text: "Nome curto opcional para exibir a funcionalidade em espaços menores."
+    },
+    descricao: {
+        title: "Descrição",
+        text: "Resumo que explica o objetivo da funcionalidade."
+    },
+    ordem: {
+        title: "Ordem",
+        text: "Número usado para ordenar funcionalidades nas listagens. Números menores aparecem primeiro."
+    },
+    ativo: {
+        title: "Ativo",
+        text: "Indica se a funcionalidade está disponível para uso."
+    },
+    somenteAdminSistema: {
+        title: "Somente admin",
+        text: "Restringe a funcionalidade ao administrador inicial do sistema."
+    },
+    acoes: {
+        title: "Ações da funcionalidade",
+        text: "Ações usadas nas permissões dos grupos, como visualizar, incluir, alterar, excluir ou ações customizadas."
+    },
+    chaveAcao: {
+        title: "Chave",
+        text: "Código gerado automaticamente a partir do nome da ação."
+    },
+    nomeAcao: {
+        title: "Nome",
+        text: "Nome da ação exibido para quem configura permissões."
+    },
+    detalheAcao: {
+        title: "Detalhe da ação customizada",
+        text: "Informação opcional para diferenciar ações específicas, como exportar, importar ou aprovar."
+    },
+    acaoPadrao: {
+        title: "Padrão",
+        text: "Indica ações básicas do sistema. Ações padrão não devem ser removidas."
+    }
+};
+
 const normalizeFeatureForm = (feature) => ({
     ...initialForm,
     ...feature,
@@ -44,7 +112,7 @@ const normalizeFeatureForm = (feature) => ({
     acoes: feature?.acoes?.length
         ? feature.acoes.map((acao) => ({
             ...acao,
-            localKey: acao.id ? `acao-${acao.id}` : `acao-${crypto.randomUUID()}`,
+            localKey: acao.id ? `acao-${acao.id}` : `acao-${createLocalKey()}`,
             descricao: acao.descricao || "",
             configuracao: acao.configuracao || ""
         }))
@@ -61,26 +129,42 @@ const flattenFeatures = (solucoes) =>
         }))
     );
 
-const normalizePayload = (form) => ({
+const normalizeIdentifier = (value) =>
+    value
+        .trim()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+
+const buildRegistryKey = (solucao, slug) => {
+    const solucaoSlug = normalizeIdentifier(solucao?.slug || solucao?.nome || "");
+    const funcionalidadeSlug = normalizeIdentifier(slug || "");
+
+    return solucaoSlug && funcionalidadeSlug ? `${solucaoSlug}.${funcionalidadeSlug}` : "";
+};
+
+const normalizePayload = (form, selectedSolution) => ({
     solucaoId: Number(form.solucaoId),
-    slug: form.slug.trim(),
+    slug: normalizeIdentifier(form.slug),
     titulo: form.titulo.trim(),
     label: form.label.trim() || null,
     descricao: form.descricao.trim() || null,
     ordem: Number(form.ordem) || 0,
     ativo: !!form.ativo,
-    registryKey: form.registryKey.trim() || null,
+    registryKey: buildRegistryKey(selectedSolution, form.slug) || null,
     somenteAdminSistema: !!form.somenteAdminSistema,
     acoes: form.acoes.map((acao) => ({
         ...(acao.id ? { id: Number(acao.id) } : {}),
-        chave: acao.chave.trim().toLowerCase(),
+        chave: acao.acaoPadrao ? normalizeIdentifier(acao.chave || acao.nome) : normalizeIdentifier(acao.nome),
         nome: acao.nome.trim(),
         descricao: acao.descricao?.trim() || null,
         ordem: Number(acao.ordem) || 0,
         ativo: !!acao.ativo,
         acaoPadrao: !!acao.acaoPadrao,
         configuracao: acao.configuracao?.trim() || null
-    })).filter((acao) => acao.chave && acao.nome)
+    })).filter((acao) => acao.nome)
 });
 
 export default function FeatureManagement({ permissions }) {
@@ -97,6 +181,7 @@ export default function FeatureManagement({ permissions }) {
     const [form, setForm] = useState(initialForm);
     const [activeTab, setActiveTab] = useState("main");
     const [pendingDelete, setPendingDelete] = useState(null);
+    const [activeHelp, setActiveHelp] = useState(null);
 
     const features = useMemo(() => flattenFeatures(solucoes), [solucoes]);
 
@@ -143,6 +228,7 @@ export default function FeatureManagement({ permissions }) {
         setForm(initialForm);
         setSaving(false);
         setActiveTab("main");
+        setActiveHelp(null);
     };
 
     const handleChange = (event) => {
@@ -168,7 +254,7 @@ export default function FeatureManagement({ permissions }) {
             ...current,
             acoes: [
                 ...current.acoes,
-                { localKey: `acao-${crypto.randomUUID()}`, chave: "", nome: "", descricao: "", ordem: (current.acoes.length + 1) * 10, ativo: true, acaoPadrao: false, configuracao: "" }
+                { localKey: `acao-${createLocalKey()}`, chave: "", nome: "", descricao: "", ordem: (current.acoes.length + 1) * 10, ativo: true, acaoPadrao: false, configuracao: "" }
             ]
         }));
     };
@@ -190,15 +276,15 @@ export default function FeatureManagement({ permissions }) {
             return;
         }
 
-        if (form.acoes.some((acao) => !acao.chave.trim() || !acao.nome.trim())) {
+        if (form.acoes.some((acao) => !acao.nome.trim())) {
             setActiveTab("actions");
-            setError("Preencha chave e nome de todas as ações da funcionalidade.");
+            setError("Preencha o nome de todas as ações da funcionalidade.");
             return;
         }
 
         setSaving(true);
 
-        const payload = normalizePayload(form);
+        const payload = normalizePayload(form, selectedSolution);
 
         try {
             if (modalMode === "create") {
@@ -271,6 +357,7 @@ export default function FeatureManagement({ permissions }) {
     };
 
     const selectedSolution = solucoes.find((solucao) => String(solucao.id) === String(form.solucaoId));
+    const generatedRegistryKey = buildRegistryKey(selectedSolution, form.slug);
     const readonly = modalMode === "view";
 
     return (
@@ -283,7 +370,7 @@ export default function FeatureManagement({ permissions }) {
                     title="Cadastro de funcionalidades"
                     columns={[
                         { key: "titulo", label: "Título", render: (feature) => feature.titulo || "-" },
-                        { key: "slug", label: "Slug", render: (feature) => feature.slug || "-" },
+                        { key: "slug", label: "Identificador", render: (feature) => feature.slug || "-" },
                         { key: "solucao", label: "Solução", render: (feature) => feature.solucaoNome || "-" },
                         { key: "registryKey", label: "Rota", render: (feature) => feature.registryKey || "-" },
                         { key: "ordem", label: "Ordem" },
@@ -340,8 +427,11 @@ export default function FeatureManagement({ permissions }) {
                             />
 
                             <CrudModalTabPanel active={activeTab === "main"}>
-                                    <label>
-                                        Solução
+                                    <div className="field-help-field">
+                                        <span className="field-help-label">
+                                            <span>Solução</span>
+                                            <HelpButton help={fieldHelp.solucao} onHelp={setActiveHelp} />
+                                        </span>
                                         <CustomDropdown
                                             name="solucaoId"
                                             value={form.solucaoId || ""}
@@ -356,53 +446,72 @@ export default function FeatureManagement({ permissions }) {
                                                 }))
                                             ]}
                                         />
-                                    </label>
+                                    </div>
 
-                                    <label>
-                                        Título
-                                        <input name="titulo" value={form.titulo || ""} onChange={handleChange} disabled={readonly || saving} required />
-                                    </label>
+                                    <div className="field-help-field">
+                                        <span className="field-help-label">
+                                            <label htmlFor="funcionalidade-titulo">Título</label>
+                                            <HelpButton help={fieldHelp.titulo} onHelp={setActiveHelp} />
+                                        </span>
+                                        <input id="funcionalidade-titulo" name="titulo" value={form.titulo || ""} onChange={handleChange} disabled={readonly || saving} required />
+                                    </div>
 
-                                    <label>
-                                        Slug
-                                        <input name="slug" value={form.slug || ""} onChange={handleChange} disabled={readonly || saving} required />
-                                    </label>
+                                    <div className="field-help-field">
+                                        <span className="field-help-label">
+                                            <label htmlFor="funcionalidade-slug">Identificador</label>
+                                            <HelpButton help={fieldHelp.slug} onHelp={setActiveHelp} />
+                                        </span>
+                                        <input id="funcionalidade-slug" name="slug" value={form.slug || ""} onChange={handleChange} disabled={readonly || saving} required />
+                                    </div>
 
-                                    <label>
-                                        Rota da funcionalidade
+                                    <div className="field-help-field">
+                                        <span className="field-help-label">
+                                            <label htmlFor="funcionalidade-registry">Rota da funcionalidade</label>
+                                            <HelpButton help={fieldHelp.registryKey} onHelp={setActiveHelp} />
+                                        </span>
                                         <input
-                                            name="registryKey"
-                                            value={form.registryKey || ""}
-                                            onChange={handleChange}
-                                            disabled={readonly || saving}
-                                            placeholder={selectedSolution ? `${selectedSolution.slug}.${form.slug || "nova-rota"}` : "solucao.slug-da-funcionalidade"}
+                                            id="funcionalidade-registry"
+                                            value={generatedRegistryKey || ""}
+                                            readOnly
+                                            disabled
+                                            placeholder="Selecione a solução e informe o identificador"
                                         />
-                                    </label>
+                                    </div>
 
-                                    <label>
-                                        Label
-                                        <input name="label" value={form.label || ""} onChange={handleChange} disabled={readonly || saving} />
-                                    </label>
+                                    <div className="field-help-field">
+                                        <span className="field-help-label">
+                                            <label htmlFor="funcionalidade-label">Label</label>
+                                            <HelpButton help={fieldHelp.label} onHelp={setActiveHelp} />
+                                        </span>
+                                        <input id="funcionalidade-label" name="label" value={form.label || ""} onChange={handleChange} disabled={readonly || saving} />
+                                    </div>
 
-                                    <label>
-                                        Descrição
-                                        <input name="descricao" value={form.descricao || ""} onChange={handleChange} disabled={readonly || saving} />
-                                    </label>
+                                    <div className="field-help-field">
+                                        <span className="field-help-label">
+                                            <label htmlFor="funcionalidade-descricao">Descrição</label>
+                                            <HelpButton help={fieldHelp.descricao} onHelp={setActiveHelp} />
+                                        </span>
+                                        <input id="funcionalidade-descricao" name="descricao" value={form.descricao || ""} onChange={handleChange} disabled={readonly || saving} />
+                                    </div>
 
-                                    <label>
-                                        Ordem
-                                        <input name="ordem" type="number" value={form.ordem ?? 0} onChange={handleChange} disabled={readonly || saving} />
-                                    </label>
-
+                                    <div className="field-help-field">
+                                        <span className="field-help-label">
+                                            <label htmlFor="funcionalidade-ordem">Ordem</label>
+                                            <HelpButton help={fieldHelp.ordem} onHelp={setActiveHelp} />
+                                        </span>
+                                        <input id="funcionalidade-ordem" name="ordem" type="number" value={form.ordem ?? 0} onChange={handleChange} disabled={readonly || saving} />
+                                    </div>
                                     <section className="user-company-section" aria-label="Status da funcionalidade">
                                         <div className="user-permissions-grid">
                                             <label className="user-permission-option">
                                                 <input type="checkbox" name="ativo" checked={!!form.ativo} onChange={handleChange} disabled={readonly || saving} />
                                                 Ativo
+                                                <HelpButton help={fieldHelp.ativo} onHelp={setActiveHelp} />
                                             </label>
                                             <label className="user-permission-option">
                                                 <input type="checkbox" name="somenteAdminSistema" checked={!!form.somenteAdminSistema} onChange={handleChange} disabled={readonly || saving} />
                                                 Somente admin
+                                                <HelpButton help={fieldHelp.somenteAdminSistema} onHelp={setActiveHelp} />
                                             </label>
                                         </div>
                                     </section>
@@ -412,6 +521,7 @@ export default function FeatureManagement({ permissions }) {
                                     <div className="user-company-header">
                                         <div>
                                             <span>Ações da funcionalidade</span>
+                                            <HelpButton help={fieldHelp.acoes} onHelp={setActiveHelp} />
                                             <strong>Opções exibidas no grid de permissões</strong>
                                         </div>
                                         {!readonly && (
@@ -426,16 +536,8 @@ export default function FeatureManagement({ permissions }) {
                                             <div key={acao.localKey || acao.id || index} className="user-feature-permission-row">
                                                 <div className="user-feature-crud-options">
                                                     <label>
-                                                        Chave
-                                                        <input
-                                                            value={acao.chave || ""}
-                                                            onChange={(event) => handleActionChange(index, "chave", event.target.value)}
-                                                            disabled={readonly || saving || acao.acaoPadrao}
-                                                            required
-                                                        />
-                                                    </label>
-                                                    <label>
                                                         Nome
+                                                        <HelpButton help={fieldHelp.nomeAcao} onHelp={setActiveHelp} />
                                                         <input
                                                             value={acao.nome || ""}
                                                             onChange={(event) => handleActionChange(index, "nome", event.target.value)}
@@ -445,6 +547,7 @@ export default function FeatureManagement({ permissions }) {
                                                     </label>
                                                     <label>
                                                         Ordem
+                                                        <HelpButton help={fieldHelp.ordem} onHelp={setActiveHelp} />
                                                         <input
                                                             type="number"
                                                             value={acao.ordem ?? 0}
@@ -456,6 +559,7 @@ export default function FeatureManagement({ permissions }) {
 
                                                 <label>
                                                     Detalhe da ação customizada
+                                                    <HelpButton help={fieldHelp.detalheAcao} onHelp={setActiveHelp} />
                                                     <input
                                                         value={acao.configuracao || ""}
                                                         onChange={(event) => handleActionChange(index, "configuracao", event.target.value)}
@@ -466,6 +570,7 @@ export default function FeatureManagement({ permissions }) {
 
                                                 <label>
                                                     Descrição
+                                                    <HelpButton help={fieldHelp.descricao} onHelp={setActiveHelp} />
                                                     <input
                                                         value={acao.descricao || ""}
                                                         onChange={(event) => handleActionChange(index, "descricao", event.target.value)}
@@ -482,6 +587,7 @@ export default function FeatureManagement({ permissions }) {
                                                             disabled={readonly || saving}
                                                         />
                                                         Ativa
+                                                        <HelpButton help={fieldHelp.ativo} onHelp={setActiveHelp} />
                                                     </label>
                                                     <label className="user-permission-option">
                                                         <input
@@ -491,6 +597,7 @@ export default function FeatureManagement({ permissions }) {
                                                             disabled={readonly || saving}
                                                         />
                                                     Padrão
+                                                    <HelpButton help={fieldHelp.acaoPadrao} onHelp={setActiveHelp} />
                                                     </label>
                                                     {!readonly && !acao.acaoPadrao && (
                                                         <button className="crud-inline-action crud-inline-action--danger" type="button" onClick={() => removeAction(index)} disabled={saving}>
@@ -504,6 +611,8 @@ export default function FeatureManagement({ permissions }) {
                             </CrudModalTabPanel>
                 </CrudModal>
             )}
+
+            <FieldHelpDialog help={activeHelp} onClose={() => setActiveHelp(null)} />
 
             <ConfirmDialog
                 open={!!pendingDelete}

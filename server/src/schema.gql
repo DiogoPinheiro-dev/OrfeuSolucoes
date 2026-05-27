@@ -66,7 +66,6 @@ input CreateSolucaoInput {
   ordem: Int = 0
   slug: String!
   somenteAdminSistema: Boolean = false
-  status: String
 }
 
 input CreateUserInput {
@@ -246,7 +245,6 @@ type SolucaoType {
   ordem: Float!
   slug: String!
   somenteAdminSistema: Boolean!
-  status: String
 }
 
 input SwitchCompanyInput {
@@ -313,7 +311,6 @@ input UpdateSolucaoInput {
   ordem: Int
   slug: String
   somenteAdminSistema: Boolean
-  status: String
 }
 
 input UpdateUserInput {

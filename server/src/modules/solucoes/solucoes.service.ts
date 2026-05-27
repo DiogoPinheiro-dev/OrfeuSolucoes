@@ -16,7 +16,6 @@ type SolucaoRecord = {
   nome: string;
   descricao?: string | null;
   eyebrow?: string | null;
-  status?: string | null;
   ordem: number;
   ativo: boolean;
   exibirNoHub: boolean;
@@ -96,6 +95,77 @@ const LEGACY_ACTION_FIELDS: Record<string, keyof Pick<FuncionalidadePermissao, '
 export class SolucoesService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async ensureDefaultConfiguradorFeatures(): Promise<void> {
+    const configurador = (await (this.prisma as never as { solucao: { findUnique: Function } }).solucao.findUnique({
+      where: { slug: 'configurador' },
+      select: { id: true }
+    })) as { id: number } | null;
+
+    if (!configurador) {
+      return;
+    }
+
+    await this.mergeDuplicateConfiguradorFeature(
+      configurador.id,
+      'cadastro-de-soluções',
+      'cadastro-de-solucoes'
+    );
+
+    const defaultFeatures = [
+      {
+        slug: 'cadastro-de-solucoes',
+        titulo: 'Cadastro de solucoes',
+        label: 'Solucoes',
+        descricao: 'Crie e mantenha as solucoes exibidas no hub do sistema.',
+        ordem: 35,
+        registryKey: 'configurador.cadastro-de-solucoes'
+      }
+    ];
+
+    for (const feature of defaultFeatures) {
+      const existing = (await (this.prisma as never as { funcionalidade: { findUnique: Function } }).funcionalidade.findUnique({
+        where: {
+          solucaoId_slug: {
+            solucaoId: configurador.id,
+            slug: feature.slug
+          }
+        }
+      })) as FuncionalidadeRecord | null;
+      const funcionalidade = existing
+        ? (await (this.prisma as never as { funcionalidade: { update: Function } }).funcionalidade.update({
+            where: { id: existing.id },
+            data: {
+              titulo: feature.titulo,
+              label: feature.label,
+              descricao: feature.descricao,
+              ordem: feature.ordem,
+              ativo: true,
+              registryKey: feature.registryKey,
+              somenteAdminSistema: true
+            }
+          })) as FuncionalidadeRecord
+        : (await (this.prisma as never as { funcionalidade: { create: Function } }).funcionalidade.create({
+            data: {
+              solucaoId: configurador.id,
+              slug: feature.slug,
+              titulo: feature.titulo,
+              label: feature.label,
+              descricao: feature.descricao,
+              ordem: feature.ordem,
+              ativo: true,
+              registryKey: feature.registryKey,
+              somenteAdminSistema: true
+            }
+          })) as FuncionalidadeRecord;
+
+      await this.syncFuncionalidadeAcoes(funcionalidade.id);
+
+      if (!existing) {
+        await this.syncNewFuncionalidadeAccess(funcionalidade);
+      }
+    }
+  }
+
   async myHubNavigation(user: JwtPayload): Promise<SolucaoType[]> {
     const solucoes = await this.findAll();
     const groupSolutionIds = await this.findGroupSolutionIds(user.grupo?.id);
@@ -103,12 +173,17 @@ export class SolucoesService {
     const companySolutionIds = await this.findCompanySolutionIds(user.empresaId);
     const companyFeatureIds = await this.findCompanyFeatureIds(user.empresaId);
     const isSystemAdmin = this.isSystemAdmin(user);
+    const canBypassAccessRules = isSystemAdmin || this.hasFullAccessGroup(user.grupo);
 
     return solucoes
       .filter((solucao) => solucao.ativo && solucao.exibirNoHub)
       .filter((solucao) => {
         if (solucao.somenteAdminSistema) {
           return isSystemAdmin;
+        }
+
+        if (canBypassAccessRules) {
+          return true;
         }
 
         return groupSolutionIds.has(solucao.id) && companySolutionIds.has(solucao.id);
@@ -122,12 +197,16 @@ export class SolucoesService {
               return isSystemAdmin;
             }
 
+            if (canBypassAccessRules) {
+              return true;
+            }
+
             const permissao = groupFeaturePermissions.get(funcionalidade.id);
 
             return !!permissao?.podeVisualizar && companyFeatureIds.has(funcionalidade.id);
           })
           .map((funcionalidade) => {
-            if (isSystemAdmin) {
+            if (canBypassAccessRules) {
               return this.withAllPermissions(funcionalidade);
             }
 
@@ -180,7 +259,6 @@ export class SolucoesService {
         nome: input.nome.trim(),
         descricao: input.descricao?.trim() || null,
         eyebrow: input.eyebrow?.trim() || null,
-        status: input.status?.trim() || null,
         ordem: input.ordem ?? 0,
         ativo: input.ativo ?? true,
         exibirNoHub: input.exibirNoHub ?? true,
@@ -202,7 +280,6 @@ export class SolucoesService {
         ...(input.nome !== undefined ? { nome: input.nome.trim() } : {}),
         ...(input.descricao !== undefined ? { descricao: input.descricao?.trim() || null } : {}),
         ...(input.eyebrow !== undefined ? { eyebrow: input.eyebrow?.trim() || null } : {}),
-        ...(input.status !== undefined ? { status: input.status?.trim() || null } : {}),
         ...(input.ordem !== undefined ? { ordem: input.ordem } : {}),
         ...(input.ativo !== undefined ? { ativo: input.ativo } : {}),
         ...(input.exibirNoHub !== undefined ? { exibirNoHub: input.exibirNoHub } : {}),
@@ -492,11 +569,67 @@ export class SolucoesService {
   }
 
   private normalizeSlug(slug: string): string {
-    return slug.trim().toLowerCase();
+    return slug
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  private async mergeDuplicateConfiguradorFeature(solucaoId: number, duplicateSlug: string, targetSlug: string): Promise<void> {
+    const duplicate = (await (this.prisma as never as { funcionalidade: { findUnique: Function } }).funcionalidade.findUnique({
+      where: {
+        solucaoId_slug: {
+          solucaoId,
+          slug: duplicateSlug
+        }
+      }
+    })) as FuncionalidadeRecord | null;
+
+    if (!duplicate) {
+      return;
+    }
+
+    const target = (await (this.prisma as never as { funcionalidade: { findUnique: Function } }).funcionalidade.findUnique({
+      where: {
+        solucaoId_slug: {
+          solucaoId,
+          slug: targetSlug
+        }
+      }
+    })) as FuncionalidadeRecord | null;
+
+    if (!target) {
+      await (this.prisma as never as { funcionalidade: { update: Function } }).funcionalidade.update({
+        where: { id: duplicate.id },
+        data: { slug: targetSlug }
+      });
+      return;
+    }
+
+    await (this.prisma as never as { funcionalidade: { delete: Function } }).funcionalidade.delete({
+      where: { id: duplicate.id }
+    });
   }
 
   private isSystemAdmin(user?: { login?: string | null } | null): boolean {
     return user?.login?.toLowerCase() === 'admin';
+  }
+
+  private hasFullAccessGroup(grupo?: {
+    acessoEcommerce?: boolean | null;
+    acessoProjetos?: boolean | null;
+    acessoHoras?: boolean | null;
+    acessoConfigurador?: boolean | null;
+  } | null): boolean {
+    return !!(
+      grupo?.acessoEcommerce &&
+      grupo.acessoProjetos &&
+      grupo.acessoHoras &&
+      grupo.acessoConfigurador
+    );
   }
 
   private normalizeActionKey(chave: string): string {
@@ -529,7 +662,6 @@ export class SolucoesService {
       nome: solucao.nome,
       descricao: solucao.descricao ?? null,
       eyebrow: solucao.eyebrow ?? null,
-      status: solucao.status ?? null,
       ordem: solucao.ordem,
       ativo: solucao.ativo,
       exibirNoHub: solucao.exibirNoHub,

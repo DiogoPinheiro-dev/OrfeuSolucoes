@@ -2,8 +2,8 @@ export const FEATURE_COMPONENT_REGISTRY = {
     "configurador.cadastro-de-usuarios": "user-management",
     "configurador.cadastro-de-grupos": "group-management",
     "configurador.cadastro-de-empresas": "company-management",
-    "configurador.cadastro-de-funcionalidades": "feature-management",
-    "configurador.teste": "test-feature"
+    "configurador.cadastro-de-solucoes": "solution-management",
+    "configurador.cadastro-de-funcionalidades": "feature-management"
 };
 
 export const normalizeSolutions = (solutions = []) =>
@@ -13,7 +13,6 @@ export const normalizeSolutions = (solutions = []) =>
         title: solution.nome,
         description: solution.descricao,
         eyebrow: solution.eyebrow,
-        status: solution.status,
         areas: (solution.funcionalidades || []).map((feature) => ({
             id: feature.id,
             slug: feature.slug,

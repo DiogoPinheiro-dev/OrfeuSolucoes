@@ -97,7 +97,7 @@ export class UsersService {
     const userExists = await this.prisma.usuario.findUnique({ where: { id: input.id } });
 
     if (!userExists) {
-      throw new NotFoundException('UsuÃ¡rio nÃ£o encontrado.');
+      throw new NotFoundException('Usuário não encontrado.');
     }
 
     const existingUser = (await this.prisma.usuario.findUnique({
@@ -120,7 +120,7 @@ export class UsersService {
       const emailOwner = await this.prisma.usuario.findUnique({ where: { email } });
 
       if (emailOwner && emailOwner.id !== input.id) {
-        throw new ConflictException('Email jÃ¡ estÃ¡ em uso.');
+        throw new ConflictException('Email já está em uso.');
       }
 
       data.email = email;
@@ -178,7 +178,7 @@ export class UsersService {
     const userExists = await this.prisma.usuario.findUnique({ where: { id } });
 
     if (!userExists) {
-      throw new NotFoundException('UsuÃ¡rio nÃ£o encontrado.');
+      throw new NotFoundException('Usuário não encontrado.');
     }
 
     const userWithGroup = (await this.prisma.usuario.findUnique({
@@ -227,7 +227,7 @@ export class UsersService {
     })) as UsuarioWithRole | null;
 
     if (!user) {
-      throw new NotFoundException('UsuÃ¡rio nÃ£o encontrado.');
+      throw new NotFoundException('Usuário não encontrado.');
     }
 
     return this.toUserType(await this.attachEmpresas(user));
