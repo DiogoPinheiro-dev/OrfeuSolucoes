@@ -7,6 +7,16 @@
   --hub-sidebar-width: 260px;
 }
 
+.hub-page,
+.hub-page h1,
+.hub-page h2,
+.hub-page strong,
+.hub-kicker,
+.hub-eyebrow,
+.hub-summary-label {
+  font-weight: 400;
+}
+
 @media (min-width: 921px) {
   .hub-page .hub-main,
   .hub-page footer.site-footer {
@@ -45,7 +55,7 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 400;
 }
 
 .hub-hero h1 {
@@ -64,7 +74,7 @@
   display: block;
   margin-bottom: 10px;
   color: var(--detail-accent-text);
-  font-weight: 700;
+  font-weight: 400;
 }
 
 .hub-summary-card strong {

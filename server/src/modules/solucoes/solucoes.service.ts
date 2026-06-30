@@ -166,6 +166,156 @@ export class SolucoesService {
     }
   }
 
+  async ensureControleChamadosSolution(): Promise<void> {
+    const existingSolucao = (await (this.prisma as never as { solucao: { findUnique: Function } }).solucao.findUnique({
+      where: { slug: 'controle-de-chamados' },
+      select: { id: true }
+    })) as { id: number } | null;
+
+    const solucao = existingSolucao
+      ? (await (this.prisma as never as { solucao: { update: Function } }).solucao.update({
+          where: { id: existingSolucao.id },
+          data: {
+            nome: 'Controle de Chamados',
+            descricao: 'Abertura, acompanhamento e atendimento de chamados por empresa.',
+            eyebrow: 'Atendimento',
+            ordem: 40,
+            ativo: true,
+            exibirNoHub: true,
+            somenteAdminSistema: false
+          },
+          select: { id: true }
+        })) as { id: number }
+      : (await (this.prisma as never as { solucao: { create: Function } }).solucao.create({
+          data: {
+            slug: 'controle-de-chamados',
+            nome: 'Controle de Chamados',
+            descricao: 'Abertura, acompanhamento e atendimento de chamados por empresa.',
+            eyebrow: 'Atendimento',
+            ordem: 40,
+            ativo: true,
+            exibirNoHub: true,
+            somenteAdminSistema: false
+          },
+          select: { id: true }
+        })) as { id: number };
+
+    const features: Array<{
+      slug: string;
+      titulo: string;
+      label: string;
+      descricao: string;
+      ordem: number;
+      registryKey: string;
+      acoes?: FuncionalidadeAcaoInput[];
+    }> = [
+      {
+        slug: 'abrir-chamado',
+        titulo: 'Abrir chamado',
+        label: 'Novo chamado',
+        descricao: 'Registre uma nova solicitacao de atendimento para a empresa selecionada.',
+        ordem: 10,
+        registryKey: 'controle-de-chamados.abrir-chamado'
+      },
+      {
+        slug: 'meus-chamados',
+        titulo: 'Meus chamados',
+        label: 'Minhas solicitacoes',
+        descricao: 'Acompanhe chamados abertos por voce, responda e solicite reabertura quando necessario.',
+        ordem: 20,
+        registryKey: 'controle-de-chamados.meus-chamados',
+        acoes: [
+          {
+            chave: 'responder_proprio_chamado',
+            nome: 'Responder proprio chamado', configuracao: 'responder_proprio_chamado',
+            descricao: 'Permite adicionar respostas publicas nos proprios chamados.',
+            ordem: 50,
+            ativo: true
+          },
+          {
+            chave: 'reabrir_proprio_chamado',
+            nome: 'Reabrir proprio chamado', configuracao: 'reabrir_proprio_chamado',
+            descricao: 'Permite reabrir chamados proprios que foram resolvidos.',
+            ordem: 60,
+            ativo: true
+          }
+        ]
+      },
+      {
+        slug: 'painel-atendimento',
+        titulo: 'Painel de atendimento',
+        label: 'Fila de atendimento',
+        descricao: 'Visualize a fila da empresa, assuma, atribua, responda e movimente chamados.',
+        ordem: 30,
+        registryKey: 'controle-de-chamados.painel-atendimento',
+        acoes: [
+          { chave: 'visualizar_fila', nome: 'Visualizar fila', configuracao: 'visualizar_fila', ordem: 50, ativo: true },
+          { chave: 'assumir_chamado', nome: 'Assumir chamado', configuracao: 'assumir_chamado', ordem: 60, ativo: true },
+          { chave: 'atribuir_chamado', nome: 'Atribuir chamado', configuracao: 'atribuir_chamado', ordem: 70, ativo: true },
+          { chave: 'transferir_chamado', nome: 'Transferir chamado', configuracao: 'transferir_chamado', ordem: 80, ativo: true },
+          { chave: 'responder_chamado', nome: 'Responder chamado', configuracao: 'responder_chamado', ordem: 90, ativo: true },
+          { chave: 'adicionar_nota_interna', nome: 'Adicionar nota interna', configuracao: 'adicionar_nota_interna', ordem: 100, ativo: true },
+          { chave: 'alterar_prioridade', nome: 'Alterar prioridade', configuracao: 'alterar_prioridade', ordem: 110, ativo: true },
+          { chave: 'alterar_status', nome: 'Alterar status', configuracao: 'alterar_status', ordem: 120, ativo: true },
+          { chave: 'resolver_chamado', nome: 'Resolver chamado', configuracao: 'resolver_chamado', ordem: 130, ativo: true },
+          { chave: 'encerrar_chamado', nome: 'Encerrar chamado', configuracao: 'encerrar_chamado', ordem: 140, ativo: true },
+          { chave: 'reabrir_chamado', nome: 'Reabrir chamado', configuracao: 'reabrir_chamado', ordem: 150, ativo: true }
+        ]
+      },
+      {
+        slug: 'categorias',
+        titulo: 'Categorias de chamados',
+        label: 'Categorias',
+        descricao: 'Configure categorias de chamados especificas da empresa selecionada.',
+        ordem: 40,
+        registryKey: 'controle-de-chamados.categorias'
+      }
+    ];
+
+    for (const feature of features) {
+      const existing = (await (this.prisma as never as { funcionalidade: { findUnique: Function } }).funcionalidade.findUnique({
+        where: {
+          solucaoId_slug: {
+            solucaoId: solucao.id,
+            slug: feature.slug
+          }
+        }
+      })) as FuncionalidadeRecord | null;
+      const funcionalidade = existing
+        ? (await (this.prisma as never as { funcionalidade: { update: Function } }).funcionalidade.update({
+            where: { id: existing.id },
+            data: {
+              titulo: feature.titulo,
+              label: feature.label,
+              descricao: feature.descricao,
+              ordem: feature.ordem,
+              ativo: true,
+              registryKey: feature.registryKey,
+              somenteAdminSistema: false
+            }
+          })) as FuncionalidadeRecord
+        : (await (this.prisma as never as { funcionalidade: { create: Function } }).funcionalidade.create({
+            data: {
+              solucaoId: solucao.id,
+              slug: feature.slug,
+              titulo: feature.titulo,
+              label: feature.label,
+              descricao: feature.descricao,
+              ordem: feature.ordem,
+              ativo: true,
+              registryKey: feature.registryKey,
+              somenteAdminSistema: false
+            }
+          })) as FuncionalidadeRecord;
+
+      await this.syncFuncionalidadeAcoes(funcionalidade.id, feature.acoes);
+
+      if (!existing) {
+        await this.syncNewFuncionalidadeAccess(funcionalidade);
+      }
+    }
+  }
+
   async myHubNavigation(user: JwtPayload): Promise<SolucaoType[]> {
     const solucoes = await this.findAll();
     const groupSolutionIds = await this.findGroupSolutionIds(user.grupo?.id);
@@ -763,14 +913,19 @@ export class SolucoesService {
   private async syncFuncionalidadeAcoes(funcionalidadeId: number, acoes?: FuncionalidadeAcaoInput[]): Promise<void> {
     const normalized = this.normalizeActionInputs(acoes);
     const submittedIds = normalized.map((acao) => acao.id).filter((id): id is number => !!id);
-
-    await (this.prisma as never as { funcionalidadeAcao: { deleteMany: Function } }).funcionalidadeAcao.deleteMany({
-      where: {
-        funcionalidadeId,
-        acaoPadrao: false,
-        ...(submittedIds.length ? { id: { notIn: submittedIds } } : {})
-      }
-    });
+    const submittedKeys = normalized.map((acao) => acao.chave).filter(Boolean);
+    const submittedConfigs = normalized.map((acao) => acao.configuracao).filter((configuracao): configuracao is string => !!configuracao);
+    const comparableActionKey = (value?: string | null) => (value ?? '')
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '');
+    const existingActions = (await (this.prisma as never as { funcionalidadeAcao: { findMany: Function } }).funcionalidadeAcao.findMany({
+      where: { funcionalidadeId },
+      select: { id: true, chave: true, configuracao: true }
+    })) as Pick<FuncionalidadeAcaoRecord, 'id' | 'chave' | 'configuracao'>[];
 
     for (const acao of normalized) {
       const data = {
@@ -790,13 +945,41 @@ export class SolucoesService {
           data
         });
       } else {
-        await (this.prisma as never as { funcionalidadeAcao: { upsert: Function } }).funcionalidadeAcao.upsert({
-          where: { funcionalidadeId_chave: { funcionalidadeId, chave: acao.chave } },
-          update: data,
-          create: data
-        });
+        const comparableKey = comparableActionKey(acao.chave);
+        const comparableConfig = comparableActionKey(acao.configuracao);
+        const existingAction = existingActions.find((item) =>
+          item.chave === acao.chave ||
+          (!!acao.configuracao && item.configuracao === acao.configuracao) ||
+          comparableActionKey(item.chave) === comparableKey ||
+          (!!comparableConfig && comparableActionKey(item.configuracao) === comparableConfig)
+        );
+
+        if (existingAction) {
+          await (this.prisma as never as { funcionalidadeAcao: { update: Function } }).funcionalidadeAcao.update({
+            where: { id: existingAction.id },
+            data
+          });
+        } else {
+          await (this.prisma as never as { funcionalidadeAcao: { upsert: Function } }).funcionalidadeAcao.upsert({
+            where: { funcionalidadeId_chave: { funcionalidadeId, chave: acao.chave } },
+            update: data,
+            create: data
+          });
+        }
       }
     }
+
+    await (this.prisma as never as { funcionalidadeAcao: { deleteMany: Function } }).funcionalidadeAcao.deleteMany({
+      where: {
+        funcionalidadeId,
+        acaoPadrao: false,
+        NOT: [
+          ...(submittedIds.length ? [{ id: { in: submittedIds } }] : []),
+          ...(submittedKeys.length ? [{ chave: { in: submittedKeys } }] : []),
+          ...(submittedConfigs.length ? [{ configuracao: { in: submittedConfigs } }] : [])
+        ]
+      }
+    });
 
     await this.syncMissingActionPermissionsForFeature(funcionalidadeId);
   }

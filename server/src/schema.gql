@@ -2,13 +2,117 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+input AlterarPrioridadeChamadoInput {
+  chamadoId: String!
+  prioridade: String!
+}
+
+input AlterarStatusChamadoInput {
+  chamadoId: String!
+  observacao: String
+  status: String!
+}
+
+type AtendenteChamadoType {
+  email: String!
+  id: String!
+  login: String
+  nome: String
+}
+
+input AtribuirChamadoInput {
+  chamadoId: String!
+  responsavelId: String
+}
+
 type AuthPayloadType {
   accessToken: String!
   user: UserType!
 }
 
+type ChamadoCategoriaType {
+  ativo: Boolean!
+  atualizadoEm: DateTime!
+  criadoEm: DateTime!
+  descricao: String
+  empresaId: Int!
+  id: Int!
+  nome: String!
+}
+
+input ChamadoFiltroInput {
+  categoriaId: Int
+  page: Int = 1
+  pageSize: Int = 20
+  prioridade: String
+  responsavelId: String
+  status: String
+  termo: String
+}
+
+type ChamadoHistoricoType {
+  campo: String
+  chamadoId: String!
+  criadoEm: DateTime!
+  evento: String!
+  id: String!
+  observacao: String
+  usuarioId: String
+  usuarioNome: String
+  valorAnterior: String
+  valorNovo: String
+}
+
+type ChamadoMensagemType {
+  autorId: String!
+  autorNome: String
+  chamadoId: String!
+  conteudo: String!
+  criadoEm: DateTime!
+  id: String!
+  tipo: String!
+}
+
+type ChamadoPageType {
+  items: [ChamadoType!]!
+  page: Int!
+  pageSize: Int!
+  total: Int!
+}
+
+type ChamadoType {
+  atualizadoEm: DateTime!
+  categoriaId: Int
+  categoriaNome: String
+  criadoEm: DateTime!
+  descricao: String!
+  empresaId: Int!
+  encerradoEm: DateTime
+  historico: [ChamadoHistoricoType!]!
+  id: String!
+  mensagens: [ChamadoMensagemType!]!
+  numero: Int!
+  primeiraRespostaEm: DateTime
+  prioridade: String!
+  resolvidoEm: DateTime
+  responsavelId: String
+  responsavelNome: String
+  solicitanteId: String!
+  solicitanteNome: String
+  status: String!
+  tipo: String!
+  titulo: String!
+  versao: Int!
+}
+
 input ChangePasswordInput {
   novaSenha: String!
+}
+
+input CreateChamadoCategoriaInput {
+  ativo: Boolean = true
+  descricao: String
+  nome: String!
 }
 
 input CreateEmpresaInput {
@@ -76,6 +180,19 @@ input CreateUserInput {
   nome: String
   senha: String!
 }
+
+input CriarChamadoInput {
+  categoriaId: Int
+  descricao: String!
+  prioridade: String
+  tipo: String
+  titulo: String!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
 
 type EmpresaType {
   acessoEcommerce: Boolean!
@@ -189,23 +306,35 @@ input LoginInput {
 }
 
 type Mutation {
+  alterarPrioridadeChamado(input: AlterarPrioridadeChamadoInput!): ChamadoType!
+  alterarStatusChamado(input: AlterarStatusChamadoInput!): ChamadoType!
+  assumirChamado(id: String!): ChamadoType!
+  atribuirChamado(input: AtribuirChamadoInput!): ChamadoType!
   changePassword(input: ChangePasswordInput!): AuthPayloadType!
+  createChamadoCategoria(input: CreateChamadoCategoriaInput!): ChamadoCategoriaType!
   createEmpresa(input: CreateEmpresaInput!): EmpresaType!
   createFuncionalidade(input: CreateFuncionalidadeInput!): FuncionalidadeType!
   createGrupoUsuario(input: CreateGrupoUsuarioInput!): GrupoUsuarioType!
   createServico(input: CreateServicoInput!): ServicoType!
   createSolucao(input: CreateSolucaoInput!): SolucaoType!
   createUser(input: CreateUserInput!): UserType!
+  criarChamado(input: CriarChamadoInput!): ChamadoType!
+  deleteChamadoCategoria(id: Int!): Boolean!
   deleteEmpresa(id: Int!): Boolean!
   deleteFuncionalidade(id: Int!): Boolean!
   deleteGrupoUsuario(id: Int!): Boolean!
   deleteServico(id: Int!): Boolean!
   deleteSolucao(id: Int!): Boolean!
   deleteUser(id: String!): Boolean!
+  encerrarChamado(id: String!, observacao: String): ChamadoType!
   login(input: LoginInput!): AuthPayloadType!
   loginCompanies(input: LoginCompaniesInput!): [EmpresaType!]!
   logout: Boolean!
+  reabrirChamado(id: String!, observacao: String): ChamadoType!
+  resolverChamado(id: String!, observacao: String): ChamadoType!
+  responderChamado(input: ResponderChamadoInput!): ChamadoType!
   switchCompany(input: SwitchCompanyInput!): AuthPayloadType!
+  updateChamadoCategoria(input: UpdateChamadoCategoriaInput!): ChamadoCategoriaType!
   updateEmpresa(input: UpdateEmpresaInput!): EmpresaType!
   updateFuncionalidade(input: UpdateFuncionalidadeInput!): FuncionalidadeType!
   updateGrupoUsuario(input: UpdateGrupoUsuarioInput!): GrupoUsuarioType!
@@ -215,14 +344,24 @@ type Mutation {
 }
 
 type Query {
+  atendentesDisponiveis: [AtendenteChamadoType!]!
+  categoriasChamado(ativas: Boolean = true): [ChamadoCategoriaType!]!
+  chamado(id: String!): ChamadoType!
   empresas: [EmpresaType!]!
+  filaChamados(filtro: ChamadoFiltroInput): ChamadoPageType!
   gruposUsuarios: [GrupoUsuarioType!]!
   health: String!
   me: UserType!
+  meusChamados(filtro: ChamadoFiltroInput): ChamadoPageType!
   myHubNavigation: [SolucaoType!]!
   servicos: [ServicoType!]!
   solucoes: [SolucaoType!]!
   users: [UserType!]!
+}
+
+input ResponderChamadoInput {
+  chamadoId: String!
+  conteudo: String!
 }
 
 type ServicoType {
@@ -249,6 +388,13 @@ type SolucaoType {
 
 input SwitchCompanyInput {
   empresaId: Int!
+}
+
+input UpdateChamadoCategoriaInput {
+  ativo: Boolean
+  descricao: String
+  id: Int!
+  nome: String
 }
 
 input UpdateEmpresaInput {

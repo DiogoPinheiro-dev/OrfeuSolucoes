@@ -3,7 +3,11 @@ export const FEATURE_COMPONENT_REGISTRY = {
     "configurador.cadastro-de-grupos": "group-management",
     "configurador.cadastro-de-empresas": "company-management",
     "configurador.cadastro-de-solucoes": "solution-management",
-    "configurador.cadastro-de-funcionalidades": "feature-management"
+    "configurador.cadastro-de-funcionalidades": "feature-management",
+    "controle-de-chamados.abrir-chamado": "chamado-create",
+    "controle-de-chamados.meus-chamados": "meus-chamados",
+    "controle-de-chamados.painel-atendimento": "painel-atendimento",
+    "controle-de-chamados.categorias": "categoria-chamado-management"
 };
 
 export const normalizeSolutions = (solutions = []) =>
@@ -59,12 +63,25 @@ export const canAccessSolution = (solutions, slug) =>
 export const getUserGroupLabel = (user) =>
     user?.grupo?.nome || "Sem grupo";
 
+const normalizeActionIdentifier = (value = "") =>
+    value
+        .trim()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "_")
+        .replace(/^_+|_+$/g, "");
+
 export const canUseFeatureAction = (user, feature, action) => {
     if (isSystemAdmin(user)) {
         return true;
     }
 
-    const dynamicAction = feature?.acoes?.find((item) => item.chave === action || item.configuracao === action);
+    const requestedAction = normalizeActionIdentifier(action);
+    const dynamicAction = feature?.acoes?.find((item) =>
+        normalizeActionIdentifier(item.chave) === requestedAction ||
+        normalizeActionIdentifier(item.configuracao || "") === requestedAction
+    );
 
     if (dynamicAction) {
         return !!dynamicAction.permitido;

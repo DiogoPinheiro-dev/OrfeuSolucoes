@@ -120,6 +120,7 @@ export class GruposUsuariosService {
 
     await this.ensureInitialAdminPasswordPolicy();
     await this.solucoesService.ensureDefaultConfiguradorFeatures();
+    await this.solucoesService.ensureControleChamadosSolution();
     await this.ensureInitialAdminSolutionAccess();
   }
 
@@ -363,7 +364,8 @@ export class GruposUsuariosService {
         podeVisualizar: permissao?.podeVisualizar ?? defaults.podeVisualizar ?? true,
         podeIncluir: permissao?.podeIncluir ?? defaults.podeIncluir ?? false,
         podeAlterar: permissao?.podeAlterar ?? defaults.podeAlterar ?? false,
-        podeExcluir: permissao?.podeExcluir ?? defaults.podeExcluir ?? false
+        podeExcluir: permissao?.podeExcluir ?? defaults.podeExcluir ?? false,
+        acoes: permissao?.acoes ?? []
       };
     });
   }

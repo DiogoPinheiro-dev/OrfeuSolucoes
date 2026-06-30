@@ -1,16 +1,32 @@
 import { Link, Navigate, useParams } from "react-router-dom";
 
 import { FEATURE_COMPONENT_REGISTRY, canAccessSolution, getFeatureBySlug, getSolutionBySlug } from "../auth/hubConfig";
+import CategoriaChamadoManagement from "../components/CategoriaChamadoManagement";
+import ChamadoCreate from "../components/ChamadoCreate";
 import CompanyManagement from "../components/CompanyManagement";
 import FeatureManagement from "../components/FeatureManagement";
 import Footer from "../components/Footer";
 import GroupManagement from "../components/GroupManagement";
 import Header from "../components/Header";
+import MeusChamados from "../components/MeusChamados";
+import PainelAtendimento from "../components/PainelAtendimento";
 import SolutionManagement from "../components/SolutionManagement";
 import UserManagement from "../components/UserManagement";
 import { useHubNavigation } from "../hooks/useHubNavigation";
 
 import "../styles/workspace.css";
+
+const FEATURE_COMPONENTS = {
+    "user-management": UserManagement,
+    "company-management": CompanyManagement,
+    "group-management": GroupManagement,
+    "solution-management": SolutionManagement,
+    "feature-management": FeatureManagement,
+    "chamado-create": ChamadoCreate,
+    "meus-chamados": MeusChamados,
+    "painel-atendimento": PainelAtendimento,
+    "categoria-chamado-management": CategoriaChamadoManagement
+};
 
 export default function SolutionFeaturePage() {
     const { slug, areaSlug } = useParams();
@@ -49,11 +65,7 @@ export default function SolutionFeaturePage() {
     }
 
     const componentKey = FEATURE_COMPONENT_REGISTRY[area.registryKey] || FEATURE_COMPONENT_REGISTRY[`${solution.slug}.${area.slug}`];
-    const isUserManagement = componentKey === "user-management";
-    const isCompanyManagement = componentKey === "company-management";
-    const isGroupManagement = componentKey === "group-management";
-    const isSolutionManagement = componentKey === "solution-management";
-    const isFeatureManagement = componentKey === "feature-management";
+    const FeatureComponent = FEATURE_COMPONENTS[componentKey];
 
     return (
         <div className="page-wrapper workspace-page">
@@ -70,16 +82,8 @@ export default function SolutionFeaturePage() {
                     </div>
 
                     <section className="workspace-feature-crud">
-                        {isUserManagement ? (
-                            <UserManagement permissions={area} />
-                        ) : isCompanyManagement ? (
-                            <CompanyManagement permissions={area} />
-                        ) : isGroupManagement ? (
-                            <GroupManagement permissions={area} />
-                        ) : isSolutionManagement ? (
-                            <SolutionManagement permissions={area} />
-                        ) : isFeatureManagement ? (
-                            <FeatureManagement permissions={area} />
+                        {FeatureComponent ? (
+                            <FeatureComponent permissions={area} />
                         ) : (
                             <section className="workspace-panel workspace-panel-wide">
                                 <span className="workspace-label">{area.label}</span>

@@ -16,6 +16,16 @@
   gap: 20px;
 }
 
+.workspace-shell,
+.workspace-shell h1,
+.workspace-shell h2,
+.workspace-shell strong,
+.workspace-shell a,
+.workspace-kicker,
+.workspace-label {
+  font-weight: 400;
+}
+
 .workspace-breadcrumb {
   display: flex;
   align-items: center;
@@ -25,7 +35,7 @@
 
 .workspace-breadcrumb a {
   color: var(--secondary);
-  font-weight: 700;
+  font-weight: 400;
 }
 
 .workspace-hero,
@@ -48,7 +58,7 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 400;
 }
 
 .workspace-hero h1,

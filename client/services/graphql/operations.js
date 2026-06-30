@@ -710,3 +710,223 @@ export const DELETE_FUNCIONALIDADE_MUTATION = gql`
     deleteFuncionalidade(id: $id)
   }
 `;
+
+export const CHAMADO_FIELDS = gql`
+  fragment ChamadoFields on ChamadoType {
+    id
+    numero
+    empresaId
+    solicitanteId
+    solicitanteNome
+    responsavelId
+    responsavelNome
+    categoriaId
+    categoriaNome
+    titulo
+    descricao
+    tipo
+    prioridade
+    status
+    criadoEm
+    atualizadoEm
+    primeiraRespostaEm
+    resolvidoEm
+    encerradoEm
+    versao
+    mensagens {
+      id
+      chamadoId
+      autorId
+      autorNome
+      tipo
+      conteudo
+      criadoEm
+    }
+    historico {
+      id
+      chamadoId
+      usuarioId
+      usuarioNome
+      evento
+      campo
+      valorAnterior
+      valorNovo
+      observacao
+      criadoEm
+    }
+  }
+`;
+
+export const CHAMADO_CATEGORIA_FIELDS = gql`
+  fragment ChamadoCategoriaFields on ChamadoCategoriaType {
+    id
+    empresaId
+    nome
+    descricao
+    ativo
+    criadoEm
+    atualizadoEm
+  }
+`;
+
+export const MEUS_CHAMADOS_QUERY = gql`
+  ${CHAMADO_FIELDS}
+  query MeusChamados($filtro: ChamadoFiltroInput) {
+    meusChamados(filtro: $filtro) {
+      items {
+        ...ChamadoFields
+      }
+      total
+      page
+      pageSize
+    }
+  }
+`;
+
+export const FILA_CHAMADOS_QUERY = gql`
+  ${CHAMADO_FIELDS}
+  query FilaChamados($filtro: ChamadoFiltroInput) {
+    filaChamados(filtro: $filtro) {
+      items {
+        ...ChamadoFields
+      }
+      total
+      page
+      pageSize
+    }
+  }
+`;
+
+export const CHAMADO_QUERY = gql`
+  ${CHAMADO_FIELDS}
+  query Chamado($id: String!) {
+    chamado(id: $id) {
+      ...ChamadoFields
+    }
+  }
+`;
+
+export const CATEGORIAS_CHAMADO_QUERY = gql`
+  ${CHAMADO_CATEGORIA_FIELDS}
+  query CategoriasChamado($ativas: Boolean) {
+    categoriasChamado(ativas: $ativas) {
+      ...ChamadoCategoriaFields
+    }
+  }
+`;
+
+export const ATENDENTES_DISPONIVEIS_QUERY = gql`
+  query AtendentesDisponiveis {
+    atendentesDisponiveis {
+      id
+      nome
+      login
+      email
+    }
+  }
+`;
+
+export const CRIAR_CHAMADO_MUTATION = gql`
+  ${CHAMADO_FIELDS}
+  mutation CriarChamado($input: CriarChamadoInput!) {
+    criarChamado(input: $input) {
+      ...ChamadoFields
+    }
+  }
+`;
+
+export const RESPONDER_CHAMADO_MUTATION = gql`
+  ${CHAMADO_FIELDS}
+  mutation ResponderChamado($input: ResponderChamadoInput!) {
+    responderChamado(input: $input) {
+      ...ChamadoFields
+    }
+  }
+`;
+
+export const ASSUMIR_CHAMADO_MUTATION = gql`
+  ${CHAMADO_FIELDS}
+  mutation AssumirChamado($id: String!) {
+    assumirChamado(id: $id) {
+      ...ChamadoFields
+    }
+  }
+`;
+
+export const ATRIBUIR_CHAMADO_MUTATION = gql`
+  ${CHAMADO_FIELDS}
+  mutation AtribuirChamado($input: AtribuirChamadoInput!) {
+    atribuirChamado(input: $input) {
+      ...ChamadoFields
+    }
+  }
+`;
+
+export const ALTERAR_STATUS_CHAMADO_MUTATION = gql`
+  ${CHAMADO_FIELDS}
+  mutation AlterarStatusChamado($input: AlterarStatusChamadoInput!) {
+    alterarStatusChamado(input: $input) {
+      ...ChamadoFields
+    }
+  }
+`;
+
+export const ALTERAR_PRIORIDADE_CHAMADO_MUTATION = gql`
+  ${CHAMADO_FIELDS}
+  mutation AlterarPrioridadeChamado($input: AlterarPrioridadeChamadoInput!) {
+    alterarPrioridadeChamado(input: $input) {
+      ...ChamadoFields
+    }
+  }
+`;
+
+export const RESOLVER_CHAMADO_MUTATION = gql`
+  ${CHAMADO_FIELDS}
+  mutation ResolverChamado($id: String!, $observacao: String) {
+    resolverChamado(id: $id, observacao: $observacao) {
+      ...ChamadoFields
+    }
+  }
+`;
+
+export const ENCERRAR_CHAMADO_MUTATION = gql`
+  ${CHAMADO_FIELDS}
+  mutation EncerrarChamado($id: String!, $observacao: String) {
+    encerrarChamado(id: $id, observacao: $observacao) {
+      ...ChamadoFields
+    }
+  }
+`;
+
+export const REABRIR_CHAMADO_MUTATION = gql`
+  ${CHAMADO_FIELDS}
+  mutation ReabrirChamado($id: String!, $observacao: String) {
+    reabrirChamado(id: $id, observacao: $observacao) {
+      ...ChamadoFields
+    }
+  }
+`;
+
+export const CREATE_CHAMADO_CATEGORIA_MUTATION = gql`
+  ${CHAMADO_CATEGORIA_FIELDS}
+  mutation CreateChamadoCategoria($input: CreateChamadoCategoriaInput!) {
+    createChamadoCategoria(input: $input) {
+      ...ChamadoCategoriaFields
+    }
+  }
+`;
+
+export const UPDATE_CHAMADO_CATEGORIA_MUTATION = gql`
+  ${CHAMADO_CATEGORIA_FIELDS}
+  mutation UpdateChamadoCategoria($input: UpdateChamadoCategoriaInput!) {
+    updateChamadoCategoria(input: $input) {
+      ...ChamadoCategoriaFields
+    }
+  }
+`;
+
+export const DELETE_CHAMADO_CATEGORIA_MUTATION = gql`
+  mutation DeleteChamadoCategoria($id: Int!) {
+    deleteChamadoCategoria(id: $id)
+  }
+`;
