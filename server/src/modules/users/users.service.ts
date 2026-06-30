@@ -265,6 +265,8 @@ export class UsersService {
       acessoProjetos: empresaVinculada.acessoProjetos ?? false,
       acessoHoras: empresaVinculada.acessoHoras ?? false,
       solucaoIds: [],
+      solucaoSlugs: [],
+      solucaoNomes: [],
       funcionalidadeIds: []
     }));
 
@@ -281,6 +283,8 @@ export class UsersService {
             acessoProjetos: empresa.acessoProjetos ?? false,
             acessoHoras: empresa.acessoHoras ?? false,
             solucaoIds: [],
+            solucaoSlugs: [],
+            solucaoNomes: [],
             funcionalidadeIds: []
           }
         : null,

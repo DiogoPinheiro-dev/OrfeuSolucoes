@@ -126,7 +126,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
     }, [chamadoId]);
 
     useEffect(() => {
-        if (!canAssign) {
+        if (!canManageResponsavel) {
             return;
         }
 
@@ -151,7 +151,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
         return () => {
             active = false;
         };
-    }, [canAssign]);
+    }, [canManageResponsavel]);
 
     const runAction = async (action, success) => {
         setError("");
@@ -276,7 +276,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
                                 <select
                                     value={responsavelId}
                                     onChange={(event) => setResponsavelId(event.target.value)}
-                                    disabled={!canAssign || saving || isResolved || isClosed}
+                                    disabled={!canManageResponsavel || saving || isResolved || isClosed}
                                 >
                                     <option value="">Sem responsavel</option>
                                     {atendentes.map((atendente) => (
@@ -286,13 +286,26 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
                                     ))}
                                 </select>
                             </label>
-                            <button
-                                type="button"
-                                onClick={() => runAction(() => atribuirChamado({ chamadoId: chamado.id, responsavelId: responsavelId || null }))}
-                                disabled={!canAssign || saving || isResolved || isClosed}
-                            >
-                                Salvar responsavel
-                            </button>
+                            <div className="chamado-inline-actions chamado-inline-actions-wrap">
+                                {canAssign && (
+                                    <button
+                                        type="button"
+                                        onClick={() => runAction(() => atribuirChamado({ chamadoId: chamado.id, responsavelId: responsavelId || null }))}
+                                        disabled={saving || isResolved || isClosed}
+                                    >
+                                        Salvar responsavel
+                                    </button>
+                                )}
+                                {canTransfer && (
+                                    <button
+                                        type="button"
+                                        onClick={() => runAction(() => transferirChamado({ chamadoId: chamado.id, responsavelId: responsavelId || null }))}
+                                        disabled={saving || isResolved || isClosed}
+                                    >
+                                        Transferir chamado
+                                    </button>
+                                )}
+                            </div>
 
                             <label>
                                 <span>Status</span>

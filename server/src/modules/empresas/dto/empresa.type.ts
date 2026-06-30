@@ -20,6 +20,12 @@ export class EmpresaType {
   @Field(() => [Int])
   solucaoIds!: number[];
 
+  @Field(() => [String])
+  solucaoSlugs!: string[];
+
+  @Field(() => [String])
+  solucaoNomes!: string[];
+
   @Field(() => [Int])
   funcionalidadeIds!: number[];
 }

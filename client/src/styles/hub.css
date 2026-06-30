@@ -5,6 +5,7 @@
 
 .hub-page {
   --hub-sidebar-width: 260px;
+  --hub-sidebar-collapsed-width: 86px;
 }
 
 .hub-page,
@@ -21,6 +22,12 @@
   .hub-page .hub-main,
   .hub-page footer.site-footer {
     margin-left: var(--hub-sidebar-width);
+    transition: margin-left 0.28s ease;
+  }
+
+  body.hub-sidebar-collapsed .hub-page .hub-main,
+  body.hub-sidebar-collapsed .hub-page footer.site-footer {
+    margin-left: var(--hub-sidebar-collapsed-width);
   }
 }
 

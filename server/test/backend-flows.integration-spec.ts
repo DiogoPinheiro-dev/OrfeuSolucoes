@@ -1006,8 +1006,15 @@ describe('Fluxos integrados do backend', () => {
       responsavelId: segundoAtendente.id
     }, atendentePayload);
     expect(atribuido.responsavelNome).toBe(segundoAtendente.nome);
-        const atribuicoes = atribuido.historico.filter((item) => item.evento === 'ATRIBUICAO');
+    const atribuicoes = atribuido.historico.filter((item) => item.evento === 'ATRIBUICAO');
     expect(atribuicoes[atribuicoes.length - 1]?.valorNovo).toBe(segundoAtendente.nome);
+
+    const transferido = await world.chamadosService.transferirChamado({
+      chamadoId: chamado.id,
+      responsavelId: atendente.id
+    }, atendentePayload);
+    expect(transferido.responsavelNome).toBe(atendente.nome);
+    expect(transferido.historico.find((item) => item.evento === 'TRANSFERENCIA')?.valorNovo).toBe(atendente.nome);
 
     const respondido = await world.chamadosService.responderChamado({
       chamadoId: chamado.id,
@@ -1033,6 +1040,7 @@ describe('Fluxos integrados do backend', () => {
       'ABERTURA',
       'ATRIBUICAO',
       'MENSAGEM',
+      'TRANSFERENCIA',
       'ALTERACAO_PRIORIDADE',
       'RESOLUCAO',
       'REABERTURA',

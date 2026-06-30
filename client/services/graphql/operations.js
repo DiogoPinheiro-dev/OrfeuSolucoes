@@ -82,6 +82,8 @@ export const LOGIN_COMPANIES_MUTATION = gql`
       acessoProjetos
       acessoHoras
       solucaoIds
+      solucaoSlugs
+      solucaoNomes
       funcionalidadeIds
     }
   }
@@ -351,6 +353,8 @@ export const EMPRESAS_QUERY = gql`
       acessoProjetos
       acessoHoras
       solucaoIds
+      solucaoSlugs
+      solucaoNomes
       funcionalidadeIds
     }
   }
@@ -365,6 +369,8 @@ export const CREATE_EMPRESA_MUTATION = gql`
       acessoProjetos
       acessoHoras
       solucaoIds
+      solucaoSlugs
+      solucaoNomes
       funcionalidadeIds
     }
   }
@@ -379,6 +385,8 @@ export const UPDATE_EMPRESA_MUTATION = gql`
       acessoProjetos
       acessoHoras
       solucaoIds
+      solucaoSlugs
+      solucaoNomes
       funcionalidadeIds
     }
   }
@@ -857,6 +865,15 @@ export const ATRIBUIR_CHAMADO_MUTATION = gql`
   ${CHAMADO_FIELDS}
   mutation AtribuirChamado($input: AtribuirChamadoInput!) {
     atribuirChamado(input: $input) {
+      ...ChamadoFields
+    }
+  }
+`;
+
+export const TRANSFERIR_CHAMADO_MUTATION = gql`
+  ${CHAMADO_FIELDS}
+  mutation TransferirChamado($input: AtribuirChamadoInput!) {
+    transferirChamado(input: $input) {
       ...ChamadoFields
     }
   }

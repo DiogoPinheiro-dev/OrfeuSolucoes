@@ -114,6 +114,13 @@ export const atribuirChamado = (input) =>
         select: (data) => data?.atribuirChamado
     });
 
+export const transferirChamado = (input) =>
+    mutate({
+        mutation: TRANSFERIR_CHAMADO_MUTATION,
+        variables: { input },
+        select: (data) => data?.transferirChamado
+    });
+
 export const alterarStatusChamado = (input) =>
     mutate({
         mutation: ALTERAR_STATUS_CHAMADO_MUTATION,

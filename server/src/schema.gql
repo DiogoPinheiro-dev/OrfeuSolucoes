@@ -202,6 +202,8 @@ type EmpresaType {
   id: Int!
   nome: String
   solucaoIds: [Int!]!
+  solucaoNomes: [String!]!
+  solucaoSlugs: [String!]!
 }
 
 input FuncionalidadeAcaoInput {
@@ -334,6 +336,7 @@ type Mutation {
   resolverChamado(id: String!, observacao: String): ChamadoType!
   responderChamado(input: ResponderChamadoInput!): ChamadoType!
   switchCompany(input: SwitchCompanyInput!): AuthPayloadType!
+  transferirChamado(input: AtribuirChamadoInput!): ChamadoType!
   updateChamadoCategoria(input: UpdateChamadoCategoriaInput!): ChamadoCategoriaType!
   updateEmpresa(input: UpdateEmpresaInput!): EmpresaType!
   updateFuncionalidade(input: UpdateFuncionalidadeInput!): FuncionalidadeType!

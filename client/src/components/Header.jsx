@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronDown, ChevronRight, LogOut, UserRound } from "lucide-react";
+import { ChevronDown, ChevronRight, LogOut, PanelLeftClose, PanelLeftOpen, UserRound } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { getUserGroupLabel } from "../auth/hubConfig";
@@ -15,7 +15,7 @@ const LANDING_LINKS = [
     { id: "highlights", label: "Destaques" },
     { id: "about-company", label: "Quem somos" },
     { id: "clients", label: "Clientes" },
-    { id: "features", label: "Serviços", authOnly: true },
+    { id: "features", label: "Serviços" },
     { id: "contato", label: "Contato" }
 ];
 
@@ -28,6 +28,7 @@ export default function Header() {
     const [open, setOpen] = useState(false);
     const [isPinned, setIsPinned] = useState(location.pathname !== "/");
     const [expandedSolutions, setExpandedSolutions] = useState({});
+    const [isHubSidebarCollapsed, setIsHubSidebarCollapsed] = useState(false);
     const [selectedCompanyId, setSelectedCompanyId] = useState(user?.empresa?.id ? String(user.empresa.id) : "");
     const { solutions: hubSolutions } = useHubNavigation();
 
@@ -39,6 +40,7 @@ export default function Header() {
     const hubLinkClass = (path) => `nav-link px-2 nav-button ${location.pathname === path ? "nav-button--active" : ""}`;
 
     const closeMenu = () => setOpen(false);
+    const toggleHubSidebar = () => setIsHubSidebarCollapsed((current) => !current);
 
     const scrollWithOffset = (element) => {
         const top = element.getBoundingClientRect().top + window.scrollY - SCROLL_OFFSET;
@@ -87,7 +89,8 @@ export default function Header() {
     };
 
     const userDisplayName = user?.nome || user?.email || "Usuário";
-    const userSubtitle = canSwitchCompany ? getUserGroupLabel(user) : user?.empresa?.nome || getUserGroupLabel(user);
+    const userSubtitle = getUserGroupLabel(user);
+    const userCompanyName = user?.empresa?.nome;
 
     const handleCompanyChange = async (event) => {
         const nextCompanyId = event.target.value;
@@ -120,7 +123,7 @@ export default function Header() {
         </button>
     );
 
-    const companySwitcher = canSwitchCompany && (
+    const companySwitcher = canSwitchCompany ? (
         <label className="hub-company-switcher">
             <CustomDropdown
                 className="custom-dropdown--hub"
@@ -134,7 +137,11 @@ export default function Header() {
                 }))}
             />
         </label>
-    );
+    ) : userCompanyName ? (
+        <span className="hub-company-switcher hub-company-switcher--readonly" aria-label="Empresa ativa">
+            {userCompanyName}
+        </span>
+    ) : null;
     
     const userCard = (
         <div className="hub-user-card">
@@ -149,6 +156,14 @@ export default function Header() {
             {renderLogoutButton()}
         </div>
     );
+    useEffect(() => {
+        document.body.classList.toggle("hub-sidebar-collapsed", isHubView && isHubSidebarCollapsed);
+
+        return () => {
+            document.body.classList.remove("hub-sidebar-collapsed");
+        };
+    }, [isHubSidebarCollapsed, isHubView]);
+
 
     useEffect(() => {
         if (!isLandingView) {
@@ -204,11 +219,29 @@ export default function Header() {
     }, [user?.empresa?.id]);
 
     return (
-        <div className={`site-header ${isHubView ? "site-header--hub-sidebar" : ""} ${isPinned ? "site-header--pinned" : "site-header--overlay"} ${open ? "site-header--menu-open" : ""}`}>
+        <div className={`site-header ${isHubView ? "site-header--hub-sidebar" : ""} ${isHubView && isHubSidebarCollapsed ? "site-header--hub-collapsed" : ""} ${isPinned ? "site-header--pinned" : "site-header--overlay"} ${open ? "site-header--menu-open" : ""}`}>
             <header className="header-main py-3 mb-4" role="navigation" aria-label="Navegação principal">
-                <Link to="/" className="header-brand text-decoration-none" aria-label="Orfeu Soluções">
-                    <img src={logo} alt="Orfeu Soluções" className="brand-logo" />
-                </Link>
+                <div className="header-brand-row">
+                    <Link to="/" className="header-brand text-decoration-none" aria-label="Orfeu Soluções">
+                        <img src={logo} alt="Orfeu Soluções" className="brand-logo" />
+                    </Link>
+
+                    {isHubView && (
+                        <button
+                            type="button"
+                            className="hub-sidebar-toggle"
+                            onClick={toggleHubSidebar}
+                            aria-label={isHubSidebarCollapsed ? "Expandir menu do Hub" : "Minimizar menu do Hub"}
+                            title={isHubSidebarCollapsed ? "Expandir menu" : "Minimizar menu"}
+                        >
+                            {isHubSidebarCollapsed ? (
+                                <PanelLeftOpen size={20} strokeWidth={2} aria-hidden="true" />
+                            ) : (
+                                <PanelLeftClose size={20} strokeWidth={2} aria-hidden="true" />
+                            )}
+                        </button>
+                    )}
+                </div>
 
                 {isHubView && isAuthenticated && (
                     <div className="mobile-hub-profile">
@@ -286,7 +319,7 @@ export default function Header() {
                         </>
                     ) : (
                         <>
-                            {LANDING_LINKS.filter((item) => !item.authOnly || isAuthenticated).map((item) => (
+                            {LANDING_LINKS.map((item) => (
                                 <li key={item.id}>
                                     <button
                                         className="nav-link px-2 nav-button"

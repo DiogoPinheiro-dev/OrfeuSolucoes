@@ -633,6 +633,33 @@ export class SolucoesService {
     };
   }
 
+  async findCompanySolutionSummaries(empresaId: number): Promise<Array<{ id: number; slug: string; nome: string }>> {
+    const acessos = (await (this.prisma as never as { empresaSolucao: { findMany: Function } }).empresaSolucao.findMany({
+      where: { empresaId },
+      include: {
+        solucao: {
+          select: {
+            id: true,
+            slug: true,
+            nome: true,
+            ativo: true,
+            ordem: true
+          }
+        }
+      },
+      orderBy: { id: 'asc' }
+    })) as Array<{ solucao?: { id: number; slug: string; nome: string; ativo?: boolean; ordem?: number } | null }>;
+
+    return acessos
+      .map((acesso) => acesso.solucao)
+      .filter((solucao): solucao is { id: number; slug: string; nome: string; ativo?: boolean; ordem?: number } => !!solucao && solucao.ativo !== false)
+      .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0) || a.nome.localeCompare(b.nome))
+      .map((solucao) => ({
+        id: solucao.id,
+        slug: solucao.slug,
+        nome: solucao.nome
+      }));
+  }
   private async findGroupSolutionIds(grupoId?: number | null): Promise<Set<number>> {
     if (!grupoId) {
       return new Set();
@@ -681,7 +708,6 @@ export class SolucoesService {
 
     return new Set(rows.map((row) => row.solucaoId));
   }
-
   private async findCompanyFeatureIds(empresaId?: number | null): Promise<Set<number>> {
     if (!empresaId) {
       return new Set();

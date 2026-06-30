@@ -187,7 +187,10 @@ export class EmpresasService {
   }
 
   async toEmpresaType(empresa: EmpresaRecord): Promise<EmpresaType> {
-    const access = await this.solucoesService.findCompanyAccess(empresa.id);
+    const [access, solucoes] = await Promise.all([
+      this.solucoesService.findCompanyAccess(empresa.id),
+      this.solucoesService.findCompanySolutionSummaries(empresa.id)
+    ]);
 
     return {
       id: empresa.id,
@@ -196,6 +199,8 @@ export class EmpresasService {
       acessoProjetos: empresa.acessoProjetos ?? false,
       acessoHoras: empresa.acessoHoras ?? false,
       solucaoIds: access.solucaoIds,
+      solucaoSlugs: solucoes.map((solucao) => solucao.slug),
+      solucaoNomes: solucoes.map((solucao) => solucao.nome),
       funcionalidadeIds: access.funcionalidadeIds
     };
   }

@@ -46,6 +46,9 @@
     color: #64748b;
 }
 
+
+
+
 .chamado-form,
 .chamado-response-form,
 .chamado-action-stack {
@@ -119,6 +122,11 @@
     gap: 0.75rem;
 }
 
+
+.chamado-inline-actions-wrap {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+}
 .chamados-pagination {
     color: #64748b;
 }
@@ -193,11 +201,6 @@
     color: var(--button-primary-hover-text);
 }
 
-.chamado-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1rem;
-}
 
 .chamado-card {
     background: rgba(255, 255, 255, 0.96);
@@ -213,6 +216,161 @@
     text-align: left;
 }
 
+
+.chamado-card-compact {
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+    padding: 0.85rem;
+}
+
+
+.chamado-kanban-shell {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.chamado-kanban-top-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    height: 14px;
+    scrollbar-color: rgba(23, 78, 166, 0.48) rgba(226, 232, 240, 0.75);
+    scrollbar-width: thin;
+}
+
+.chamado-kanban-top-scroll > div {
+    height: 1px;
+}
+
+.chamado-kanban-top-scroll::-webkit-scrollbar {
+    height: 10px;
+}
+
+.chamado-kanban-top-scroll::-webkit-scrollbar-track {
+    background: rgba(226, 232, 240, 0.75);
+    border-radius: 999px;
+}
+
+.chamado-kanban-top-scroll::-webkit-scrollbar-thumb {
+    background: rgba(23, 78, 166, 0.48);
+    border-radius: 999px;
+}
+
+.chamado-kanban-arrow {
+    position: absolute;
+    top: calc(50% + 7px);
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border: 1px solid rgba(23, 78, 166, 0.22);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.14);
+    color: #174ea6;
+    cursor: pointer;
+    font-size: 1.8rem;
+    line-height: 1;
+    transform: translateY(-50%);
+    transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, transform 0.16s ease;
+}
+
+.chamado-kanban-arrow:hover,
+.chamado-kanban-arrow:focus-visible {
+    background: var(--button-primary-bg);
+    border-color: var(--button-primary-border);
+    color: var(--button-primary-text);
+    outline: none;
+    transform: translateY(-50%) scale(1.04);
+}
+
+.chamado-kanban-arrow-left {
+    left: 0.75rem;
+}
+
+.chamado-kanban-arrow-right {
+    right: 0.75rem;
+}
+.chamado-kanban {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(240px, 1fr));
+    gap: 1rem;
+    overflow-x: auto;
+    padding: 0 0.25rem 0.35rem;
+    scrollbar-width: none;
+}
+
+.chamado-kanban::-webkit-scrollbar {
+    display: none;
+}
+
+.chamado-kanban-column {
+    background: rgba(248, 250, 252, 0.9);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    min-width: 240px;
+    padding: 0.8rem;
+}
+
+
+.chamado-kanban-column-over {
+    background: rgba(239, 246, 255, 0.96);
+    border-color: rgba(23, 78, 166, 0.42);
+    box-shadow: inset 0 0 0 2px rgba(23, 78, 166, 0.12);
+}
+.chamado-kanban-column > header {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.chamado-kanban-column > header small {
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 999px;
+    color: #64748b;
+    display: inline-flex;
+    height: 1.75rem;
+    justify-content: center;
+    min-width: 1.75rem;
+    padding: 0 0.45rem;
+}
+
+.chamado-kanban-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-height: 120px;
+}
+
+.chamado-kanban-empty {
+    border: 1px dashed rgba(15, 23, 42, 0.16);
+    border-radius: 14px;
+    color: #94a3b8;
+    margin: 0;
+    padding: 1rem;
+    text-align: center;
+}
+
+.chamado-card[draggable="true"] {
+    cursor: grab;
+}
+
+.chamado-card[draggable="true"]:active {
+    cursor: grabbing;
+}
+
+.chamado-card-dragging {
+    opacity: 0.45;
+    transform: scale(0.98);
+}
 .chamado-card:hover {
     border-color: rgba(23, 78, 166, 0.35);
     transform: translateY(-1px);
@@ -502,8 +660,84 @@
         grid-template-columns: 1fr;
     }
 
+    .chamados-header,
     .chamado-detail-header {
         flex-direction: column;
+    }
+
+    
+.chamado-kanban-shell {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.chamado-kanban-top-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    height: 14px;
+    scrollbar-color: rgba(23, 78, 166, 0.48) rgba(226, 232, 240, 0.75);
+    scrollbar-width: thin;
+}
+
+.chamado-kanban-top-scroll > div {
+    height: 1px;
+}
+
+.chamado-kanban-top-scroll::-webkit-scrollbar {
+    height: 10px;
+}
+
+.chamado-kanban-top-scroll::-webkit-scrollbar-track {
+    background: rgba(226, 232, 240, 0.75);
+    border-radius: 999px;
+}
+
+.chamado-kanban-top-scroll::-webkit-scrollbar-thumb {
+    background: rgba(23, 78, 166, 0.48);
+    border-radius: 999px;
+}
+
+.chamado-kanban-arrow {
+    position: absolute;
+    top: calc(50% + 7px);
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border: 1px solid rgba(23, 78, 166, 0.22);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.14);
+    color: #174ea6;
+    cursor: pointer;
+    font-size: 1.8rem;
+    line-height: 1;
+    transform: translateY(-50%);
+    transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, transform 0.16s ease;
+}
+
+.chamado-kanban-arrow:hover,
+.chamado-kanban-arrow:focus-visible {
+    background: var(--button-primary-bg);
+    border-color: var(--button-primary-border);
+    color: var(--button-primary-text);
+    outline: none;
+    transform: translateY(-50%) scale(1.04);
+}
+
+.chamado-kanban-arrow-left {
+    left: 0.75rem;
+}
+
+.chamado-kanban-arrow-right {
+    right: 0.75rem;
+}
+.chamado-kanban {
+        grid-template-columns: repeat(6, minmax(220px, 82vw));
     }
 
     .chamado-badges {

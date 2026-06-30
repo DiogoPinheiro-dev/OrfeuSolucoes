@@ -90,6 +90,14 @@ export class ChamadosResolver {
   }
 
   @Mutation(() => ChamadoType)
+  transferirChamado(
+    @Args('input') input: AtribuirChamadoInput,
+    @CurrentUser() user: JwtPayload
+  ): Promise<ChamadoType> {
+    return this.chamadosService.transferirChamado(input, user);
+  }
+
+  @Mutation(() => ChamadoType)
   alterarStatusChamado(
     @Args('input') input: AlterarStatusChamadoInput,
     @CurrentUser() user: JwtPayload

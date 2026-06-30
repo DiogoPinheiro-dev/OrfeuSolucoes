@@ -7,6 +7,12 @@
   .workspace-page .workspace-main,
   .workspace-page footer.site-footer {
     margin-left: 260px;
+    transition: margin-left 0.28s ease;
+  }
+
+  body.hub-sidebar-collapsed .workspace-page .workspace-main,
+  body.hub-sidebar-collapsed .workspace-page footer.site-footer {
+    margin-left: 86px;
   }
 }
 

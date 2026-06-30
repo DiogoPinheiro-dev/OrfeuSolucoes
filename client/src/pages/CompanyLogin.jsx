@@ -8,6 +8,7 @@ import PasswordInput from "../components/PasswordInput";
 import { useAuth } from "../hooks/useAuth";
 
 import "../styles/companyLogin.css";
+const getCompanySolutionLabels = (company) => [...new Set((company.solucaoNomes || []).filter(Boolean))];
 
 export default function CompanyLogin() {
     const navigate = useNavigate();
@@ -158,11 +159,7 @@ export default function CompanyLogin() {
                                         <span>
                                             <strong>{company.nome || `Empresa ${company.id}`}</strong>
                                             <small>
-                                                {[
-                                                    company.acessoEcommerce ? "E-commerce" : null,
-                                                    company.acessoProjetos ? "Projetos" : null,
-                                                    company.acessoHoras ? "Horas" : null
-                                                ].filter(Boolean).join(" | ") || "Sem soluções contratadas"}
+                                                {getCompanySolutionLabels(company).join(" | ") || "Sem soluções contratadas"}
                                             </small>
                                         </span>
                                     </label>

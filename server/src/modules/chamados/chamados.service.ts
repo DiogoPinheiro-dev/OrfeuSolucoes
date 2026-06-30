@@ -349,8 +349,23 @@ export class ChamadosService {
   }
 
   async atribuirChamado(input: AtribuirChamadoInput, user: JwtPayload): Promise<ChamadoType> {
+    return this.alterarResponsavelChamado(input, user, 'atribuir_chamado', 'ATRIBUICAO', 'Responsavel alterado.', 'Responsavel removido.');
+  }
+
+  async transferirChamado(input: AtribuirChamadoInput, user: JwtPayload): Promise<ChamadoType> {
+    return this.alterarResponsavelChamado(input, user, 'transferir_chamado', 'TRANSFERENCIA', 'Chamado transferido.', 'Transferencia removida.');
+  }
+
+  private async alterarResponsavelChamado(
+    input: AtribuirChamadoInput,
+    user: JwtPayload,
+    requiredAction: string,
+    evento: string,
+    observacaoAlteracao: string,
+    observacaoRemocao: string
+  ): Promise<ChamadoType> {
     const empresaId = this.assertCompanyContext(user);
-    await this.assertFeatureAction(user, FEATURES.painel, 'atribuir_chamado');
+    await this.assertFeatureAction(user, FEATURES.painel, requiredAction);
 
     const chamado = await this.findChamadoRecordOrThrow(input.chamadoId, empresaId);
     const responsavelId = input.responsavelId?.trim() || null;
@@ -382,11 +397,11 @@ export class ChamadosService {
       },
       [
         {
-          evento: 'ATRIBUICAO',
+          evento,
           campo: 'responsavel',
           valorAnterior: responsavelAnteriorNome,
           valorNovo: novoResponsavelNome,
-          observacao: responsavelId ? 'Responsavel alterado.' : 'Responsavel removido.'
+          observacao: responsavelId ? observacaoAlteracao : observacaoRemocao
         },
         ...(nextStatus !== chamado.status
           ? [{
@@ -823,6 +838,16 @@ export class ChamadosService {
     }
 
     await this.assertFeatureAction(user, FEATURES.painel, 'responder_chamado');
+  }
+
+  private async assertAnyFeatureAction(user: JwtPayload, featureSlug: string, actions: string[]): Promise<void> {
+    for (const action of actions) {
+      if (await this.canFeatureAction(user, featureSlug, action)) {
+        return;
+      }
+    }
+
+    throw new ForbiddenException('Usuario sem permissao para executar esta acao.');
   }
 
   private async canUseAnyChamadosFeature(user: JwtPayload): Promise<boolean> {
