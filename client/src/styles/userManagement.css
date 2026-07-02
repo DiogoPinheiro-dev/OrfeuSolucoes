@@ -31,7 +31,9 @@
   color: var(--muted);
 }
 
-.user-form input {
+.user-form input,
+.user-form select,
+.user-form textarea {
   width: 100%;
   padding: 12px 13px;
   border-radius: 10px;
@@ -40,7 +42,9 @@
   color: var(--primary);
 }
 
-.user-form input:disabled {
+.user-form input:disabled,
+.user-form select:disabled,
+.user-form textarea:disabled {
   background: var(--surface-soft);
   color: var(--muted);
 }
@@ -344,4 +348,85 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+}
+.responsavel-checkbox-group {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+}
+
+.responsavel-checkbox-group legend {
+  padding: 0 6px;
+  color: var(--primary);
+}
+
+.responsavel-checkbox-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.responsavel-checkbox-option {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 9px !important;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-white);
+  color: var(--primary);
+}
+
+.user-form .responsavel-checkbox-option input[type="checkbox"] {
+  width: 18px;
+  min-width: 18px;
+  height: 18px;
+  min-height: 18px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--button-primary-bg);
+}
+
+.responsavel-funcionalidade-section {
+  display: grid;
+  gap: 8px;
+}
+
+.responsavel-section-title {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+.responsavel-funcionalidade-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.responsavel-geral-option {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 8px !important;
+  width: fit-content;
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-white);
+  color: var(--primary);
+}
+
+.user-form .responsavel-geral-option input[type="checkbox"] {
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  min-height: 16px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--button-primary-bg);
 }

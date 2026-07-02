@@ -1,4 +1,6 @@
 import { Field, Int, ObjectType } from '@nestjs/graphql';
+import { ChamadoAnexoType } from './chamado-anexo.type';
+import { ChamadoAcompanhanteType } from './chamado-acompanhante.type';
 
 @ObjectType()
 export class ChamadoMensagemType {
@@ -22,6 +24,9 @@ export class ChamadoMensagemType {
 
   @Field(() => Date)
   criadoEm!: Date;
+
+  @Field(() => [ChamadoAnexoType])
+  anexos!: ChamadoAnexoType[];
 }
 
 @ObjectType()
@@ -81,10 +86,37 @@ export class ChamadoType {
   responsavelNome?: string | null;
 
   @Field(() => Int, { nullable: true })
+  responsavelGrupoId?: number | null;
+
+  @Field(() => String, { nullable: true })
+  responsavelGrupoNome?: string | null;
+
+  @Field(() => String, { nullable: true })
+  liderAtendimentoId?: string | null;
+
+  @Field(() => String, { nullable: true })
+  liderAtendimentoNome?: string | null;
+
+  @Field(() => Date, { nullable: true })
+  atendimentoAssumidoEm?: Date | null;
+
+  @Field(() => Int, { nullable: true })
   categoriaId?: number | null;
 
   @Field(() => String, { nullable: true })
   categoriaNome?: string | null;
+
+  @Field(() => Int, { nullable: true })
+  solucaoId?: number | null;
+
+  @Field(() => String, { nullable: true })
+  solucaoNome?: string | null;
+
+  @Field(() => Int, { nullable: true })
+  funcionalidadeId?: number | null;
+
+  @Field(() => String, { nullable: true })
+  funcionalidadeNome?: string | null;
 
   @Field()
   titulo!: string;
@@ -121,6 +153,12 @@ export class ChamadoType {
 
   @Field(() => [ChamadoMensagemType])
   mensagens!: ChamadoMensagemType[];
+
+  @Field(() => [ChamadoAnexoType])
+  anexos!: ChamadoAnexoType[];
+
+  @Field(() => [ChamadoAcompanhanteType])
+  acompanhantes!: ChamadoAcompanhanteType[];
 
   @Field(() => [ChamadoHistoricoType])
   historico!: ChamadoHistoricoType[];

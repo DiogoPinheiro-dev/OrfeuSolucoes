@@ -1,7 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { criarChamado, getCategoriasChamado } from "../../services/Chamados/ChamadoService";
+import {
+    criarChamado,
+    getAcompanhantesElegiveisChamado,
+    getCategoriasChamado,
+    getOpcoesAberturaChamado,
+    getResponsaveisParaAberturaChamado,
+    uploadChamadoAnexos
+} from "../../services/Chamados/ChamadoService";
 import { canUseFeatureAction } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
 import { prioridadeEditOptions, tipoOptions } from "./chamadoLabels";
@@ -13,31 +20,54 @@ const initialForm = {
     descricao: "",
     tipo: "SOLICITACAO",
     prioridade: "MEDIA",
-    categoriaId: ""
+    categoriaId: "",
+    solucaoId: "",
+    funcionalidadeId: ""
 };
+
+const responsavelLabel = (responsavel) => responsavel?.nome || responsavel?.login || responsavel?.email || "Responsavel";
+const responsavelTipoLabel = (responsavel) => responsavel?.tipo === "GRUPO" ? "Grupo" : "Usuario";
+const MAX_ANEXO_FILES = 5;
+const MAX_ANEXO_SIZE_BYTES = 10 * 1024 * 1024;
+const ANEXO_ACCEPT = ".jpg,.jpeg,.png,.pdf,.docx,.txt";
+const formatAnexoSize = (size) => `${(size / 1024 / 1024).toFixed(2)} MB`;
 
 export default function ChamadoCreate({ permissions }) {
     const navigate = useNavigate();
     const { user } = useAuth();
     const [form, setForm] = useState(initialForm);
     const [categorias, setCategorias] = useState([]);
+    const [solucoes, setSolucoes] = useState([]);
+    const [acompanhantesElegiveis, setAcompanhantesElegiveis] = useState([]);
+    const [selectedAcompanhanteIds, setSelectedAcompanhanteIds] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
+    const [responsaveisModalOpen, setResponsaveisModalOpen] = useState(false);
+    const [responsaveisCandidatos, setResponsaveisCandidatos] = useState([]);
+    const [selectedResponsavelId, setSelectedResponsavelId] = useState("");
+    const [pendingPayload, setPendingPayload] = useState(null);
+    const [anexos, setAnexos] = useState([]);
 
     useEffect(() => {
         let active = true;
 
         const load = async () => {
             try {
-                const response = await getCategoriasChamado(true);
+                const [categoriasResponse, opcoesResponse, acompanhantesResponse] = await Promise.all([
+                    getCategoriasChamado(true),
+                    getOpcoesAberturaChamado(),
+                    getAcompanhantesElegiveisChamado()
+                ]);
 
                 if (active) {
-                    setCategorias(response);
+                    setCategorias(categoriasResponse);
+                    setSolucoes(opcoesResponse.solucoes || []);
+                    setAcompanhantesElegiveis(acompanhantesResponse);
                 }
             } catch (loadError) {
                 if (active) {
-                    setError(loadError.message || "Nao foi possivel carregar categorias.");
+                    setError(loadError.message || "Nao foi possivel carregar o formulario.");
                 }
             } finally {
                 if (active) {
@@ -53,14 +83,61 @@ export default function ChamadoCreate({ permissions }) {
         };
     }, []);
 
+    const selectedSolucao = useMemo(
+        () => solucoes.find((solucao) => String(solucao.id) === String(form.solucaoId)),
+        [form.solucaoId, solucoes]
+    );
+
+    const funcionalidades = selectedSolucao?.funcionalidades || [];
+
     const handleChange = (event) => {
         const { name, value } = event.target;
 
         setForm((current) => ({
             ...current,
-            [name]: value
+            [name]: value,
+            ...(name === "solucaoId" ? { funcionalidadeId: "" } : {})
         }));
     };
+
+    const toggleAcompanhante = (usuarioId) => {
+        setSelectedAcompanhanteIds((current) =>
+            current.includes(usuarioId)
+                ? current.filter((id) => id !== usuarioId)
+                : [...current, usuarioId]
+        );
+    };
+
+    const handleAnexosChange = (event) => {
+        const selectedFiles = Array.from(event.target.files || []);
+
+        if (selectedFiles.length > MAX_ANEXO_FILES) {
+            setError(`Selecione no maximo ${MAX_ANEXO_FILES} anexos por chamado.`);
+            event.target.value = "";
+            return;
+        }
+
+        const oversizedFile = selectedFiles.find((file) => file.size > MAX_ANEXO_SIZE_BYTES);
+
+        if (oversizedFile) {
+            setError(`O arquivo "${oversizedFile.name}" ultrapassa o limite de 10 MB.`);
+            event.target.value = "";
+            return;
+        }
+
+        setError("");
+        setAnexos(selectedFiles);
+    };
+
+    const buildPayload = () => ({
+        titulo: form.titulo.trim(),
+        descricao: form.descricao.trim(),
+        tipo: form.tipo,
+        prioridade: form.prioridade,
+        categoriaId: form.categoriaId ? Number(form.categoriaId) : null,
+        solucaoId: Number(form.solucaoId),
+        funcionalidadeId: form.funcionalidadeId ? Number(form.funcionalidadeId) : null
+    });
 
     const handleSubmit = async (event) => {
         event.preventDefault();
@@ -71,18 +148,67 @@ export default function ChamadoCreate({ permissions }) {
             return;
         }
 
+        if (!form.solucaoId) {
+            setError("Selecione a solucao relacionada ao chamado.");
+            return;
+        }
+
         setSaving(true);
 
         try {
-            const chamado = await criarChamado({
-                titulo: form.titulo.trim(),
-                descricao: form.descricao.trim(),
-                tipo: form.tipo,
-                prioridade: form.prioridade,
-                categoriaId: form.categoriaId ? Number(form.categoriaId) : null
+            const payload = buildPayload();
+            const responsaveis = await getResponsaveisParaAberturaChamado({
+                solucaoId: payload.solucaoId,
+                funcionalidadeId: payload.funcionalidadeId
             });
 
+            setPendingPayload(payload);
+            setResponsaveisCandidatos(responsaveis);
+            setSelectedResponsavelId(responsaveis[0]?.id || "");
+            setResponsaveisModalOpen(true);
+        } catch (lookupError) {
+            setError(lookupError.message || "Nao foi possivel buscar responsaveis para este chamado.");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const closeResponsaveisModal = () => {
+        if (saving) {
+            return;
+        }
+
+        setResponsaveisModalOpen(false);
+        setResponsaveisCandidatos([]);
+        setSelectedResponsavelId("");
+        setPendingPayload(null);
+    };
+
+    const submitChamado = async (responsavel = null) => {
+        if (!pendingPayload) {
+            return;
+        }
+
+        setSaving(true);
+        setError("");
+
+        try {
+            const responsavelUsuarioId = responsavel?.tipo === "USUARIO" ? responsavel.usuarioId : null;
+            const chamado = await criarChamado({
+                ...pendingPayload,
+                responsavelId: responsavelUsuarioId,
+                responsavelGrupoId: responsavel?.tipo === "GRUPO" ? Number(responsavel.grupoId) : null,
+                acompanhanteIds: selectedAcompanhanteIds.filter((id) => id !== responsavelUsuarioId)
+            });
+
+            if (anexos.length) {
+                await uploadChamadoAnexos(chamado.id, anexos);
+            }
+
             setForm(initialForm);
+            setAnexos([]);
+            setSelectedAcompanhanteIds([]);
+            closeResponsaveisModal();
             navigate(`/hub/controle-de-chamados/meus-chamados/${chamado.id}`);
         } catch (saveError) {
             setError(saveError.message || "Nao foi possivel abrir o chamado.");
@@ -162,11 +288,81 @@ export default function ChamadoCreate({ permissions }) {
                                 ))}
                             </select>
                         </label>
+
+                        <label>
+                            <span>Solucao</span>
+                            <select name="solucaoId" value={form.solucaoId} onChange={handleChange} disabled={!canCreate || saving} required>
+                                <option value="">Selecione</option>
+                                {solucoes.map((solucao) => (
+                                    <option key={solucao.id} value={solucao.id}>{solucao.nome}</option>
+                                ))}
+                            </select>
+                        </label>
+
+                        <label>
+                            <span>Funcionalidade</span>
+                            <select name="funcionalidadeId" value={form.funcionalidadeId} onChange={handleChange} disabled={!canCreate || saving || !form.solucaoId}>
+                                <option value="">Sem funcionalidade especifica</option>
+                                {funcionalidades.map((funcionalidade) => (
+                                    <option key={funcionalidade.id} value={funcionalidade.id}>{funcionalidade.label || funcionalidade.titulo}</option>
+                                ))}
+                            </select>
+                        </label>
                     </div>
+
+                    <fieldset className="chamado-acompanhantes-fieldset">
+                        <legend>Acompanhantes</legend>
+                        <small>Selecione usuarios da empresa que poderao acompanhar, responder e anexar arquivos neste chamado.</small>
+                        {acompanhantesElegiveis.length ? (
+                            <div className="chamado-acompanhantes-grid">
+                                {acompanhantesElegiveis.map((acompanhante) => (
+                                    <label key={acompanhante.id} className="chamado-acompanhante-option">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedAcompanhanteIds.includes(acompanhante.id)}
+                                            onChange={() => toggleAcompanhante(acompanhante.id)}
+                                            disabled={!canCreate || saving}
+                                        />
+                                        <span>
+                                            {acompanhante.nome || acompanhante.login || acompanhante.email}
+                                            <small>{acompanhante.grupoNome || acompanhante.email}</small>
+                                        </span>
+                                    </label>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="chamado-muted">Nenhum usuario elegivel para acompanhar este chamado.</p>
+                        )}
+                    </fieldset>
+
+                    <label className="chamado-anexo-picker">
+                        <span>Anexos</span>
+                        <input
+                            type="file"
+                            multiple
+                            accept={ANEXO_ACCEPT}
+                            onChange={handleAnexosChange}
+                            disabled={!canCreate || saving}
+                        />
+                        <small>JPG, JPEG, PNG, PDF, DOCX ou TXT. Maximo de 5 arquivos, 10 MB cada.</small>
+                    </label>
+
+                    {anexos.length ? (
+                        <div className="chamado-anexo-list">
+                            {anexos.map((file) => (
+                                <span key={`${file.name}-${file.size}-${file.lastModified}`} className="chamado-anexo-item">
+                                    {file.name} <small>{formatAnexoSize(file.size)}</small>
+                                </span>
+                            ))}
+                            <button type="button" className="chamado-link-button" onClick={() => setAnexos([])} disabled={saving}>
+                                Limpar anexos
+                            </button>
+                        </div>
+                    ) : null}
 
                     <div className="chamado-actions">
                         <button type="submit" disabled={!canCreate || saving}>
-                            {saving ? "Abrindo..." : "Abrir chamado"}
+                            {saving ? "Buscando responsaveis..." : "Abrir chamado"}
                         </button>
                     </div>
 
@@ -174,6 +370,54 @@ export default function ChamadoCreate({ permissions }) {
                         <p className="chamado-muted">Seu grupo nao possui permissao para abrir chamados nesta funcionalidade.</p>
                     )}
                 </form>
+            )}
+
+            {responsaveisModalOpen && (
+                <div className="chamado-modal-backdrop" role="presentation">
+                    <div className="chamado-responsavel-modal" role="dialog" aria-modal="true" aria-label="Selecionar responsavel">
+                        <header>
+                            <span>Controle de chamados</span>
+                            <h3>Selecionar responsavel</h3>
+                            <p>Escolha o usuario ou grupo responsavel que sera vinculado a este chamado.</p>
+                        </header>
+
+                        {responsaveisCandidatos.length ? (
+                            <div className="chamado-responsavel-options">
+                                {responsaveisCandidatos.map((responsavel) => (
+                                    <label key={responsavel.id} className="chamado-responsavel-option">
+                                        <input
+                                            type="radio"
+                                            name="responsavelId"
+                                            value={responsavel.id}
+                                            checked={selectedResponsavelId === responsavel.id}
+                                            onChange={(event) => setSelectedResponsavelId(event.target.value)}
+                                            disabled={saving}
+                                        />
+                                        <span>
+                                            {responsavelLabel(responsavel)}
+                                            <small>{responsavelTipoLabel(responsavel)}{responsavel.email ? ` · ${responsavel.email}` : ""}</small>
+                                        </span>
+                                    </label>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="chamado-muted">Nenhum responsavel cadastrado para a solucao e funcionalidade selecionadas.</p>
+                        )}
+
+                        <div className="chamado-modal-actions">
+                            <button type="button" onClick={closeResponsaveisModal} disabled={saving}>Cancelar</button>
+                            {responsaveisCandidatos.length ? (
+                                <button type="button" onClick={() => submitChamado(responsaveisCandidatos.find((responsavel) => responsavel.id === selectedResponsavelId) || null)} disabled={saving || !selectedResponsavelId}>
+                                    {saving ? "Abrindo..." : "Abrir chamado"}
+                                </button>
+                            ) : (
+                                <button type="button" onClick={() => submitChamado(null)} disabled={saving}>
+                                    {saving ? "Abrindo..." : "Abrir sem responsavel"}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
             )}
         </section>
     );

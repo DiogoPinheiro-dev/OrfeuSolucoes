@@ -728,8 +728,16 @@ export const CHAMADO_FIELDS = gql`
     solicitanteNome
     responsavelId
     responsavelNome
-    categoriaId
+    responsavelGrupoId
+    responsavelGrupoNome
+    liderAtendimentoId
+    liderAtendimentoNome
+    atendimentoAssumidoEm    categoriaId
     categoriaNome
+    solucaoId
+    solucaoNome
+    funcionalidadeId
+    funcionalidadeNome
     titulo
     descricao
     tipo
@@ -749,6 +757,43 @@ export const CHAMADO_FIELDS = gql`
       tipo
       conteudo
       criadoEm
+      anexos {
+        id
+        chamadoId
+        mensagemId
+        autorId
+        autorNome
+        nomeOriginal
+        mimeType
+        tamanho
+        downloadUrl
+        criadoEm
+      }
+    }
+    anexos {
+      id
+      chamadoId
+      mensagemId
+      autorId
+      autorNome
+      nomeOriginal
+      mimeType
+      tamanho
+      downloadUrl
+      criadoEm
+    }
+    acompanhantes {
+      id
+      chamadoId
+      usuarioId
+      usuarioNome
+      usuarioLogin
+      usuarioEmail
+      adicionadoPorId
+      adicionadoPorNome
+      ativo
+      criadoEm
+      atualizadoEm
     }
     historico {
       id
@@ -777,6 +822,34 @@ export const CHAMADO_CATEGORIA_FIELDS = gql`
   }
 `;
 
+
+export const CHAMADO_RESPONSAVEL_FIELDS = gql`
+  fragment ChamadoResponsavelFields on ChamadoResponsavelType {
+    id
+    empresaId
+    tipo
+    usuarioId    usuarioNome
+    usuarioEmail
+    grupoId
+    grupoNome
+    responsavelNome
+    ativo    criadoEm
+    atualizadoEm
+    solucoes {
+      id
+      solucaoId
+      solucaoNome
+      responsavelGeral
+      ativo
+      funcionalidades {
+        id
+        funcionalidadeId
+        funcionalidadeNome
+        ativo
+      }
+    }
+  }
+`;
 export const MEUS_CHAMADOS_QUERY = gql`
   ${CHAMADO_FIELDS}
   query MeusChamados($filtro: ChamadoFiltroInput) {
@@ -795,6 +868,20 @@ export const FILA_CHAMADOS_QUERY = gql`
   ${CHAMADO_FIELDS}
   query FilaChamados($filtro: ChamadoFiltroInput) {
     filaChamados(filtro: $filtro) {
+      items {
+        ...ChamadoFields
+      }
+      total
+      page
+      pageSize
+    }
+  }
+`;
+
+export const CHAMADOS_ARQUIVADOS_QUERY = gql`
+  ${CHAMADO_FIELDS}
+  query ChamadosArquivados($filtro: ChamadoFiltroInput) {
+    chamadosArquivados(filtro: $filtro) {
       items {
         ...ChamadoFields
       }
@@ -827,6 +914,9 @@ export const ATENDENTES_DISPONIVEIS_QUERY = gql`
   query AtendentesDisponiveis {
     atendentesDisponiveis {
       id
+      tipo
+      usuarioId
+      grupoId
       nome
       login
       email
@@ -834,6 +924,50 @@ export const ATENDENTES_DISPONIVEIS_QUERY = gql`
   }
 `;
 
+
+export const OPCOES_ABERTURA_CHAMADO_QUERY = gql`
+  query OpcoesAberturaChamado {
+    opcoesAberturaChamado {
+      solucoes {
+        id
+        nome
+        slug
+        funcionalidades {
+          id
+          titulo
+          label
+          slug
+        }
+      }
+    }
+  }
+`;
+
+export const RESPONSAVEIS_PARA_ABERTURA_CHAMADO_QUERY = gql`
+  query ResponsaveisParaAberturaChamado($solucaoId: Int!, $funcionalidadeId: Int) {
+    responsaveisParaAberturaChamado(solucaoId: $solucaoId, funcionalidadeId: $funcionalidadeId) {
+      id
+      tipo
+      usuarioId
+      grupoId
+      nome
+      login
+      email
+    }
+  }
+`;
+
+export const ACOMPANHANTES_ELEGIVEIS_CHAMADO_QUERY = gql`
+  query AcompanhantesElegiveisChamado($chamadoId: String) {
+    acompanhantesElegiveisChamado(chamadoId: $chamadoId) {
+      id
+      nome
+      login
+      email
+      grupoNome
+    }
+  }
+`;
 export const CRIAR_CHAMADO_MUTATION = gql`
   ${CHAMADO_FIELDS}
   mutation CriarChamado($input: CriarChamadoInput!) {
@@ -852,6 +986,15 @@ export const RESPONDER_CHAMADO_MUTATION = gql`
   }
 `;
 
+export const ATUALIZAR_ACOMPANHANTES_CHAMADO_MUTATION = gql`
+  ${CHAMADO_FIELDS}
+  mutation AtualizarAcompanhantesChamado($input: AtualizarChamadoAcompanhantesInput!) {
+    atualizarAcompanhantesChamado(input: $input) {
+      ...ChamadoFields
+    }
+  }
+`;
+
 export const ASSUMIR_CHAMADO_MUTATION = gql`
   ${CHAMADO_FIELDS}
   mutation AssumirChamado($id: String!) {
@@ -861,6 +1004,15 @@ export const ASSUMIR_CHAMADO_MUTATION = gql`
   }
 `;
 
+
+export const LIBERAR_ATENDIMENTO_CHAMADO_MUTATION = gql`
+  ${CHAMADO_FIELDS}
+  mutation LiberarAtendimentoChamado($id: String!) {
+    liberarAtendimentoChamado(id: $id) {
+      ...ChamadoFields
+    }
+  }
+`;
 export const ATRIBUIR_CHAMADO_MUTATION = gql`
   ${CHAMADO_FIELDS}
   mutation AtribuirChamado($input: AtribuirChamadoInput!) {
@@ -915,6 +1067,15 @@ export const ENCERRAR_CHAMADO_MUTATION = gql`
   }
 `;
 
+export const ARQUIVAR_CHAMADO_MUTATION = gql`
+  ${CHAMADO_FIELDS}
+  mutation ArquivarChamado($id: String!, $observacao: String) {
+    arquivarChamado(id: $id, observacao: $observacao) {
+      ...ChamadoFields
+    }
+  }
+`;
+
 export const REABRIR_CHAMADO_MUTATION = gql`
   ${CHAMADO_FIELDS}
   mutation ReabrirChamado($id: String!, $observacao: String) {
@@ -924,6 +1085,69 @@ export const REABRIR_CHAMADO_MUTATION = gql`
   }
 `;
 
+
+export const RESPONSAVEIS_CHAMADO_QUERY = gql`
+  ${CHAMADO_RESPONSAVEL_FIELDS}
+  query ResponsaveisChamado($ativas: Boolean) {
+    responsaveisChamado(ativas: $ativas) {
+      ...ChamadoResponsavelFields
+    }
+  }
+`;
+
+export const RESPONSAVEIS_CHAMADO_OPTIONS_QUERY = gql`
+  query ResponsaveisChamadoOptions {
+    responsaveisChamadoOptions {
+      usuarios {
+        id
+        nome
+        login
+        email
+        grupoNome
+      }
+      grupos {
+        id
+        nome
+        descricao
+        usuariosCount
+      }
+      solucoes {        id
+        nome
+        slug
+        funcionalidades {
+          id
+          titulo
+          label
+          slug
+        }
+      }
+    }
+  }
+`;
+
+export const CREATE_CHAMADO_RESPONSAVEL_MUTATION = gql`
+  ${CHAMADO_RESPONSAVEL_FIELDS}
+  mutation CreateChamadoResponsavel($input: CreateChamadoResponsavelInput!) {
+    createChamadoResponsavel(input: $input) {
+      ...ChamadoResponsavelFields
+    }
+  }
+`;
+
+export const UPDATE_CHAMADO_RESPONSAVEL_MUTATION = gql`
+  ${CHAMADO_RESPONSAVEL_FIELDS}
+  mutation UpdateChamadoResponsavel($input: UpdateChamadoResponsavelInput!) {
+    updateChamadoResponsavel(input: $input) {
+      ...ChamadoResponsavelFields
+    }
+  }
+`;
+
+export const DELETE_CHAMADO_RESPONSAVEL_MUTATION = gql`
+  mutation DeleteChamadoResponsavel($id: Int!) {
+    deleteChamadoResponsavel(id: $id)
+  }
+`;
 export const CREATE_CHAMADO_CATEGORIA_MUTATION = gql`
   ${CHAMADO_CATEGORIA_FIELDS}
   mutation CreateChamadoCategoria($input: CreateChamadoCategoriaInput!) {

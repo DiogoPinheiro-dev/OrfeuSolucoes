@@ -8,9 +8,12 @@ import { AlterarPrioridadeChamadoInput } from './dto/alterar-prioridade-chamado.
 import { AlterarStatusChamadoInput } from './dto/alterar-status-chamado.input';
 import { AtribuirChamadoInput } from './dto/atribuir-chamado.input';
 import { AtendenteChamadoType } from './dto/atendente-chamado.type';
+import { AtualizarChamadoAcompanhantesInput } from './dto/chamado-acompanhante.input';
 import { ChamadoCategoriaType } from './dto/chamado-categoria.type';
 import { CreateChamadoCategoriaInput, UpdateChamadoCategoriaInput } from './dto/chamado-categoria.input';
+import { CreateChamadoResponsavelInput, UpdateChamadoResponsavelInput } from './dto/chamado-responsavel.input';
 import { ChamadoFiltroInput } from './dto/chamado-filtro.input';
+import { ChamadoResponsavelOptionsType, ChamadoResponsavelType, ChamadoResponsavelUsuarioOptionType } from './dto/chamado-responsavel.type';
 import { ChamadoPageType, ChamadoType } from './dto/chamado.type';
 import { CriarChamadoInput } from './dto/criar-chamado.input';
 import { ResponderChamadoInput } from './dto/responder-chamado.input';
@@ -36,6 +39,14 @@ export class ChamadosResolver {
     return this.chamadosService.filaChamados(user, filtro);
   }
 
+  @Query(() => ChamadoPageType)
+  chamadosArquivados(
+    @CurrentUser() user: JwtPayload,
+    @Args('filtro', { type: () => ChamadoFiltroInput, nullable: true }) filtro?: ChamadoFiltroInput
+  ): Promise<ChamadoPageType> {
+    return this.chamadosService.chamadosArquivados(user, filtro);
+  }
+
   @Query(() => ChamadoType)
   chamado(
     @Args('id') id: string,
@@ -57,6 +68,42 @@ export class ChamadosResolver {
     return this.chamadosService.atendentesDisponiveis(user);
   }
 
+
+  @Query(() => [ChamadoResponsavelType])
+  responsaveisChamado(
+    @CurrentUser() user: JwtPayload,
+    @Args('ativas', { type: () => Boolean, nullable: true, defaultValue: false }) ativas?: boolean
+  ): Promise<ChamadoResponsavelType[]> {
+    return this.chamadosService.responsaveisChamado(user, ativas ?? false);
+  }
+
+  @Query(() => ChamadoResponsavelOptionsType)
+  responsaveisChamadoOptions(@CurrentUser() user: JwtPayload): Promise<ChamadoResponsavelOptionsType> {
+    return this.chamadosService.responsaveisChamadoOptions(user);
+  }
+
+  @Query(() => ChamadoResponsavelOptionsType)
+  opcoesAberturaChamado(@CurrentUser() user: JwtPayload): Promise<ChamadoResponsavelOptionsType> {
+    return this.chamadosService.opcoesAberturaChamado(user);
+  }
+
+  @Query(() => [AtendenteChamadoType])
+  responsaveisParaAberturaChamado(
+    @CurrentUser() user: JwtPayload,
+    @Args('solucaoId', { type: () => Int }) solucaoId: number,
+    @Args('funcionalidadeId', { type: () => Int, nullable: true }) funcionalidadeId?: number
+  ): Promise<AtendenteChamadoType[]> {
+    return this.chamadosService.responsaveisParaAberturaChamado(user, solucaoId, funcionalidadeId ?? null);
+  }
+
+  @Query(() => [ChamadoResponsavelUsuarioOptionType])
+  acompanhantesElegiveisChamado(
+    @CurrentUser() user: JwtPayload,
+    @Args('chamadoId', { type: () => String, nullable: true }) chamadoId?: string
+  ): Promise<ChamadoResponsavelUsuarioOptionType[]> {
+    return this.chamadosService.acompanhantesElegiveisChamado(user, chamadoId ?? null);
+  }
+
   @Mutation(() => ChamadoType)
   criarChamado(
     @Args('input') input: CriarChamadoInput,
@@ -74,11 +121,27 @@ export class ChamadosResolver {
   }
 
   @Mutation(() => ChamadoType)
+  atualizarAcompanhantesChamado(
+    @Args('input') input: AtualizarChamadoAcompanhantesInput,
+    @CurrentUser() user: JwtPayload
+  ): Promise<ChamadoType> {
+    return this.chamadosService.atualizarAcompanhantesChamado(input, user);
+  }
+
+  @Mutation(() => ChamadoType)
   assumirChamado(
     @Args('id') id: string,
     @CurrentUser() user: JwtPayload
   ): Promise<ChamadoType> {
     return this.chamadosService.assumirChamado(id, user);
+  }
+
+  @Mutation(() => ChamadoType)
+  liberarAtendimentoChamado(
+    @Args('id') id: string,
+    @CurrentUser() user: JwtPayload
+  ): Promise<ChamadoType> {
+    return this.chamadosService.liberarAtendimentoChamado(id, user);
   }
 
   @Mutation(() => ChamadoType)
@@ -132,6 +195,15 @@ export class ChamadosResolver {
   }
 
   @Mutation(() => ChamadoType)
+  arquivarChamado(
+    @Args('id') id: string,
+    @CurrentUser() user: JwtPayload,
+    @Args('observacao', { type: () => String, nullable: true }) observacao?: string
+  ): Promise<ChamadoType> {
+    return this.chamadosService.arquivarChamado(id, user, observacao);
+  }
+
+  @Mutation(() => ChamadoType)
   reabrirChamado(
     @Args('id') id: string,
     @CurrentUser() user: JwtPayload,
@@ -140,6 +212,30 @@ export class ChamadosResolver {
     return this.chamadosService.reabrirChamado(id, user, observacao);
   }
 
+
+  @Mutation(() => ChamadoResponsavelType)
+  createChamadoResponsavel(
+    @Args('input') input: CreateChamadoResponsavelInput,
+    @CurrentUser() user: JwtPayload
+  ): Promise<ChamadoResponsavelType> {
+    return this.chamadosService.createResponsavel(input, user);
+  }
+
+  @Mutation(() => ChamadoResponsavelType)
+  updateChamadoResponsavel(
+    @Args('input') input: UpdateChamadoResponsavelInput,
+    @CurrentUser() user: JwtPayload
+  ): Promise<ChamadoResponsavelType> {
+    return this.chamadosService.updateResponsavel(input, user);
+  }
+
+  @Mutation(() => Boolean)
+  deleteChamadoResponsavel(
+    @Args('id', { type: () => Int }) id: number,
+    @CurrentUser() user: JwtPayload
+  ): Promise<boolean> {
+    return this.chamadosService.deleteResponsavel(id, user);
+  }
   @Mutation(() => ChamadoCategoriaType)
   createChamadoCategoria(
     @Args('input') input: CreateChamadoCategoriaInput,

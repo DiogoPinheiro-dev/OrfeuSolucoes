@@ -263,12 +263,31 @@ export class SolucoesService {
         ]
       },
       {
+        slug: 'chamados-arquivados',
+        titulo: 'Chamados arquivados',
+        label: 'Arquivados',
+        descricao: 'Visualize chamados arquivados e permita desarquivamento controlado por administradores.',
+        ordem: 40,
+        registryKey: 'controle-de-chamados.chamados-arquivados',
+        acoes: [
+          { chave: 'reabrir_chamado', nome: 'Desarquivar chamado', configuracao: 'reabrir_chamado', ordem: 50, ativo: true }
+        ]
+      },
+      {
         slug: 'categorias',
         titulo: 'Categorias de chamados',
         label: 'Categorias',
         descricao: 'Configure categorias de chamados especificas da empresa selecionada.',
-        ordem: 40,
+        ordem: 50,
         registryKey: 'controle-de-chamados.categorias'
+      },
+      {
+        slug: 'responsaveis',
+        titulo: 'Cadastro de responsaveis',
+        label: 'Responsaveis',
+        descricao: 'Cadastre supervisores e responsaveis por solucao ou funcionalidade.',
+        ordem: 60,
+        registryKey: 'controle-de-chamados.responsaveis'
       }
     ];
 

@@ -1,6 +1,9 @@
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'node:crypto';
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { extname, join } from 'node:path';
 import { AuthService } from '../src/modules/auth/auth.service';
 import { JwtPayload } from '../src/modules/auth/strategies/jwt-payload.type';
 import { ChamadosService } from '../src/modules/chamados/chamados.service';
@@ -32,7 +35,11 @@ type ModelName =
   | 'chamadoMensagem'
   | 'chamadoHistorico'
   | 'chamadoCategoria'
-  | 'chamadoSequencia';
+  | 'chamadoSequencia'
+  | 'chamadoResponsavel'
+  | 'chamadoResponsavelSolucao'
+  | 'chamadoResponsavelFuncionalidade'
+  | 'chamadoAnexo';
 
 const MODELS: ModelName[] = [
   'usuario',
@@ -52,7 +59,11 @@ const MODELS: ModelName[] = [
   'chamadoMensagem',
   'chamadoHistorico',
   'chamadoCategoria',
-  'chamadoSequencia'
+  'chamadoSequencia',
+  'chamadoResponsavel',
+  'chamadoResponsavelSolucao',
+  'chamadoResponsavelFuncionalidade',
+  'chamadoAnexo'
 ];
 
 const INTEGER_ID_MODELS = new Set<ModelName>([
@@ -81,7 +92,9 @@ const COMPOSITE_KEYS: Record<string, string[]> = {
   grupoId_funcionalidadeAcaoId: ['grupoId', 'funcionalidadeAcaoId'],
   empresaId_funcionalidadeId: ['empresaId', 'funcionalidadeId'],
   empresaId_usuarioId: ['empresaId', 'usuarioId'],
-  empresaId_numero: ['empresaId', 'numero']
+  empresaId_numero: ['empresaId', 'numero'],
+  responsavelId_solucaoId: ['responsavelId', 'solucaoId'],
+  responsavelSolucaoId_funcionalidadeId: ['responsavelSolucaoId', 'funcionalidadeId']
 };
 
 class InMemoryDelegate {
@@ -238,6 +251,10 @@ class InMemoryPrismaService {
   public chamadoHistorico = new InMemoryDelegate(this, 'chamadoHistorico');
   public chamadoCategoria = new InMemoryDelegate(this, 'chamadoCategoria');
   public chamadoSequencia = new InMemoryDelegate(this, 'chamadoSequencia');
+  public chamadoResponsavel = new InMemoryDelegate(this, 'chamadoResponsavel');
+  public chamadoResponsavelSolucao = new InMemoryDelegate(this, 'chamadoResponsavelSolucao');
+  public chamadoResponsavelFuncionalidade = new InMemoryDelegate(this, 'chamadoResponsavelFuncionalidade');
+  public chamadoAnexo = new InMemoryDelegate(this, 'chamadoAnexo');
 
   async $transaction<T>(callback: (tx: this) => Promise<T>): Promise<T> {
     return callback(this);
@@ -287,6 +304,24 @@ class InMemoryPrismaService {
         }
 
         if (Array.isArray(relation)) {
+          const relCondition = condition as AnyRecord;
+
+          if ('some' in relCondition || 'every' in relCondition || 'none' in relCondition) {
+            if ('some' in relCondition && !relation.some((item) => this.matchesWhere(relationModel, item, relCondition.some))) {
+              return false;
+            }
+
+            if ('every' in relCondition && !relation.every((item) => this.matchesWhere(relationModel, item, relCondition.every))) {
+              return false;
+            }
+
+            if ('none' in relCondition && relation.some((item) => this.matchesWhere(relationModel, item, relCondition.none))) {
+              return false;
+            }
+
+            continue;
+          }
+
           if (!relation.some((item) => this.matchesWhere(relationModel, item, condition))) {
             return false;
           }
@@ -338,8 +373,12 @@ class InMemoryPrismaService {
   }
   createRow(model: ModelName, data: AnyRecord): AnyRecord {
     const nestedEmpresas = model === 'usuario' ? data.empresas?.create ?? [] : [];
+    const nestedResponsavelSolucoes = model === 'chamadoResponsavel' ? data.solucoes?.create ?? [] : [];
+    const nestedResponsavelFuncionalidades = model === 'chamadoResponsavelSolucao' ? data.funcionalidades?.create ?? [] : [];
     const normalized = this.withDefaults(model, { ...data });
     delete normalized.empresas;
+    delete normalized.solucoes;
+    delete normalized.funcionalidades;
     this.data[model].push(normalized);
 
     if (model === 'usuario') {
@@ -347,6 +386,33 @@ class InMemoryPrismaService {
         this.createRow('empresaUsuario', {
           usuarioId: normalized.id,
           empresaId: vinculo.empresaId
+        });
+      }
+    }
+
+    if (model === 'chamadoResponsavel') {
+      for (const solucao of nestedResponsavelSolucoes) {
+        const funcionalidades = solucao.funcionalidades?.create ?? [];
+        const responsavelSolucao = this.createRow('chamadoResponsavelSolucao', {
+          ...solucao,
+          responsavelId: normalized.id,
+          funcionalidades: undefined
+        });
+
+        for (const funcionalidade of funcionalidades) {
+          this.createRow('chamadoResponsavelFuncionalidade', {
+            ...funcionalidade,
+            responsavelSolucaoId: responsavelSolucao.id
+          });
+        }
+      }
+    }
+
+    if (model === 'chamadoResponsavelSolucao') {
+      for (const funcionalidade of nestedResponsavelFuncionalidades) {
+        this.createRow('chamadoResponsavelFuncionalidade', {
+          ...funcionalidade,
+          responsavelSolucaoId: normalized.id
         });
       }
     }
@@ -368,7 +434,7 @@ class InMemoryPrismaService {
       row[key] = value;
     }
 
-    if (['chamado', 'chamadoCategoria', 'chamadoSequencia'].includes(model)) {
+    if (['chamado', 'chamadoCategoria', 'chamadoSequencia', 'chamadoResponsavel', 'chamadoResponsavelSolucao', 'chamadoResponsavelFuncionalidade'].includes(model)) {
       row.atualizadoEm = new Date();
     }
   }
@@ -416,7 +482,10 @@ class InMemoryPrismaService {
     }
 
     if (Array.isArray(relation)) {
-      const ordered = this.orderRows(relation, options.orderBy);
+      const filteredRelation = options.where
+        ? relation.filter((item) => this.matchesWhere(relationModel, item, options.where))
+        : relation;
+      const ordered = this.orderRows(filteredRelation, options.orderBy);
       return ordered.map((item) => this.project(relationModel, item, options));
     }
 
@@ -471,6 +540,12 @@ class InMemoryPrismaService {
         return this.data.grupoUsuario.find((grupo) => grupo.id === row.grupoId) ?? null;
       case 'usuario.empresas':
         return this.data.empresaUsuario.filter((vinculo) => vinculo.usuarioId === row.id);
+      case 'grupoUsuario.usuarios':
+        return this.data.usuario.filter((usuario) => usuario.grupoId === row.id);
+      case 'grupoUsuario.solucoes':
+        return this.data.grupoSolucao.filter((vinculo) => vinculo.grupoId === row.id);
+      case 'grupoUsuario.funcionalidades':
+        return this.data.grupoFuncionalidade.filter((vinculo) => vinculo.grupoId === row.id);
       case 'empresaUsuario.empresa':
         return this.data.empresa.find((empresa) => empresa.id === row.empresaId) ?? null;
       case 'empresaUsuario.usuario':
@@ -501,16 +576,50 @@ class InMemoryPrismaService {
         return this.data.usuario.find((usuario) => usuario.id === row.solicitanteId) ?? null;
       case 'chamado.responsavel':
         return row.responsavelId ? this.data.usuario.find((usuario) => usuario.id === row.responsavelId) ?? null : null;
+      case 'chamado.responsavelGrupo':
+        return row.responsavelGrupoId ? this.data.grupoUsuario.find((grupo) => grupo.id === row.responsavelGrupoId) ?? null : null;
+      case 'chamado.liderAtendimento':
+        return row.liderAtendimentoId ? this.data.usuario.find((usuario) => usuario.id === row.liderAtendimentoId) ?? null : null;
+      case 'chamado.solucao':
+        return row.solucaoId ? this.data.solucao.find((solucao) => solucao.id === row.solucaoId) ?? null : null;
+      case 'chamado.funcionalidade':
+        return row.funcionalidadeId ? this.data.funcionalidade.find((funcionalidade) => funcionalidade.id === row.funcionalidadeId) ?? null : null;
       case 'chamado.categoria':
         return row.categoriaId ? this.data.chamadoCategoria.find((categoria) => categoria.id === row.categoriaId) ?? null : null;
       case 'chamado.mensagens':
         return this.data.chamadoMensagem.filter((mensagem) => mensagem.chamadoId === row.id);
       case 'chamado.historico':
         return this.data.chamadoHistorico.filter((historico) => historico.chamadoId === row.id);
+      case 'chamado.anexos':
+        return this.data.chamadoAnexo.filter((anexo) => anexo.chamadoId === row.id);
       case 'chamadoMensagem.autor':
         return this.data.usuario.find((usuario) => usuario.id === row.autorId) ?? null;
+      case 'chamadoMensagem.anexos':
+        return this.data.chamadoAnexo.filter((anexo) => anexo.mensagemId === row.id);
+      case 'chamadoAnexo.autor':
+        return this.data.usuario.find((usuario) => usuario.id === row.autorId) ?? null;
+      case 'chamadoAnexo.chamado':
+        return this.data.chamado.find((chamado) => chamado.id === row.chamadoId) ?? null;
+      case 'chamadoAnexo.mensagem':
+        return row.mensagemId ? this.data.chamadoMensagem.find((mensagem) => mensagem.id === row.mensagemId) ?? null : null;
       case 'chamadoHistorico.usuario':
         return row.usuarioId ? this.data.usuario.find((usuario) => usuario.id === row.usuarioId) ?? null : null;
+      case 'chamadoResponsavel.usuario':
+        return row.usuarioId ? this.data.usuario.find((usuario) => usuario.id === row.usuarioId) ?? null : null;
+      case 'chamadoResponsavel.grupo':
+        return row.grupoId ? this.data.grupoUsuario.find((grupo) => grupo.id === row.grupoId) ?? null : null;
+      case 'chamadoResponsavel.solucoes':
+        return this.data.chamadoResponsavelSolucao.filter((solucao) => solucao.responsavelId === row.id);
+      case 'chamadoResponsavelSolucao.responsavel':
+        return this.data.chamadoResponsavel.find((responsavel) => responsavel.id === row.responsavelId) ?? null;
+      case 'chamadoResponsavelSolucao.solucao':
+        return this.data.solucao.find((solucao) => solucao.id === row.solucaoId) ?? null;
+      case 'chamadoResponsavelSolucao.funcionalidades':
+        return this.data.chamadoResponsavelFuncionalidade.filter((funcionalidade) => funcionalidade.responsavelSolucaoId === row.id);
+      case 'chamadoResponsavelFuncionalidade.responsavelSolucao':
+        return this.data.chamadoResponsavelSolucao.find((solucao) => solucao.id === row.responsavelSolucaoId) ?? null;
+      case 'chamadoResponsavelFuncionalidade.funcionalidade':
+        return this.data.funcionalidade.find((funcionalidade) => funcionalidade.id === row.funcionalidadeId) ?? null;
       default:
         return undefined;
     }
@@ -520,6 +629,9 @@ class InMemoryPrismaService {
     const targets: Record<string, ModelName> = {
       'usuario.grupo': 'grupoUsuario',
       'usuario.empresas': 'empresaUsuario',
+      'grupoUsuario.usuarios': 'usuario',
+      'grupoUsuario.solucoes': 'grupoSolucao',
+      'grupoUsuario.funcionalidades': 'grupoFuncionalidade',
       'empresaUsuario.empresa': 'empresa',
       'empresaUsuario.usuario': 'usuario',
       'solucao.funcionalidades': 'funcionalidade',
@@ -535,11 +647,28 @@ class InMemoryPrismaService {
       'empresaFuncionalidade.funcionalidade': 'funcionalidade',
       'chamado.solicitante': 'usuario',
       'chamado.responsavel': 'usuario',
+      'chamado.responsavelGrupo': 'grupoUsuario',
+      'chamado.liderAtendimento': 'usuario',
+      'chamado.solucao': 'solucao',
+      'chamado.funcionalidade': 'funcionalidade',
       'chamado.categoria': 'chamadoCategoria',
       'chamado.mensagens': 'chamadoMensagem',
       'chamado.historico': 'chamadoHistorico',
+      'chamado.anexos': 'chamadoAnexo',
       'chamadoMensagem.autor': 'usuario',
-      'chamadoHistorico.usuario': 'usuario'
+      'chamadoMensagem.anexos': 'chamadoAnexo',
+      'chamadoAnexo.autor': 'usuario',
+      'chamadoAnexo.chamado': 'chamado',
+      'chamadoAnexo.mensagem': 'chamadoMensagem',
+      'chamadoHistorico.usuario': 'usuario',
+      'chamadoResponsavel.usuario': 'usuario',
+      'chamadoResponsavel.grupo': 'grupoUsuario',
+      'chamadoResponsavel.solucoes': 'chamadoResponsavelSolucao',
+      'chamadoResponsavelSolucao.responsavel': 'chamadoResponsavel',
+      'chamadoResponsavelSolucao.solucao': 'solucao',
+      'chamadoResponsavelSolucao.funcionalidades': 'chamadoResponsavelFuncionalidade',
+      'chamadoResponsavelFuncionalidade.responsavelSolucao': 'chamadoResponsavelSolucao',
+      'chamadoResponsavelFuncionalidade.funcionalidade': 'funcionalidade'
     };
 
     return targets[`${model}.${key}`] ?? null;
@@ -621,12 +750,40 @@ class InMemoryPrismaService {
         row.resolvidoEm = row.resolvidoEm ?? null;
         row.encerradoEm = row.encerradoEm ?? null;
         row.responsavelId = row.responsavelId ?? null;
+        row.responsavelGrupoId = row.responsavelGrupoId ?? null;
+        row.liderAtendimentoId = row.liderAtendimentoId ?? null;
+        row.atendimentoAssumidoEm = row.atendimentoAssumidoEm ?? null;
+        row.solucaoId = row.solucaoId ?? null;
+        row.funcionalidadeId = row.funcionalidadeId ?? null;
         row.categoriaId = row.categoriaId ?? null;
         row.versao = row.versao ?? 1;
         break;
       case 'chamadoMensagem':
       case 'chamadoHistorico':
         row.criadoEm = row.criadoEm ?? now;
+        break;
+      case 'chamadoAnexo':
+        row.mensagemId = row.mensagemId ?? null;
+        row.criadoEm = row.criadoEm ?? now;
+        break;
+      case 'chamadoResponsavel':
+        row.tipo = row.tipo ?? 'USUARIO';
+        row.usuarioId = row.usuarioId ?? null;
+        row.grupoId = row.grupoId ?? null;
+        row.ativo = row.ativo ?? true;
+        row.criadoEm = row.criadoEm ?? now;
+        row.atualizadoEm = row.atualizadoEm ?? now;
+        break;
+      case 'chamadoResponsavelSolucao':
+        row.responsavelGeral = row.responsavelGeral ?? false;
+        row.ativo = row.ativo ?? true;
+        row.criadoEm = row.criadoEm ?? now;
+        row.atualizadoEm = row.atualizadoEm ?? now;
+        break;
+      case 'chamadoResponsavelFuncionalidade':
+        row.ativo = row.ativo ?? true;
+        row.criadoEm = row.criadoEm ?? now;
+        row.atualizadoEm = row.atualizadoEm ?? now;
         break;
       case 'chamadoCategoria':
         row.descricao = row.descricao ?? null;
@@ -651,6 +808,32 @@ class InMemoryPrismaService {
     return ['equals', 'in', 'not', 'contains', 'gt', 'gte', 'lt', 'lte'].some((key) => key in value);
   }
 }
+class TestChamadoAnexoStorage {
+  private readonly root = mkdtempSync(join(tmpdir(), 'orfeu-chamados-'));
+
+  async save(chamadoId: string, file: { originalname: string; buffer: Buffer; mimetype: string; size: number }) {
+    const extension = extname(file.originalname || '').toLowerCase();
+    const nomeArquivo = `${randomUUID()}${extension}`;
+    const directory = join(this.root, chamadoId);
+    const caminho = join(directory, nomeArquivo);
+
+    mkdirSync(directory, { recursive: true });
+    writeFileSync(caminho, file.buffer);
+
+    return {
+      nomeOriginal: file.originalname,
+      nomeArquivo,
+      caminho,
+      mimeType: file.mimetype,
+      tamanho: file.size
+    };
+  }
+
+  resolve(caminho: string): string {
+    return caminho;
+  }
+}
+
 type TestWorld = {
   prisma: InMemoryPrismaService;
   solucoesService: SolucoesService;
@@ -672,7 +855,8 @@ function createWorld(): TestWorld {
   const empresasService = new EmpresasService(prismaService, solucoesService);
   const usersService = new UsersService(prismaService);
   const servicosService = new ServicosService(prismaService);
-  const chamadosService = new ChamadosService(prismaService, solucoesService);
+  const anexoStorage = new TestChamadoAnexoStorage();
+  const chamadosService = new ChamadosService(prismaService, solucoesService, anexoStorage as any);
   const jwtService = new JwtService({ secret: 'integration-test-secret' });
   const configService = {
     get: (key: string) => ({ NODE_ENV: 'test', JWT_EXPIRES_IN: 3600 } as Record<string, unknown>)[key]
@@ -811,8 +995,10 @@ describe('Fluxos integrados do backend', () => {
     expect(funcionalidadesControle.map((funcionalidade) => funcionalidade.slug).sort()).toEqual([
       'abrir-chamado',
       'categorias',
+      'chamados-arquivados',
       'meus-chamados',
-      'painel-atendimento'
+      'painel-atendimento',
+      'responsaveis'
     ]);
 
     const grupo = await world.gruposService.create({
@@ -860,7 +1046,7 @@ describe('Fluxos integrados do backend', () => {
     expect(usuario.grupo?.id).toBe(grupo.id);
     expect(usuario.empresas.map((item) => item.id)).toEqual([empresa.id]);
     expect(usuarioLogado.availableSolutions).toContain('controle-de-chamados');
-    expect(controleNoHub.funcionalidades).toHaveLength(4);
+    expect(controleNoHub.funcionalidades).toHaveLength(6);
     expect(atribuirChamado.permitido).toBe(true);
 
     const usuarios = await world.usersService.findAll(admin);
@@ -895,6 +1081,7 @@ describe('Fluxos integrados do backend', () => {
     const abrir = expectDefined(features.find((feature) => feature.slug === 'abrir-chamado'));
     const meus = expectDefined(features.find((feature) => feature.slug === 'meus-chamados'));
     const painel = expectDefined(features.find((feature) => feature.slug === 'painel-atendimento'));
+    const arquivados = expectDefined(features.find((feature) => feature.slug === 'chamados-arquivados'));
     const categorias = expectDefined(features.find((feature) => feature.slug === 'categorias'));
 
     const grupoSolicitante = await world.gruposService.create({
@@ -920,7 +1107,7 @@ describe('Fluxos integrados do backend', () => {
           podeVisualizar: true,
           podeIncluir: false,
           podeAlterar: false,
-          podeExcluir: false,
+          podeExcluir: true,
           acoes: meus.acoes.map((acao) => ({ funcionalidadeId: meus.id, acaoId: acao.id, chave: acao.chave, permitido: true }))
         }
       ]
@@ -934,8 +1121,8 @@ describe('Fluxos integrados do backend', () => {
       podeAlterar: true,
       podeExcluir: true,
       solucaoIds: [controleChamados.id],
-      funcionalidadeIds: [painel.id, categorias.id, meus.id],
-      funcionalidadePermissoes: [painel, categorias, meus].map(buildPermissionForFeature)
+      funcionalidadeIds: [painel.id, arquivados.id, categorias.id, meus.id],
+      funcionalidadePermissoes: [painel, arquivados, categorias, meus].map(buildPermissionForFeature)
     });
 
     const empresa = await world.empresasService.create({
@@ -982,7 +1169,9 @@ describe('Fluxos integrados do backend', () => {
       descricao: 'Usuario nao consegue conectar na VPN corporativa.',
       tipo: 'INCIDENTE',
       prioridade: 'ALTA',
-      categoriaId: categoria.id
+      categoriaId: categoria.id,
+      solucaoId: controleChamados.id,
+      funcionalidadeId: abrir.id
     }, solicitantePayload);
 
     expect(chamado.numero).toBe(1);
@@ -1033,10 +1222,10 @@ describe('Fluxos integrados do backend', () => {
     expect(reaberto.status).toBe('EM_ATENDIMENTO');
 
     await world.chamadosService.resolverChamado(chamado.id, atendentePayload, 'Ajuste definitivo aplicado.');
-    const encerrado = await world.chamadosService.encerrarChamado(chamado.id, atendentePayload, 'Chamado encerrado apos confirmacao.');
+    const arquivado = await world.chamadosService.encerrarChamado(chamado.id, atendentePayload, 'Chamado arquivado apos confirmacao.');
 
-    expect(encerrado.status).toBe('ENCERRADO');
-    expect(encerrado.historico.map((item) => item.evento)).toEqual(expect.arrayContaining([
+    expect(arquivado.status).toBe('ARQUIVADO');
+    expect(arquivado.historico.map((item) => item.evento)).toEqual(expect.arrayContaining([
       'ABERTURA',
       'ATRIBUICAO',
       'MENSAGEM',
@@ -1044,9 +1233,324 @@ describe('Fluxos integrados do backend', () => {
       'ALTERACAO_PRIORIDADE',
       'RESOLUCAO',
       'REABERTURA',
-      'ENCERRAMENTO'
+      'ARQUIVAMENTO'
     ]));
+
+    const filaAposEncerramento = await world.chamadosService.filaChamados(atendentePayload, { page: 1, pageSize: 10 });
+    expect(filaAposEncerramento.items.map((item) => item.id)).not.toContain(chamado.id);
+
+    const chamadoArquivadoDireto = await world.chamadosService.criarChamado({
+      titulo: 'Solicitacao para arquivamento direto',
+      descricao: 'Chamado arquivado pela acao rapida do Kanban.',
+      tipo: 'SOLICITACAO',
+      prioridade: 'MEDIA',
+      categoriaId: categoria.id,
+      solucaoId: controleChamados.id,
+      funcionalidadeId: abrir.id
+    }, solicitantePayload);
+
+    await expect(world.chamadosService.arquivarChamado(chamadoArquivadoDireto.id, atendentePayload, 'Tentativa sem responsabilidade.'))
+      .rejects.toThrow('Apenas o responsavel atual pelo chamado pode arquivar.');
+
+    await world.chamadosService.assumirChamado(chamadoArquivadoDireto.id, atendentePayload);
+    const arquivadoDireto = await world.chamadosService.arquivarChamado(chamadoArquivadoDireto.id, atendentePayload, 'Chamado arquivado pelo Kanban.');
+    expect(arquivadoDireto.status).toBe('ARQUIVADO');
+    expect(arquivadoDireto.historico.map((item) => item.evento)).toContain('ARQUIVAMENTO');
+
+    const filaAposArquivamentoDireto = await world.chamadosService.filaChamados(atendentePayload, { page: 1, pageSize: 10 });
+    expect(filaAposArquivamentoDireto.items.map((item) => item.id)).not.toContain(chamadoArquivadoDireto.id);
+
+    const chamadosArquivados = await world.chamadosService.chamadosArquivados(atendentePayload, { page: 1, pageSize: 10 });
+    expect(chamadosArquivados.items.map((item) => item.id)).toContain(chamadoArquivadoDireto.id);
+
+    await expect(world.chamadosService.reabrirChamado(chamadoArquivadoDireto.id, atendentePayload, 'Tentativa sem perfil administrador.'))
+      .rejects.toThrow('Apenas administradores podem desarquivar chamados.');
+
+    const adminEmpresaPayload = { ...admin, empresaId: empresa.id, empresaNome: empresa.nome };
+    const desarquivadoPorAdmin = await world.chamadosService.reabrirChamado(chamadoArquivadoDireto.id, adminEmpresaPayload, 'Chamado desarquivado pelo administrador.');
+    expect(desarquivadoPorAdmin.status).toBe('EM_ATENDIMENTO');
+
+    const arquivadosAposDesarquivar = await world.chamadosService.chamadosArquivados(atendentePayload, { page: 1, pageSize: 10 });
+    expect(arquivadosAposDesarquivar.items.map((item) => item.id)).not.toContain(chamadoArquivadoDireto.id);
+
+    const chamadoArquivadoPeloSolicitante = await world.chamadosService.criarChamado({
+      titulo: 'Solicitacao arquivada pelo solicitante',
+      descricao: 'Chamado arquivado a partir dos Meus chamados.',
+      tipo: 'SOLICITACAO',
+      prioridade: 'MEDIA',
+      categoriaId: categoria.id,
+      solucaoId: controleChamados.id,
+      funcionalidadeId: abrir.id
+    }, solicitantePayload);
+
+    await expect(world.chamadosService.arquivarChamado(
+      chamadoArquivadoPeloSolicitante.id,
+      solicitantePayload,
+      'Tentativa sem responsabilidade em Meus chamados.'
+    )).rejects.toThrow('Apenas o responsavel atual pelo chamado pode arquivar.');
+
+    await world.chamadosService.atribuirChamado({
+      chamadoId: chamadoArquivadoPeloSolicitante.id,
+      responsavelId: solicitante.id
+    }, atendentePayload);
+
+    const arquivadoPeloSolicitante = await world.chamadosService.arquivarChamado(
+      chamadoArquivadoPeloSolicitante.id,
+      solicitantePayload,
+      'Chamado arquivado pelo solicitante em Meus chamados.'
+    );
+    expect(arquivadoPeloSolicitante.status).toBe('ARQUIVADO');
+
+    const meusAposArquivamentoProprio = await world.chamadosService.meusChamados(solicitantePayload, { page: 1, pageSize: 10 });
+    expect(meusAposArquivamentoProprio.items.map((item) => item.id)).not.toContain(chamadoArquivadoPeloSolicitante.id);
   });
+
+
+  it('valida cadastro de responsaveis por usuario e grupo com lideranca temporaria no chamado', async () => {
+    const { world, admin } = await bootstrapBaseWorld();
+    const controleChamados = expectDefined((await world.solucoesService.findAll()).find((solucao) => solucao.slug === 'controle-de-chamados'));
+    const features = controleChamados.funcionalidades;
+    const abrir = expectDefined(features.find((feature) => feature.slug === 'abrir-chamado'));
+    const meus = expectDefined(features.find((feature) => feature.slug === 'meus-chamados'));
+    const painel = expectDefined(features.find((feature) => feature.slug === 'painel-atendimento'));
+    const responsaveis = expectDefined(features.find((feature) => feature.slug === 'responsaveis'));
+
+    const grupoSolicitante = await world.gruposService.create({
+      nome: 'Solicitantes Responsaveis Integracao',
+      descricao: 'Abre chamados com responsavel sugerido.',
+      podeVisualizar: true,
+      podeIncluir: true,
+      podeAlterar: false,
+      podeExcluir: false,
+      solucaoIds: [controleChamados.id],
+      funcionalidadeIds: [abrir.id, meus.id],
+      funcionalidadePermissoes: [abrir, meus].map(buildPermissionForFeature)
+    });
+
+    const grupoAtendimento = await world.gruposService.create({
+      nome: 'Grupo Atendimento Responsavel Integracao',
+      descricao: 'Grupo elegivel como responsavel por chamados.',
+      podeVisualizar: true,
+      podeIncluir: true,
+      podeAlterar: true,
+      podeExcluir: true,
+      solucaoIds: [controleChamados.id],
+      funcionalidadeIds: [painel.id, meus.id, responsaveis.id],
+      funcionalidadePermissoes: [painel, meus, responsaveis].map(buildPermissionForFeature)
+    });
+
+    const empresa = await world.empresasService.create({
+      nome: 'Empresa Responsaveis Integracao',
+      solucaoIds: [controleChamados.id],
+      funcionalidadeIds: features.map((feature) => feature.id)
+    }, admin);
+    const adminEmpresa = { ...admin, empresaId: empresa.id, empresaNome: empresa.nome };
+
+    const solicitante = await world.usersService.create({
+      nome: 'Solicitante Responsaveis',
+      login: 'solicitante.responsaveis',
+      email: 'solicitante.responsaveis@orfeu.test',
+      senha: 'Senha@12345',
+      grupoId: grupoSolicitante.id,
+      empresaIds: [empresa.id]
+    });
+    const liderPrincipal = await world.usersService.create({
+      nome: 'Lider Principal',
+      login: 'lider.principal',
+      email: 'lider.principal@orfeu.test',
+      senha: 'Senha@12345',
+      grupoId: grupoAtendimento.id,
+      empresaIds: [empresa.id]
+    });
+    const liderBackup = await world.usersService.create({
+      nome: 'Lider Backup',
+      login: 'lider.backup',
+      email: 'lider.backup@orfeu.test',
+      senha: 'Senha@12345',
+      grupoId: grupoAtendimento.id,
+      empresaIds: [empresa.id]
+    });
+
+    const solicitantePayload = toJwtPayload((await world.authService.login('solicitante.responsaveis', 'Senha@12345', empresa.id)).user, empresa.id);
+    const liderPrincipalPayload = toJwtPayload((await world.authService.login('lider.principal', 'Senha@12345', empresa.id)).user, empresa.id);
+    const liderBackupPayload = toJwtPayload((await world.authService.login('lider.backup', 'Senha@12345', empresa.id)).user, empresa.id);
+
+    const responsavelUsuario = await world.chamadosService.createResponsavel({
+      tipo: 'USUARIO',
+      usuarioId: liderPrincipal.id,
+      grupoId: null,
+      ativo: true,
+      solucoes: [{ solucaoId: controleChamados.id, responsavelGeral: true, funcionalidadeIds: [] }]
+    }, adminEmpresa);
+    const responsavelGrupo = await world.chamadosService.createResponsavel({
+      tipo: 'GRUPO',
+      usuarioId: null,
+      grupoId: grupoAtendimento.id,
+      ativo: true,
+      solucoes: [{ solucaoId: controleChamados.id, responsavelGeral: false, funcionalidadeIds: [painel.id] }]
+    }, adminEmpresa);
+
+    expect(responsavelUsuario.responsavelNome).toBe('Lider Principal');
+    expect(responsavelUsuario.solucoes).toHaveLength(1);
+    const responsavelUsuarioSolucao = expectDefined(responsavelUsuario.solucoes[0]);
+    const responsavelGrupoSolucao = expectDefined(responsavelGrupo.solucoes[0]);
+    expect(responsavelUsuarioSolucao.responsavelGeral).toBe(true);
+    expect(responsavelGrupo.tipo).toBe('GRUPO');
+    expect(responsavelGrupo.grupoNome).toBe('Grupo Atendimento Responsavel Integracao');
+    expect(responsavelGrupoSolucao.funcionalidades.map((item) => item.funcionalidadeId)).toEqual([painel.id]);
+
+    const candidatosSemFuncionalidade = await world.chamadosService.responsaveisParaAberturaChamado(solicitantePayload, controleChamados.id, null);
+    expect(candidatosSemFuncionalidade.map((item) => item.nome)).toEqual(['Lider Principal']);
+
+    const candidatosPainel = await world.chamadosService.responsaveisParaAberturaChamado(solicitantePayload, controleChamados.id, painel.id);
+    expect(candidatosPainel.map((item) => item.nome).sort()).toEqual(['Grupo Atendimento Responsavel Integracao', 'Lider Principal'].sort());
+
+    const chamado = await world.chamadosService.criarChamado({
+      titulo: 'Erro em fila de atendimento',
+      descricao: 'Fila precisa ser redistribuida para o grupo responsavel.',
+      tipo: 'INCIDENTE',
+      prioridade: 'ALTA',
+      solucaoId: controleChamados.id,
+      funcionalidadeId: painel.id,
+      responsavelGrupoId: grupoAtendimento.id
+    }, solicitantePayload);
+
+    expect(chamado.responsavelId).toBeNull();
+    expect(chamado.responsavelGrupoId).toBe(grupoAtendimento.id);
+    expect(chamado.responsavelGrupoNome).toBe('Grupo Atendimento Responsavel Integracao');
+
+    const assumido = await world.chamadosService.assumirChamado(chamado.id, liderPrincipalPayload);
+    expect(assumido.status).toBe('EM_ATENDIMENTO');
+    expect(assumido.responsavelGrupoId).toBe(grupoAtendimento.id);
+    expect(assumido.responsavelId).toBeNull();
+    expect(assumido.liderAtendimentoId).toBe(liderPrincipal.id);
+    expect(assumido.liderAtendimentoNome).toBe('Lider Principal');
+    expect(assumido.historico.map((item) => item.evento)).toContain('LIDERANCA_ATENDIMENTO');
+
+    await expect(world.chamadosService.assumirChamado(chamado.id, liderBackupPayload)).rejects.toThrow('Este chamado ja esta em atendimento');
+
+    const liberado = await world.chamadosService.liberarAtendimentoChamado(chamado.id, liderPrincipalPayload);
+    expect(liberado.liderAtendimentoId).toBeNull();
+    expect(liberado.responsavelGrupoId).toBe(grupoAtendimento.id);
+    expect(liberado.historico.map((item) => item.evento)).toContain('LIBERACAO_ATENDIMENTO');
+
+    const reassumido = await world.chamadosService.assumirChamado(chamado.id, liderBackupPayload);
+    expect(reassumido.liderAtendimentoId).toBe(liderBackup.id);
+    expect(reassumido.liderAtendimentoNome).toBe('Lider Backup');
+  });
+
+  it('salva anexos no chamado e na resposta mantendo metadados, historico e download autorizado', async () => {
+    const { world, admin } = await bootstrapBaseWorld();
+    const controleChamados = expectDefined((await world.solucoesService.findAll()).find((solucao) => solucao.slug === 'controle-de-chamados'));
+    const features = controleChamados.funcionalidades;
+    const abrir = expectDefined(features.find((feature) => feature.slug === 'abrir-chamado'));
+    const meus = expectDefined(features.find((feature) => feature.slug === 'meus-chamados'));
+    const painel = expectDefined(features.find((feature) => feature.slug === 'painel-atendimento'));
+
+    const grupoSolicitante = await world.gruposService.create({
+      nome: 'Solicitantes Anexos Integracao',
+      descricao: 'Abre chamados com evidencias anexadas.',
+      podeVisualizar: true,
+      podeIncluir: true,
+      podeAlterar: false,
+      podeExcluir: false,
+      solucaoIds: [controleChamados.id],
+      funcionalidadeIds: [abrir.id, meus.id],
+      funcionalidadePermissoes: [abrir, meus].map(buildPermissionForFeature)
+    });
+    const grupoAtendimento = await world.gruposService.create({
+      nome: 'Atendentes Anexos Integracao',
+      descricao: 'Responde chamados com anexos.',
+      podeVisualizar: true,
+      podeIncluir: true,
+      podeAlterar: true,
+      podeExcluir: true,
+      solucaoIds: [controleChamados.id],
+      funcionalidadeIds: [painel.id, meus.id],
+      funcionalidadePermissoes: [painel, meus].map(buildPermissionForFeature)
+    });
+
+    const empresa = await world.empresasService.create({
+      nome: 'Empresa Anexos Integracao',
+      solucaoIds: [controleChamados.id],
+      funcionalidadeIds: features.map((feature) => feature.id)
+    }, admin);
+
+    const solicitante = await world.usersService.create({
+      nome: 'Solicitante Anexos',
+      login: 'solicitante.anexos',
+      email: 'solicitante.anexos@orfeu.test',
+      senha: 'Senha@12345',
+      grupoId: grupoSolicitante.id,
+      empresaIds: [empresa.id]
+    });
+    const atendente = await world.usersService.create({
+      nome: 'Atendente Anexos',
+      login: 'atendente.anexos',
+      email: 'atendente.anexos@orfeu.test',
+      senha: 'Senha@12345',
+      grupoId: grupoAtendimento.id,
+      empresaIds: [empresa.id]
+    });
+
+    const solicitantePayload = toJwtPayload((await world.authService.login('solicitante.anexos', 'Senha@12345', empresa.id)).user, empresa.id);
+    const atendentePayload = toJwtPayload((await world.authService.login('atendente.anexos', 'Senha@12345', empresa.id)).user, empresa.id);
+
+    const chamado = await world.chamadosService.criarChamado({
+      titulo: 'Erro com evidencias',
+      descricao: 'Chamado aberto com arquivo de evidencia.',
+      tipo: 'SOLICITACAO',
+      prioridade: 'MEDIA',
+      solucaoId: controleChamados.id,
+      funcionalidadeId: abrir.id
+    }, solicitantePayload);
+
+    const evidencia = Buffer.from('log inicial do erro');
+    const anexosChamado = await world.chamadosService.adicionarAnexos(chamado.id, [{
+      originalname: 'evidencia.txt',
+      buffer: evidencia,
+      mimetype: 'text/plain',
+      size: evidencia.length
+    }], solicitantePayload);
+
+    expect(anexosChamado).toHaveLength(1);
+    const anexoChamado = expectDefined(anexosChamado[0]);
+    expect(anexoChamado.nomeOriginal).toBe('evidencia.txt');
+    expect(anexoChamado.downloadUrl).toContain('/chamados/' + chamado.id + '/anexos/');
+
+    const respondido = await world.chamadosService.responderChamado({
+      chamadoId: chamado.id,
+      conteudo: 'Analise iniciada com documento tecnico.'
+    }, atendentePayload);
+    const mensagemId = expectDefined(respondido.mensagens[0]?.id);
+    const parecer = Buffer.from('%PDF parecer tecnico');
+
+    await world.chamadosService.adicionarAnexos(chamado.id, [{
+      originalname: 'parecer.pdf',
+      buffer: parecer,
+      mimetype: 'application/pdf',
+      size: parecer.length
+    }], atendentePayload, mensagemId);
+
+    const detalhe = await world.chamadosService.chamado(chamado.id, solicitantePayload);
+    expect(detalhe.anexos.map((anexo) => anexo.nomeOriginal)).toEqual(['evidencia.txt']);
+    const mensagemDetalhe = expectDefined(detalhe.mensagens[0]);
+    const anexoDetalhe = expectDefined(detalhe.anexos[0]);
+    expect(mensagemDetalhe.anexos.map((anexo) => anexo.nomeOriginal)).toEqual(['parecer.pdf']);
+    expect(detalhe.historico.filter((item) => item.evento === 'ANEXO')).toHaveLength(2);
+
+    const download = await world.chamadosService.prepararDownloadAnexo(chamado.id, anexoDetalhe.id, solicitantePayload);
+    expect(download.nomeOriginal).toBe('evidencia.txt');
+    expect(download.mimeType).toBe('text/plain');
+
+    await expect(world.chamadosService.adicionarAnexos(chamado.id, [{
+      originalname: 'script.exe',
+      buffer: Buffer.from('binario'),
+      mimetype: 'application/octet-stream',
+      size: 7
+    }], solicitantePayload)).rejects.toThrow('Tipo de arquivo nao permitido para anexo.');
+  });
+
 
   it('mantem o CRUD de servicos consistente no mesmo ciclo de persistencia em memoria', async () => {
     const { world } = await bootstrapBaseWorld();

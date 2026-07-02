@@ -14,20 +14,56 @@ input AlterarStatusChamadoInput {
 }
 
 type AtendenteChamadoType {
-  email: String!
+  email: String
+  grupoId: Int
   id: String!
   login: String
   nome: String
+  tipo: String!
+  usuarioId: String
 }
 
 input AtribuirChamadoInput {
   chamadoId: String!
+  responsavelGrupoId: Int
   responsavelId: String
+}
+
+input AtualizarChamadoAcompanhantesInput {
+  chamadoId: String!
+  usuarioIds: [String!]
 }
 
 type AuthPayloadType {
   accessToken: String!
   user: UserType!
+}
+
+type ChamadoAcompanhanteType {
+  adicionadoPorId: String
+  adicionadoPorNome: String
+  ativo: Boolean!
+  atualizadoEm: DateTime!
+  chamadoId: String!
+  criadoEm: DateTime!
+  id: String!
+  usuarioEmail: String
+  usuarioId: String!
+  usuarioLogin: String
+  usuarioNome: String
+}
+
+type ChamadoAnexoType {
+  autorId: String!
+  autorNome: String
+  chamadoId: String!
+  criadoEm: DateTime!
+  downloadUrl: String!
+  id: String!
+  mensagemId: String
+  mimeType: String!
+  nomeOriginal: String!
+  tamanho: Int!
 }
 
 type ChamadoCategoriaType {
@@ -64,6 +100,7 @@ type ChamadoHistoricoType {
 }
 
 type ChamadoMensagemType {
+  anexos: [ChamadoAnexoType!]!
   autorId: String!
   autorNome: String
   chamadoId: String!
@@ -80,7 +117,83 @@ type ChamadoPageType {
   total: Int!
 }
 
+type ChamadoResponsavelFuncionalidadeOptionType {
+  id: Int!
+  label: String
+  slug: String!
+  titulo: String!
+}
+
+type ChamadoResponsavelFuncionalidadeType {
+  ativo: Boolean!
+  funcionalidadeId: Int!
+  funcionalidadeNome: String!
+  id: Int!
+}
+
+type ChamadoResponsavelGrupoOptionType {
+  descricao: String
+  id: Int!
+  nome: String!
+  usuariosCount: Int!
+}
+
+type ChamadoResponsavelOptionsType {
+  grupos: [ChamadoResponsavelGrupoOptionType!]!
+  solucoes: [ChamadoResponsavelSolucaoOptionType!]!
+  usuarios: [ChamadoResponsavelUsuarioOptionType!]!
+}
+
+input ChamadoResponsavelSolucaoInput {
+  funcionalidadeIds: [Int!]
+  responsavelGeral: Boolean = false
+  solucaoId: Int!
+}
+
+type ChamadoResponsavelSolucaoOptionType {
+  funcionalidades: [ChamadoResponsavelFuncionalidadeOptionType!]!
+  id: Int!
+  nome: String!
+  slug: String!
+}
+
+type ChamadoResponsavelSolucaoType {
+  ativo: Boolean!
+  funcionalidades: [ChamadoResponsavelFuncionalidadeType!]!
+  id: Int!
+  responsavelGeral: Boolean!
+  solucaoId: Int!
+  solucaoNome: String!
+}
+
+type ChamadoResponsavelType {
+  ativo: Boolean!
+  atualizadoEm: DateTime!
+  criadoEm: DateTime!
+  empresaId: Int!
+  grupoId: Int
+  grupoNome: String
+  id: Int!
+  responsavelNome: String
+  solucoes: [ChamadoResponsavelSolucaoType!]!
+  tipo: String!
+  usuarioEmail: String
+  usuarioId: String
+  usuarioNome: String
+}
+
+type ChamadoResponsavelUsuarioOptionType {
+  email: String!
+  grupoNome: String
+  id: String!
+  login: String
+  nome: String
+}
+
 type ChamadoType {
+  acompanhantes: [ChamadoAcompanhanteType!]!
+  anexos: [ChamadoAnexoType!]!
+  atendimentoAssumidoEm: DateTime
   atualizadoEm: DateTime!
   categoriaId: Int
   categoriaNome: String
@@ -88,17 +201,25 @@ type ChamadoType {
   descricao: String!
   empresaId: Int!
   encerradoEm: DateTime
+  funcionalidadeId: Int
+  funcionalidadeNome: String
   historico: [ChamadoHistoricoType!]!
   id: String!
+  liderAtendimentoId: String
+  liderAtendimentoNome: String
   mensagens: [ChamadoMensagemType!]!
   numero: Int!
   primeiraRespostaEm: DateTime
   prioridade: String!
   resolvidoEm: DateTime
+  responsavelGrupoId: Int
+  responsavelGrupoNome: String
   responsavelId: String
   responsavelNome: String
   solicitanteId: String!
   solicitanteNome: String
+  solucaoId: Int
+  solucaoNome: String
   status: String!
   tipo: String!
   titulo: String!
@@ -113,6 +234,14 @@ input CreateChamadoCategoriaInput {
   ativo: Boolean = true
   descricao: String
   nome: String!
+}
+
+input CreateChamadoResponsavelInput {
+  ativo: Boolean = true
+  grupoId: Int
+  solucoes: [ChamadoResponsavelSolucaoInput!]!
+  tipo: String = "USUARIO"
+  usuarioId: String
 }
 
 input CreateEmpresaInput {
@@ -182,9 +311,14 @@ input CreateUserInput {
 }
 
 input CriarChamadoInput {
+  acompanhanteIds: [String!]
   categoriaId: Int
   descricao: String!
+  funcionalidadeId: Int
   prioridade: String
+  responsavelGrupoId: Int
+  responsavelId: String
+  solucaoId: Int!
   tipo: String
   titulo: String!
 }
@@ -310,10 +444,13 @@ input LoginInput {
 type Mutation {
   alterarPrioridadeChamado(input: AlterarPrioridadeChamadoInput!): ChamadoType!
   alterarStatusChamado(input: AlterarStatusChamadoInput!): ChamadoType!
+  arquivarChamado(id: String!, observacao: String): ChamadoType!
   assumirChamado(id: String!): ChamadoType!
   atribuirChamado(input: AtribuirChamadoInput!): ChamadoType!
+  atualizarAcompanhantesChamado(input: AtualizarChamadoAcompanhantesInput!): ChamadoType!
   changePassword(input: ChangePasswordInput!): AuthPayloadType!
   createChamadoCategoria(input: CreateChamadoCategoriaInput!): ChamadoCategoriaType!
+  createChamadoResponsavel(input: CreateChamadoResponsavelInput!): ChamadoResponsavelType!
   createEmpresa(input: CreateEmpresaInput!): EmpresaType!
   createFuncionalidade(input: CreateFuncionalidadeInput!): FuncionalidadeType!
   createGrupoUsuario(input: CreateGrupoUsuarioInput!): GrupoUsuarioType!
@@ -322,6 +459,7 @@ type Mutation {
   createUser(input: CreateUserInput!): UserType!
   criarChamado(input: CriarChamadoInput!): ChamadoType!
   deleteChamadoCategoria(id: Int!): Boolean!
+  deleteChamadoResponsavel(id: Int!): Boolean!
   deleteEmpresa(id: Int!): Boolean!
   deleteFuncionalidade(id: Int!): Boolean!
   deleteGrupoUsuario(id: Int!): Boolean!
@@ -329,6 +467,7 @@ type Mutation {
   deleteSolucao(id: Int!): Boolean!
   deleteUser(id: String!): Boolean!
   encerrarChamado(id: String!, observacao: String): ChamadoType!
+  liberarAtendimentoChamado(id: String!): ChamadoType!
   login(input: LoginInput!): AuthPayloadType!
   loginCompanies(input: LoginCompaniesInput!): [EmpresaType!]!
   logout: Boolean!
@@ -338,6 +477,7 @@ type Mutation {
   switchCompany(input: SwitchCompanyInput!): AuthPayloadType!
   transferirChamado(input: AtribuirChamadoInput!): ChamadoType!
   updateChamadoCategoria(input: UpdateChamadoCategoriaInput!): ChamadoCategoriaType!
+  updateChamadoResponsavel(input: UpdateChamadoResponsavelInput!): ChamadoResponsavelType!
   updateEmpresa(input: UpdateEmpresaInput!): EmpresaType!
   updateFuncionalidade(input: UpdateFuncionalidadeInput!): FuncionalidadeType!
   updateGrupoUsuario(input: UpdateGrupoUsuarioInput!): GrupoUsuarioType!
@@ -347,9 +487,11 @@ type Mutation {
 }
 
 type Query {
+  acompanhantesElegiveisChamado(chamadoId: String): [ChamadoResponsavelUsuarioOptionType!]!
   atendentesDisponiveis: [AtendenteChamadoType!]!
   categoriasChamado(ativas: Boolean = true): [ChamadoCategoriaType!]!
   chamado(id: String!): ChamadoType!
+  chamadosArquivados(filtro: ChamadoFiltroInput): ChamadoPageType!
   empresas: [EmpresaType!]!
   filaChamados(filtro: ChamadoFiltroInput): ChamadoPageType!
   gruposUsuarios: [GrupoUsuarioType!]!
@@ -357,6 +499,10 @@ type Query {
   me: UserType!
   meusChamados(filtro: ChamadoFiltroInput): ChamadoPageType!
   myHubNavigation: [SolucaoType!]!
+  opcoesAberturaChamado: ChamadoResponsavelOptionsType!
+  responsaveisChamado(ativas: Boolean = false): [ChamadoResponsavelType!]!
+  responsaveisChamadoOptions: ChamadoResponsavelOptionsType!
+  responsaveisParaAberturaChamado(funcionalidadeId: Int, solucaoId: Int!): [AtendenteChamadoType!]!
   servicos: [ServicoType!]!
   solucoes: [SolucaoType!]!
   users: [UserType!]!
@@ -398,6 +544,15 @@ input UpdateChamadoCategoriaInput {
   descricao: String
   id: Int!
   nome: String
+}
+
+input UpdateChamadoResponsavelInput {
+  ativo: Boolean
+  grupoId: Int
+  id: Int!
+  solucoes: [ChamadoResponsavelSolucaoInput!]
+  tipo: String
+  usuarioId: String
 }
 
 input UpdateEmpresaInput {

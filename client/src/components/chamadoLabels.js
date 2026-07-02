@@ -5,8 +5,21 @@ export const statusOptions = [
     { value: "EM_ATENDIMENTO", label: "Em atendimento" },
     { value: "PENDENTE", label: "Pendente" },
     { value: "RESOLVIDO", label: "Resolvido" },
-    { value: "ENCERRADO", label: "Encerrado" }
+    { value: "ARQUIVADO", label: "Arquivado" }
 ];
+
+export const kanbanStatusOptions = statusOptions.filter((option) =>
+    option.value && option.value !== "ARQUIVADO"
+);
+
+export const kanbanFilterStatusOptions = [
+    statusOptions[0],
+    ...kanbanStatusOptions
+];
+
+export const archivedKanbanStatusOptions = statusOptions.filter((option) =>
+    option.value === "ARQUIVADO"
+);
 
 export const editableStatusOptions = [
     { value: "EM_TRIAGEM", label: "Em triagem" },

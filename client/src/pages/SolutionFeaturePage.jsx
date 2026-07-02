@@ -3,12 +3,14 @@ import { Link, Navigate, useParams } from "react-router-dom";
 import { FEATURE_COMPONENT_REGISTRY, canAccessSolution, getFeatureBySlug, getSolutionBySlug } from "../auth/hubConfig";
 import CategoriaChamadoManagement from "../components/CategoriaChamadoManagement";
 import ChamadoCreate from "../components/ChamadoCreate";
+import ChamadosArquivados from "../components/ChamadosArquivados";
 import CompanyManagement from "../components/CompanyManagement";
 import FeatureManagement from "../components/FeatureManagement";
 import Footer from "../components/Footer";
 import GroupManagement from "../components/GroupManagement";
 import Header from "../components/Header";
 import MeusChamados from "../components/MeusChamados";
+import ResponsavelChamadoManagement from "../components/ResponsavelChamadoManagement";
 import PainelAtendimento from "../components/PainelAtendimento";
 import SolutionManagement from "../components/SolutionManagement";
 import UserManagement from "../components/UserManagement";
@@ -25,7 +27,9 @@ const FEATURE_COMPONENTS = {
     "chamado-create": ChamadoCreate,
     "meus-chamados": MeusChamados,
     "painel-atendimento": PainelAtendimento,
-    "categoria-chamado-management": CategoriaChamadoManagement
+    "chamados-arquivados": ChamadosArquivados,
+    "categoria-chamado-management": CategoriaChamadoManagement,
+    "responsavel-chamado-management": ResponsavelChamadoManagement
 };
 
 export default function SolutionFeaturePage() {

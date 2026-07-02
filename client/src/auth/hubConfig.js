@@ -7,7 +7,9 @@ export const FEATURE_COMPONENT_REGISTRY = {
     "controle-de-chamados.abrir-chamado": "chamado-create",
     "controle-de-chamados.meus-chamados": "meus-chamados",
     "controle-de-chamados.painel-atendimento": "painel-atendimento",
-    "controle-de-chamados.categorias": "categoria-chamado-management"
+    "controle-de-chamados.chamados-arquivados": "chamados-arquivados",
+    "controle-de-chamados.categorias": "categoria-chamado-management",
+    "controle-de-chamados.responsaveis": "responsavel-chamado-management"
 };
 
 export const normalizeSolutions = (solutions = []) =>

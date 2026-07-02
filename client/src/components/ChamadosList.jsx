@@ -6,13 +6,15 @@ import { canUseFeatureAction } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
 import ChamadoDetail from "./ChamadoDetail";
 import {
+    archivedKanbanStatusOptions,
     formatDateTime,
     prioridadeClassName,
     prioridadeLabel,
     prioridadeOptions,
     statusClassName,
     statusLabel,
-    statusOptions,
+    kanbanFilterStatusOptions,
+    kanbanStatusOptions,
     tipoClassName,
     tipoLabel
 } from "./chamadoLabels";
@@ -27,34 +29,71 @@ const initialFilters = {
     prioridade: ""
 };
 
-const kanbanColumns = statusOptions.filter((option) => option.value);
+const chamadoResponsavelLabel = (chamado) => chamado.responsavelGrupoNome || chamado.responsavelNome || "Sem responsavel";
+const chamadoAtendimentoLabel = (chamado) => chamado.liderAtendimentoNome ? ` · Atendimento: ${chamado.liderAtendimentoNome}` : "";
 
-function ChamadoCard({ chamado, onOpen, compact = false, draggable = false, isDragging = false, onDragStart, onDragEnd }) {
+function ChamadoCard({
+    chamado,
+    onOpen,
+    compact = false,
+    draggable = false,
+    isDragging = false,
+    onDragStart,
+    onDragEnd,
+    currentUserId,
+}) {
+    const handleOpen = () => {
+        onOpen(chamado.id);
+    };
+    const isAcompanhando = !!currentUserId && chamado.solicitanteId !== currentUserId && chamado.acompanhantes?.some((acompanhante) => acompanhante.ativo !== false && acompanhante.usuarioId === currentUserId);
+
+    const handleKeyDown = (event) => {
+        if (event.target !== event.currentTarget) {
+            return;
+        }
+
+        if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            handleOpen();
+        }
+    };
+
+
     return (
-        <button
+        <article
             key={chamado.id}
-            type="button"
             className={`chamado-card${compact ? " chamado-card-compact" : ""}${isDragging ? " chamado-card-dragging" : ""}`}
-            onClick={() => onOpen(chamado.id)}
+            role="button"
+            tabIndex={0}
+            onClick={handleOpen}
+            onKeyDown={handleKeyDown}
             draggable={draggable}
-            onDragStart={(event) => onDragStart?.(event, chamado)}
+            onDragStart={(event) => {
+                if (event.target.closest?.("button")) {
+                    event.preventDefault();
+                    return;
+                }
+
+                onDragStart?.(event, chamado);
+            }}
             onDragEnd={onDragEnd}
         >
-            <span className="chamado-number">#{chamado.numero}</span>
-            <strong>{chamado.titulo}</strong>
+            <div className="chamado-card-header">
+                <strong>{chamado.titulo}</strong>
+            </div>
             <span className="chamado-card-meta">
                 <span className={tipoClassName(chamado.tipo)}>{tipoLabel(chamado.tipo)}</span>
                 <span className={statusClassName(chamado.status)}>{statusLabel(chamado.status)}</span>
                 <span className={prioridadeClassName(chamado.prioridade)}>{prioridadeLabel(chamado.prioridade)}</span>
+                {isAcompanhando && <span className="chamado-badge-acompanhando">Acompanhando</span>}
             </span>
             <small>
-                Solicitante: {chamado.solicitanteNome || "-"} · Responsavel: {chamado.responsavelNome || "Sem responsavel"}
+                Solicitante: {chamado.solicitanteNome || "-"} - Responsavel: {chamado.responsavelNome || "Sem responsavel"}
             </small>
             <small>Atualizado em {formatDateTime(chamado.atualizadoEm)}</small>
-        </button>
+        </article>
     );
 }
-
 export default function ChamadosList({ title, description, areaSlug, loadChamados, permissions, mode }) {
     const navigate = useNavigate();
     const { itemId } = useParams();
@@ -73,7 +112,10 @@ export default function ChamadosList({ title, description, areaSlug, loadChamado
     const [movingChamadoId, setMovingChamadoId] = useState(null);
 
     const pageSize = KANBAN_PAGE_SIZE;
+    const isArchivedMode = mode === "arquivados";
+    const kanbanColumns = isArchivedMode ? archivedKanbanStatusOptions : kanbanStatusOptions;
     const canMoveKanbanCards = mode === "painel" && canUseFeatureAction(user, permissions, "alterar_status");
+
 
     const filtro = useMemo(() => ({
         termo: filters.termo.trim() || null,
@@ -89,7 +131,7 @@ export default function ChamadosList({ title, description, areaSlug, loadChamado
         }
 
         return kanbanColumns.filter((column) => column.value === filters.status);
-    }, [filters.status]);
+    }, [filters.status, kanbanColumns]);
 
     const chamadosPorStatus = useMemo(() => {
         const grouped = Object.fromEntries(kanbanColumns.map((column) => [column.value, []]));
@@ -101,7 +143,7 @@ export default function ChamadosList({ title, description, areaSlug, loadChamado
         }
 
         return grouped;
-    }, [result.items]);
+    }, [result.items, kanbanColumns]);
 
     const load = async () => {
         setError("");
@@ -252,6 +294,7 @@ export default function ChamadosList({ title, description, areaSlug, loadChamado
         }
     };
 
+
     const openDetail = (id) => {
         navigate(`/hub/controle-de-chamados/${areaSlug}/${id}`);
     };
@@ -287,18 +330,20 @@ export default function ChamadosList({ title, description, areaSlug, loadChamado
                         name="termo"
                         value={filters.termo}
                         onChange={handleFilterChange}
-                        placeholder="Numero, titulo ou descricao"
+                        placeholder="Titulo ou descricao"
                     />
                 </label>
 
-                <label>
-                    <span>Status</span>
-                    <select name="status" value={filters.status} onChange={handleFilterChange}>
-                        {statusOptions.map((option) => (
-                            <option key={option.value} value={option.value}>{option.label}</option>
-                        ))}
-                    </select>
-                </label>
+                {!isArchivedMode && (
+                    <label>
+                        <span>Status</span>
+                        <select name="status" value={filters.status} onChange={handleFilterChange}>
+                            {kanbanFilterStatusOptions.map((option) => (
+                                <option key={option.value} value={option.value}>{option.label}</option>
+                            ))}
+                        </select>
+                    </label>
+                )}
 
                 <label>
                     <span>Prioridade</span>
@@ -361,6 +406,7 @@ export default function ChamadosList({ title, description, areaSlug, loadChamado
                                                     isDragging={draggedChamado?.id === chamado.id || movingChamadoId === chamado.id}
                                                     onDragStart={handleKanbanDragStart}
                                                     onDragEnd={handleKanbanDragEnd}
+                                                    currentUserId={user?.id || user?.sub}
                                                 />
                                             ))
                                         ) : (

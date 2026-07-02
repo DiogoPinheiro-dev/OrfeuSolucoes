@@ -20,8 +20,13 @@ model Usuario {
   grupo    GrupoUsuario? @relation(fields: [grupoId], references: [id])
   chamadosSolicitados Chamado[] @relation("ChamadoSolicitante")
   chamadosResponsavel Chamado[] @relation("ChamadoResponsavel")
+  chamadosLiderAtendimento Chamado[] @relation("ChamadoLiderAtendimento")
+  chamadosAcompanhando ChamadoAcompanhante[] @relation("ChamadoAcompanhanteUsuario")
+  chamadosAcompanhantesAdicionados ChamadoAcompanhante[] @relation("ChamadoAcompanhanteAdicionadoPor")
   chamadoMensagens ChamadoMensagem[]
   chamadoHistoricos ChamadoHistorico[]
+  chamadoResponsaveisConfigurados ChamadoResponsavel[]
+  chamadoAnexos ChamadoAnexo[]
 
   @@map("Usuarios")
 }
@@ -43,6 +48,8 @@ model GrupoUsuario {
   solucoes GrupoSolucao[]
   funcionalidades GrupoFuncionalidade[]
   funcionalidadeAcoes GrupoFuncionalidadeAcao[]
+  chamadosResponsavelGrupo Chamado[] @relation("ChamadoResponsavelGrupo")
+  chamadoResponsaveisConfigurados ChamadoResponsavel[]
 
   @@map("GruposUsuarios")
 }
@@ -77,7 +84,10 @@ model Empresa {
   chamadoCategorias ChamadoCategoria[]
   chamadoMensagens ChamadoMensagem[]
   chamadoHistoricos ChamadoHistorico[]
+  chamadoResponsaveisConfigurados ChamadoResponsavel[]
   chamadoSequencia ChamadoSequencia?
+  chamadoAnexos ChamadoAnexo[]
+  chamadoAcompanhantes ChamadoAcompanhante[]
 
   @@map("Empresas")
 }
@@ -96,6 +106,9 @@ model Solucao {
   funcionalidades Funcionalidade[]
   grupos GrupoSolucao[]
   empresas EmpresaSolucao[]
+  chamadoResponsavelSolucoes ChamadoResponsavelSolucao[]
+  chamados Chamado[]
+
 
   @@map("Solucoes")
 }
@@ -116,6 +129,9 @@ model Funcionalidade {
   grupos GrupoFuncionalidade[]
   empresas EmpresaFuncionalidade[]
   acoes FuncionalidadeAcao[]
+  chamadoResponsavelFuncionalidades ChamadoResponsavelFuncionalidade[]
+  chamados Chamado[]
+
 
   @@unique([solucaoId, slug], map: "UX_Funcionalidades_SolucaoId_Slug")
   @@map("Funcionalidades")
@@ -222,7 +238,12 @@ model Chamado {
   empresaId          Int      @map("EmpresaId")
   solicitanteId      String   @db.UniqueIdentifier @map("SolicitanteId")
   responsavelId      String?  @db.UniqueIdentifier @map("ResponsavelId")
+  responsavelGrupoId Int?     @map("ResponsavelGrupoId")
+  liderAtendimentoId String?  @db.UniqueIdentifier @map("LiderAtendimentoId")
+  atendimentoAssumidoEm DateTime? @map("AtendimentoAssumidoEm")
   categoriaId        Int?     @map("CategoriaId")
+  solucaoId          Int?     @map("SolucaoId")
+  funcionalidadeId   Int?     @map("FuncionalidadeId")
   titulo             String   @map("Titulo")
   descricao          String   @map("Descricao")
   tipo               String   @default("SOLICITACAO") @map("Tipo")
@@ -238,19 +259,50 @@ model Chamado {
   empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   solicitante Usuario @relation("ChamadoSolicitante", fields: [solicitanteId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   responsavel Usuario? @relation("ChamadoResponsavel", fields: [responsavelId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  responsavelGrupo GrupoUsuario? @relation("ChamadoResponsavelGrupo", fields: [responsavelGrupoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  liderAtendimento Usuario? @relation("ChamadoLiderAtendimento", fields: [liderAtendimentoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   categoria ChamadoCategoria? @relation(fields: [categoriaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  solucao Solucao? @relation(fields: [solucaoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  funcionalidade Funcionalidade? @relation(fields: [funcionalidadeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   mensagens ChamadoMensagem[]
   historico ChamadoHistorico[]
+  anexos ChamadoAnexo[]
+  acompanhantes ChamadoAcompanhante[]
 
   @@unique([empresaId, numero], map: "UX_Chamados_EmpresaId_Numero")
   @@index([empresaId, status], map: "IX_Chamados_EmpresaId_Status")
   @@index([empresaId, responsavelId], map: "IX_Chamados_EmpresaId_ResponsavelId")
+  @@index([empresaId, responsavelGrupoId], map: "IX_Chamados_EmpresaId_ResponsavelGrupoId")
+  @@index([empresaId, liderAtendimentoId], map: "IX_Chamados_EmpresaId_LiderAtendimentoId")
   @@index([empresaId, solicitanteId], map: "IX_Chamados_EmpresaId_SolicitanteId")
   @@index([empresaId, prioridade], map: "IX_Chamados_EmpresaId_Prioridade")
+  @@index([empresaId, solucaoId], map: "IX_Chamados_EmpresaId_SolucaoId")
+  @@index([empresaId, funcionalidadeId], map: "IX_Chamados_EmpresaId_FuncionalidadeId")
   @@index([empresaId, atualizadoEm], map: "IX_Chamados_EmpresaId_AtualizadoEm")
   @@map("Chamados")
 }
 
+
+model ChamadoAcompanhante {
+  id             String   @id @default(uuid()) @db.UniqueIdentifier @map("Id")
+  chamadoId      String   @db.UniqueIdentifier @map("ChamadoId")
+  empresaId       Int      @map("EmpresaId")
+  usuarioId       String   @db.UniqueIdentifier @map("UsuarioId")
+  adicionadoPorId String?  @db.UniqueIdentifier @map("AdicionadoPorId")
+  ativo           Boolean  @default(true) @map("Ativo")
+  criadoEm        DateTime @default(now()) @map("CriadoEm")
+  atualizadoEm    DateTime @updatedAt @map("AtualizadoEm")
+
+  chamado       Chamado @relation(fields: [chamadoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  empresa       Empresa @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuario       Usuario @relation("ChamadoAcompanhanteUsuario", fields: [usuarioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  adicionadoPor Usuario? @relation("ChamadoAcompanhanteAdicionadoPor", fields: [adicionadoPorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([chamadoId, usuarioId], map: "UX_ChamadoAcompanhantes_ChamadoId_UsuarioId")
+  @@index([empresaId, chamadoId, ativo], map: "IX_ChamadoAcompanhantes_EmpresaId_ChamadoId_Ativo")
+  @@index([empresaId, usuarioId, ativo], map: "IX_ChamadoAcompanhantes_EmpresaId_UsuarioId_Ativo")
+  @@map("ChamadoAcompanhantes")
+}
 model ChamadoMensagem {
   id        String   @id @default(uuid()) @db.UniqueIdentifier @map("Id")
   chamadoId String   @db.UniqueIdentifier @map("ChamadoId")
@@ -263,11 +315,36 @@ model ChamadoMensagem {
   chamado Chamado @relation(fields: [chamadoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   autor Usuario @relation(fields: [autorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  anexos ChamadoAnexo[]
 
   @@index([empresaId, chamadoId, criadoEm], map: "IX_ChamadoMensagens_EmpresaId_ChamadoId_CriadoEm")
   @@map("ChamadoMensagens")
 }
 
+
+model ChamadoAnexo {
+  id           String   @id @default(uuid()) @db.UniqueIdentifier @map("Id")
+  chamadoId    String   @db.UniqueIdentifier @map("ChamadoId")
+  empresaId    Int      @map("EmpresaId")
+  autorId      String   @db.UniqueIdentifier @map("AutorId")
+  mensagemId   String?  @db.UniqueIdentifier @map("MensagemId")
+  nomeOriginal String   @map("NomeOriginal")
+  nomeArquivo  String   @map("NomeArquivo")
+  caminho      String   @map("Caminho")
+  mimeType     String   @map("MimeType")
+  tamanho      Int      @map("Tamanho")
+  criadoEm     DateTime @default(now()) @map("CriadoEm")
+
+  chamado Chamado @relation(fields: [chamadoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  autor Usuario @relation(fields: [autorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  mensagem ChamadoMensagem? @relation(fields: [mensagemId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([empresaId, chamadoId, criadoEm], map: "IX_ChamadoAnexos_EmpresaId_ChamadoId_CriadoEm")
+  @@index([empresaId, mensagemId], map: "IX_ChamadoAnexos_EmpresaId_MensagemId")
+  @@index([autorId], map: "IX_ChamadoAnexos_AutorId")
+  @@map("ChamadoAnexos")
+}
 model ChamadoHistorico {
   id            String   @id @default(uuid()) @db.UniqueIdentifier @map("Id")
   chamadoId     String   @db.UniqueIdentifier @map("ChamadoId")
@@ -302,6 +379,63 @@ model ChamadoCategoria {
 
   @@unique([empresaId, nome], map: "UX_ChamadoCategorias_EmpresaId_Nome")
   @@map("ChamadoCategorias")
+}
+
+
+model ChamadoResponsavel {
+  id          Int      @id @default(autoincrement()) @map("Id")
+  empresaId   Int      @map("EmpresaId")
+  tipo        String   @default("USUARIO") @map("Tipo")
+  usuarioId   String?  @db.UniqueIdentifier @map("UsuarioId")
+  grupoId     Int?     @map("GrupoId")
+  ativo       Boolean  @default(true) @map("Ativo")
+  criadoEm    DateTime @default(now()) @map("CriadoEm")
+  atualizadoEm DateTime @updatedAt @map("AtualizadoEm")
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  usuario Usuario? @relation(fields: [usuarioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  grupo GrupoUsuario? @relation(fields: [grupoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  solucoes ChamadoResponsavelSolucao[]
+
+  @@index([empresaId, ativo], map: "IX_ChamadoResponsaveis_EmpresaId_Ativo")
+  @@index([empresaId, tipo], map: "IX_ChamadoResponsaveis_EmpresaId_Tipo")
+  @@index([empresaId, usuarioId], map: "IX_ChamadoResponsaveis_EmpresaId_UsuarioId")
+  @@index([empresaId, grupoId], map: "IX_ChamadoResponsaveis_EmpresaId_GrupoId")
+  @@map("ChamadoResponsaveis")
+}
+
+model ChamadoResponsavelSolucao {
+  id                Int      @id @default(autoincrement()) @map("Id")
+  responsavelId      Int      @map("ResponsavelId")
+  solucaoId          Int      @map("SolucaoId")
+  responsavelGeral   Boolean  @default(false) @map("ResponsavelGeral")
+  ativo              Boolean  @default(true) @map("Ativo")
+  criadoEm           DateTime @default(now()) @map("CriadoEm")
+  atualizadoEm       DateTime @updatedAt @map("AtualizadoEm")
+
+  responsavel ChamadoResponsavel @relation(fields: [responsavelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  solucao Solucao @relation(fields: [solucaoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  funcionalidades ChamadoResponsavelFuncionalidade[]
+
+  @@unique([responsavelId, solucaoId], map: "UX_ChamadoResponsavelSolucoes_ResponsavelId_SolucaoId")
+  @@index([solucaoId], map: "IX_ChamadoResponsavelSolucoes_SolucaoId")
+  @@map("ChamadoResponsavelSolucoes")
+}
+
+model ChamadoResponsavelFuncionalidade {
+  id                    Int      @id @default(autoincrement()) @map("Id")
+  responsavelSolucaoId   Int      @map("ResponsavelSolucaoId")
+  funcionalidadeId       Int      @map("FuncionalidadeId")
+  ativo                  Boolean  @default(true) @map("Ativo")
+  criadoEm               DateTime @default(now()) @map("CriadoEm")
+  atualizadoEm           DateTime @updatedAt @map("AtualizadoEm")
+
+  responsavelSolucao ChamadoResponsavelSolucao @relation(fields: [responsavelSolucaoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  funcionalidade Funcionalidade @relation(fields: [funcionalidadeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([responsavelSolucaoId, funcionalidadeId], map: "UX_ChamadoResponsavelFuncionalidades_ResponsavelSolucaoId_FuncionalidadeId")
+  @@index([funcionalidadeId], map: "IX_ChamadoResponsavelFuncionalidades_FuncionalidadeId")
+  @@map("ChamadoResponsavelFuncionalidades")
 }
 
 model ChamadoSequencia {

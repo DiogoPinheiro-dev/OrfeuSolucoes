@@ -1,5 +1,5 @@
 import { Field, InputType, Int } from '@nestjs/graphql';
-import { IsInt, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { ArrayUnique, IsArray, IsInt, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 
 @InputType()
 export class CriarChamadoInput {
@@ -29,4 +29,30 @@ export class CriarChamadoInput {
   @IsOptional()
   @IsInt()
   categoriaId?: number | null;
+
+  @Field(() => Int)
+  @IsInt()
+  solucaoId!: number;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsInt()
+  funcionalidadeId?: number | null;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsUUID()
+  responsavelId?: string | null;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsInt()
+  responsavelGrupoId?: number | null;
+
+  @Field(() => [String], { nullable: true })
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsUUID('4', { each: true })
+  acompanhanteIds?: string[] | null;
 }

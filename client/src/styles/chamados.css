@@ -46,6 +46,20 @@
     color: #64748b;
 }
 
+.chamado-panel-action {
+    display: flex;
+    flex-direction: column;
+    gap: 1.15rem;
+}
+
+.chamado-panel-action label + button {
+    margin-top: 0.35rem;
+}
+
+.chamado-panel-action button {
+    align-self: flex-start;
+}
+
 
 
 
@@ -124,8 +138,14 @@
 
 
 .chamado-inline-actions-wrap {
-    flex-wrap: wrap;
+    align-items: stretch;
+    flex-direction: column;
     justify-content: flex-start;
+    width: 100%;
+}
+
+.chamado-inline-actions-wrap button {
+    width: 100%;
 }
 .chamados-pagination {
     color: #64748b;
@@ -182,6 +202,51 @@
 .chamado-panel button:disabled {
     cursor: not-allowed;
     opacity: 0.45;
+}
+
+.chamados-shell button.chamado-action-archive {
+    background: #dc2626;
+    border-color: #b91c1c;
+    color: #ffffff;
+}
+
+.chamados-shell button.chamado-action-archive:hover:not(:disabled),
+.chamados-shell button.chamado-action-archive:focus-visible {
+    background: #b91c1c;
+    border-color: #991b1b;
+    color: #ffffff;
+}
+
+.chamados-shell button.chamado-action-reopen {
+    background: #facc15;
+    border-color: #eab308;
+    color: #422006;
+}
+
+.chamados-shell button.chamado-action-reopen:hover:not(:disabled),
+.chamados-shell button.chamado-action-reopen:focus-visible {
+    background: #eab308;
+    border-color: #ca8a04;
+    color: #422006;
+}
+
+.chamados-shell button.chamado-action-resolve {
+    background: #16a34a;
+    border-color: #15803d;
+    color: #ffffff;
+}
+
+.chamados-shell button.chamado-action-resolve:hover:not(:disabled),
+.chamados-shell button.chamado-action-resolve:focus-visible {
+    background: #15803d;
+    border-color: #166534;
+    color: #ffffff;
+}
+
+.chamados-shell button.chamado-action-archive:focus-visible,
+.chamados-shell button.chamado-action-reopen:focus-visible,
+.chamados-shell button.chamado-action-resolve:focus-visible {
+    outline: none;
 }
 
 .chamado-back,
@@ -371,8 +436,10 @@
     opacity: 0.45;
     transform: scale(0.98);
 }
-.chamado-card:hover {
+.chamado-card:hover,
+.chamado-card:focus-visible {
     border-color: rgba(23, 78, 166, 0.35);
+    outline: none;
     transform: translateY(-1px);
 }
 
@@ -382,6 +449,54 @@
 
 .chamado-card strong {
     font-weight: 400;
+}
+
+.chamado-card-header {
+    align-items: flex-start;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: space-between;
+}
+
+.chamado-card-header strong {
+    flex: 1;
+    min-width: 0;
+}
+
+.chamado-card-archive {
+    align-items: center;
+    background: #fff1f2;
+    border: 1px solid #fecdd3;
+    border-radius: 999px;
+    color: #be123c;
+    cursor: pointer;
+    display: inline-flex;
+    flex: 0 0 auto;
+    height: 2rem;
+    justify-content: center;
+    padding: 0;
+    transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, transform 0.16s ease;
+    width: 2rem;
+}
+
+.chamado-card-archive svg {
+    fill: currentColor;
+    height: 1rem;
+    width: 1rem;
+}
+
+.chamado-card-archive:hover,
+.chamado-card-archive:focus-visible {
+    background: #ffe4e6;
+    border-color: #fb7185;
+    color: #9f1239;
+    outline: none;
+    transform: scale(1.04);
+}
+
+.chamado-card-archive:disabled {
+    cursor: wait;
+    opacity: 0.55;
 }
 
 .chamado-card-meta {
@@ -534,7 +649,7 @@
     color: #166534;
 }
 
-.chamado-status.chamado-status-encerrado {
+.chamado-status.chamado-status-arquivado {
     background: #f8fafc;
     border-color: #cbd5e1;
     color: #475569;
@@ -569,6 +684,17 @@
     align-items: stretch;
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+}
+
+.chamado-detail-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.chamado-atendimento-panel {
+    align-self: start;
 }
 
 .chamado-meta {
@@ -652,9 +778,81 @@
     accent-color: var(--button-primary-bg);
 }
 
+.chamado-acompanhantes-fieldset {
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin: 0;
+    padding: 1rem;
+}
+
+.chamado-acompanhantes-fieldset legend {
+    color: #102033;
+    padding: 0 0.35rem;
+}
+
+.chamado-acompanhantes-fieldset small,
+.chamado-acompanhante-option small {
+    color: #64748b;
+}
+
+.chamado-acompanhantes-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.chamado-acompanhante-option {
+    align-items: center !important;
+    background: rgba(248, 250, 252, 0.95);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 14px;
+    cursor: pointer;
+    display: grid !important;
+    grid-template-columns: auto 1fr;
+    gap: 0.75rem !important;
+    padding: 0.85rem;
+}
+
+.chamado-acompanhante-option input[type="checkbox"] {
+    accent-color: var(--button-primary-bg);
+    height: 18px;
+    margin: 0;
+    width: 18px;
+}
+
+.chamado-acompanhante-option span,
+.chamado-acompanhante-option small {
+    display: block;
+}
+
+.chamado-badge-acompanhando {
+    background: rgba(224, 242, 254, 0.88);
+    border: 1px solid rgba(14, 165, 233, 0.24);
+    border-radius: 999px;
+    color: #0369a1;
+    padding: 0.3rem 0.55rem;
+}
+.chamado-acompanhante-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.chamado-acompanhante-tag {
+    background: rgba(219, 234, 254, 0.72);
+    border: 1px solid rgba(59, 130, 246, 0.18);
+    border-radius: 999px;
+    color: #1e3a8a;
+    padding: 0.4rem 0.7rem;
+}
+
 @media (max-width: 900px) {
     .chamado-form-grid,
     .chamados-filters,
+    .chamado-acompanhantes-grid,
     .chamado-detail-grid,
     .chamado-meta {
         grid-template-columns: 1fr;
@@ -743,5 +941,153 @@
     .chamado-badges {
         justify-content: flex-start;
     }
+}
+.chamado-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 2200;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    background: rgba(15, 23, 42, 0.38);
+    backdrop-filter: blur(4px);
+}
+
+.chamado-responsavel-modal {
+    width: min(100%, 520px);
+    display: grid;
+    gap: 1rem;
+    padding: 1.25rem;
+    border: 1px solid var(--line);
+    border-radius: 1.25rem;
+    background: var(--surface-white);
+    box-shadow: var(--shadow);
+}
+
+.chamado-responsavel-modal header {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.chamado-responsavel-modal header span {
+    color: var(--detail-accent-text);
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.chamado-responsavel-modal header h3,
+.chamado-responsavel-modal header p {
+    margin: 0;
+}
+
+.chamado-responsavel-options {
+    display: grid;
+    gap: 0.65rem;
+    max-height: 320px;
+    overflow: auto;
+}
+
+.chamado-responsavel-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.8rem 0.9rem;
+    border: 1px solid var(--line);
+    border-radius: 0.9rem;
+    background: var(--surface-soft);
+    color: var(--primary);
+}
+
+.chamado-responsavel-option input {
+    width: 18px;
+    min-width: 18px;
+    height: 18px;
+    accent-color: var(--button-primary-bg);
+}
+
+.chamado-responsavel-option span {
+    display: grid;
+    gap: 0.2rem;
+}
+
+.chamado-responsavel-option small {
+    color: var(--muted);
+}
+
+.chamado-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+}
+
+.chamado-modal-actions button {
+    min-height: 42px;
+    padding: 0.7rem 1rem;
+    border-radius: var(--button-radius);
+    border: 1px solid var(--button-secondary-border);
+    background: var(--surface-soft);
+    color: var(--primary);
+    cursor: pointer;
+}
+
+.chamado-modal-actions button:last-child {
+    border-color: var(--button-primary-border);
+    background: var(--button-primary-bg);
+    color: var(--button-primary-text);
+}
+
+.chamado-modal-actions button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.chamado-anexo-picker input[type="file"] {
+    background: #fff;
+}
+
+.chamado-anexo-picker small,
+.chamado-anexo-item small,
+.chamado-anexo-link small {
+    color: #64748b;
+    font-size: 0.78rem;
+}
+
+.chamado-anexo-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+}
+
+.chamado-anexo-list-links {
+    margin-top: 0.65rem;
+}
+
+.chamado-anexo-item,
+.chamado-anexo-link {
+    align-items: center;
+    background: #f8fafc;
+    border: 1px solid rgba(15, 23, 42, 0.1);
+    border-radius: 999px;
+    color: #102033;
+    display: inline-flex;
+    gap: 0.45rem;
+    padding: 0.45rem 0.7rem;
+    text-decoration: none;
+}
+
+.chamado-anexo-link:hover,
+.chamado-anexo-link:focus-visible {
+    border-color: rgba(23, 78, 166, 0.35);
+    color: #174ea6;
+    outline: none;
+}
+
+.chamado-link-button {
+    background: transparent !important;
+    border-color: rgba(23, 78, 166, 0.2) !important;
+    color: #174ea6 !important;
+    padding: 0.45rem 0.7rem !important;
 }
 

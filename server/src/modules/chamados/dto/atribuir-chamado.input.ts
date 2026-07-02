@@ -1,5 +1,5 @@
-import { Field, InputType } from '@nestjs/graphql';
-import { IsOptional, IsString } from 'class-validator';
+import { Field, InputType, Int } from '@nestjs/graphql';
+import { IsInt, IsOptional, IsString, IsUUID } from 'class-validator';
 
 @InputType()
 export class AtribuirChamadoInput {
@@ -9,6 +9,11 @@ export class AtribuirChamadoInput {
 
   @Field(() => String, { nullable: true })
   @IsOptional()
-  @IsString()
+  @IsUUID()
   responsavelId?: string | null;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsInt()
+  responsavelGrupoId?: number | null;
 }
