@@ -25,6 +25,9 @@ export class GrupoUsuarioType {
   acessoConfigurador!: boolean;
 
   @Field()
+  padraoSistema!: boolean;
+
+  @Field()
   podeVisualizar!: boolean;
 
   @Field()

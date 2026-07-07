@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getEmpresas } from "../../services/Auth/AuthService";
 import { getGruposUsuarios } from "../../services/GruposUsuarios/GrupoUsuarioService";
 import { createUser, deleteUser, getUsers, updateUser } from "../../services/Users/UserService";
-import { canUseFeatureAction, isGroupAdmin, isSystemAdmin } from "../auth/hubConfig";
+import { canUseFeatureAction, isGroupAdmin } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
 import ConfirmDialog from "./ConfirmDialog";
 import CrudGrid from "./CrudGrid";
@@ -26,7 +26,7 @@ const initialForm = {
 
 const EMPRESAS_PAGE_SIZE = 5;
 
-const isProtectedAdminUser = (user) => isSystemAdmin(user);
+const isProtectedAdminUser = (user) => !!user?.padraoSistema;
 
 const fieldHelp = {
     nome: {
@@ -79,7 +79,11 @@ export default function UserManagement({ permissions }) {
         setLoading(true);
 
         try {
-            setUsers(await getUsers());
+            const usersResponse = await getUsers();
+            setUsers(usersResponse);
+            setSelectedIds((current) =>
+                current.filter((id) => usersResponse.some((user) => user.id === id && !isProtectedAdminUser(user)))
+            );
         } catch (loadError) {
             setError(loadError.message || "Não foi possível carregar usuários.");
         } finally {
@@ -224,7 +228,7 @@ export default function UserManagement({ permissions }) {
         const deleteUsers = users.filter((item) => idsToDelete.includes(item.id));
 
         if (deleteUsers.some(isProtectedAdminUser)) {
-            setError("O usuário administrador inicial não pode ser excluído.");
+            setError("O usuario administrador padrao do sistema nao pode ser excluido.");
             return;
         }
 
@@ -286,7 +290,6 @@ export default function UserManagement({ permissions }) {
     };
 
     const readonly = modalMode === "view";
-    const editingProtectedAdmin = isProtectedAdminUser(form);
     const empresasTotalPages = Math.max(1, Math.ceil(empresas.length / EMPRESAS_PAGE_SIZE));
     const empresasStart = (empresasPage - 1) * EMPRESAS_PAGE_SIZE;
     const visibleEmpresas = empresas.slice(empresasStart, empresasStart + EMPRESAS_PAGE_SIZE);
@@ -322,14 +325,7 @@ export default function UserManagement({ permissions }) {
                     onToggleSelectAll={toggleVisibleUsers}
                     isRowSelectable={(user) => !isProtectedAdminUser(user)}
                     onCreate={() => openModal("create")}
-                    onEdit={(user) => {
-                        if (isProtectedAdminUser(user)) {
-                            setError("O usuário administrador inicial não pode ser alterado.");
-                            return;
-                        }
-
-                        openModal("edit", user);
-                    }}
+                    onEdit={(user) => openModal("edit", user)}
                     onView={(user) => openModal("view", user)}
                     onDelete={handleDelete}
                     search={search}
@@ -376,7 +372,7 @@ export default function UserManagement({ permissions }) {
                                     <label htmlFor="usuario-nome">Nome</label>
                                     <HelpButton help={fieldHelp.nome} onHelp={setActiveHelp} />
                                 </span>
-                                <input id="usuario-nome" name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || saving || editingProtectedAdmin} />
+                                <input id="usuario-nome" name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || saving} />
                             </div>
 
                             <div className="field-help-field">
@@ -389,8 +385,8 @@ export default function UserManagement({ permissions }) {
                                     name="login"
                                     value={form.login || ""}
                                     onChange={handleChange}
-                                    disabled={readonly || saving || editingProtectedAdmin}
-                                    required={!editingProtectedAdmin}
+                                    disabled={readonly || saving}
+                                    required
                                 />
                             </div>
 
@@ -438,7 +434,7 @@ export default function UserManagement({ permissions }) {
                                     name="grupoId"
                                     value={form.grupoId || ""}
                                     onChange={handleChange}
-                                    disabled={readonly || saving || editingProtectedAdmin}
+                                    disabled={readonly || saving}
                                     ariaLabel="Selecionar grupo do usuário"
                                     options={[
                                         { value: "", label: "Sem grupo" },
@@ -464,7 +460,7 @@ export default function UserManagement({ permissions }) {
                                     </div>
                                 </div>
 
-                                {readonly || editingProtectedAdmin ? (
+                                {readonly ? (
                                     <div className="user-company-list">
                                         {empresasSelecionadas.length ? (
                                             empresasSelecionadas.map((empresa) => (

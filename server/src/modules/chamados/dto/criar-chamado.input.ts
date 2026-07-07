@@ -15,15 +15,13 @@ export class CriarChamadoInput {
   @MaxLength(1000)
   descricao!: string;
 
-  @Field(() => String, { nullable: true })
-  @IsOptional()
-  @IsString()
-  tipo?: string | null;
+  @Field(() => Int)
+  @IsInt()
+  tipoId!: number;
 
-  @Field(() => String, { nullable: true })
-  @IsOptional()
-  @IsString()
-  prioridade?: string | null;
+  @Field(() => Int)
+  @IsInt()
+  prioridadeId!: number;
 
   @Field(() => Int, { nullable: true })
   @IsOptional()

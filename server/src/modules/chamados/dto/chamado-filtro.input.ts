@@ -1,5 +1,5 @@
 import { Field, InputType, Int } from '@nestjs/graphql';
-import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsDateString, IsInt, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
 
 @InputType()
 export class ChamadoFiltroInput {
@@ -13,20 +13,40 @@ export class ChamadoFiltroInput {
   @IsString()
   status?: string | null;
 
-  @Field(() => String, { nullable: true })
+  @Field(() => Int, { nullable: true })
   @IsOptional()
-  @IsString()
-  prioridade?: string | null;
+  @IsInt()
+  prioridadeId?: number | null;
 
   @Field(() => String, { nullable: true })
   @IsOptional()
-  @IsString()
+  @IsUUID()
   responsavelId?: string | null;
 
   @Field(() => Int, { nullable: true })
   @IsOptional()
   @IsInt()
+  responsavelGrupoId?: number | null;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsUUID()
+  solicitanteId?: string | null;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsInt()
   categoriaId?: number | null;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsDateString()
+  criadoDe?: string | null;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsDateString()
+  criadoAte?: string | null;
 
   @Field(() => Int, { nullable: true, defaultValue: 1 })
   @IsOptional()

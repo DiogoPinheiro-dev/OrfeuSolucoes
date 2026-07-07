@@ -9,6 +9,8 @@ export const FEATURE_COMPONENT_REGISTRY = {
     "controle-de-chamados.painel-atendimento": "painel-atendimento",
     "controle-de-chamados.chamados-arquivados": "chamados-arquivados",
     "controle-de-chamados.categorias": "categoria-chamado-management",
+    "controle-de-chamados.tipos": "tipo-chamado-management",
+    "controle-de-chamados.prioridades": "prioridade-chamado-management",
     "controle-de-chamados.responsaveis": "responsavel-chamado-management"
 };
 

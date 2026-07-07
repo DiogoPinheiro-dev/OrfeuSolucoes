@@ -21,6 +21,7 @@ const initialForm = {
 };
 
 const booleanLabel = (value) => (value ? "Sim" : "Não");
+const canDeleteEmpresa = (empresa) => !empresa?.padraoSistema;
 
 const fieldHelp = {
     nome: {
@@ -67,6 +68,7 @@ export default function CompanyManagement({ permissions }) {
         try {
             const [empresasResponse, usersResponse, solucoesResponse] = await Promise.all([getEmpresas(), getUsers(), getSolucoes()]);
             setEmpresas(empresasResponse);
+            setSelectedIds((current) => current.filter((id) => empresasResponse.some((empresa) => empresa.id === id && canDeleteEmpresa(empresa))));
             setUsers(usersResponse);
             setSolucoes(solucoesResponse.filter((solucao) => !solucao.somenteAdminSistema));
         } catch (loadError) {
@@ -168,10 +170,15 @@ export default function CompanyManagement({ permissions }) {
     };
 
     const handleDelete = async (ids) => {
-        const deleteEmpresas = empresas.filter((empresa) => ids.includes(empresa.id));
+        const deleteEmpresas = empresas.filter((empresa) => ids.includes(empresa.id) && canDeleteEmpresa(empresa));
+
+        if (!deleteEmpresas.length) {
+            setError("A empresa padrao do sistema nao pode ser excluida.");
+            return;
+        }
 
         setPendingDelete({
-            ids,
+            ids: deleteEmpresas.map((empresa) => empresa.id),
             label: deleteEmpresas.length === 1
                 ? deleteEmpresas[0].nome || "empresa selecionada"
                 : `${deleteEmpresas.length} empresas selecionadas`
@@ -203,6 +210,12 @@ export default function CompanyManagement({ permissions }) {
     };
 
     const toggleSelectedEmpresa = (empresaId) => {
+        const empresa = empresas.find((item) => item.id === empresaId);
+
+        if (!canDeleteEmpresa(empresa)) {
+            return;
+        }
+
         setSelectedIds((current) =>
             current.includes(empresaId)
                 ? current.filter((id) => id !== empresaId)
@@ -211,7 +224,7 @@ export default function CompanyManagement({ permissions }) {
     };
 
     const toggleVisibleEmpresas = (checked, visibleEmpresas) => {
-        const visibleIds = visibleEmpresas.map((empresa) => empresa.id);
+        const visibleIds = visibleEmpresas.filter(canDeleteEmpresa).map((empresa) => empresa.id);
 
         setSelectedIds((current) => {
             if (!checked) {
@@ -274,6 +287,7 @@ export default function CompanyManagement({ permissions }) {
                     onSelect={setSelectedId}
                     onToggleSelect={toggleSelectedEmpresa}
                     onToggleSelectAll={toggleVisibleEmpresas}
+                    isRowSelectable={canDeleteEmpresa}
                     onCreate={() => openModal("create")}
                     onEdit={(empresa) => openModal("edit", empresa)}
                     onView={(empresa) => openModal("view", empresa)}

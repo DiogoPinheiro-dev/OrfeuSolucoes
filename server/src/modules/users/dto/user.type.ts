@@ -40,6 +40,9 @@ export class UserType {
   @Field()
   deveAlterarSenha!: boolean;
 
+  @Field()
+  padraoSistema!: boolean;
+
   @Field(() => [String])
   availableSolutions!: string[];
 }

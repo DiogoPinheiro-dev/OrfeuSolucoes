@@ -6,20 +6,21 @@ import {
     getAcompanhantesElegiveisChamado,
     getCategoriasChamado,
     getOpcoesAberturaChamado,
+    getPrioridadesChamado,
+    getTiposChamado,
     getResponsaveisParaAberturaChamado,
     uploadChamadoAnexos
 } from "../../services/Chamados/ChamadoService";
 import { canUseFeatureAction } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
-import { prioridadeEditOptions, tipoOptions } from "./chamadoLabels";
 
 import "../styles/chamados.css";
 
 const initialForm = {
     titulo: "",
     descricao: "",
-    tipo: "SOLICITACAO",
-    prioridade: "MEDIA",
+    tipoId: "",
+    prioridadeId: "",
     categoriaId: "",
     solucaoId: "",
     funcionalidadeId: ""
@@ -37,6 +38,8 @@ export default function ChamadoCreate({ permissions }) {
     const { user } = useAuth();
     const [form, setForm] = useState(initialForm);
     const [categorias, setCategorias] = useState([]);
+    const [tipos, setTipos] = useState([]);
+    const [prioridades, setPrioridades] = useState([]);
     const [solucoes, setSolucoes] = useState([]);
     const [acompanhantesElegiveis, setAcompanhantesElegiveis] = useState([]);
     const [selectedAcompanhanteIds, setSelectedAcompanhanteIds] = useState([]);
@@ -54,14 +57,23 @@ export default function ChamadoCreate({ permissions }) {
 
         const load = async () => {
             try {
-                const [categoriasResponse, opcoesResponse, acompanhantesResponse] = await Promise.all([
+                const [categoriasResponse, tiposResponse, prioridadesResponse, opcoesResponse, acompanhantesResponse] = await Promise.all([
                     getCategoriasChamado(true),
+                    getTiposChamado(true),
+                    getPrioridadesChamado(true),
                     getOpcoesAberturaChamado(),
                     getAcompanhantesElegiveisChamado()
                 ]);
 
                 if (active) {
                     setCategorias(categoriasResponse);
+                    setTipos(tiposResponse);
+                    setPrioridades(prioridadesResponse);
+                    setForm((current) => ({
+                        ...current,
+                        tipoId: tiposResponse.some((tipo) => String(tipo.id) === String(current.tipoId)) ? current.tipoId : tiposResponse[0]?.id ? String(tiposResponse[0].id) : "",
+                        prioridadeId: prioridadesResponse.some((prioridade) => String(prioridade.id) === String(current.prioridadeId)) ? current.prioridadeId : prioridadesResponse[0]?.id ? String(prioridadesResponse[0].id) : ""
+                    }));
                     setSolucoes(opcoesResponse.solucoes || []);
                     setAcompanhantesElegiveis(acompanhantesResponse);
                 }
@@ -132,8 +144,8 @@ export default function ChamadoCreate({ permissions }) {
     const buildPayload = () => ({
         titulo: form.titulo.trim(),
         descricao: form.descricao.trim(),
-        tipo: form.tipo,
-        prioridade: form.prioridade,
+        tipoId: Number(form.tipoId),
+        prioridadeId: Number(form.prioridadeId),
         categoriaId: form.categoriaId ? Number(form.categoriaId) : null,
         solucaoId: Number(form.solucaoId),
         funcionalidadeId: form.funcionalidadeId ? Number(form.funcionalidadeId) : null
@@ -145,6 +157,11 @@ export default function ChamadoCreate({ permissions }) {
 
         if (!form.titulo.trim() || !form.descricao.trim()) {
             setError("Preencha titulo e descricao para abrir o chamado.");
+            return;
+        }
+
+        if (!form.tipoId || !form.prioridadeId) {
+            setError("Cadastre e selecione tipo e prioridade para abrir o chamado.");
             return;
         }
 
@@ -263,18 +280,18 @@ export default function ChamadoCreate({ permissions }) {
                     <div className="chamado-form-grid">
                         <label>
                             <span>Tipo</span>
-                            <select name="tipo" value={form.tipo} onChange={handleChange} disabled={!canCreate || saving}>
-                                {tipoOptions.map((option) => (
-                                    <option key={option.value} value={option.value}>{option.label}</option>
+                            <select name="tipoId" value={form.tipoId} onChange={handleChange} disabled={!canCreate || saving}>
+                                {tipos.map((option) => (
+                                    <option key={option.id} value={option.id}>{option.nome}</option>
                                 ))}
                             </select>
                         </label>
 
                         <label>
                             <span>Prioridade</span>
-                            <select name="prioridade" value={form.prioridade} onChange={handleChange} disabled={!canCreate || saving}>
-                                {prioridadeEditOptions.map((option) => (
-                                    <option key={option.value} value={option.value}>{option.label}</option>
+                            <select name="prioridadeId" value={form.prioridadeId} onChange={handleChange} disabled={!canCreate || saving}>
+                                {prioridades.map((option) => (
+                                    <option key={option.id} value={option.id}>{option.nome}</option>
                                 ))}
                             </select>
                         </label>
@@ -395,7 +412,7 @@ export default function ChamadoCreate({ permissions }) {
                                         />
                                         <span>
                                             {responsavelLabel(responsavel)}
-                                            <small>{responsavelTipoLabel(responsavel)}{responsavel.email ? ` · ${responsavel.email}` : ""}</small>
+                                            <small>{responsavelTipoLabel(responsavel)}{responsavel.email ? ` Ãƒâ€šÃ‚Â· ${responsavel.email}` : ""}</small>
                                         </span>
                                     </label>
                                 ))}

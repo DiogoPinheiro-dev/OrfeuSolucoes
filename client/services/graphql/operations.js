@@ -40,6 +40,7 @@ export const LOGIN_MUTATION = gql`
         podeAlterar
         podeExcluir
         deveAlterarSenha
+        padraoSistema
         availableSolutions
         grupo {
           id
@@ -109,6 +110,7 @@ export const CHANGE_PASSWORD_MUTATION = gql`
         podeAlterar
         podeExcluir
         deveAlterarSenha
+        padraoSistema
         availableSolutions
         grupo {
           id
@@ -156,6 +158,7 @@ export const SWITCH_COMPANY_MUTATION = gql`
         podeAlterar
         podeExcluir
         deveAlterarSenha
+        padraoSistema
         availableSolutions
         grupo {
           id
@@ -201,6 +204,7 @@ export const CREATE_USER_MUTATION = gql`
       podeAlterar
       podeExcluir
       deveAlterarSenha
+        padraoSistema
       availableSolutions
       grupo {
         id
@@ -238,6 +242,7 @@ export const USERS_QUERY = gql`
       podeAlterar
       podeExcluir
       deveAlterarSenha
+        padraoSistema
       availableSolutions
       grupo {
         id
@@ -272,6 +277,7 @@ export const UPDATE_USER_MUTATION = gql`
       podeAlterar
       podeExcluir
       deveAlterarSenha
+        padraoSistema
       availableSolutions
       grupo {
         id
@@ -312,6 +318,7 @@ export const ME_QUERY = gql`
       podeAlterar
       podeExcluir
       deveAlterarSenha
+        padraoSistema
       availableSolutions
       grupo {
         id
@@ -352,6 +359,7 @@ export const EMPRESAS_QUERY = gql`
       acessoEcommerce
       acessoProjetos
       acessoHoras
+      padraoSistema
       solucaoIds
       solucaoSlugs
       solucaoNomes
@@ -368,6 +376,7 @@ export const CREATE_EMPRESA_MUTATION = gql`
       acessoEcommerce
       acessoProjetos
       acessoHoras
+      padraoSistema
       solucaoIds
       solucaoSlugs
       solucaoNomes
@@ -384,6 +393,7 @@ export const UPDATE_EMPRESA_MUTATION = gql`
       acessoEcommerce
       acessoProjetos
       acessoHoras
+      padraoSistema
       solucaoIds
       solucaoSlugs
       solucaoNomes
@@ -408,6 +418,7 @@ export const GRUPOS_USUARIOS_QUERY = gql`
       acessoProjetos
       acessoHoras
       acessoConfigurador
+      padraoSistema
       podeVisualizar
       podeIncluir
       podeAlterar
@@ -441,6 +452,7 @@ export const CREATE_GRUPO_USUARIO_MUTATION = gql`
       acessoProjetos
       acessoHoras
       acessoConfigurador
+      padraoSistema
       podeVisualizar
       podeIncluir
       podeAlterar
@@ -474,6 +486,7 @@ export const UPDATE_GRUPO_USUARIO_MUTATION = gql`
       acessoProjetos
       acessoHoras
       acessoConfigurador
+      padraoSistema
       podeVisualizar
       podeIncluir
       podeAlterar
@@ -668,8 +681,8 @@ export const CREATE_FUNCIONALIDADE_MUTATION = gql`
       acoes {
         id
         funcionalidadeId
-        chave
-        nome
+          chave
+          nome
         descricao
         ordem
         ativo
@@ -700,8 +713,8 @@ export const UPDATE_FUNCIONALIDADE_MUTATION = gql`
       acoes {
         id
         funcionalidadeId
-        chave
-        nome
+          chave
+          nome
         descricao
         ordem
         ativo
@@ -740,8 +753,12 @@ export const CHAMADO_FIELDS = gql`
     funcionalidadeNome
     titulo
     descricao
-    tipo
-    prioridade
+    tipoId
+    tipoNome
+    tipoCor
+    prioridadeId
+    prioridadeNome
+    prioridadeCor
     status
     criadoEm
     atualizadoEm
@@ -822,7 +839,33 @@ export const CHAMADO_CATEGORIA_FIELDS = gql`
   }
 `;
 
+export const CHAMADO_TIPO_FIELDS = gql`
+  fragment ChamadoTipoFields on ChamadoTipoType {
+    id
+    empresaId
+    nome
+    descricao
+    cor
+    ordem
+    ativo
+    criadoEm
+    atualizadoEm
+  }
+`;
 
+export const CHAMADO_PRIORIDADE_FIELDS = gql`
+  fragment ChamadoPrioridadeFields on ChamadoPrioridadeType {
+    id
+    empresaId
+    nome
+    descricao
+    cor
+    ordem
+    ativo
+    criadoEm
+    atualizadoEm
+  }
+`;
 export const CHAMADO_RESPONSAVEL_FIELDS = gql`
   fragment ChamadoResponsavelFields on ChamadoResponsavelType {
     id
@@ -909,7 +952,23 @@ export const CATEGORIAS_CHAMADO_QUERY = gql`
     }
   }
 `;
+export const TIPOS_CHAMADO_QUERY = gql`
+  ${CHAMADO_TIPO_FIELDS}
+  query TiposChamado($ativas: Boolean) {
+    tiposChamado(ativas: $ativas) {
+      ...ChamadoTipoFields
+    }
+  }
+`;
 
+export const PRIORIDADES_CHAMADO_QUERY = gql`
+  ${CHAMADO_PRIORIDADE_FIELDS}
+  query PrioridadesChamado($ativas: Boolean) {
+    prioridadesChamado(ativas: $ativas) {
+      ...ChamadoPrioridadeFields
+    }
+  }
+`;
 export const ATENDENTES_DISPONIVEIS_QUERY = gql`
   query AtendentesDisponiveis {
     atendentesDisponiveis {
@@ -1095,6 +1154,14 @@ export const RESPONSAVEIS_CHAMADO_QUERY = gql`
   }
 `;
 
+export const RESPONSAVEIS_FILTRO_CHAMADO_QUERY = gql`
+  ${CHAMADO_RESPONSAVEL_FIELDS}
+  query ResponsaveisFiltroChamado {
+    responsaveisFiltroChamado {
+      ...ChamadoResponsavelFields
+    }
+  }
+`;
 export const RESPONSAVEIS_CHAMADO_OPTIONS_QUERY = gql`
   query ResponsaveisChamadoOptions {
     responsaveisChamadoOptions {
@@ -1146,6 +1213,53 @@ export const UPDATE_CHAMADO_RESPONSAVEL_MUTATION = gql`
 export const DELETE_CHAMADO_RESPONSAVEL_MUTATION = gql`
   mutation DeleteChamadoResponsavel($id: Int!) {
     deleteChamadoResponsavel(id: $id)
+  }
+`;
+export const CREATE_CHAMADO_TIPO_MUTATION = gql`
+  ${CHAMADO_TIPO_FIELDS}
+  mutation CreateChamadoTipo($input: CreateChamadoTipoInput!) {
+    createChamadoTipo(input: $input) {
+      ...ChamadoTipoFields
+    }
+  }
+`;
+
+export const UPDATE_CHAMADO_TIPO_MUTATION = gql`
+  ${CHAMADO_TIPO_FIELDS}
+  mutation UpdateChamadoTipo($input: UpdateChamadoTipoInput!) {
+    updateChamadoTipo(input: $input) {
+      ...ChamadoTipoFields
+    }
+  }
+`;
+
+export const DELETE_CHAMADO_TIPO_MUTATION = gql`
+  mutation DeleteChamadoTipo($id: Int!) {
+    deleteChamadoTipo(id: $id)
+  }
+`;
+
+export const CREATE_CHAMADO_PRIORIDADE_MUTATION = gql`
+  ${CHAMADO_PRIORIDADE_FIELDS}
+  mutation CreateChamadoPrioridade($input: CreateChamadoPrioridadeInput!) {
+    createChamadoPrioridade(input: $input) {
+      ...ChamadoPrioridadeFields
+    }
+  }
+`;
+
+export const UPDATE_CHAMADO_PRIORIDADE_MUTATION = gql`
+  ${CHAMADO_PRIORIDADE_FIELDS}
+  mutation UpdateChamadoPrioridade($input: UpdateChamadoPrioridadeInput!) {
+    updateChamadoPrioridade(input: $input) {
+      ...ChamadoPrioridadeFields
+    }
+  }
+`;
+
+export const DELETE_CHAMADO_PRIORIDADE_MUTATION = gql`
+  mutation DeleteChamadoPrioridade($id: Int!) {
+    deleteChamadoPrioridade(id: $id)
   }
 `;
 export const CREATE_CHAMADO_CATEGORIA_MUTATION = gql`

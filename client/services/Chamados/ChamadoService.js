@@ -12,23 +12,32 @@ import {
     CHAMADOS_ARQUIVADOS_QUERY,
     CHAMADO_QUERY,
     CREATE_CHAMADO_CATEGORIA_MUTATION,
+    CREATE_CHAMADO_PRIORIDADE_MUTATION,
+    CREATE_CHAMADO_TIPO_MUTATION,
     CREATE_CHAMADO_RESPONSAVEL_MUTATION,
     CRIAR_CHAMADO_MUTATION,
     DELETE_CHAMADO_CATEGORIA_MUTATION,
+    DELETE_CHAMADO_PRIORIDADE_MUTATION,
+    DELETE_CHAMADO_TIPO_MUTATION,
     DELETE_CHAMADO_RESPONSAVEL_MUTATION,
     ENCERRAR_CHAMADO_MUTATION,
     FILA_CHAMADOS_QUERY,
     LIBERAR_ATENDIMENTO_CHAMADO_MUTATION,
     MEUS_CHAMADOS_QUERY,
     OPCOES_ABERTURA_CHAMADO_QUERY,
+    PRIORIDADES_CHAMADO_QUERY,
     REABRIR_CHAMADO_MUTATION,
     RESPONSAVEIS_CHAMADO_OPTIONS_QUERY,
+    RESPONSAVEIS_FILTRO_CHAMADO_QUERY,
     RESPONSAVEIS_PARA_ABERTURA_CHAMADO_QUERY,
     RESPONSAVEIS_CHAMADO_QUERY,
     RESOLVER_CHAMADO_MUTATION,
     RESPONDER_CHAMADO_MUTATION,
+    TIPOS_CHAMADO_QUERY,
     TRANSFERIR_CHAMADO_MUTATION,
     UPDATE_CHAMADO_CATEGORIA_MUTATION,
+    UPDATE_CHAMADO_PRIORIDADE_MUTATION,
+    UPDATE_CHAMADO_TIPO_MUTATION,
     UPDATE_CHAMADO_RESPONSAVEL_MUTATION
 } from "../graphql/operations";
 
@@ -120,6 +129,20 @@ export const getCategoriasChamado = (ativas = true) =>
         select: (data) => data?.categoriasChamado ?? []
     });
 
+
+export const getTiposChamado = (ativas = true) =>
+    query({
+        query: TIPOS_CHAMADO_QUERY,
+        variables: { ativas },
+        select: (data) => data?.tiposChamado ?? []
+    });
+
+export const getPrioridadesChamado = (ativas = true) =>
+    query({
+        query: PRIORIDADES_CHAMADO_QUERY,
+        variables: { ativas },
+        select: (data) => data?.prioridadesChamado ?? []
+    });
 export const getAtendentesDisponiveis = () =>
     query({
         query: ATENDENTES_DISPONIVEIS_QUERY,
@@ -333,6 +356,11 @@ export const getResponsaveisChamado = (ativas = false) =>
         variables: { ativas },
         select: (data) => data?.responsaveisChamado ?? []
     });
+export const getResponsaveisFiltroChamado = () =>
+    query({
+        query: RESPONSAVEIS_FILTRO_CHAMADO_QUERY,
+        select: (data) => data?.responsaveisFiltroChamado ?? []
+    });
 
 export const getResponsaveisChamadoOptions = () =>
     query({
@@ -370,6 +398,55 @@ export const deleteChamadoResponsavel = (id) =>
         mutation: DELETE_CHAMADO_RESPONSAVEL_MUTATION,
         variables: { id: Number(id) },
         select: (data) => data?.deleteChamadoResponsavel
+    });
+const normalizeChamadoConfiguracaoInput = (input) => ({
+    ...input,
+    ...(input.id !== undefined ? { id: Number(input.id) } : {}),
+    ordem: Number(input.ordem || 0),
+    descricao: input.descricao?.trim() || null,
+    cor: input.cor?.trim() || null,
+});
+
+export const createChamadoTipo = (input) =>
+    mutate({
+        mutation: CREATE_CHAMADO_TIPO_MUTATION,
+        variables: { input: normalizeChamadoConfiguracaoInput(input) },
+        select: (data) => data?.createChamadoTipo
+    });
+
+export const updateChamadoTipo = (input) =>
+    mutate({
+        mutation: UPDATE_CHAMADO_TIPO_MUTATION,
+        variables: { input: normalizeChamadoConfiguracaoInput({ ...input, id: Number(input.id) }) },
+        select: (data) => data?.updateChamadoTipo
+    });
+
+export const deleteChamadoTipo = (id) =>
+    mutate({
+        mutation: DELETE_CHAMADO_TIPO_MUTATION,
+        variables: { id: Number(id) },
+        select: (data) => data?.deleteChamadoTipo
+    });
+
+export const createChamadoPrioridade = (input) =>
+    mutate({
+        mutation: CREATE_CHAMADO_PRIORIDADE_MUTATION,
+        variables: { input: normalizeChamadoConfiguracaoInput(input) },
+        select: (data) => data?.createChamadoPrioridade
+    });
+
+export const updateChamadoPrioridade = (input) =>
+    mutate({
+        mutation: UPDATE_CHAMADO_PRIORIDADE_MUTATION,
+        variables: { input: normalizeChamadoConfiguracaoInput({ ...input, id: Number(input.id) }) },
+        select: (data) => data?.updateChamadoPrioridade
+    });
+
+export const deleteChamadoPrioridade = (id) =>
+    mutate({
+        mutation: DELETE_CHAMADO_PRIORIDADE_MUTATION,
+        variables: { id: Number(id) },
+        select: (data) => data?.deleteChamadoPrioridade
     });
 export const createChamadoCategoria = (input) =>
     mutate({

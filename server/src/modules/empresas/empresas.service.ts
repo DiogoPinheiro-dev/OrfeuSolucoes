@@ -12,6 +12,7 @@ export type EmpresaRecord = {
   acessoEcommerce?: boolean;
   acessoProjetos?: boolean;
   acessoHoras?: boolean;
+  padraoSistema?: boolean;
 };
 
 @Injectable()
@@ -58,6 +59,7 @@ export class EmpresasService {
       input.solucaoIds ?? [],
       await this.resolveFuncionalidadeIds(input.solucaoIds ?? [], input.funcionalidadeIds)
     );
+    await this.solucoesService.ensureDefaultChamadoConfiguracoesForEmpresa(empresa.id);
 
     return this.toEmpresaType(empresa);
   }
@@ -120,6 +122,7 @@ export class EmpresasService {
         input.solucaoIds ?? [],
         await this.resolveFuncionalidadeIds(input.solucaoIds ?? [], input.funcionalidadeIds)
       );
+      await this.solucoesService.ensureDefaultChamadoConfiguracoesForEmpresa(input.id);
     }
 
     return this.toEmpresaType(empresa);
@@ -128,8 +131,8 @@ export class EmpresasService {
   async remove(id: number, admin: JwtPayload): Promise<boolean> {
     this.assertAdmin(admin, 'remover empresas');
 
-    await this.findById(id);
-
+    const empresa = await this.findById(id);
+    this.assertCanRemoveEmpresa(empresa);
     await this.prisma.$transaction(async (tx) => {
       const vinculos = (await tx.empresaUsuario.findMany({
         where: { empresaId: id },
@@ -198,6 +201,7 @@ export class EmpresasService {
       acessoEcommerce: empresa.acessoEcommerce ?? false,
       acessoProjetos: empresa.acessoProjetos ?? false,
       acessoHoras: empresa.acessoHoras ?? false,
+      padraoSistema: empresa.padraoSistema ?? false,
       solucaoIds: access.solucaoIds,
       solucaoSlugs: solucoes.map((solucao) => solucao.slug),
       solucaoNomes: solucoes.map((solucao) => solucao.nome),
@@ -205,6 +209,11 @@ export class EmpresasService {
     };
   }
 
+  private assertCanRemoveEmpresa(empresa: EmpresaRecord): void {
+    if (empresa.padraoSistema) {
+      throw new ForbiddenException('A empresa padrao do sistema nao pode ser excluida. Altere seus dados quando necessario.');
+    }
+  }
   private assertAdmin(user: JwtPayload, action: string): void {
     if (user.login?.toLowerCase() !== 'admin') {
       throw new ForbiddenException(`Apenas o usuario administrador inicial pode ${action}.`);

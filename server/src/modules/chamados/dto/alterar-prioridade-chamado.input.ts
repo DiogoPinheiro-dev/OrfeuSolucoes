@@ -1,5 +1,5 @@
-import { Field, InputType } from '@nestjs/graphql';
-import { IsString } from 'class-validator';
+import { Field, InputType, Int } from '@nestjs/graphql';
+import { IsInt, IsString } from 'class-validator';
 
 @InputType()
 export class AlterarPrioridadeChamadoInput {
@@ -7,7 +7,7 @@ export class AlterarPrioridadeChamadoInput {
   @IsString()
   chamadoId!: string;
 
-  @Field()
-  @IsString()
-  prioridade!: string;
+  @Field(() => Int)
+  @IsInt()
+  prioridadeId!: number;
 }

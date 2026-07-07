@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { alterarStatusChamado } from "../../services/Chamados/ChamadoService";
+import {
+    alterarStatusChamado,
+    getAcompanhantesElegiveisChamado,
+    getCategoriasChamado,
+    getPrioridadesChamado,
+    getResponsaveisFiltroChamado,
+    getTiposChamado
+} from "../../services/Chamados/ChamadoService";
 import { canUseFeatureAction } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
 import ChamadoDetail from "./ChamadoDetail";
@@ -10,7 +17,6 @@ import {
     formatDateTime,
     prioridadeClassName,
     prioridadeLabel,
-    prioridadeOptions,
     statusClassName,
     statusLabel,
     kanbanFilterStatusOptions,
@@ -26,11 +32,32 @@ const KANBAN_PAGE_SIZE = 100;
 const initialFilters = {
     termo: "",
     status: "",
-    prioridade: ""
+    prioridadeId: "",
+    categoriaId: "",
+    responsavelId: "",
+    responsavelGrupoId: "",
+    solicitanteId: "",
+    criadoDe: "",
+    criadoAte: ""
 };
 
 const chamadoResponsavelLabel = (chamado) => chamado.responsavelGrupoNome || chamado.responsavelNome || "Sem responsavel";
-const chamadoAtendimentoLabel = (chamado) => chamado.liderAtendimentoNome ? ` · Atendimento: ${chamado.liderAtendimentoNome}` : "";
+const chamadoAtendimentoLabel = (chamado) => chamado.liderAtendimentoNome ? ` Ãƒâ€šÃ‚Â· Atendimento: ${chamado.liderAtendimentoNome}` : "";
+const responsavelOptionLabel = (responsavel) => responsavel.responsavelNome || responsavel.usuarioNome || responsavel.grupoNome || "Responsavel";
+
+const uniqueResponsaveisBy = (responsaveis, keySelector) => {
+    const map = new Map();
+
+    for (const responsavel of responsaveis) {
+        const key = keySelector(responsavel);
+
+        if (key && !map.has(key)) {
+            map.set(key, responsavel);
+        }
+    }
+
+    return Array.from(map.values()).sort((a, b) => responsavelOptionLabel(a).localeCompare(responsavelOptionLabel(b)));
+};
 
 function ChamadoCard({
     chamado,
@@ -41,6 +68,7 @@ function ChamadoCard({
     onDragStart,
     onDragEnd,
     currentUserId,
+
 }) {
     const handleOpen = () => {
         onOpen(chamado.id);
@@ -82,9 +110,9 @@ function ChamadoCard({
                 <strong>{chamado.titulo}</strong>
             </div>
             <span className="chamado-card-meta">
-                <span className={tipoClassName(chamado.tipo)}>{tipoLabel(chamado.tipo)}</span>
+                <span className={tipoClassName(chamado.tipoId)} style={chamado.tipoCor ? { backgroundColor: chamado.tipoCor } : undefined}>{chamado.tipoNome || tipoLabel(chamado.tipoId)}</span>
                 <span className={statusClassName(chamado.status)}>{statusLabel(chamado.status)}</span>
-                <span className={prioridadeClassName(chamado.prioridade)}>{prioridadeLabel(chamado.prioridade)}</span>
+                <span className={prioridadeClassName(chamado.prioridadeId)} style={chamado.prioridadeCor ? { backgroundColor: chamado.prioridadeCor } : undefined}>{chamado.prioridadeNome || prioridadeLabel(chamado.prioridadeId)}</span>
                 {isAcompanhando && <span className="chamado-badge-acompanhando">Acompanhando</span>}
             </span>
             <small>
@@ -101,6 +129,11 @@ export default function ChamadosList({ title, description, areaSlug, loadChamado
     const [filters, setFilters] = useState(initialFilters);
     const [page, setPage] = useState(1);
     const [result, setResult] = useState({ items: [], total: 0, page: 1, pageSize: KANBAN_PAGE_SIZE });
+    const [categorias, setCategorias] = useState([]);
+    const [responsaveis, setResponsaveis] = useState([]);
+    const [solicitantes, setSolicitantes] = useState([]);
+    const [prioridades, setPrioridades] = useState([]);
+    const [tipos, setTipos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const kanbanRef = useRef(null);
@@ -115,12 +148,26 @@ export default function ChamadosList({ title, description, areaSlug, loadChamado
     const isArchivedMode = mode === "arquivados";
     const kanbanColumns = isArchivedMode ? archivedKanbanStatusOptions : kanbanStatusOptions;
     const canMoveKanbanCards = mode === "painel" && canUseFeatureAction(user, permissions, "alterar_status");
+    const responsaveisUsuarios = useMemo(() => uniqueResponsaveisBy(
+        responsaveis.filter((responsavel) => responsavel.tipo === "USUARIO" && responsavel.usuarioId),
+        (responsavel) => responsavel.usuarioId
+    ), [responsaveis]);
+    const responsaveisGrupos = useMemo(() => uniqueResponsaveisBy(
+        responsaveis.filter((responsavel) => responsavel.tipo === "GRUPO" && responsavel.grupoId),
+        (responsavel) => responsavel.grupoId
+    ), [responsaveis]);
 
 
     const filtro = useMemo(() => ({
         termo: filters.termo.trim() || null,
         status: filters.status || null,
-        prioridade: filters.prioridade || null,
+        prioridadeId: filters.prioridadeId ? Number(filters.prioridadeId) : null,
+        categoriaId: filters.categoriaId ? Number(filters.categoriaId) : null,
+        responsavelId: filters.responsavelId || null,
+        responsavelGrupoId: filters.responsavelGrupoId ? Number(filters.responsavelGrupoId) : null,
+        solicitanteId: filters.solicitanteId || null,
+        criadoDe: filters.criadoDe || null,
+        criadoAte: filters.criadoAte || null,
         page,
         pageSize
     }), [filters, page, pageSize]);
@@ -159,6 +206,43 @@ export default function ChamadosList({ title, description, areaSlug, loadChamado
         }
     };
 
+    useEffect(() => {
+        let active = true;
+
+        const loadFilterOptions = async () => {
+            try {
+                const [categoriasResponse, prioridadesResponse, tiposResponse, solicitantesResponse, responsaveisResponse] = await Promise.all([
+                    getCategoriasChamado(true),
+                    getPrioridadesChamado(true),
+                    getTiposChamado(true),
+                    getAcompanhantesElegiveisChamado(),
+                    getResponsaveisFiltroChamado()
+                ]);
+
+                if (active) {
+                    setCategorias(categoriasResponse);
+                    setPrioridades(prioridadesResponse);
+                    setTipos(tiposResponse);
+                    setSolicitantes(solicitantesResponse);
+                    setResponsaveis(responsaveisResponse);
+                }
+            } catch {
+                if (active) {
+                    setCategorias([]);
+                    setPrioridades([]);
+                    setTipos([]);
+                    setSolicitantes([]);
+                    setResponsaveis([]);
+                }
+            }
+        };
+
+        void loadFilterOptions();
+
+        return () => {
+            active = false;
+        };
+    }, []);
     useEffect(() => {
         if (!itemId) {
             void load();
@@ -223,7 +307,9 @@ export default function ChamadosList({ title, description, areaSlug, loadChamado
 
         setFilters((current) => ({
             ...current,
-            [name]: value
+            [name]: value,
+            ...(name === "responsavelId" && value ? { responsavelGrupoId: "" } : {}),
+            ...(name === "responsavelGrupoId" && value ? { responsavelId: "" } : {})
         }));
         setPage(1);
     };
@@ -347,11 +433,60 @@ export default function ChamadosList({ title, description, areaSlug, loadChamado
 
                 <label>
                     <span>Prioridade</span>
-                    <select name="prioridade" value={filters.prioridade} onChange={handleFilterChange}>
-                        {prioridadeOptions.map((option) => (
+                    <select name="prioridadeId" value={filters.prioridadeId} onChange={handleFilterChange}>
+                        {[{ value: "", label: "Todas" }, ...prioridades.map((item) => ({ value: item.id, label: item.nome }))].map((option) => (
                             <option key={option.value} value={option.value}>{option.label}</option>
                         ))}
                     </select>
+                </label>
+                <label>
+                    <span>Categoria</span>
+                    <select name="categoriaId" value={filters.categoriaId} onChange={handleFilterChange}>
+                        <option value="">Todas</option>
+                        {categorias.map((categoria) => (
+                            <option key={categoria.id} value={categoria.id}>{categoria.nome}</option>
+                        ))}
+                    </select>
+                </label>
+
+                <label>
+                    <span>Responsavel usuario</span>
+                    <select name="responsavelId" value={filters.responsavelId} onChange={handleFilterChange}>
+                        <option value="">Todos</option>
+                        {responsaveisUsuarios.map((responsavel) => (
+                            <option key={responsavel.usuarioId} value={responsavel.usuarioId}>{responsavelOptionLabel(responsavel)}</option>
+                        ))}
+                    </select>
+                </label>
+
+                <label>
+                    <span>Grupo responsavel</span>
+                    <select name="responsavelGrupoId" value={filters.responsavelGrupoId} onChange={handleFilterChange}>
+                        <option value="">Todos</option>
+                        {responsaveisGrupos.map((responsavel) => (
+                            <option key={responsavel.grupoId} value={responsavel.grupoId}>{responsavelOptionLabel(responsavel)}</option>
+                        ))}
+                    </select>
+                </label>
+
+                <label>
+                    <span>Solicitante</span>
+                    <select name="solicitanteId" value={filters.solicitanteId} onChange={handleFilterChange}>
+                        <option value="">Todos</option>
+                        {solicitantes.map((solicitante) => (
+                            <option key={solicitante.id} value={solicitante.id}>{solicitante.nome || solicitante.login || solicitante.email}</option>
+                        ))}
+                    </select>
+                </label>
+
+                <label>
+                    <span>De</span>
+                    <input type="date" name="criadoDe" value={filters.criadoDe} onChange={handleFilterChange} />
+                </label>
+
+                <label>
+                    <span>Ate</span>
+                    <input type="date" name="criadoAte" value={filters.criadoAte} onChange={handleFilterChange} />
                 </label>
             </div>
 
@@ -434,7 +569,7 @@ export default function ChamadosList({ title, description, areaSlug, loadChamado
             <footer className="chamados-pagination">
                 <span>
                     {result.total} chamado(s)
-                    {result.total > result.items.length ? ` · exibindo ${result.items.length} mais recentes no Kanban` : ""}
+                    {result.total > result.items.length ? ` Ãƒâ€šÃ‚Â· exibindo ${result.items.length} mais recentes no Kanban` : ""}
                 </span>
             </footer>
         </section>

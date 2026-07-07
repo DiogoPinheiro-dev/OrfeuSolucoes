@@ -17,6 +17,9 @@ export class EmpresaType {
   @Field()
   acessoHoras!: boolean;
 
+  @Field()
+  padraoSistema!: boolean;
+
   @Field(() => [Int])
   solucaoIds!: number[];
 

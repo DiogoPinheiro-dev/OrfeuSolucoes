@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Empresa, EmpresaUsuario, Usuario } from '@prisma/client';
 import { hash } from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -18,6 +18,7 @@ type UsuarioWithRole = Usuario & {
     acessoProjetos?: boolean;
     acessoHoras?: boolean;
     acessoConfigurador?: boolean;
+    padraoSistema?: boolean;
     podeVisualizar?: boolean;
     podeIncluir?: boolean;
     podeAlterar?: boolean;
@@ -39,7 +40,7 @@ export class UsersService {
     const userExists = await this.prisma.usuario.findUnique({ where: { email } });
 
     if (userExists) {
-      throw new ConflictException('Email já está em uso.');
+      throw new ConflictException('Email jÃƒÂ¡ estÃƒÂ¡ em uso.');
     }
 
     if (login) {
@@ -97,17 +98,10 @@ export class UsersService {
     const userExists = await this.prisma.usuario.findUnique({ where: { id: input.id } });
 
     if (!userExists) {
-      throw new NotFoundException('Usuário não encontrado.');
+      throw new NotFoundException('UsuÃƒÂ¡rio nÃƒÂ£o encontrado.');
     }
 
-    const existingUser = (await this.prisma.usuario.findUnique({
-      where: { id: input.id },
-      include: { grupo: true } as never
-    })) as UsuarioWithRole | null;
 
-    if (this.isSystemAdmin(existingUser)) {
-      throw new BadRequestException('O usuario administrador inicial nao pode ser alterado.');
-    }
 
     const data: Record<string, unknown> = {};
 
@@ -120,7 +114,7 @@ export class UsersService {
       const emailOwner = await this.prisma.usuario.findUnique({ where: { email } });
 
       if (emailOwner && emailOwner.id !== input.id) {
-        throw new ConflictException('Email já está em uso.');
+        throw new ConflictException('Email jÃƒÂ¡ estÃƒÂ¡ em uso.');
       }
 
       data.email = email;
@@ -178,7 +172,7 @@ export class UsersService {
     const userExists = await this.prisma.usuario.findUnique({ where: { id } });
 
     if (!userExists) {
-      throw new NotFoundException('Usuário não encontrado.');
+      throw new NotFoundException('UsuÃƒÂ¡rio nÃƒÂ£o encontrado.');
     }
 
     const userWithGroup = (await this.prisma.usuario.findUnique({
@@ -186,8 +180,8 @@ export class UsersService {
       include: { grupo: true } as never
     })) as UsuarioWithRole | null;
 
-    if (this.isSystemAdmin(userWithGroup)) {
-      throw new BadRequestException('O usuario administrador inicial nao pode ser excluido.');
+    if (userWithGroup) {
+      this.assertCanRemoveUser(userWithGroup);
     }
 
     await this.prisma.empresaUsuario.deleteMany({
@@ -214,7 +208,7 @@ export class UsersService {
     const user = await this.prisma.usuario.findUnique({ where: { id } });
 
     if (!user) {
-      throw new NotFoundException('Usuário não encontrado.');
+      throw new NotFoundException('UsuÃƒÂ¡rio nÃƒÂ£o encontrado.');
     }
 
     return user;
@@ -227,7 +221,7 @@ export class UsersService {
     })) as UsuarioWithRole | null;
 
     if (!user) {
-      throw new NotFoundException('Usuário não encontrado.');
+      throw new NotFoundException('UsuÃƒÂ¡rio nÃƒÂ£o encontrado.');
     }
 
     return this.toUserType(await this.attachEmpresas(user));
@@ -264,6 +258,7 @@ export class UsersService {
       acessoEcommerce: empresaVinculada.acessoEcommerce ?? false,
       acessoProjetos: empresaVinculada.acessoProjetos ?? false,
       acessoHoras: empresaVinculada.acessoHoras ?? false,
+      padraoSistema: empresaVinculada.padraoSistema ?? false,
       solucaoIds: [],
       solucaoSlugs: [],
       solucaoNomes: [],
@@ -282,6 +277,7 @@ export class UsersService {
             acessoEcommerce: empresa.acessoEcommerce ?? false,
             acessoProjetos: empresa.acessoProjetos ?? false,
             acessoHoras: empresa.acessoHoras ?? false,
+            padraoSistema: empresa.padraoSistema ?? false,
             solucaoIds: [],
             solucaoSlugs: [],
             solucaoNomes: [],
@@ -298,6 +294,7 @@ export class UsersService {
             acessoProjetos: user.grupo.acessoProjetos ?? false,
             acessoHoras: user.grupo.acessoHoras ?? false,
             acessoConfigurador: user.grupo.acessoConfigurador ?? false,
+            padraoSistema: user.grupo.padraoSistema ?? false,
             podeVisualizar: isAdminGroup || (user.grupo.podeVisualizar ?? true),
             podeIncluir: isAdminGroup || (user.grupo.podeIncluir ?? false),
             podeAlterar: isAdminGroup || (user.grupo.podeAlterar ?? false),
@@ -312,8 +309,15 @@ export class UsersService {
       podeAlterar: isAdminGroup || (user.grupo?.podeAlterar ?? false),
       podeExcluir: isAdminGroup || (user.grupo?.podeExcluir ?? false),
       deveAlterarSenha: user.deveAlterarSenha ?? false,
+      padraoSistema: user.padraoSistema ?? false,
       availableSolutions: this.resolveDefaultSolutions(user)
     };
+  }
+
+  private assertCanRemoveUser(user: UsuarioWithRole): void {
+    if (user.padraoSistema) {
+      throw new ForbiddenException('O usuario administrador padrao do sistema nao pode ser excluido. Altere seus dados quando necessario.');
+    }
   }
 
   private resolveDefaultSolutions(user: UsuarioWithRole): string[] {

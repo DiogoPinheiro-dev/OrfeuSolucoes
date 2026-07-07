@@ -30,6 +30,7 @@ const initialForm = {
 };
 
 const booleanLabel = (value) => (value ? "Sim" : "Não");
+const canDeleteGroup = (group) => !group?.padraoSistema;
 
 const legacyActionFields = {
     visualizar: "podeVisualizar",
@@ -147,6 +148,7 @@ export default function GroupManagement({ permissions }) {
         try {
             const [groupsResponse, solucoesResponse] = await Promise.all([getGruposUsuarios(), getSolucoes()]);
             setGroups(groupsResponse);
+            setSelectedIds((current) => current.filter((id) => groupsResponse.some((group) => group.id === id && canDeleteGroup(group))));
             setSolucoes(solucoesResponse.filter((solucao) => !solucao.somenteAdminSistema));
         } catch (loadError) {
             setError(loadError.message || "Não foi possível carregar grupos.");
@@ -242,10 +244,15 @@ export default function GroupManagement({ permissions }) {
     };
 
     const handleDelete = (ids) => {
-        const groupsToDelete = groups.filter((group) => ids.includes(group.id));
+        const groupsToDelete = groups.filter((group) => ids.includes(group.id) && canDeleteGroup(group));
+
+        if (!groupsToDelete.length) {
+            setError("O grupo Administradores padrao do sistema nao pode ser excluido.");
+            return;
+        }
 
         setPendingDelete({
-            ids,
+            ids: groupsToDelete.map((group) => group.id),
             label: groupsToDelete.length === 1
                 ? groupsToDelete[0].nome || "grupo selecionado"
                 : `${groupsToDelete.length} grupos selecionados`
@@ -371,6 +378,12 @@ export default function GroupManagement({ permissions }) {
     };
 
     const toggleSelectedGroup = (groupId) => {
+        const group = groups.find((item) => item.id === groupId);
+
+        if (!canDeleteGroup(group)) {
+            return;
+        }
+
         setSelectedIds((current) =>
             current.includes(groupId)
                 ? current.filter((id) => id !== groupId)
@@ -379,7 +392,7 @@ export default function GroupManagement({ permissions }) {
     };
 
     const toggleVisibleGroups = (checked, visibleGroups) => {
-        const visibleIds = visibleGroups.map((group) => group.id);
+        const visibleIds = visibleGroups.filter(canDeleteGroup).map((group) => group.id);
 
         setSelectedIds((current) => {
             if (!checked) {
@@ -416,7 +429,7 @@ export default function GroupManagement({ permissions }) {
                     selectedIds={selectedIds}
                     onToggleSelect={toggleSelectedGroup}
                     onToggleSelectAll={toggleVisibleGroups}
-                    isRowSelectable={() => true}
+                    isRowSelectable={canDeleteGroup}
                     onCreate={() => openModal("create")}
                     onEdit={(group) => openModal("edit", group)}
                     onView={(group) => openModal("view", group)}

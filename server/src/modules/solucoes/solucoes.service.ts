@@ -91,10 +91,93 @@ const LEGACY_ACTION_FIELDS: Record<string, keyof Pick<FuncionalidadePermissao, '
   excluir: 'podeExcluir'
 };
 
+const DEFAULT_CHAMADO_TIPOS = [
+  { nome: 'Solicitacao', cor: '#ea580c', ordem: 10 },
+  { nome: 'Incidente', cor: '#dc2626', ordem: 20 },
+  { nome: 'Duvida', cor: '#16a34a', ordem: 30 },
+  { nome: 'Melhoria', cor: '#f59e0b', ordem: 40 }
+] as const;
+
+const DEFAULT_CHAMADO_PRIORIDADES = [
+  { nome: 'Baixa', cor: '#16a34a', ordem: 10 },
+  { nome: 'Media', cor: '#f59e0b', ordem: 20 },
+  { nome: 'Alta', cor: '#ea580c', ordem: 30 },
+  { nome: 'Urgente', cor: '#dc2626', ordem: 40 }
+] as const;
 @Injectable()
 export class SolucoesService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async ensureDefaultChamadoConfiguracoesForEmpresa(empresaId: number, force = false): Promise<void> {
+    const acessoControleChamados = force
+      ? { id: 0 }
+      : await this.findControleChamadosCompanyAccess(empresaId);
+
+    if (!acessoControleChamados) {
+      return;
+    }
+
+    for (const tipo of DEFAULT_CHAMADO_TIPOS) {
+      const existing = await (this.prisma as never as { chamadoTipo: { findFirst: Function } }).chamadoTipo.findFirst({
+        where: { empresaId, nome: tipo.nome },
+        select: { id: true }
+      }) as { id: number } | null;
+
+      if (!existing) {
+        await (this.prisma as never as { chamadoTipo: { create: Function } }).chamadoTipo.create({
+          data: {
+            empresaId,
+            nome: tipo.nome,
+            descricao: null,
+            cor: tipo.cor,
+            ordem: tipo.ordem,
+            ativo: true
+          }
+        });
+      }
+    }
+
+    for (const prioridade of DEFAULT_CHAMADO_PRIORIDADES) {
+      const existing = await (this.prisma as never as { chamadoPrioridade: { findFirst: Function } }).chamadoPrioridade.findFirst({
+        where: { empresaId, nome: prioridade.nome },
+        select: { id: true }
+      }) as { id: number } | null;
+
+      if (!existing) {
+        await (this.prisma as never as { chamadoPrioridade: { create: Function } }).chamadoPrioridade.create({
+          data: {
+            empresaId,
+            nome: prioridade.nome,
+            descricao: null,
+            cor: prioridade.cor,
+            ordem: prioridade.ordem,
+            ativo: true
+          }
+        });
+      }
+    }
+  }
+  private async findControleChamadosCompanyAccess(empresaId: number): Promise<{ id: number } | null> {
+    const acessoSolucao = await (this.prisma as never as { empresaSolucao: { findFirst: Function } }).empresaSolucao.findFirst({
+      where: {
+        empresaId,
+        solucao: { slug: 'controle-de-chamados' }
+      },
+      select: { id: true }
+    }) as { id: number } | null;
+
+    if (acessoSolucao) {
+      return acessoSolucao;
+    }
+
+    return await (this.prisma as never as { empresaFuncionalidade: { findFirst: Function } }).empresaFuncionalidade.findFirst({
+      where: {
+        empresaId,
+        funcionalidade: { solucao: { slug: 'controle-de-chamados' } }
+      },
+      select: { id: true }
+    }) as { id: number } | null;
+  }
   async ensureDefaultConfiguradorFeatures(): Promise<void> {
     const configurador = (await (this.prisma as never as { solucao: { findUnique: Function } }).solucao.findUnique({
       where: { slug: 'configurador' },
@@ -288,6 +371,22 @@ export class SolucoesService {
         descricao: 'Cadastre supervisores e responsaveis por solucao ou funcionalidade.',
         ordem: 60,
         registryKey: 'controle-de-chamados.responsaveis'
+      },
+      {
+        slug: 'tipos',
+        titulo: 'Tipos de chamados',
+        label: 'Tipos',
+        descricao: 'Configure os tipos usados na abertura e classificacao dos chamados.',
+        ordem: 70,
+        registryKey: 'controle-de-chamados.tipos'
+      },
+      {
+        slug: 'prioridades',
+        titulo: 'Prioridades de chamados',
+        label: 'Prioridades',
+        descricao: 'Configure as prioridades usadas na triagem e atendimento dos chamados.',
+        ordem: 80,
+        registryKey: 'controle-de-chamados.prioridades'
       }
     ];
 

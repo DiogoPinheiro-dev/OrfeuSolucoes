@@ -4,7 +4,7 @@
 
 input AlterarPrioridadeChamadoInput {
   chamadoId: String!
-  prioridade: String!
+  prioridadeId: Int!
 }
 
 input AlterarStatusChamadoInput {
@@ -78,10 +78,14 @@ type ChamadoCategoriaType {
 
 input ChamadoFiltroInput {
   categoriaId: Int
+  criadoAte: String
+  criadoDe: String
   page: Int = 1
   pageSize: Int = 20
-  prioridade: String
+  prioridadeId: Int
+  responsavelGrupoId: Int
   responsavelId: String
+  solicitanteId: String
   status: String
   termo: String
 }
@@ -115,6 +119,18 @@ type ChamadoPageType {
   page: Int!
   pageSize: Int!
   total: Int!
+}
+
+type ChamadoPrioridadeType {
+  ativo: Boolean!
+  atualizadoEm: DateTime!
+  cor: String
+  criadoEm: DateTime!
+  descricao: String
+  empresaId: Int!
+  id: Int!
+  nome: String!
+  ordem: Int!
 }
 
 type ChamadoResponsavelFuncionalidadeOptionType {
@@ -190,6 +206,18 @@ type ChamadoResponsavelUsuarioOptionType {
   nome: String
 }
 
+type ChamadoTipoType {
+  ativo: Boolean!
+  atualizadoEm: DateTime!
+  cor: String
+  criadoEm: DateTime!
+  descricao: String
+  empresaId: Int!
+  id: Int!
+  nome: String!
+  ordem: Int!
+}
+
 type ChamadoType {
   acompanhantes: [ChamadoAcompanhanteType!]!
   anexos: [ChamadoAnexoType!]!
@@ -210,7 +238,9 @@ type ChamadoType {
   mensagens: [ChamadoMensagemType!]!
   numero: Int!
   primeiraRespostaEm: DateTime
-  prioridade: String!
+  prioridadeCor: String
+  prioridadeId: Int!
+  prioridadeNome: String!
   resolvidoEm: DateTime
   responsavelGrupoId: Int
   responsavelGrupoNome: String
@@ -221,7 +251,9 @@ type ChamadoType {
   solucaoId: Int
   solucaoNome: String
   status: String!
-  tipo: String!
+  tipoCor: String
+  tipoId: Int!
+  tipoNome: String!
   titulo: String!
   versao: Int!
 }
@@ -236,12 +268,28 @@ input CreateChamadoCategoriaInput {
   nome: String!
 }
 
+input CreateChamadoPrioridadeInput {
+  ativo: Boolean = true
+  cor: String
+  descricao: String
+  nome: String!
+  ordem: Int = 0
+}
+
 input CreateChamadoResponsavelInput {
   ativo: Boolean = true
   grupoId: Int
   solucoes: [ChamadoResponsavelSolucaoInput!]!
   tipo: String = "USUARIO"
   usuarioId: String
+}
+
+input CreateChamadoTipoInput {
+  ativo: Boolean = true
+  cor: String
+  descricao: String
+  nome: String!
+  ordem: Int = 0
 }
 
 input CreateEmpresaInput {
@@ -315,11 +363,11 @@ input CriarChamadoInput {
   categoriaId: Int
   descricao: String!
   funcionalidadeId: Int
-  prioridade: String
+  prioridadeId: Int!
   responsavelGrupoId: Int
   responsavelId: String
   solucaoId: Int!
-  tipo: String
+  tipoId: Int!
   titulo: String!
 }
 
@@ -335,6 +383,7 @@ type EmpresaType {
   funcionalidadeIds: [Int!]!
   id: Int!
   nome: String
+  padraoSistema: Boolean!
   solucaoIds: [Int!]!
   solucaoNomes: [String!]!
   solucaoSlugs: [String!]!
@@ -423,6 +472,7 @@ type GrupoUsuarioType {
   funcionalidadePermissoes: [FuncionalidadePermissaoType!]!
   id: Int!
   nome: String!
+  padraoSistema: Boolean!
   podeAlterar: Boolean!
   podeExcluir: Boolean!
   podeIncluir: Boolean!
@@ -450,7 +500,9 @@ type Mutation {
   atualizarAcompanhantesChamado(input: AtualizarChamadoAcompanhantesInput!): ChamadoType!
   changePassword(input: ChangePasswordInput!): AuthPayloadType!
   createChamadoCategoria(input: CreateChamadoCategoriaInput!): ChamadoCategoriaType!
+  createChamadoPrioridade(input: CreateChamadoPrioridadeInput!): ChamadoPrioridadeType!
   createChamadoResponsavel(input: CreateChamadoResponsavelInput!): ChamadoResponsavelType!
+  createChamadoTipo(input: CreateChamadoTipoInput!): ChamadoTipoType!
   createEmpresa(input: CreateEmpresaInput!): EmpresaType!
   createFuncionalidade(input: CreateFuncionalidadeInput!): FuncionalidadeType!
   createGrupoUsuario(input: CreateGrupoUsuarioInput!): GrupoUsuarioType!
@@ -459,7 +511,9 @@ type Mutation {
   createUser(input: CreateUserInput!): UserType!
   criarChamado(input: CriarChamadoInput!): ChamadoType!
   deleteChamadoCategoria(id: Int!): Boolean!
+  deleteChamadoPrioridade(id: Int!): Boolean!
   deleteChamadoResponsavel(id: Int!): Boolean!
+  deleteChamadoTipo(id: Int!): Boolean!
   deleteEmpresa(id: Int!): Boolean!
   deleteFuncionalidade(id: Int!): Boolean!
   deleteGrupoUsuario(id: Int!): Boolean!
@@ -477,7 +531,9 @@ type Mutation {
   switchCompany(input: SwitchCompanyInput!): AuthPayloadType!
   transferirChamado(input: AtribuirChamadoInput!): ChamadoType!
   updateChamadoCategoria(input: UpdateChamadoCategoriaInput!): ChamadoCategoriaType!
+  updateChamadoPrioridade(input: UpdateChamadoPrioridadeInput!): ChamadoPrioridadeType!
   updateChamadoResponsavel(input: UpdateChamadoResponsavelInput!): ChamadoResponsavelType!
+  updateChamadoTipo(input: UpdateChamadoTipoInput!): ChamadoTipoType!
   updateEmpresa(input: UpdateEmpresaInput!): EmpresaType!
   updateFuncionalidade(input: UpdateFuncionalidadeInput!): FuncionalidadeType!
   updateGrupoUsuario(input: UpdateGrupoUsuarioInput!): GrupoUsuarioType!
@@ -500,11 +556,14 @@ type Query {
   meusChamados(filtro: ChamadoFiltroInput): ChamadoPageType!
   myHubNavigation: [SolucaoType!]!
   opcoesAberturaChamado: ChamadoResponsavelOptionsType!
+  prioridadesChamado(ativas: Boolean = true): [ChamadoPrioridadeType!]!
   responsaveisChamado(ativas: Boolean = false): [ChamadoResponsavelType!]!
   responsaveisChamadoOptions: ChamadoResponsavelOptionsType!
+  responsaveisFiltroChamado: [ChamadoResponsavelType!]!
   responsaveisParaAberturaChamado(funcionalidadeId: Int, solucaoId: Int!): [AtendenteChamadoType!]!
   servicos: [ServicoType!]!
   solucoes: [SolucaoType!]!
+  tiposChamado(ativas: Boolean = true): [ChamadoTipoType!]!
   users: [UserType!]!
 }
 
@@ -546,6 +605,15 @@ input UpdateChamadoCategoriaInput {
   nome: String
 }
 
+input UpdateChamadoPrioridadeInput {
+  ativo: Boolean
+  cor: String
+  descricao: String
+  id: Int!
+  nome: String
+  ordem: Int
+}
+
 input UpdateChamadoResponsavelInput {
   ativo: Boolean
   grupoId: Int
@@ -553,6 +621,15 @@ input UpdateChamadoResponsavelInput {
   solucoes: [ChamadoResponsavelSolucaoInput!]
   tipo: String
   usuarioId: String
+}
+
+input UpdateChamadoTipoInput {
+  ativo: Boolean
+  cor: String
+  descricao: String
+  id: Int!
+  nome: String
+  ordem: Int
 }
 
 input UpdateEmpresaInput {
@@ -637,6 +714,7 @@ type UserType {
   id: String!
   login: String
   nome: String
+  padraoSistema: Boolean!
   podeAlterar: Boolean!
   podeExcluir: Boolean!
   podeIncluir: Boolean!

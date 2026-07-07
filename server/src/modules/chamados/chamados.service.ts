@@ -13,6 +13,10 @@ import { AtualizarChamadoAcompanhantesInput } from './dto/chamado-acompanhante.i
 import { ChamadoAcompanhanteType } from './dto/chamado-acompanhante.type';
 import { ChamadoAnexoType } from './dto/chamado-anexo.type';
 import { ChamadoCategoriaType } from './dto/chamado-categoria.type';
+import { CreateChamadoPrioridadeInput, UpdateChamadoPrioridadeInput } from './dto/chamado-prioridade.input';
+import { ChamadoPrioridadeType } from './dto/chamado-prioridade.type';
+import { CreateChamadoTipoInput, UpdateChamadoTipoInput } from './dto/chamado-tipo.input';
+import { ChamadoTipoType } from './dto/chamado-tipo.type';
 import { CreateChamadoCategoriaInput, UpdateChamadoCategoriaInput } from './dto/chamado-categoria.input';
 import { CreateChamadoResponsavelInput, UpdateChamadoResponsavelInput } from './dto/chamado-responsavel.input';
 import { ChamadoFiltroInput } from './dto/chamado-filtro.input';
@@ -29,12 +33,12 @@ const FEATURES = {
   painel: 'painel-atendimento',
   arquivados: 'chamados-arquivados',
   categorias: 'categorias',
+  tipos: 'tipos',
+  prioridades: 'prioridades',
   responsaveis: 'responsaveis'
 } as const;
 
 const STATUS = ['ABERTO', 'EM_TRIAGEM', 'EM_ATENDIMENTO', 'PENDENTE', 'RESOLVIDO', 'ARQUIVADO'] as const;
-const PRIORIDADES = ['BAIXA', 'MEDIA', 'ALTA', 'URGENTE'] as const;
-const TIPOS = ['SOLICITACAO', 'INCIDENTE', 'DUVIDA', 'MELHORIA'] as const;
 
 const MAX_ANEXO_FILES = 5;
 const MAX_ANEXO_SIZE_BYTES = 10 * 1024 * 1024;
@@ -75,6 +79,18 @@ type ChamadoCategoriaRecord = {
   empresaId: number;
   nome: string;
   descricao?: string | null;
+  ativo: boolean;
+  criadoEm: Date;
+  atualizadoEm: Date;
+};
+
+type ChamadoConfiguracaoRecord = {
+  id: number;
+  empresaId: number;
+  nome: string;
+  descricao?: string | null;
+  cor?: string | null;
+  ordem: number;
   ativo: boolean;
   criadoEm: Date;
   atualizadoEm: Date;
@@ -208,8 +224,8 @@ type ChamadoRecord = {
   funcionalidadeId?: number | null;
   titulo: string;
   descricao: string;
-  tipo: string;
-  prioridade: string;
+  tipoId: number;
+  prioridadeId: number;
   status: string;
   criadoEm: Date;
   atualizadoEm: Date;
@@ -222,6 +238,8 @@ type ChamadoRecord = {
   responsavelGrupo?: GrupoResumoRecord | null;
   liderAtendimento?: UsuarioResumoRecord | null;
   categoria?: ChamadoCategoriaRecord | null;
+  tipoConfiguracao?: ChamadoConfiguracaoRecord | null;
+  prioridadeConfiguracao?: ChamadoConfiguracaoRecord | null;
   solucao?: { id: number; nome: string; slug: string } | null;
   funcionalidade?: { id: number; titulo: string; label?: string | null; slug: string } | null;
   mensagens?: ChamadoMensagemRecord[];
@@ -245,6 +263,8 @@ const chamadoSummaryInclude = {
   categoria: true,
   solucao: { select: { id: true, nome: true, slug: true } },
   funcionalidade: { select: { id: true, titulo: true, label: true, slug: true } },
+  tipoConfiguracao: true,
+  prioridadeConfiguracao: true,
   acompanhantes: {
     where: { ativo: true },
     include: {
@@ -329,9 +349,10 @@ export class ChamadosService {
   async criarChamado(input: CriarChamadoInput, user: JwtPayload): Promise<ChamadoType> {
     const empresaId = this.assertCompanyContext(user);
     await this.assertFeatureAction(user, FEATURES.abrir, 'incluir');
+    await this.ensureDefaultChamadoConfiguracoes(empresaId);
 
-    const tipo = this.normalizeValue(input.tipo, TIPOS, 'SOLICITACAO', 'tipo');
-    const prioridade = this.normalizeValue(input.prioridade, PRIORIDADES, 'MEDIA', 'prioridade');
+    const tipo = await this.ensureTipoChamado(empresaId, input.tipoId);
+    const prioridade = await this.ensurePrioridadeChamado(empresaId, input.prioridadeId);
     const titulo = this.requiredText(input.titulo, 'titulo');
     const descricao = this.requiredText(input.descricao, 'descricao');
     const contexto = await this.resolveChamadoContext(input.solucaoId, input.funcionalidadeId ?? null);
@@ -380,8 +401,8 @@ export class ChamadosService {
           responsavelGrupoId: responsavelAbertura.responsavelGrupoId,
           titulo,
           descricao,
-          tipo,
-          prioridade,
+          tipoId: tipo.id,
+          prioridadeId: prioridade.id,
           status: 'ABERTO'
         },
         include: chamadoSummaryInclude
@@ -874,9 +895,9 @@ export class ChamadosService {
     await this.assertFeatureAction(user, FEATURES.painel, 'alterar_prioridade');
 
     const chamado = await this.findChamadoRecordOrThrow(input.chamadoId, empresaId);
-    const prioridade = this.normalizeValue(input.prioridade, PRIORIDADES, undefined, 'prioridade');
+    const prioridade = await this.ensurePrioridadeChamado(empresaId, input.prioridadeId);
 
-    if (prioridade === chamado.prioridade) {
+    if (prioridade.id === chamado.prioridadeId) {
       return this.chamado(chamado.id, user);
     }
 
@@ -884,14 +905,14 @@ export class ChamadosService {
       chamado,
       user,
       {
-        prioridade,
+        prioridadeId: prioridade.id,
         versao: { increment: 1 }
       },
       [{
         evento: 'ALTERACAO_PRIORIDADE',
         campo: 'prioridade',
-        valorAnterior: chamado.prioridade,
-        valorNovo: prioridade
+        valorAnterior: chamado.prioridadeConfiguracao?.nome ?? null,
+        valorNovo: prioridade.nome
       }]
     );
 
@@ -1008,6 +1029,27 @@ export class ChamadosService {
       .sort((a, b) => (a.responsavelNome || '').localeCompare(b.responsavelNome || ''));
   }
 
+  async responsaveisFiltroChamado(user: JwtPayload): Promise<ChamadoResponsavelType[]> {
+    const empresaId = this.assertCompanyContext(user);
+
+    if (!(await this.canUseAnyChamadosFeature(user))) {
+      throw new ForbiddenException('Usuario sem acesso ao controle de chamados.');
+    }
+
+    const responsaveis = (await this.prisma.chamadoResponsavel.findMany({
+      where: {
+        empresaId,
+        ativo: true,
+        solucoes: { some: { ativo: true } }
+      },
+      include: this.responsavelInclude(),
+      orderBy: [{ atualizadoEm: 'desc' }]
+    })) as ChamadoResponsavelRecord[];
+
+    return responsaveis
+      .map((responsavel) => this.toResponsavelType(responsavel))
+      .sort((a, b) => (a.responsavelNome || '').localeCompare(b.responsavelNome || ''));
+  }
   async responsaveisChamadoOptions(user: JwtPayload): Promise<ChamadoResponsavelOptionsType> {
     const empresaId = this.assertCompanyContext(user);
     await this.assertFeatureAction(user, FEATURES.responsaveis, 'visualizar');
@@ -1258,7 +1300,85 @@ export class ChamadosService {
 
     return true;
   }
+  async tiposChamado(user: JwtPayload, ativas = true): Promise<ChamadoTipoType[]> {
+    const empresaId = this.assertCompanyContext(user);
 
+    if (!(await this.canUseAnyChamadosFeature(user))) {
+      throw new ForbiddenException('Usuario sem acesso ao controle de chamados.');
+    }
+
+    await this.ensureDefaultChamadoConfiguracoes(empresaId);
+
+    const tipos = (await (this.prisma as never as { chamadoTipo: { findMany: Function } }).chamadoTipo.findMany({
+      where: { empresaId, ...(ativas ? { ativo: true } : {}) },
+      orderBy: [{ ativo: 'desc' }, { ordem: 'asc' }, { nome: 'asc' }]
+    })) as ChamadoConfiguracaoRecord[];
+
+    return tipos.map((tipo) => this.toTipoType(tipo));
+  }
+
+  async createTipo(input: CreateChamadoTipoInput, user: JwtPayload): Promise<ChamadoTipoType> {
+    const empresaId = this.assertCompanyContext(user);
+    await this.assertFeatureAction(user, FEATURES.tipos, 'incluir');
+    const created = (await (this.prisma as never as { chamadoTipo: { create: Function } }).chamadoTipo.create({ data: this.buildConfiguracaoData(empresaId, input) })) as ChamadoConfiguracaoRecord;
+    return this.toTipoType(created);
+  }
+
+  async updateTipo(input: UpdateChamadoTipoInput, user: JwtPayload): Promise<ChamadoTipoType> {
+    const empresaId = this.assertCompanyContext(user);
+    await this.assertFeatureAction(user, FEATURES.tipos, 'alterar');
+    await this.ensureTipoRecord(input.id, empresaId);
+    const updated = (await (this.prisma as never as { chamadoTipo: { update: Function } }).chamadoTipo.update({ where: { id: input.id }, data: this.buildConfiguracaoUpdateData(input) })) as ChamadoConfiguracaoRecord;
+    return this.toTipoType(updated);
+  }
+
+  async deleteTipo(id: number, user: JwtPayload): Promise<boolean> {
+    const empresaId = this.assertCompanyContext(user);
+    await this.assertFeatureAction(user, FEATURES.tipos, 'excluir');
+    await this.ensureTipoRecord(id, empresaId);
+    await (this.prisma as never as { chamadoTipo: { update: Function } }).chamadoTipo.update({ where: { id }, data: { ativo: false } });
+    return true;
+  }
+
+  async prioridadesChamado(user: JwtPayload, ativas = true): Promise<ChamadoPrioridadeType[]> {
+    const empresaId = this.assertCompanyContext(user);
+
+    if (!(await this.canUseAnyChamadosFeature(user))) {
+      throw new ForbiddenException('Usuario sem acesso ao controle de chamados.');
+    }
+
+    await this.ensureDefaultChamadoConfiguracoes(empresaId);
+
+    const prioridades = (await (this.prisma as never as { chamadoPrioridade: { findMany: Function } }).chamadoPrioridade.findMany({
+      where: { empresaId, ...(ativas ? { ativo: true } : {}) },
+      orderBy: [{ ativo: 'desc' }, { ordem: 'asc' }, { nome: 'asc' }]
+    })) as ChamadoConfiguracaoRecord[];
+
+    return prioridades.map((prioridade) => this.toPrioridadeType(prioridade));
+  }
+
+  async createPrioridade(input: CreateChamadoPrioridadeInput, user: JwtPayload): Promise<ChamadoPrioridadeType> {
+    const empresaId = this.assertCompanyContext(user);
+    await this.assertFeatureAction(user, FEATURES.prioridades, 'incluir');
+    const created = (await (this.prisma as never as { chamadoPrioridade: { create: Function } }).chamadoPrioridade.create({ data: this.buildConfiguracaoData(empresaId, input) })) as ChamadoConfiguracaoRecord;
+    return this.toPrioridadeType(created);
+  }
+
+  async updatePrioridade(input: UpdateChamadoPrioridadeInput, user: JwtPayload): Promise<ChamadoPrioridadeType> {
+    const empresaId = this.assertCompanyContext(user);
+    await this.assertFeatureAction(user, FEATURES.prioridades, 'alterar');
+    await this.ensurePrioridadeRecord(input.id, empresaId);
+    const updated = (await (this.prisma as never as { chamadoPrioridade: { update: Function } }).chamadoPrioridade.update({ where: { id: input.id }, data: this.buildConfiguracaoUpdateData(input) })) as ChamadoConfiguracaoRecord;
+    return this.toPrioridadeType(updated);
+  }
+
+  async deletePrioridade(id: number, user: JwtPayload): Promise<boolean> {
+    const empresaId = this.assertCompanyContext(user);
+    await this.assertFeatureAction(user, FEATURES.prioridades, 'excluir');
+    await this.ensurePrioridadeRecord(id, empresaId);
+    await (this.prisma as never as { chamadoPrioridade: { update: Function } }).chamadoPrioridade.update({ where: { id }, data: { ativo: false } });
+    return true;
+  }
   async atendentesDisponiveis(user: JwtPayload): Promise<AtendenteChamadoType[]> {
     const empresaId = this.assertCompanyContext(user);
     await this.assertFeatureAction(user, FEATURES.painel, 'atribuir_chamado');
@@ -1316,7 +1436,15 @@ export class ChamadosService {
 
   async responsaveisParaAberturaChamado(user: JwtPayload, solucaoId: number, funcionalidadeId?: number | null): Promise<AtendenteChamadoType[]> {
     const empresaId = this.assertCompanyContext(user);
-    await this.assertFeatureAction(user, FEATURES.abrir, 'incluir');
+    const canSelectResponsavel =
+      await this.canFeatureAction(user, FEATURES.abrir, 'incluir') ||
+      await this.canFeatureAction(user, FEATURES.painel, 'atribuir_chamado') ||
+      await this.canFeatureAction(user, FEATURES.painel, 'transferir_chamado');
+
+    if (!canSelectResponsavel) {
+      throw new ForbiddenException('Usuario sem permissao para selecionar responsaveis de chamado.');
+    }
+
     const contexto = await this.resolveChamadoContext(solucaoId, funcionalidadeId ?? null);
 
     return this.findResponsaveisParaContexto(empresaId, contexto.solucaoId, contexto.funcionalidadeId);
@@ -1519,9 +1647,7 @@ export class ChamadosService {
           { responsavelGeral: true },
           { funcionalidades: { some: { funcionalidadeId, ativo: true } } }
         ]
-      : [
-          { responsavelGeral: true }
-        ];
+      : undefined;
 
     const responsaveis = await this.prisma.chamadoResponsavel.findMany({
       where: {
@@ -1531,7 +1657,7 @@ export class ChamadosService {
           some: {
             solucaoId,
             ativo: true,
-            OR: criterios
+            ...(criterios ? { OR: criterios } : {})
           }
         }
       },
@@ -1624,16 +1750,31 @@ export class ChamadosService {
       where.status = this.normalizeValue(filtro.status, STATUS, undefined, 'status');
     }
 
-    if (filtro?.prioridade) {
-      where.prioridade = this.normalizeValue(filtro.prioridade, PRIORIDADES, undefined, 'prioridade');
+    if (filtro?.prioridadeId) {
+      where.prioridadeId = filtro.prioridadeId;
+    }
+
+    if (filtro?.solicitanteId) {
+      where.solicitanteId = filtro.solicitanteId;
     }
 
     if (filtro?.responsavelId) {
       where.responsavelId = filtro.responsavelId;
     }
 
+    if (filtro?.responsavelGrupoId) {
+      where.responsavelGrupoId = filtro.responsavelGrupoId;
+    }
+
     if (filtro?.categoriaId) {
       where.categoriaId = filtro.categoriaId;
+    }
+
+    if (filtro?.criadoDe || filtro?.criadoAte) {
+      where.criadoEm = {
+        ...(filtro.criadoDe ? { gte: new Date(filtro.criadoDe) } : {}),
+        ...(filtro.criadoAte ? { lte: this.endOfDay(filtro.criadoAte) } : {})
+      };
     }
 
     const termo = filtro?.termo?.trim();
@@ -2260,6 +2401,88 @@ export class ChamadosService {
       atualizadoEm: responsavel.atualizadoEm
     };
   }
+  private async ensureDefaultChamadoConfiguracoes(empresaId: number): Promise<void> {
+    await this.solucoesService.ensureDefaultChamadoConfiguracoesForEmpresa(empresaId, true);
+  }
+  private async ensureTipoChamado(empresaId: number, id: number | null | undefined): Promise<ChamadoConfiguracaoRecord> {
+    if (!id || !Number.isInteger(Number(id))) {
+      throw new BadRequestException('Selecione o tipo de chamado.');
+    }
+
+    const tipo = await (this.prisma as never as { chamadoTipo: { findFirst: Function } }).chamadoTipo.findFirst({
+      where: { id: Number(id), empresaId, ativo: true }
+    }) as ChamadoConfiguracaoRecord | null;
+
+    if (!tipo) {
+      throw new BadRequestException('Tipo de chamado invalido ou inativo.');
+    }
+
+    return tipo;
+  }
+
+  private async ensurePrioridadeChamado(empresaId: number, id: number | null | undefined): Promise<ChamadoConfiguracaoRecord> {
+    if (!id || !Number.isInteger(Number(id))) {
+      throw new BadRequestException('Selecione a prioridade do chamado.');
+    }
+
+    const prioridade = await (this.prisma as never as { chamadoPrioridade: { findFirst: Function } }).chamadoPrioridade.findFirst({
+      where: { id: Number(id), empresaId, ativo: true }
+    }) as ChamadoConfiguracaoRecord | null;
+
+    if (!prioridade) {
+      throw new BadRequestException('Prioridade de chamado invalida ou inativa.');
+    }
+
+    return prioridade;
+  }
+
+  private async ensureTipoRecord(id: number, empresaId: number): Promise<ChamadoConfiguracaoRecord> {
+    const tipo = await (this.prisma as never as { chamadoTipo: { findFirst: Function } }).chamadoTipo.findFirst({
+      where: { id, empresaId }
+    }) as ChamadoConfiguracaoRecord | null;
+
+    if (!tipo) {
+      throw new NotFoundException('Tipo de chamado nao encontrado.');
+    }
+
+    return tipo;
+  }
+
+  private async ensurePrioridadeRecord(id: number, empresaId: number): Promise<ChamadoConfiguracaoRecord> {
+    const prioridade = await (this.prisma as never as { chamadoPrioridade: { findFirst: Function } }).chamadoPrioridade.findFirst({
+      where: { id, empresaId }
+    }) as ChamadoConfiguracaoRecord | null;
+
+    if (!prioridade) {
+      throw new NotFoundException('Prioridade de chamado nao encontrada.');
+    }
+
+    return prioridade;
+  }
+
+  private buildConfiguracaoData(empresaId: number, input: { nome: string; descricao?: string | null; cor?: string | null; ordem?: number; ativo?: boolean }) {
+    const nome = this.requiredText(input.nome, 'nome');
+
+    return {
+      empresaId,
+      nome,
+      descricao: input.descricao?.trim() || null,
+      cor: input.cor?.trim() || null,
+      ordem: input.ordem ?? 0,
+      ativo: input.ativo ?? true
+    };
+  }
+
+  private buildConfiguracaoUpdateData(input: { nome?: string | null; descricao?: string | null; cor?: string | null; ordem?: number | null; ativo?: boolean | null }) {
+    return {
+      ...(input.nome !== undefined ? { nome: this.requiredText(input.nome ?? '', 'nome') } : {}),
+      ...(input.descricao !== undefined ? { descricao: input.descricao?.trim() || null } : {}),
+      ...(input.cor !== undefined ? { cor: input.cor?.trim() || null } : {}),
+      ...(input.ordem !== undefined && input.ordem !== null ? { ordem: input.ordem } : {}),
+      ...(input.ativo !== undefined && input.ativo !== null ? { ativo: input.ativo } : {})
+    };
+  }
+
   private async ensureCategoria(id: number, empresaId: number, requireActive: boolean): Promise<ChamadoCategoriaRecord> {
     const categoria = (await (this.prisma as never as { chamadoCategoria: { findFirst: Function } }).chamadoCategoria.findFirst({
       where: {
@@ -2618,6 +2841,14 @@ export class ChamadosService {
       .replace(/^_+|_+$/g, '');
   }
 
+  private endOfDay(value: string): Date {
+    const date = new Date(value);
+
+    date.setHours(23, 59, 59, 999);
+
+    return date;
+  }
+
   private normalizeValue<T extends readonly string[]>(
     value: string | null | undefined,
     allowed: T,
@@ -2689,8 +2920,12 @@ export class ChamadosService {
       funcionalidadeNome: chamado.funcionalidade?.label || chamado.funcionalidade?.titulo || null,
       titulo: chamado.titulo,
       descricao: chamado.descricao,
-      tipo: chamado.tipo,
-      prioridade: chamado.prioridade,
+      tipoId: chamado.tipoId,
+      tipoNome: chamado.tipoConfiguracao?.nome ?? '-',
+      tipoCor: chamado.tipoConfiguracao?.cor ?? null,
+      prioridadeId: chamado.prioridadeId,
+      prioridadeNome: chamado.prioridadeConfiguracao?.nome ?? '-',
+      prioridadeCor: chamado.prioridadeConfiguracao?.cor ?? null,
       status: chamado.status,
       criadoEm: chamado.criadoEm,
       atualizadoEm: chamado.atualizadoEm,
@@ -2774,6 +3009,33 @@ export class ChamadosService {
       ativo: categoria.ativo,
       criadoEm: categoria.criadoEm,
       atualizadoEm: categoria.atualizadoEm
+    };
+  }
+  private toTipoType(tipo: ChamadoConfiguracaoRecord): ChamadoTipoType {
+    return {
+      id: tipo.id,
+      empresaId: tipo.empresaId,
+      nome: tipo.nome,
+      descricao: tipo.descricao ?? null,
+      cor: tipo.cor ?? null,
+      ordem: tipo.ordem,
+      ativo: tipo.ativo,
+      criadoEm: tipo.criadoEm,
+      atualizadoEm: tipo.atualizadoEm
+    };
+  }
+
+  private toPrioridadeType(prioridade: ChamadoConfiguracaoRecord): ChamadoPrioridadeType {
+    return {
+      id: prioridade.id,
+      empresaId: prioridade.empresaId,
+      nome: prioridade.nome,
+      descricao: prioridade.descricao ?? null,
+      cor: prioridade.cor ?? null,
+      ordem: prioridade.ordem,
+      ativo: prioridade.ativo,
+      criadoEm: prioridade.criadoEm,
+      atualizadoEm: prioridade.atualizadoEm
     };
   }
 

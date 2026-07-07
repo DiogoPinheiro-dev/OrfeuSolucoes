@@ -15,6 +15,7 @@ model Usuario {
   senhaHash String  @map("Senha")
   grupoId   Int?    @map("GrupoId")
   deveAlterarSenha Boolean @default(false) @map("DeveAlterarSenha")
+  padraoSistema Boolean @default(false) @map("PadraoSistema")
 
   empresas EmpresaUsuario[]
   grupo    GrupoUsuario? @relation(fields: [grupoId], references: [id])
@@ -39,6 +40,7 @@ model GrupoUsuario {
   acessoProjetos  Boolean @default(false) @map("AcessoProjetos")
   acessoHoras     Boolean @default(false) @map("AcessoHoras")
   acessoConfigurador Boolean @default(false) @map("AcessoConfigurador")
+  padraoSistema Boolean @default(false) @map("PadraoSistema")
   podeVisualizar Boolean @default(true) @map("PodeVisualizar")
   podeIncluir    Boolean @default(false) @map("PodeIncluir")
   podeAlterar    Boolean @default(false) @map("PodeAlterar")
@@ -71,6 +73,7 @@ model Empresa {
   acessoEcommerce Boolean  @default(false) @map("AcessoEcommerce")
   acessoProjetos  Boolean  @default(false) @map("AcessoProjetos")
   acessoHoras     Boolean  @default(false) @map("AcessoHoras")
+  padraoSistema   Boolean  @default(false) @map("PadraoSistema")
   // cnpj        String?  @map("CNPJ")
   // endereco    String?  @map("Endereco")
   // telefone    String?  @map("Telefone")
@@ -88,6 +91,8 @@ model Empresa {
   chamadoSequencia ChamadoSequencia?
   chamadoAnexos ChamadoAnexo[]
   chamadoAcompanhantes ChamadoAcompanhante[]
+  chamadoTipos ChamadoTipo[]
+  chamadoPrioridades ChamadoPrioridade[]
 
   @@map("Empresas")
 }
@@ -246,8 +251,8 @@ model Chamado {
   funcionalidadeId   Int?     @map("FuncionalidadeId")
   titulo             String   @map("Titulo")
   descricao          String   @map("Descricao")
-  tipo               String   @default("SOLICITACAO") @map("Tipo")
-  prioridade         String   @default("MEDIA") @map("Prioridade")
+  tipoId             Int      @map("TipoId")
+  prioridadeId       Int      @map("PrioridadeId")
   status             String   @default("ABERTO") @map("Status")
   criadoEm           DateTime @default(now()) @map("CriadoEm")
   atualizadoEm       DateTime @updatedAt @map("AtualizadoEm")
@@ -264,6 +269,8 @@ model Chamado {
   categoria ChamadoCategoria? @relation(fields: [categoriaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   solucao Solucao? @relation(fields: [solucaoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   funcionalidade Funcionalidade? @relation(fields: [funcionalidadeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tipoConfiguracao ChamadoTipo @relation(fields: [tipoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  prioridadeConfiguracao ChamadoPrioridade @relation(fields: [prioridadeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   mensagens ChamadoMensagem[]
   historico ChamadoHistorico[]
   anexos ChamadoAnexo[]
@@ -275,7 +282,8 @@ model Chamado {
   @@index([empresaId, responsavelGrupoId], map: "IX_Chamados_EmpresaId_ResponsavelGrupoId")
   @@index([empresaId, liderAtendimentoId], map: "IX_Chamados_EmpresaId_LiderAtendimentoId")
   @@index([empresaId, solicitanteId], map: "IX_Chamados_EmpresaId_SolicitanteId")
-  @@index([empresaId, prioridade], map: "IX_Chamados_EmpresaId_Prioridade")
+  @@index([empresaId, tipoId], map: "IX_Chamados_EmpresaId_TipoId")
+  @@index([empresaId, prioridadeId], map: "IX_Chamados_EmpresaId_PrioridadeId")
   @@index([empresaId, solucaoId], map: "IX_Chamados_EmpresaId_SolucaoId")
   @@index([empresaId, funcionalidadeId], map: "IX_Chamados_EmpresaId_FuncionalidadeId")
   @@index([empresaId, atualizadoEm], map: "IX_Chamados_EmpresaId_AtualizadoEm")
@@ -381,6 +389,44 @@ model ChamadoCategoria {
   @@map("ChamadoCategorias")
 }
 
+
+model ChamadoTipo {
+  id          Int      @id @default(autoincrement()) @map("Id")
+  empresaId   Int      @map("EmpresaId")
+  nome        String   @map("Nome")
+  descricao   String?  @map("Descricao")
+  cor         String?  @map("Cor")
+  ordem       Int      @default(0) @map("Ordem")
+  ativo       Boolean  @default(true) @map("Ativo")
+  criadoEm    DateTime @default(now()) @map("CriadoEm")
+  atualizadoEm DateTime @updatedAt @map("AtualizadoEm")
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  chamados Chamado[]
+
+  @@unique([empresaId, nome], map: "UX_ChamadoTipos_EmpresaId_Nome")
+  @@index([empresaId, ativo], map: "IX_ChamadoTipos_EmpresaId_Ativo")
+  @@map("ChamadoTipos")
+}
+
+model ChamadoPrioridade {
+  id          Int      @id @default(autoincrement()) @map("Id")
+  empresaId   Int      @map("EmpresaId")
+  nome        String   @map("Nome")
+  descricao   String?  @map("Descricao")
+  cor         String?  @map("Cor")
+  ordem       Int      @default(0) @map("Ordem")
+  ativo       Boolean  @default(true) @map("Ativo")
+  criadoEm    DateTime @default(now()) @map("CriadoEm")
+  atualizadoEm DateTime @updatedAt @map("AtualizadoEm")
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  chamados Chamado[]
+
+  @@unique([empresaId, nome], map: "UX_ChamadoPrioridades_EmpresaId_Nome")
+  @@index([empresaId, ativo], map: "IX_ChamadoPrioridades_EmpresaId_Ativo")
+  @@map("ChamadoPrioridades")
+}
 
 model ChamadoResponsavel {
   id          Int      @id @default(autoincrement()) @map("Id")

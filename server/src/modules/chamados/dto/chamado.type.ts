@@ -124,11 +124,23 @@ export class ChamadoType {
   @Field()
   descricao!: string;
 
-  @Field()
-  tipo!: string;
+  @Field(() => Int)
+  tipoId!: number;
 
   @Field()
-  prioridade!: string;
+  tipoNome!: string;
+
+  @Field(() => String, { nullable: true })
+  tipoCor?: string | null;
+
+  @Field(() => Int)
+  prioridadeId!: number;
+
+  @Field()
+  prioridadeNome!: string;
+
+  @Field(() => String, { nullable: true })
+  prioridadeCor?: string | null;
 
   @Field()
   status!: string;

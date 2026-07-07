@@ -2,6 +2,7 @@ import { Link, Navigate, useParams } from "react-router-dom";
 
 import { FEATURE_COMPONENT_REGISTRY, canAccessSolution, getFeatureBySlug, getSolutionBySlug } from "../auth/hubConfig";
 import CategoriaChamadoManagement from "../components/CategoriaChamadoManagement";
+import ChamadoConfiguracaoManagement from "../components/ChamadoConfiguracaoManagement";
 import ChamadoCreate from "../components/ChamadoCreate";
 import ChamadosArquivados from "../components/ChamadosArquivados";
 import CompanyManagement from "../components/CompanyManagement";
@@ -29,6 +30,8 @@ const FEATURE_COMPONENTS = {
     "painel-atendimento": PainelAtendimento,
     "chamados-arquivados": ChamadosArquivados,
     "categoria-chamado-management": CategoriaChamadoManagement,
+    "tipo-chamado-management": (props) => <ChamadoConfiguracaoManagement {...props} kind="tipos" />,
+    "prioridade-chamado-management": (props) => <ChamadoConfiguracaoManagement {...props} kind="prioridades" />,
     "responsavel-chamado-management": ResponsavelChamadoManagement
 };
 

@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { compare, hash } from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FuncionalidadePermissao, SolucoesService } from '../solucoes/solucoes.service';
@@ -14,6 +14,7 @@ type GrupoUsuarioRecord = {
   acessoProjetos?: boolean;
   acessoHoras?: boolean;
   acessoConfigurador?: boolean;
+  padraoSistema?: boolean;
   podeVisualizar?: boolean;
   podeIncluir?: boolean;
   podeAlterar?: boolean;
@@ -46,7 +47,8 @@ export class GruposUsuariosService {
             nome: 'Empresa Teste',
             acessoEcommerce: false,
             acessoProjetos: false,
-            acessoHoras: false
+            acessoHoras: false,
+            padraoSistema: true
           }
         });
 
@@ -65,7 +67,8 @@ export class GruposUsuariosService {
             podeVisualizar: true,
             podeIncluir: true,
             podeAlterar: true,
-            podeExcluir: true
+            podeExcluir: true,
+            padraoSistema: true
           }
         })) as GrupoUsuarioRecord;
         const senhaHash = await hash('admin123', 10);
@@ -76,7 +79,8 @@ export class GruposUsuariosService {
             email: 'admin@admin.com',
             senhaHash,
             grupoId: grupo.id,
-            deveAlterarSenha: true
+            deveAlterarSenha: true,
+            padraoSistema: true
           } as never
         });
 
@@ -304,6 +308,8 @@ export class GruposUsuariosService {
       throw new NotFoundException('Grupo de usuario nao encontrado.');
     }
 
+    this.assertCanRemoveGrupo(current);
+
     await (this.prisma as never as { usuario: { updateMany: Function } }).usuario.updateMany({
       where: { grupoId: id },
       data: { grupoId: null }
@@ -313,6 +319,11 @@ export class GruposUsuariosService {
     return true;
   }
 
+  private assertCanRemoveGrupo(grupo: GrupoUsuarioRecord): void {
+    if (grupo.padraoSistema) {
+      throw new ForbiddenException('O grupo Administradores padrao do sistema nao pode ser excluido. Altere seus dados quando necessario.');
+    }
+  }
   async toType(grupo: GrupoUsuarioRecord): Promise<GrupoUsuarioType> {
     const access = await this.solucoesService.findGroupAccess(grupo.id);
 
@@ -324,6 +335,7 @@ export class GruposUsuariosService {
       acessoProjetos: grupo.acessoProjetos ?? false,
       acessoHoras: grupo.acessoHoras ?? false,
       acessoConfigurador: grupo.acessoConfigurador ?? false,
+      padraoSistema: grupo.padraoSistema ?? false,
       podeVisualizar: grupo.podeVisualizar ?? true,
       podeIncluir: grupo.podeIncluir ?? false,
       podeAlterar: grupo.podeAlterar ?? false,

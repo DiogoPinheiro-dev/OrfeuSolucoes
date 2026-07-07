@@ -10,6 +10,10 @@ import { AtribuirChamadoInput } from './dto/atribuir-chamado.input';
 import { AtendenteChamadoType } from './dto/atendente-chamado.type';
 import { AtualizarChamadoAcompanhantesInput } from './dto/chamado-acompanhante.input';
 import { ChamadoCategoriaType } from './dto/chamado-categoria.type';
+import { CreateChamadoPrioridadeInput, UpdateChamadoPrioridadeInput } from './dto/chamado-prioridade.input';
+import { ChamadoPrioridadeType } from './dto/chamado-prioridade.type';
+import { CreateChamadoTipoInput, UpdateChamadoTipoInput } from './dto/chamado-tipo.input';
+import { ChamadoTipoType } from './dto/chamado-tipo.type';
 import { CreateChamadoCategoriaInput, UpdateChamadoCategoriaInput } from './dto/chamado-categoria.input';
 import { CreateChamadoResponsavelInput, UpdateChamadoResponsavelInput } from './dto/chamado-responsavel.input';
 import { ChamadoFiltroInput } from './dto/chamado-filtro.input';
@@ -62,7 +66,21 @@ export class ChamadosResolver {
   ): Promise<ChamadoCategoriaType[]> {
     return this.chamadosService.categoriasChamado(user, ativas ?? true);
   }
+  @Query(() => [ChamadoTipoType])
+  tiposChamado(
+    @CurrentUser() user: JwtPayload,
+    @Args('ativas', { type: () => Boolean, nullable: true, defaultValue: true }) ativas?: boolean
+  ): Promise<ChamadoTipoType[]> {
+    return this.chamadosService.tiposChamado(user, ativas ?? true);
+  }
 
+  @Query(() => [ChamadoPrioridadeType])
+  prioridadesChamado(
+    @CurrentUser() user: JwtPayload,
+    @Args('ativas', { type: () => Boolean, nullable: true, defaultValue: true }) ativas?: boolean
+  ): Promise<ChamadoPrioridadeType[]> {
+    return this.chamadosService.prioridadesChamado(user, ativas ?? true);
+  }
   @Query(() => [AtendenteChamadoType])
   atendentesDisponiveis(@CurrentUser() user: JwtPayload): Promise<AtendenteChamadoType[]> {
     return this.chamadosService.atendentesDisponiveis(user);
@@ -77,6 +95,10 @@ export class ChamadosResolver {
     return this.chamadosService.responsaveisChamado(user, ativas ?? false);
   }
 
+  @Query(() => [ChamadoResponsavelType])
+  responsaveisFiltroChamado(@CurrentUser() user: JwtPayload): Promise<ChamadoResponsavelType[]> {
+    return this.chamadosService.responsaveisFiltroChamado(user);
+  }
   @Query(() => ChamadoResponsavelOptionsType)
   responsaveisChamadoOptions(@CurrentUser() user: JwtPayload): Promise<ChamadoResponsavelOptionsType> {
     return this.chamadosService.responsaveisChamadoOptions(user);
@@ -235,6 +257,53 @@ export class ChamadosResolver {
     @CurrentUser() user: JwtPayload
   ): Promise<boolean> {
     return this.chamadosService.deleteResponsavel(id, user);
+  }
+  @Mutation(() => ChamadoTipoType)
+  createChamadoTipo(
+    @Args('input') input: CreateChamadoTipoInput,
+    @CurrentUser() user: JwtPayload
+  ): Promise<ChamadoTipoType> {
+    return this.chamadosService.createTipo(input, user);
+  }
+
+  @Mutation(() => ChamadoTipoType)
+  updateChamadoTipo(
+    @Args('input') input: UpdateChamadoTipoInput,
+    @CurrentUser() user: JwtPayload
+  ): Promise<ChamadoTipoType> {
+    return this.chamadosService.updateTipo(input, user);
+  }
+
+  @Mutation(() => Boolean)
+  deleteChamadoTipo(
+    @Args('id', { type: () => Int }) id: number,
+    @CurrentUser() user: JwtPayload
+  ): Promise<boolean> {
+    return this.chamadosService.deleteTipo(id, user);
+  }
+
+  @Mutation(() => ChamadoPrioridadeType)
+  createChamadoPrioridade(
+    @Args('input') input: CreateChamadoPrioridadeInput,
+    @CurrentUser() user: JwtPayload
+  ): Promise<ChamadoPrioridadeType> {
+    return this.chamadosService.createPrioridade(input, user);
+  }
+
+  @Mutation(() => ChamadoPrioridadeType)
+  updateChamadoPrioridade(
+    @Args('input') input: UpdateChamadoPrioridadeInput,
+    @CurrentUser() user: JwtPayload
+  ): Promise<ChamadoPrioridadeType> {
+    return this.chamadosService.updatePrioridade(input, user);
+  }
+
+  @Mutation(() => Boolean)
+  deleteChamadoPrioridade(
+    @Args('id', { type: () => Int }) id: number,
+    @CurrentUser() user: JwtPayload
+  ): Promise<boolean> {
+    return this.chamadosService.deletePrioridade(id, user);
   }
   @Mutation(() => ChamadoCategoriaType)
   createChamadoCategoria(

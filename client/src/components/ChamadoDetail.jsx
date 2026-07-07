@@ -8,8 +8,9 @@ import {
     atribuirChamado,
     arquivarChamado,
     getAcompanhantesElegiveisChamado,
-    getAtendentesDisponiveis,
     getChamado,
+    getPrioridadesChamado,
+    getResponsaveisParaAberturaChamado,
     liberarAtendimentoChamado,
     reabrirChamado,
     resolverChamado,
@@ -26,7 +27,6 @@ import {
     editableStatusOptions,
     formatDateTime,
     prioridadeClassName,
-    prioridadeEditOptions,
     prioridadeLabel,
     statusClassName,
     statusLabel,
@@ -65,6 +65,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
     const { solutions } = useHubNavigation();
     const [chamado, setChamado] = useState(null);
     const [atendentes, setAtendentes] = useState([]);
+    const [prioridades, setPrioridades] = useState([]);
     const [acompanhantesElegiveis, setAcompanhantesElegiveis] = useState([]);
     const [selectedAcompanhanteIds, setSelectedAcompanhanteIds] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -160,7 +161,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
 
             setChamado(response);
             setStatus(response?.status || "");
-            setPrioridade(response?.prioridade || "");
+            setPrioridade(response?.prioridadeId ? String(response.prioridadeId) : "");
             setResponsavelId(chamadoResponsavelKey(response));
         } catch (loadError) {
             setError(loadError.message || "Nao foi possivel carregar o chamado.");
@@ -174,7 +175,8 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
     }, [chamadoId]);
 
     useEffect(() => {
-        if (!canManageResponsavel) {
+        if (!canManageResponsavel || !chamado?.solucaoId) {
+            setAtendentes([]);
             return;
         }
 
@@ -182,7 +184,10 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
 
         const loadAtendentes = async () => {
             try {
-                const response = await getAtendentesDisponiveis();
+                const response = await getResponsaveisParaAberturaChamado({
+                    solucaoId: chamado.solucaoId,
+                    funcionalidadeId: chamado.funcionalidadeId || null
+                });
 
                 if (active) {
                     setAtendentes(response);
@@ -199,7 +204,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
         return () => {
             active = false;
         };
-    }, [canManageResponsavel]);
+    }, [canManageResponsavel, chamado?.solucaoId, chamado?.funcionalidadeId]);
 
     useEffect(() => {
         const activeAcompanhantes = (chamado?.acompanhantes || [])
@@ -247,7 +252,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
 
             setChamado(updated);
             setStatus(updated?.status || "");
-            setPrioridade(updated?.prioridade || "");
+            setPrioridade(updated?.prioridadeId ? String(updated.prioridadeId) : "");
             setResponsavelId(chamadoResponsavelKey(updated));
             setObservacao("");
             success?.(updated);
@@ -339,7 +344,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
 
             setChamado(nextChamado);
             setStatus(nextChamado?.status || "");
-            setPrioridade(nextChamado?.prioridade || "");
+            setPrioridade(nextChamado?.prioridadeId ? String(nextChamado.prioridadeId) : "");
             setResponsavelId(chamadoResponsavelKey(nextChamado));
             setResposta("");
             clearRespostaAnexos();
@@ -441,19 +446,17 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
 
             <header className="chamado-detail-header">
                 <div>
-                    <span className="chamado-number">#{chamado.numero}</span>
                     <h2>{chamado.titulo}</h2>
-                    <p>{chamado.descricao}</p>
                 </div>
                 <div className="chamado-badges">
                     <span className={statusClassName(chamado.status)}>
                         {statusLabel(chamado.status)}
                     </span>
-                    <span className={prioridadeClassName(chamado.prioridade)}>
-                        {prioridadeLabel(chamado.prioridade)}
+                    <span className={prioridadeClassName(chamado.prioridadeId)} style={chamado.prioridadeCor ? { backgroundColor: chamado.prioridadeCor } : undefined}>
+                        {chamado.prioridadeNome || prioridadeLabel(chamado.prioridadeId)}
                     </span>
-                    <span className={tipoClassName(chamado.tipo)}>
-                        {tipoLabel(chamado.tipo)}
+                    <span className={tipoClassName(chamado.tipoId)} style={chamado.tipoCor ? { backgroundColor: chamado.tipoCor } : undefined}>
+                        {chamado.tipoNome || tipoLabel(chamado.tipoId)}
                     </span>
                 </div>
             </header>
@@ -482,6 +485,14 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
                             <dd>{chamado.categoriaNome || "Sem categoria"}</dd>
                         </div>
                         <div>
+                            <dt>Setor</dt>
+                            <dd>{chamado.solucaoNome || "Sem setor"}</dd>
+                        </div>
+                        <div>
+                            <dt>Funcionalidade</dt>
+                            <dd>{chamado.funcionalidadeNome || "Sem funcionalidade especifica"}</dd>
+                        </div>
+                        <div>
                             <dt>Criado em</dt>
                             <dd>{formatDateTime(chamado.criadoEm)}</dd>
                         </div>
@@ -490,6 +501,10 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
                             <dd>{formatDateTime(chamado.atualizadoEm)}</dd>
                         </div>
                     </dl>
+                    <div className="chamado-observacao">
+                        <h4>Observacao</h4>
+                        <p>{chamado.descricao || "-"}</p>
+                    </div>
                 </article>
 
                 <article className="chamado-panel chamado-panel-action chamado-acompanhantes-panel">
@@ -601,7 +616,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
                                 <span>Status</span>
                                 <select value={status} onChange={(event) => setStatus(event.target.value)} disabled={!canChangeStatus || saving || isResolved || isClosed}>
                                     {editableStatusOptions.map((option) => (
-                                        <option key={option.value} value={option.value}>{option.label}</option>
+                                        <option key={option.id} value={option.id}>{option.nome}</option>
                                     ))}
                                 </select>
                             </label>
@@ -616,15 +631,15 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
                             <label>
                                 <span>Prioridade</span>
                                 <select value={prioridade} onChange={(event) => setPrioridade(event.target.value)} disabled={!canChangePriority || saving || isClosed}>
-                                    {prioridadeEditOptions.map((option) => (
-                                        <option key={option.value} value={option.value}>{option.label}</option>
-                                    ))}
+                                    {prioridades.map((option) => (
+                                                <option key={option.id} value={option.id}>{option.nome}</option>
+                                            ))}
                                 </select>
                             </label>
                             <button
                                 type="button"
-                                onClick={() => runAction(() => alterarPrioridadeChamado({ chamadoId: chamado.id, prioridade }))}
-                                disabled={!canChangePriority || saving || isClosed || prioridade === chamado.prioridade}
+                                onClick={() => runAction(() => alterarPrioridadeChamado({ chamadoId: chamado.id, prioridadeId: Number(prioridade) }))}
+                                disabled={!canChangePriority || saving || isClosed || Number(prioridade) === Number(chamado.prioridadeId)}
                             >
                                 Alterar prioridade
                             </button>
@@ -787,7 +802,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
                     {chamado.historico?.map((item) => (
                         <div key={item.id} className="chamado-timeline-item compacto">
                             <strong>{item.evento}</strong>
-                            <small>{formatDateTime(item.criadoEm)} · {item.usuarioNome || "Sistema"}</small>
+                            <small>{formatDateTime(item.criadoEm)} Â· {item.usuarioNome || "Sistema"}</small>
                             <p>
                                 {formatHistoricoLinha(item)}
                             </p>
