@@ -1,11 +1,11 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
-import { GruposUsuariosService } from './grupos-usuarios.service';
+import { GrupoUsuarioBootstrapService } from './grupo-usuario-bootstrap.service';
 
 @Injectable()
 export class GruposUsuariosBootstrap implements OnApplicationBootstrap {
-  constructor(private readonly gruposUsuariosService: GruposUsuariosService) {}
+  constructor(private readonly grupoUsuarioBootstrap: GrupoUsuarioBootstrapService) {}
 
   async onApplicationBootstrap(): Promise<void> {
-    await this.gruposUsuariosService.ensureInitialSetup();
+    await this.grupoUsuarioBootstrap.ensureInitialSetup();
   }
 }

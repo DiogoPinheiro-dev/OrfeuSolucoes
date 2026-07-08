@@ -1,208 +1,27 @@
-import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { compare, hash } from 'bcrypt';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FuncionalidadePermissao, SolucoesService } from '../solucoes/solucoes.service';
+import { GrupoUsuarioBootstrapService } from './grupo-usuario-bootstrap.service';
+import { GrupoUsuarioPermissaoService } from './grupo-usuario-permissao.service';
 import { CreateGrupoUsuarioInput } from './dto/create-grupo-usuario.input';
 import { GrupoUsuarioType } from './dto/grupo-usuario.type';
 import { UpdateGrupoUsuarioInput } from './dto/update-grupo-usuario.input';
+import { toGrupoUsuarioType } from './mappers/grupo-usuario.mapper';
+import { assertCanRemoveGrupo } from './policies/grupo-usuario.policy';
+import { GrupoUsuarioRecord } from './types/grupo-usuario-record.types';
 
-type GrupoUsuarioRecord = {
-  id: number;
-  nome: string;
-  descricao?: string | null;
-  acessoEcommerce?: boolean;
-  acessoProjetos?: boolean;
-  acessoHoras?: boolean;
-  acessoConfigurador?: boolean;
-  padraoSistema?: boolean;
-  podeVisualizar?: boolean;
-  podeIncluir?: boolean;
-  podeAlterar?: boolean;
-  podeExcluir?: boolean;
-  solucaoIds?: number[];
-  funcionalidadeIds?: number[];
-  funcionalidadePermissoes?: FuncionalidadePermissao[];
-};
 
 @Injectable()
 export class GruposUsuariosService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly solucoesService: SolucoesService
+    private readonly solucoesService: SolucoesService,
+    private readonly grupoUsuarioBootstrap: GrupoUsuarioBootstrapService,
+    private readonly grupoUsuarioPermissao: GrupoUsuarioPermissaoService
   ) {}
 
   async ensureInitialSetup(): Promise<void> {
-    const [gruposCount, usuariosCount, empresasCount] = await Promise.all([
-      (this.prisma as never as { grupoUsuario: { count: Function } }).grupoUsuario.count(),
-      this.prisma.usuario.count(),
-      this.prisma.empresa.count()
-    ]);
-
-    await this.prisma.$transaction(async (tx) => {
-      let empresaId: number | null = null;
-
-      if (empresasCount === 0) {
-        const empresa = await tx.empresa.create({
-          data: {
-            nome: 'Empresa Teste',
-            acessoEcommerce: false,
-            acessoProjetos: false,
-            acessoHoras: false,
-            padraoSistema: true
-          }
-        });
-
-        empresaId = empresa.id;
-      }
-
-      if (gruposCount === 0 && usuariosCount === 0) {
-        const grupo = (await (tx as never as { grupoUsuario: { create: Function } }).grupoUsuario.create({
-          data: {
-            nome: 'Administradores',
-            descricao: 'Grupo inicial com acesso a todas as solucoes.',
-            acessoEcommerce: true,
-            acessoProjetos: true,
-            acessoHoras: true,
-            acessoConfigurador: true,
-            podeVisualizar: true,
-            podeIncluir: true,
-            podeAlterar: true,
-            podeExcluir: true,
-            padraoSistema: true
-          }
-        })) as GrupoUsuarioRecord;
-        const senhaHash = await hash('admin123', 10);
-        const usuario = await tx.usuario.create({
-          data: {
-            nome: 'Administrador',
-            login: 'admin',
-            email: 'admin@admin.com',
-            senhaHash,
-            grupoId: grupo.id,
-            deveAlterarSenha: true,
-            padraoSistema: true
-          } as never
-        });
-
-        if (empresaId) {
-          await tx.empresaUsuario.create({
-            data: {
-              empresaId,
-              usuarioId: usuario.id
-            }
-          });
-        } else {
-          const empresas = await tx.empresa.findMany({ select: { id: true } });
-
-          if (empresas.length) {
-            await tx.empresaUsuario.createMany({
-              data: empresas.map((empresa) => ({
-                empresaId: empresa.id,
-                usuarioId: usuario.id
-              }))
-            });
-          }
-        }
-      } else if (empresaId) {
-        const usuariosComAcessoGeral = await tx.usuario.findMany({
-          where: {
-            login: 'admin'
-          } as never,
-          select: { id: true }
-        });
-
-        if (usuariosComAcessoGeral.length) {
-          await tx.empresaUsuario.createMany({
-            data: usuariosComAcessoGeral.map((usuario) => ({
-              empresaId,
-              usuarioId: usuario.id
-            }))
-          });
-        }
-      }
-    });
-
-    await this.ensureInitialAdminPasswordPolicy();
-    await this.solucoesService.ensureDefaultConfiguradorFeatures();
-    await this.solucoesService.ensureControleChamadosSolution();
-    await this.ensureInitialAdminSolutionAccess();
-  }
-
-  private async ensureInitialAdminPasswordPolicy(): Promise<void> {
-    const admin = await this.prisma.usuario.findFirst({
-      where: {
-        login: 'admin',
-        email: 'admin@admin.com',
-        grupo: {
-          acessoEcommerce: true,
-          acessoProjetos: true,
-          acessoHoras: true,
-          acessoConfigurador: true
-        }
-      } as never,
-      select: {
-        id: true,
-        senhaHash: true,
-        deveAlterarSenha: true
-      } as never
-    }) as unknown as { id: string; senhaHash: string; deveAlterarSenha: boolean } | null;
-
-    if (!admin) {
-      return;
-    }
-
-    const hasLegacyPassword = await compare('admin', admin.senhaHash);
-    const hasTemporaryPassword = await compare('admin123', admin.senhaHash);
-
-    if (!hasLegacyPassword && !hasTemporaryPassword) {
-      return;
-    }
-
-    if (hasTemporaryPassword && admin.deveAlterarSenha) {
-      return;
-    }
-
-    await this.prisma.usuario.update({
-      where: { id: admin.id },
-      data: {
-        senhaHash: await hash('admin123', 10),
-        deveAlterarSenha: true
-      } as never
-    });
-  }
-
-  private async ensureInitialAdminSolutionAccess(): Promise<void> {
-    const admin = await this.prisma.usuario.findFirst({
-      where: {
-        login: 'admin',
-        email: 'admin@admin.com',
-        grupoId: { not: null }
-      } as never,
-      select: {
-        grupoId: true
-      } as never
-    }) as unknown as { grupoId: number | null } | null;
-
-    if (!admin?.grupoId) {
-      return;
-    }
-
-    const solucoes = await this.solucoesService.findAll();
-    const adminSolucoes = solucoes.filter((solucao) => solucao.slug === 'configurador' || !solucao.somenteAdminSistema);
-    const adminFuncionalidades = adminSolucoes.flatMap((solucao) => solucao.funcionalidades);
-
-    await this.solucoesService.syncGroupAccess(
-      admin.grupoId,
-      adminSolucoes.map((solucao) => solucao.id),
-      adminFuncionalidades.map((funcionalidade) => funcionalidade.id),
-      adminFuncionalidades.map((funcionalidade) => ({
-        funcionalidadeId: funcionalidade.id,
-        podeVisualizar: true,
-        podeIncluir: true,
-        podeAlterar: true,
-        podeExcluir: true
-      }))
-    );
+    return this.grupoUsuarioBootstrap.ensureInitialSetup();
   }
 
   async findAll(): Promise<GrupoUsuarioType[]> {
@@ -254,7 +73,7 @@ export class GruposUsuariosService {
       created.id,
       input.solucaoIds ?? [],
       input.funcionalidadeIds ?? [],
-      this.resolveFuncionalidadePermissoes(input.funcionalidadeIds ?? [], input.funcionalidadePermissoes, input)
+      this.grupoUsuarioPermissao.resolveFuncionalidadePermissoes(input.funcionalidadeIds ?? [], input.funcionalidadePermissoes, input)
     );
 
     return this.toType(created);
@@ -292,7 +111,7 @@ export class GruposUsuariosService {
         input.id,
         input.solucaoIds ?? [],
         funcionalidadeIds,
-        this.resolveFuncionalidadePermissoes(funcionalidadeIds, input.funcionalidadePermissoes, { ...current, ...input })
+        this.grupoUsuarioPermissao.resolveFuncionalidadePermissoes(funcionalidadeIds, input.funcionalidadePermissoes, { ...current, ...input })
       );
     }
 
@@ -308,7 +127,7 @@ export class GruposUsuariosService {
       throw new NotFoundException('Grupo de usuario nao encontrado.');
     }
 
-    this.assertCanRemoveGrupo(current);
+    assertCanRemoveGrupo(current);
 
     await (this.prisma as never as { usuario: { updateMany: Function } }).usuario.updateMany({
       where: { grupoId: id },
@@ -319,66 +138,9 @@ export class GruposUsuariosService {
     return true;
   }
 
-  private assertCanRemoveGrupo(grupo: GrupoUsuarioRecord): void {
-    if (grupo.padraoSistema) {
-      throw new ForbiddenException('O grupo Administradores padrao do sistema nao pode ser excluido. Altere seus dados quando necessario.');
-    }
-  }
   async toType(grupo: GrupoUsuarioRecord): Promise<GrupoUsuarioType> {
     const access = await this.solucoesService.findGroupAccess(grupo.id);
-
-    return {
-      id: grupo.id,
-      nome: grupo.nome,
-      descricao: grupo.descricao ?? null,
-      acessoEcommerce: grupo.acessoEcommerce ?? false,
-      acessoProjetos: grupo.acessoProjetos ?? false,
-      acessoHoras: grupo.acessoHoras ?? false,
-      acessoConfigurador: grupo.acessoConfigurador ?? false,
-      padraoSistema: grupo.padraoSistema ?? false,
-      podeVisualizar: grupo.podeVisualizar ?? true,
-      podeIncluir: grupo.podeIncluir ?? false,
-      podeAlterar: grupo.podeAlterar ?? false,
-      podeExcluir: grupo.podeExcluir ?? false,
-      solucaoIds: access.solucaoIds,
-      funcionalidadeIds: access.funcionalidadeIds,
-      funcionalidadePermissoes: access.funcionalidadePermissoes.map((permissao) => ({
-        ...permissao,
-        acoes: permissao.acoes.map((acao) => ({
-          funcionalidadeId: acao.funcionalidadeId,
-          acaoId: acao.acaoId,
-          chave: acao.chave ?? '',
-          permitido: !!acao.permitido
-        }))
-      }))
-    };
+    return toGrupoUsuarioType(grupo, access);
   }
 
-  private resolveFuncionalidadePermissoes(
-    funcionalidadeIds: number[],
-    permissoes: FuncionalidadePermissao[] | undefined,
-    defaults: {
-      podeVisualizar?: boolean;
-      podeIncluir?: boolean;
-      podeAlterar?: boolean;
-      podeExcluir?: boolean;
-    }
-  ): FuncionalidadePermissao[] {
-    const permissoesByFuncionalidadeId = new Map(
-      (permissoes ?? []).map((permissao) => [permissao.funcionalidadeId, permissao])
-    );
-
-    return [...new Set(funcionalidadeIds)].map((funcionalidadeId) => {
-      const permissao = permissoesByFuncionalidadeId.get(funcionalidadeId);
-
-      return {
-        funcionalidadeId,
-        podeVisualizar: permissao?.podeVisualizar ?? defaults.podeVisualizar ?? true,
-        podeIncluir: permissao?.podeIncluir ?? defaults.podeIncluir ?? false,
-        podeAlterar: permissao?.podeAlterar ?? defaults.podeAlterar ?? false,
-        podeExcluir: permissao?.podeExcluir ?? defaults.podeExcluir ?? false,
-        acoes: permissao?.acoes ?? []
-      };
-    });
-  }
 }
