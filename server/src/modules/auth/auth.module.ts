@@ -5,7 +5,10 @@ import { PassportModule } from '@nestjs/passport';
 import { EmpresasModule } from '../empresas/empresas.module';
 import { SolucoesModule } from '../solucoes/solucoes.module';
 import { UsersModule } from '../users/users.module';
+import { AuthCookieService } from './auth-cookie.service';
+import { AuthCredentialsService } from './auth-credentials.service';
 import { AuthResolver } from './auth.resolver';
+import { AuthSessionService } from './auth-session.service';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
@@ -35,7 +38,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     EmpresasModule,
     SolucoesModule
   ],
-  providers: [AuthService, AuthResolver, JwtStrategy],
+  providers: [AuthService, AuthCookieService, AuthCredentialsService, AuthSessionService, AuthResolver, JwtStrategy],
   exports: [AuthService]
 })
 export class AuthModule {}

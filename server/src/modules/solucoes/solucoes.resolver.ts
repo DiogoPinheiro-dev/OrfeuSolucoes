@@ -1,4 +1,4 @@
-import { ForbiddenException, UseGuards } from '@nestjs/common';
+import { UseGuards } from '@nestjs/common';
 import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
@@ -9,6 +9,7 @@ import { FuncionalidadeType } from './dto/funcionalidade.type';
 import { SolucaoType } from './dto/solucao.type';
 import { UpdateFuncionalidadeInput } from './dto/update-funcionalidade.input';
 import { UpdateSolucaoInput } from './dto/update-solucao.input';
+import { assertSystemAdmin } from './policies/solucao-access.policy';
 import { SolucoesService } from './solucoes.service';
 
 @Resolver(() => SolucaoType)
@@ -24,7 +25,7 @@ export class SolucoesResolver {
   @UseGuards(GqlAuthGuard)
   @Query(() => [SolucaoType])
   solucoes(@CurrentUser() user: JwtPayload): Promise<SolucaoType[]> {
-    this.assertSystemAdmin(user);
+    assertSystemAdmin(user);
     return this.solucoesService.findAll();
   }
 
@@ -34,7 +35,7 @@ export class SolucoesResolver {
     @Args('input') input: CreateSolucaoInput,
     @CurrentUser() user: JwtPayload
   ): Promise<SolucaoType> {
-    this.assertSystemAdmin(user);
+    assertSystemAdmin(user);
     return this.solucoesService.create(input);
   }
 
@@ -44,7 +45,7 @@ export class SolucoesResolver {
     @Args('input') input: UpdateSolucaoInput,
     @CurrentUser() user: JwtPayload
   ): Promise<SolucaoType> {
-    this.assertSystemAdmin(user);
+    assertSystemAdmin(user);
     return this.solucoesService.update(input);
   }
 
@@ -54,7 +55,7 @@ export class SolucoesResolver {
     @Args('id', { type: () => Int }) id: number,
     @CurrentUser() user: JwtPayload
   ): Promise<boolean> {
-    this.assertSystemAdmin(user);
+    assertSystemAdmin(user);
     return this.solucoesService.remove(id);
   }
 
@@ -64,7 +65,7 @@ export class SolucoesResolver {
     @Args('input') input: CreateFuncionalidadeInput,
     @CurrentUser() user: JwtPayload
   ): Promise<FuncionalidadeType> {
-    this.assertSystemAdmin(user);
+    assertSystemAdmin(user);
     return this.solucoesService.createFuncionalidade(input);
   }
 
@@ -74,7 +75,7 @@ export class SolucoesResolver {
     @Args('input') input: UpdateFuncionalidadeInput,
     @CurrentUser() user: JwtPayload
   ): Promise<FuncionalidadeType> {
-    this.assertSystemAdmin(user);
+    assertSystemAdmin(user);
     return this.solucoesService.updateFuncionalidade(input);
   }
 
@@ -84,13 +85,8 @@ export class SolucoesResolver {
     @Args('id', { type: () => Int }) id: number,
     @CurrentUser() user: JwtPayload
   ): Promise<boolean> {
-    this.assertSystemAdmin(user);
+    assertSystemAdmin(user);
     return this.solucoesService.removeFuncionalidade(id);
   }
 
-  private assertSystemAdmin(user: JwtPayload): void {
-    if (user.login?.toLowerCase() !== 'admin') {
-      throw new ForbiddenException('Apenas o usuario administrador inicial pode configurar solucoes.');
-    }
-  }
 }

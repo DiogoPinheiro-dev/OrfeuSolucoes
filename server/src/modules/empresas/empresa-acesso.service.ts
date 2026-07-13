@@ -1,9 +1,13 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
 import { SolucoesService } from '../solucoes/solucoes.service';
 
 @Injectable()
 export class EmpresaAcessoService {
-  constructor(private readonly solucoesService: SolucoesService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly solucoesService: SolucoesService
+  ) {}
 
   async syncCompanyAccess(empresaId: number, solucaoIds: number[] = [], funcionalidadeIds?: number[]): Promise<void> {
     await this.solucoesService.syncCompanyAccess(
@@ -23,6 +27,17 @@ export class EmpresaAcessoService {
 
   async findCompanySolutionSummaries(empresaId: number) {
     return this.solucoesService.findCompanySolutionSummaries(empresaId);
+  }
+
+  async userBelongsToCompany(usuarioId: string, empresaId: number): Promise<boolean> {
+    const vinculo = await this.prisma.empresaUsuario.findFirst({
+      where: {
+        empresaId,
+        usuarioId
+      }
+    });
+
+    return !!vinculo;
   }
 
   private async resolveFuncionalidadeIds(solucaoIds: number[] = [], funcionalidadeIds?: number[]): Promise<number[]> {

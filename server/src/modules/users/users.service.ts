@@ -1,19 +1,19 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Usuario } from '@prisma/client';
-import { PrismaService } from '../../prisma/prisma.service';
 import { JwtPayload } from '../auth/strategies/jwt-payload.type';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
 import { UserType } from './dto/user.type';
 import { UserCatalogService } from './user-catalog.service';
+import { UserLookupService } from './user-lookup.service';
 import { UserPasswordService } from './user-password.service';
 import { UsuarioWithRole } from './types/user-record.types';
 
 @Injectable()
 export class UsersService {
   constructor(
-    private readonly prisma: PrismaService,
     private readonly userCatalogService: UserCatalogService,
+    private readonly userLookupService: UserLookupService,
     private readonly userPasswordService: UserPasswordService
   ) {}
 
@@ -37,38 +37,19 @@ export class UsersService {
     return this.userPasswordService.updatePassword(id, senha, deveAlterarSenha);
   }
 
-  async findById(id: string): Promise<Usuario> {
-    const user = await this.prisma.usuario.findUnique({ where: { id } });
-
-    if (!user) {
-      throw new NotFoundException('Usuario nao encontrado.');
-    }
-
-    return user;
+  findById(id: string): Promise<Usuario> {
+    return this.userLookupService.findById(id);
   }
 
   findTypeById(id: string): Promise<UserType> {
     return this.userCatalogService.findTypeById(id);
   }
 
-  async findByEmail(email: string): Promise<UsuarioWithRole | null> {
-    return (await this.prisma.usuario.findUnique({
-      where: { email: email.toLowerCase() },
-      include: { grupo: true } as never
-    })) as UsuarioWithRole | null;
+  findByEmail(email: string): Promise<UsuarioWithRole | null> {
+    return this.userLookupService.findByEmail(email);
   }
 
-  async findByLoginOrEmail(loginOrEmail: string): Promise<UsuarioWithRole | null> {
-    const identifier = loginOrEmail.toLowerCase().trim();
-
-    return (await this.prisma.usuario.findFirst({
-      where: {
-        OR: [
-          { email: identifier },
-          { login: identifier } as never
-        ]
-      },
-      include: { grupo: true } as never
-    })) as UsuarioWithRole | null;
+  findByLoginOrEmail(loginOrEmail: string): Promise<UsuarioWithRole | null> {
+    return this.userLookupService.findByLoginOrEmail(loginOrEmail);
   }
 }

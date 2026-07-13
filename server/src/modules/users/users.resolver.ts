@@ -1,4 +1,4 @@
-import { ForbiddenException, UseGuards } from '@nestjs/common';
+import { UseGuards } from '@nestjs/common';
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
@@ -6,6 +6,7 @@ import { JwtPayload } from '../auth/strategies/jwt-payload.type';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
 import { UserType } from './dto/user.type';
+import { assertSystemAdmin } from './policies/user.policy';
 import { UsersService } from './users.service';
 
 @Resolver(() => UserType)
@@ -20,7 +21,7 @@ export class UsersResolver {
   @UseGuards(GqlAuthGuard)
   @Query(() => [UserType])
   users(@CurrentUser() user: JwtPayload): Promise<UserType[]> {
-    this.assertSystemAdmin(user);
+    assertSystemAdmin(user);
     return this.usersService.findAll(user);
   }
 
@@ -30,7 +31,7 @@ export class UsersResolver {
     @Args('input') input: UpdateUserInput,
     @CurrentUser() user: JwtPayload
   ): Promise<UserType> {
-    this.assertSystemAdmin(user);
+    assertSystemAdmin(user);
     return this.usersService.update(input);
   }
 
@@ -40,13 +41,8 @@ export class UsersResolver {
     @Args('id') id: string,
     @CurrentUser() user: JwtPayload
   ): Promise<boolean> {
-    this.assertSystemAdmin(user);
+    assertSystemAdmin(user);
     return this.usersService.remove(id);
   }
 
-  private assertSystemAdmin(user: JwtPayload): void {
-    if (user.login?.toLowerCase() !== 'admin') {
-      throw new ForbiddenException('Apenas o usuario administrador inicial pode acessar o configurador.');
-    }
-  }
 }

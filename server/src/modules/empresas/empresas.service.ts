@@ -1,16 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
 import { JwtPayload } from '../auth/strategies/jwt-payload.type';
 import { CreateEmpresaInput } from './dto/create-empresa.input';
 import { EmpresaType } from './dto/empresa.type';
 import { UpdateEmpresaInput } from './dto/update-empresa.input';
+import { EmpresaAcessoService } from './empresa-acesso.service';
 import { EmpresaCatalogService } from './empresa-catalog.service';
 import { EmpresaRecord } from './types/empresa-record.types';
 
 @Injectable()
 export class EmpresasService {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly empresaAcesso: EmpresaAcessoService,
     private readonly empresaCatalog: EmpresaCatalogService
   ) {}
 
@@ -38,15 +38,8 @@ export class EmpresasService {
     return this.empresaCatalog.remove(id, admin);
   }
 
-  async userBelongsToCompany(usuarioId: string, empresaId: number): Promise<boolean> {
-    const vinculo = await this.prisma.empresaUsuario.findFirst({
-      where: {
-        empresaId,
-        usuarioId
-      }
-    });
-
-    return !!vinculo;
+  userBelongsToCompany(usuarioId: string, empresaId: number): Promise<boolean> {
+    return this.empresaAcesso.userBelongsToCompany(usuarioId, empresaId);
   }
 
   toEmpresaType(empresa: EmpresaRecord): Promise<EmpresaType> {
