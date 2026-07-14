@@ -1149,3 +1149,121 @@
     padding-left: 10px;
   }
 }
+
+.chamado-notifications {
+  position: relative;
+}
+
+.chamado-notifications-trigger {
+  align-items: center;
+  background: var(--detail-accent-bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--primary);
+  cursor: pointer;
+  display: inline-flex;
+  height: 38px;
+  justify-content: center;
+  position: relative;
+  width: 38px;
+}
+
+.chamado-notifications-trigger > span {
+  align-items: center;
+  background: #dc2626;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  color: #fff;
+  display: inline-flex;
+  font-size: 0.62rem;
+  font-weight: 800;
+  justify-content: center;
+  min-height: 18px;
+  min-width: 18px;
+  padding: 0 3px;
+  position: absolute;
+  right: -7px;
+  top: -7px;
+}
+
+.chamado-notifications-popover {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.2);
+  color: #0f172a;
+  left: 0;
+  max-height: min(70vh, 520px);
+  overflow: hidden;
+  position: absolute;
+  top: calc(100% + 10px);
+  width: min(360px, calc(100vw - 32px));
+  z-index: 1200;
+}
+
+.chamado-notifications-popover > header {
+  align-items: center;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 14px;
+}
+
+.chamado-notifications-popover > header button {
+  background: transparent;
+  border: 0;
+  color: #174ea6;
+  cursor: pointer;
+}
+
+.chamado-notifications-list {
+  max-height: 440px;
+  overflow-y: auto;
+}
+
+.chamado-notifications-list > button {
+  background: #fff;
+  border: 0;
+  border-bottom: 1px solid #eef2f7;
+  color: #334155;
+  cursor: pointer;
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  text-align: left;
+  width: 100%;
+}
+
+.chamado-notifications-list > button:hover,
+.chamado-notifications-list > button:focus-visible,
+.chamado-notifications-list > button.chamado-notification-unread {
+  background: #eff6ff;
+}
+
+.chamado-notifications-list strong {
+  color: #0f172a;
+  font-size: 0.86rem;
+}
+
+.chamado-notifications-list span,
+.chamado-notifications-list small {
+  font-size: 0.76rem;
+}
+
+.chamado-notifications-list small {
+  color: #64748b;
+}
+
+.chamado-notifications-list > p {
+  color: #64748b;
+  margin: 0;
+  padding: 24px 14px;
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .chamado-notifications-popover {
+    left: auto;
+    right: 0;
+  }
+}

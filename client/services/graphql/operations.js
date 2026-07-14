@@ -759,11 +759,17 @@ export const CHAMADO_FIELDS = gql`
     prioridadeId
     prioridadeNome
     prioridadeCor
+    slaRegraId
     status
     criadoEm
     atualizadoEm
     primeiraRespostaEm
+    primeiraRespostaLimiteEm
     resolvidoEm
+    resolucaoLimiteEm
+    slaPausadoEm
+    slaTempoPausadoMinutos
+    slaStatus
     encerradoEm
     versao
     mensagens {
@@ -866,6 +872,21 @@ export const CHAMADO_PRIORIDADE_FIELDS = gql`
     atualizadoEm
   }
 `;
+export const CHAMADO_SLA_REGRA_FIELDS = gql`
+  fragment ChamadoSlaRegraFields on ChamadoSlaRegraType {
+    id
+    empresaId
+    prioridadeId
+    prioridadeNome
+    primeiraRespostaPrazoMinutos
+    resolucaoPrazoMinutos
+    modoContagem
+    ativo
+    criadoEm
+    atualizadoEm
+  }
+`;
+
 export const CHAMADO_RESPONSAVEL_FIELDS = gql`
   fragment ChamadoResponsavelFields on ChamadoResponsavelType {
     id
@@ -1284,4 +1305,59 @@ export const DELETE_CHAMADO_CATEGORIA_MUTATION = gql`
   mutation DeleteChamadoCategoria($id: Int!) {
     deleteChamadoCategoria(id: $id)
   }
+`;
+
+export const REGRAS_SLA_CHAMADO_QUERY = gql`
+  ${CHAMADO_SLA_REGRA_FIELDS}
+  query RegrasSlaChamado($ativas: Boolean) {
+    regrasSlaChamado(ativas: $ativas) {
+      ...ChamadoSlaRegraFields
+    }
+  }
+`;
+
+export const CREATE_CHAMADO_SLA_REGRA_MUTATION = gql`
+  ${CHAMADO_SLA_REGRA_FIELDS}
+  mutation CreateChamadoSlaRegra($input: CreateChamadoSlaRegraInput!) {
+    createChamadoSlaRegra(input: $input) {
+      ...ChamadoSlaRegraFields
+    }
+  }
+`;
+
+export const UPDATE_CHAMADO_SLA_REGRA_MUTATION = gql`
+  ${CHAMADO_SLA_REGRA_FIELDS}
+  mutation UpdateChamadoSlaRegra($input: UpdateChamadoSlaRegraInput!) {
+    updateChamadoSlaRegra(input: $input) {
+      ...ChamadoSlaRegraFields
+    }
+  }
+`;
+
+export const DELETE_CHAMADO_SLA_REGRA_MUTATION = gql`
+  mutation DeleteChamadoSlaRegra($id: Int!) {
+    deleteChamadoSlaRegra(id: $id)
+  }
+`;
+
+export const CHAMADO_NOTIFICACOES_QUERY = gql("query ChamadoNotificacoes($limite: Int) { notificacoesChamado(limite: $limite) { id chamadoId chamadoNumero chamadoTitulo tipo titulo mensagem lidaEm criadoEm } notificacoesChamadoNaoLidas }");
+export const MARCAR_CHAMADO_NOTIFICACAO_LIDA_MUTATION = gql("mutation MarcarChamadoNotificacaoComoLida($id: String!) { marcarChamadoNotificacaoComoLida(id: $id) }");
+export const MARCAR_TODAS_CHAMADO_NOTIFICACOES_LIDAS_MUTATION = gql("mutation MarcarTodasChamadoNotificacoesComoLidas { marcarTodasChamadoNotificacoesComoLidas }");
+export const GOOGLE_EMAIL_CONTAS_QUERY = gql("query GoogleEmailContasChamado { googleEmailContasChamado { id nome tipo emailGoogle conectado conectadoEm ativo } }");
+export const GOOGLE_EMAIL_SEND_AS_QUERY = gql("query GoogleEmailSendAs($contaId: Int!) { googleEmailSendAs(contaId: $contaId) { email nome padrao verificado } }");
+export const CHAMADO_SOLUCOES_EMAILS_QUERY = gql("query ChamadoSolucoesEmails { chamadoSolucoesEmails { id solucaoId solucaoNome googleContaId googleContaNome remetenteEmail remetenteNome responderParaEmail ativo } }");
+export const GOOGLE_EMAIL_AUTH_URL_QUERY = gql("query GoogleEmailAuthUrl($id: Int!) { googleEmailAuthUrl(id: $id) }");
+export const CREATE_GOOGLE_EMAIL_CONTA_MUTATION = gql("mutation CreateGoogleEmailConta($input: CreateGoogleEmailContaInput!) { createGoogleEmailConta(input: $input) { id nome tipo emailGoogle conectado conectadoEm ativo } }");
+export const UPDATE_GOOGLE_EMAIL_CONTA_MUTATION = gql("mutation UpdateGoogleEmailConta($input: UpdateGoogleEmailContaInput!) { updateGoogleEmailConta(input: $input) { id nome tipo emailGoogle conectado conectadoEm ativo } }");
+export const DELETE_GOOGLE_EMAIL_CONTA_MUTATION = gql("mutation DeleteGoogleEmailConta($id: Int!) { deleteGoogleEmailConta(id: $id) }");
+export const CREATE_CHAMADO_SOLUCAO_EMAIL_MUTATION = gql("mutation CreateChamadoSolucaoEmail($input: CreateChamadoSolucaoEmailInput!) { createChamadoSolucaoEmail(input: $input) { id solucaoId solucaoNome googleContaId googleContaNome remetenteEmail remetenteNome responderParaEmail ativo } }");
+export const UPDATE_CHAMADO_SOLUCAO_EMAIL_MUTATION = gql("mutation UpdateChamadoSolucaoEmail($input: UpdateChamadoSolucaoEmailInput!) { updateChamadoSolucaoEmail(input: $input) { id solucaoId solucaoNome googleContaId googleContaNome remetenteEmail remetenteNome responderParaEmail ativo } }");
+export const DELETE_CHAMADO_SOLUCAO_EMAIL_MUTATION = gql("mutation DeleteChamadoSolucaoEmail($id: Int!) { deleteChamadoSolucaoEmail(id: $id) }");
+export const CHAMADO_DASHBOARD_QUERY = gql("query ChamadoDashboard { dashboardChamados { totalAbertos emAtendimento pendentes resolvidos arquivados atrasados tempoMedioPrimeiraRespostaMinutos tempoMedioResolucaoMinutos porPrioridade { chave nome total cor } porCategoria { chave nome total cor } porAtendente { chave nome total cor } } }");
+
+export const CHAMADO_RELATORIO_QUERY = gql("query ChamadoRelatorio($filtro: ChamadoRelatorioFiltroInput) { relatorioChamados(filtro: $filtro) { total page pageSize totalPages items { id numero titulo status slaStatus prioridade categoria solicitante atendente criadoEm primeiraRespostaEm resolvidoEm tempoPrimeiraRespostaMinutos tempoResolucaoMinutos } } }");
+
+export const ALTERAR_CATEGORIA_CHAMADO_MUTATION = gql`
+  ${CHAMADO_FIELDS}
+  mutation AlterarCategoriaChamado($input: AlterarCategoriaChamadoInput!) { alterarCategoriaChamado(input: $input) { ...ChamadoFields } }
 `;

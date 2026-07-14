@@ -8,10 +8,14 @@ export const FEATURE_COMPONENT_REGISTRY = {
     "controle-de-chamados.meus-chamados": "meus-chamados",
     "controle-de-chamados.painel-atendimento": "painel-atendimento",
     "controle-de-chamados.chamados-arquivados": "chamados-arquivados",
+    "controle-de-chamados.dashboard": "chamado-dashboard",
+    "controle-de-chamados.relatorios": "chamado-relatorio",
     "controle-de-chamados.categorias": "categoria-chamado-management",
     "controle-de-chamados.tipos": "tipo-chamado-management",
     "controle-de-chamados.prioridades": "prioridade-chamado-management",
-    "controle-de-chamados.responsaveis": "responsavel-chamado-management"
+    "controle-de-chamados.responsaveis": "responsavel-chamado-management",
+    "controle-de-chamados.sla": "sla-chamado-management",
+    "controle-de-chamados.emails-solucoes": "email-solucao-chamado-management"
 };
 
 export const normalizeSolutions = (solutions = []) =>

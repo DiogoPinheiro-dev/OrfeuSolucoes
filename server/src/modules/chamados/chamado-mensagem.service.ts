@@ -3,6 +3,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { JwtPayload } from '../auth/strategies/jwt-payload.type';
 import { ResponderChamadoInput } from './dto/responder-chamado.input';
 import { ChamadoAuthorizationService } from './chamado-authorization.service';
+import { ChamadoNotificacaoService } from './chamado-notificacao.service';
+import { ChamadoSlaService } from './chamado-sla.service';
 import { isClosedStatus } from './policies/chamado-status.policy';
 import { ChamadoQueryService } from './queries/chamado-query.service';
 
@@ -11,7 +13,9 @@ export class ChamadoMensagemService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly chamadoQuery: ChamadoQueryService,
-    private readonly authorization: ChamadoAuthorizationService
+    private readonly authorization: ChamadoAuthorizationService,
+    private readonly chamadoSla: ChamadoSlaService,
+    private readonly notificacao: ChamadoNotificacaoService
   ) {}
 
   async responderChamado(input: ResponderChamadoInput, user: JwtPayload): Promise<string> {
@@ -62,7 +66,7 @@ export class ChamadoMensagemService {
       await db.chamado.update({
         where: { id: chamado.id },
         data: {
-          ...(shouldMarkFirstResponse ? { primeiraRespostaEm: now } : {}),
+          ...(shouldMarkFirstResponse ? this.chamadoSla.buildFirstResponseData(chamado, now) : {}),
           ...(shouldMoveToAttendance ? { status: nextStatus } : {}),
           versao: { increment: 1 }
         }
@@ -83,6 +87,8 @@ export class ChamadoMensagemService {
         });
       }
     });
+
+    await this.notificacao.notifyMessage(chamado, user.sub);
 
     return chamado.id;
   }

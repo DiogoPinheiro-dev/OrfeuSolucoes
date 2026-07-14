@@ -2,6 +2,11 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+input AlterarCategoriaChamadoInput {
+  categoriaId: Int
+  chamadoId: String!
+}
+
 input AlterarPrioridadeChamadoInput {
   chamadoId: String!
   prioridadeId: Int!
@@ -76,6 +81,27 @@ type ChamadoCategoriaType {
   nome: String!
 }
 
+type ChamadoDashboardSerieType {
+  chave: String!
+  cor: String
+  nome: String!
+  total: Int!
+}
+
+type ChamadoDashboardType {
+  arquivados: Int!
+  atrasados: Int!
+  emAtendimento: Int!
+  pendentes: Int!
+  porAtendente: [ChamadoDashboardSerieType!]!
+  porCategoria: [ChamadoDashboardSerieType!]!
+  porPrioridade: [ChamadoDashboardSerieType!]!
+  resolvidos: Int!
+  tempoMedioPrimeiraRespostaMinutos: Float
+  tempoMedioResolucaoMinutos: Float
+  totalAbertos: Int!
+}
+
 input ChamadoFiltroInput {
   categoriaId: Int
   criadoAte: String
@@ -86,6 +112,7 @@ input ChamadoFiltroInput {
   responsavelGrupoId: Int
   responsavelId: String
   solicitanteId: String
+  somenteAtrasados: Boolean
   status: String
   termo: String
 }
@@ -114,6 +141,18 @@ type ChamadoMensagemType {
   tipo: String!
 }
 
+type ChamadoNotificacaoType {
+  chamadoId: String!
+  chamadoNumero: Int!
+  chamadoTitulo: String!
+  criadoEm: DateTime!
+  id: String!
+  lidaEm: DateTime
+  mensagem: String!
+  tipo: String!
+  titulo: String!
+}
+
 type ChamadoPageType {
   items: [ChamadoType!]!
   page: Int!
@@ -131,6 +170,43 @@ type ChamadoPrioridadeType {
   id: Int!
   nome: String!
   ordem: Int!
+}
+
+input ChamadoRelatorioFiltroInput {
+  categoriaId: Int
+  criadoAte: String
+  criadoDe: String
+  page: Int = 1
+  pageSize: Int = 50
+  prioridadeId: Int
+  responsavelId: String
+  slaStatus: String
+  status: String
+}
+
+type ChamadoRelatorioItemType {
+  atendente: String!
+  categoria: String!
+  criadoEm: DateTime!
+  id: String!
+  numero: Int!
+  primeiraRespostaEm: DateTime
+  prioridade: String!
+  resolvidoEm: DateTime
+  slaStatus: String!
+  solicitante: String!
+  status: String!
+  tempoPrimeiraRespostaMinutos: Float
+  tempoResolucaoMinutos: Float
+  titulo: String!
+}
+
+type ChamadoRelatorioPageType {
+  items: [ChamadoRelatorioItemType!]!
+  page: Int!
+  pageSize: Int!
+  total: Int!
+  totalPages: Int!
 }
 
 type ChamadoResponsavelFuncionalidadeOptionType {
@@ -206,6 +282,31 @@ type ChamadoResponsavelUsuarioOptionType {
   nome: String
 }
 
+type ChamadoSlaRegraType {
+  ativo: Boolean!
+  atualizadoEm: DateTime!
+  criadoEm: DateTime!
+  empresaId: Int!
+  id: Int!
+  modoContagem: String!
+  primeiraRespostaPrazoMinutos: Int!
+  prioridadeId: Int!
+  prioridadeNome: String!
+  resolucaoPrazoMinutos: Int!
+}
+
+type ChamadoSolucaoEmailType {
+  ativo: Boolean!
+  googleContaId: Int!
+  googleContaNome: String!
+  id: Int!
+  remetenteEmail: String!
+  remetenteNome: String
+  responderParaEmail: String
+  solucaoId: Int!
+  solucaoNome: String!
+}
+
 type ChamadoTipoType {
   ativo: Boolean!
   atualizadoEm: DateTime!
@@ -238,14 +339,20 @@ type ChamadoType {
   mensagens: [ChamadoMensagemType!]!
   numero: Int!
   primeiraRespostaEm: DateTime
+  primeiraRespostaLimiteEm: DateTime
   prioridadeCor: String
   prioridadeId: Int!
   prioridadeNome: String!
+  resolucaoLimiteEm: DateTime
   resolvidoEm: DateTime
   responsavelGrupoId: Int
   responsavelGrupoNome: String
   responsavelId: String
   responsavelNome: String
+  slaPausadoEm: DateTime
+  slaRegraId: Int
+  slaStatus: String!
+  slaTempoPausadoMinutos: Int!
   solicitanteId: String!
   solicitanteNome: String
   solucaoId: Int
@@ -284,6 +391,23 @@ input CreateChamadoResponsavelInput {
   usuarioId: String
 }
 
+input CreateChamadoSlaRegraInput {
+  ativo: Boolean = true
+  modoContagem: String = "CORRIDO"
+  primeiraRespostaPrazoMinutos: Int!
+  prioridadeId: Int!
+  resolucaoPrazoMinutos: Int!
+}
+
+input CreateChamadoSolucaoEmailInput {
+  ativo: Boolean
+  googleContaId: Int!
+  remetenteEmail: String!
+  remetenteNome: String
+  responderParaEmail: String
+  solucaoId: Int!
+}
+
 input CreateChamadoTipoInput {
   ativo: Boolean = true
   cor: String
@@ -312,6 +436,13 @@ input CreateFuncionalidadeInput {
   solucaoId: Int!
   somenteAdminSistema: Boolean = false
   titulo: String!
+}
+
+input CreateGoogleEmailContaInput {
+  ativo: Boolean
+  emailGoogle: String!
+  nome: String!
+  tipo: String!
 }
 
 input CreateGrupoUsuarioInput {
@@ -462,6 +593,23 @@ type FuncionalidadeType {
   titulo: String!
 }
 
+type GoogleEmailContaType {
+  ativo: Boolean!
+  conectado: Boolean!
+  conectadoEm: DateTime
+  emailGoogle: String!
+  id: Int!
+  nome: String!
+  tipo: String!
+}
+
+type GoogleSendAsType {
+  email: String!
+  nome: String
+  padrao: Boolean!
+  verificado: Boolean!
+}
+
 type GrupoUsuarioType {
   acessoConfigurador: Boolean!
   acessoEcommerce: Boolean!
@@ -492,6 +640,7 @@ input LoginInput {
 }
 
 type Mutation {
+  alterarCategoriaChamado(input: AlterarCategoriaChamadoInput!): ChamadoType!
   alterarPrioridadeChamado(input: AlterarPrioridadeChamadoInput!): ChamadoType!
   alterarStatusChamado(input: AlterarStatusChamadoInput!): ChamadoType!
   arquivarChamado(id: String!, observacao: String): ChamadoType!
@@ -502,9 +651,12 @@ type Mutation {
   createChamadoCategoria(input: CreateChamadoCategoriaInput!): ChamadoCategoriaType!
   createChamadoPrioridade(input: CreateChamadoPrioridadeInput!): ChamadoPrioridadeType!
   createChamadoResponsavel(input: CreateChamadoResponsavelInput!): ChamadoResponsavelType!
+  createChamadoSlaRegra(input: CreateChamadoSlaRegraInput!): ChamadoSlaRegraType!
+  createChamadoSolucaoEmail(input: CreateChamadoSolucaoEmailInput!): ChamadoSolucaoEmailType!
   createChamadoTipo(input: CreateChamadoTipoInput!): ChamadoTipoType!
   createEmpresa(input: CreateEmpresaInput!): EmpresaType!
   createFuncionalidade(input: CreateFuncionalidadeInput!): FuncionalidadeType!
+  createGoogleEmailConta(input: CreateGoogleEmailContaInput!): GoogleEmailContaType!
   createGrupoUsuario(input: CreateGrupoUsuarioInput!): GrupoUsuarioType!
   createServico(input: CreateServicoInput!): ServicoType!
   createSolucao(input: CreateSolucaoInput!): SolucaoType!
@@ -513,9 +665,12 @@ type Mutation {
   deleteChamadoCategoria(id: Int!): Boolean!
   deleteChamadoPrioridade(id: Int!): Boolean!
   deleteChamadoResponsavel(id: Int!): Boolean!
+  deleteChamadoSlaRegra(id: Int!): Boolean!
+  deleteChamadoSolucaoEmail(id: Int!): Boolean!
   deleteChamadoTipo(id: Int!): Boolean!
   deleteEmpresa(id: Int!): Boolean!
   deleteFuncionalidade(id: Int!): Boolean!
+  deleteGoogleEmailConta(id: Int!): Boolean!
   deleteGrupoUsuario(id: Int!): Boolean!
   deleteServico(id: Int!): Boolean!
   deleteSolucao(id: Int!): Boolean!
@@ -525,6 +680,8 @@ type Mutation {
   login(input: LoginInput!): AuthPayloadType!
   loginCompanies(input: LoginCompaniesInput!): [EmpresaType!]!
   logout: Boolean!
+  marcarChamadoNotificacaoComoLida(id: String!): Boolean!
+  marcarTodasChamadoNotificacoesComoLidas: Int!
   reabrirChamado(id: String!, observacao: String): ChamadoType!
   resolverChamado(id: String!, observacao: String): ChamadoType!
   responderChamado(input: ResponderChamadoInput!): ChamadoType!
@@ -533,9 +690,12 @@ type Mutation {
   updateChamadoCategoria(input: UpdateChamadoCategoriaInput!): ChamadoCategoriaType!
   updateChamadoPrioridade(input: UpdateChamadoPrioridadeInput!): ChamadoPrioridadeType!
   updateChamadoResponsavel(input: UpdateChamadoResponsavelInput!): ChamadoResponsavelType!
+  updateChamadoSlaRegra(input: UpdateChamadoSlaRegraInput!): ChamadoSlaRegraType!
+  updateChamadoSolucaoEmail(input: UpdateChamadoSolucaoEmailInput!): ChamadoSolucaoEmailType!
   updateChamadoTipo(input: UpdateChamadoTipoInput!): ChamadoTipoType!
   updateEmpresa(input: UpdateEmpresaInput!): EmpresaType!
   updateFuncionalidade(input: UpdateFuncionalidadeInput!): FuncionalidadeType!
+  updateGoogleEmailConta(input: UpdateGoogleEmailContaInput!): GoogleEmailContaType!
   updateGrupoUsuario(input: UpdateGrupoUsuarioInput!): GrupoUsuarioType!
   updateServico(input: UpdateServicoInput!): ServicoType!
   updateSolucao(input: UpdateSolucaoInput!): SolucaoType!
@@ -547,16 +707,25 @@ type Query {
   atendentesDisponiveis: [AtendenteChamadoType!]!
   categoriasChamado(ativas: Boolean = true): [ChamadoCategoriaType!]!
   chamado(id: String!): ChamadoType!
+  chamadoSolucoesEmails: [ChamadoSolucaoEmailType!]!
   chamadosArquivados(filtro: ChamadoFiltroInput): ChamadoPageType!
+  dashboardChamados: ChamadoDashboardType!
   empresas: [EmpresaType!]!
   filaChamados(filtro: ChamadoFiltroInput): ChamadoPageType!
+  googleEmailAuthUrl(id: Int!): String!
+  googleEmailContasChamado: [GoogleEmailContaType!]!
+  googleEmailSendAs(contaId: Int!): [GoogleSendAsType!]!
   gruposUsuarios: [GrupoUsuarioType!]!
   health: String!
   me: UserType!
   meusChamados(filtro: ChamadoFiltroInput): ChamadoPageType!
   myHubNavigation: [SolucaoType!]!
+  notificacoesChamado(limite: Int = 30): [ChamadoNotificacaoType!]!
+  notificacoesChamadoNaoLidas: Int!
   opcoesAberturaChamado: ChamadoResponsavelOptionsType!
   prioridadesChamado(ativas: Boolean = true): [ChamadoPrioridadeType!]!
+  regrasSlaChamado(ativas: Boolean = true): [ChamadoSlaRegraType!]!
+  relatorioChamados(filtro: ChamadoRelatorioFiltroInput): ChamadoRelatorioPageType!
   responsaveisChamado(ativas: Boolean = false): [ChamadoResponsavelType!]!
   responsaveisChamadoOptions: ChamadoResponsavelOptionsType!
   responsaveisFiltroChamado: [ChamadoResponsavelType!]!
@@ -623,6 +792,25 @@ input UpdateChamadoResponsavelInput {
   usuarioId: String
 }
 
+input UpdateChamadoSlaRegraInput {
+  ativo: Boolean
+  id: Int!
+  modoContagem: String
+  primeiraRespostaPrazoMinutos: Int
+  prioridadeId: Int
+  resolucaoPrazoMinutos: Int
+}
+
+input UpdateChamadoSolucaoEmailInput {
+  ativo: Boolean
+  googleContaId: Int
+  id: Int!
+  remetenteEmail: String
+  remetenteNome: String
+  responderParaEmail: String
+  solucaoId: Int
+}
+
 input UpdateChamadoTipoInput {
   ativo: Boolean
   cor: String
@@ -654,6 +842,14 @@ input UpdateFuncionalidadeInput {
   solucaoId: Int
   somenteAdminSistema: Boolean
   titulo: String
+}
+
+input UpdateGoogleEmailContaInput {
+  ativo: Boolean
+  emailGoogle: String
+  id: Int!
+  nome: String
+  tipo: String
 }
 
 input UpdateGrupoUsuarioInput {

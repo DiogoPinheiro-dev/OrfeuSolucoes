@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { JwtPayload } from '../auth/strategies/jwt-payload.type';
+import { ChamadoNotificacaoService } from './chamado-notificacao.service';
 import { ChamadoRecord } from './types/chamado-record.types';
 
 export type ChamadoHistoricoPayload = {
@@ -13,7 +14,7 @@ export type ChamadoHistoricoPayload = {
 
 @Injectable()
 export class ChamadoHistoryService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly notificacao: ChamadoNotificacaoService) {}
 
   async updateChamadoWithHistory(
     chamado: ChamadoRecord,
@@ -44,6 +45,8 @@ export class ChamadoHistoryService {
         });
       }
     });
+
+    await this.notificacao.notifyHistory(chamado, user.sub, historico);
   }
 
   async updateStatus(

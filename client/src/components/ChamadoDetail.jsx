@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import {
+    alterarCategoriaChamado,
     alterarPrioridadeChamado,
     alterarStatusChamado,
     atualizarAcompanhantesChamado,
@@ -9,6 +10,7 @@ import {
     arquivarChamado,
     getAcompanhantesElegiveisChamado,
     getChamado,
+    getCategoriasChamado,
     getPrioridadesChamado,
     getResponsaveisParaAberturaChamado,
     liberarAtendimentoChamado,
@@ -23,6 +25,7 @@ import {
 import { canUseFeatureAction, getFeatureBySlug, getSolutionBySlug, isGroupAdmin, isSystemAdmin } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
 import { useHubNavigation } from "../hooks/useHubNavigation";
+import ChamadoSlaIndicator from "./ChamadoSlaIndicator";
 import {
     editableStatusOptions,
     formatDateTime,
@@ -66,6 +69,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
     const [chamado, setChamado] = useState(null);
     const [atendentes, setAtendentes] = useState([]);
     const [prioridades, setPrioridades] = useState([]);
+    const [categorias, setCategorias] = useState([]);
     const [acompanhantesElegiveis, setAcompanhantesElegiveis] = useState([]);
     const [selectedAcompanhanteIds, setSelectedAcompanhanteIds] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -76,6 +80,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
     const [observacaoArquivamentoMeus, setObservacaoArquivamentoMeus] = useState("");
     const [status, setStatus] = useState("");
     const [prioridade, setPrioridade] = useState("");
+    const [categoria, setCategoria] = useState("");
     const [responsavelId, setResponsavelId] = useState("");
     const [respostaAnexos, setRespostaAnexos] = useState([]);
     const [respostaAnexosInputKey, setRespostaAnexosInputKey] = useState(0);
@@ -100,6 +105,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
     const canManageResponsavel = canAssign || canTransfer;
     const canChangeStatus = hasAtendimentoContext && canUseFeatureAction(user, atendimentoPermissions, "alterar_status");
     const canChangePriority = hasAtendimentoContext && canUseFeatureAction(user, atendimentoPermissions, "alterar_prioridade");
+    const canChangeCategory = hasAtendimentoContext && canUseFeatureAction(user, atendimentoPermissions, "alterar_categoria");
     const canResolve = hasAtendimentoContext && canUseFeatureAction(user, atendimentoPermissions, "resolver_chamado");
     const canArchiveAtendimento = hasAtendimentoContext && canUseFeatureAction(user, atendimentoPermissions, "encerrar_chamado");
     const canArchiveProprio = isMeus && canUseFeatureAction(user, permissions, "excluir");
@@ -162,6 +168,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
             setChamado(response);
             setStatus(response?.status || "");
             setPrioridade(response?.prioridadeId ? String(response.prioridadeId) : "");
+            setCategoria(response?.categoriaId ? String(response.categoriaId) : "");
             setResponsavelId(chamadoResponsavelKey(response));
         } catch (loadError) {
             setError(loadError.message || "Nao foi possivel carregar o chamado.");
@@ -174,6 +181,14 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
         void load();
     }, [chamadoId]);
 
+    useEffect(() => {
+        if (!showAtendimentoActions) { setPrioridades([]); setCategorias([]); return; }
+        let active = true;
+        Promise.all([getPrioridadesChamado(false), getCategoriasChamado(false)])
+            .then(([prioridadesResponse, categoriasResponse]) => { if (active) { setPrioridades(prioridadesResponse); setCategorias(categoriasResponse); } })
+            .catch(() => { if (active) { setPrioridades([]); setCategorias([]); } });
+        return () => { active = false; };
+    }, [showAtendimentoActions, user?.empresa?.id, user?.empresaId]);
     useEffect(() => {
         if (!canManageResponsavel || !chamado?.solucaoId) {
             setAtendentes([]);
@@ -253,6 +268,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
             setChamado(updated);
             setStatus(updated?.status || "");
             setPrioridade(updated?.prioridadeId ? String(updated.prioridadeId) : "");
+            setCategoria(updated?.categoriaId ? String(updated.categoriaId) : "");
             setResponsavelId(chamadoResponsavelKey(updated));
             setObservacao("");
             success?.(updated);
@@ -345,6 +361,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
             setChamado(nextChamado);
             setStatus(nextChamado?.status || "");
             setPrioridade(nextChamado?.prioridadeId ? String(nextChamado.prioridadeId) : "");
+            setCategoria(nextChamado?.categoriaId ? String(nextChamado.categoriaId) : "");
             setResponsavelId(chamadoResponsavelKey(nextChamado));
             setResposta("");
             clearRespostaAnexos();
@@ -458,6 +475,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
                     <span className={tipoClassName(chamado.tipoId)} style={chamado.tipoCor ? { backgroundColor: chamado.tipoCor } : undefined}>
                         {chamado.tipoNome || tipoLabel(chamado.tipoId)}
                     </span>
+                    <ChamadoSlaIndicator chamado={chamado} showWithoutSla detailed />
                 </div>
             </header>
 
@@ -499,6 +517,18 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
                         <div>
                             <dt>Atualizado em</dt>
                             <dd>{formatDateTime(chamado.atualizadoEm)}</dd>
+                        </div>
+                        <div>
+                            <dt>Primeira resposta limite</dt>
+                            <dd>{chamado.primeiraRespostaLimiteEm ? formatDateTime(chamado.primeiraRespostaLimiteEm) : "Sem SLA"}</dd>
+                        </div>
+                        <div>
+                            <dt>Resolucao limite</dt>
+                            <dd>{chamado.resolucaoLimiteEm ? formatDateTime(chamado.resolucaoLimiteEm) : "Sem SLA"}</dd>
+                        </div>
+                        <div>
+                            <dt>Tempo pausado</dt>
+                            <dd>{chamado.slaTempoPausadoMinutos || 0} minuto(s)</dd>
                         </div>
                     </dl>
                     <div className="chamado-observacao">
@@ -616,7 +646,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
                                 <span>Status</span>
                                 <select value={status} onChange={(event) => setStatus(event.target.value)} disabled={!canChangeStatus || saving || isResolved || isClosed}>
                                     {editableStatusOptions.map((option) => (
-                                        <option key={option.id} value={option.id}>{option.nome}</option>
+                                        <option key={option.value} value={option.value}>{option.label}</option>
                                     ))}
                                 </select>
                             </label>
@@ -628,6 +658,16 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
                                 Alterar status
                             </button>
 
+                            <label>
+                                <span>Categoria</span>
+                                <select value={categoria} onChange={(event) => setCategoria(event.target.value)} disabled={!canChangeCategory || saving || isClosed}>
+                                    <option value="">Sem categoria</option>
+                                    {categorias.map((option) => <option key={option.id} value={option.id}>{option.nome}{option.ativo === false ? " (inativa)" : ""}</option>)}
+                                </select>
+                            </label>
+                            <button type="button" onClick={() => runAction(() => alterarCategoriaChamado({ chamadoId: chamado.id, categoriaId: categoria ? Number(categoria) : null }))} disabled={!canChangeCategory || saving || isClosed || (categoria ? Number(categoria) : null) === (chamado.categoriaId ?? null)}>
+                                Alterar categoria
+                            </button>
                             <label>
                                 <span>Prioridade</span>
                                 <select value={prioridade} onChange={(event) => setPrioridade(event.target.value)} disabled={!canChangePriority || saving || isClosed}>

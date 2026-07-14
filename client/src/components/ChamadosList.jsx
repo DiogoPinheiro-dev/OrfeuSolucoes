@@ -12,6 +12,7 @@ import {
 import { canUseFeatureAction } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
 import ChamadoDetail from "./ChamadoDetail";
+import ChamadoSlaIndicator, { chamadoSlaDeadline } from "./ChamadoSlaIndicator";
 import {
     archivedKanbanStatusOptions,
     formatDateTime,
@@ -90,7 +91,7 @@ function ChamadoCard({
     return (
         <article
             key={chamado.id}
-            className={`chamado-card${compact ? " chamado-card-compact" : ""}${isDragging ? " chamado-card-dragging" : ""}`}
+            className={"chamado-card" + (compact ? " chamado-card-compact" : "") + (isDragging ? " chamado-card-dragging" : "") + (chamado.slaStatus === "ATRASADO" ? " chamado-card-sla-atrasado" : "")}
             role="button"
             tabIndex={0}
             onClick={handleOpen}
@@ -180,17 +181,31 @@ export default function ChamadosList({ title, description, areaSlug, loadChamado
         return kanbanColumns.filter((column) => column.value === filters.status);
     }, [filters.status, kanbanColumns]);
 
+    const orderedItems = useMemo(() => {
+        if (filters.ordenacao !== "VENCIMENTO_SLA") {
+            return result.items;
+        }
+
+        return [...result.items].sort((left, right) => {
+            const leftDeadline = chamadoSlaDeadline(left);
+            const rightDeadline = chamadoSlaDeadline(right);
+            const leftTime = leftDeadline ? new Date(leftDeadline).getTime() : Number.MAX_SAFE_INTEGER;
+            const rightTime = rightDeadline ? new Date(rightDeadline).getTime() : Number.MAX_SAFE_INTEGER;
+            return leftTime - rightTime;
+        });
+    }, [result.items, filters.ordenacao]);
+
     const chamadosPorStatus = useMemo(() => {
         const grouped = Object.fromEntries(kanbanColumns.map((column) => [column.value, []]));
 
-        for (const chamado of result.items) {
+        for (const chamado of orderedItems) {
             if (grouped[chamado.status]) {
                 grouped[chamado.status].push(chamado);
             }
         }
 
         return grouped;
-    }, [result.items, kanbanColumns]);
+    }, [orderedItems, kanbanColumns]);
 
     const load = async () => {
         setError("");
@@ -479,7 +494,25 @@ export default function ChamadosList({ title, description, areaSlug, loadChamado
                     </select>
                 </label>
 
-                <label>
+                                {mode === "painel" && (
+                    <>
+                        <label>
+                            <span>SLA</span>
+                            <select name="somenteAtrasados" value={filters.somenteAtrasados} onChange={handleFilterChange}>
+                                <option value="">Todos</option>
+                                <option value="true">Somente atrasados</option>
+                            </select>
+                        </label>
+                        <label>
+                            <span>Ordenacao</span>
+                            <select name="ordenacao" value={filters.ordenacao} onChange={handleFilterChange}>
+                                <option value="ATUALIZACAO">Mais recentes</option>
+                                <option value="VENCIMENTO_SLA">Vencimento do SLA</option>
+                            </select>
+                        </label>
+                    </>
+                )}
+<label>
                     <span>De</span>
                     <input type="date" name="criadoDe" value={filters.criadoDe} onChange={handleFilterChange} />
                 </label>

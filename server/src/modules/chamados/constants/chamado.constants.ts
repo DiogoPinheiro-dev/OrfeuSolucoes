@@ -8,10 +8,16 @@ export const FEATURES = {
   categorias: 'categorias',
   tipos: 'tipos',
   prioridades: 'prioridades',
-  responsaveis: 'responsaveis'
+  responsaveis: 'responsaveis',
+  sla: 'sla',
+  emailsSolucoes: 'emails-solucoes',
+  dashboard: 'dashboard',
+  relatorios: 'relatorios'
 } as const;
 
 export const STATUS = ['ABERTO', 'EM_TRIAGEM', 'EM_ATENDIMENTO', 'PENDENTE', 'RESOLVIDO', 'ARQUIVADO'] as const;
+export const SLA_STATUS = ['SEM_SLA', 'NO_PRAZO', 'PERTO_DO_VENCIMENTO', 'ATRASADO', 'PAUSADO'] as const;
+export const SLA_MODO_CONTAGEM = ['CORRIDO', 'UTEIS'] as const;
 
 export const OPEN_STATUSES = ['ABERTO', 'EM_TRIAGEM', 'EM_ATENDIMENTO', 'PENDENTE'] as const;
 export const TERMINAL_STATUSES = ['RESOLVIDO', 'ARQUIVADO'] as const;

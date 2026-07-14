@@ -8,7 +8,9 @@ import { usuarioLabel } from './mappers/chamado.mapper';
 import { ChamadoAcompanhanteService } from './chamado-acompanhante.service';
 import { ChamadoAuthorizationService } from './chamado-authorization.service';
 import { ChamadoConfiguracaoService } from './chamado-configuracao.service';
+import { ChamadoNotificacaoService } from './chamado-notificacao.service';
 import { ChamadoResponsavelService } from './chamado-responsavel.service';
+import { ChamadoSlaService } from './chamado-sla.service';
 import { ChamadoRecord } from './types/chamado-record.types';
 
 @Injectable()
@@ -18,7 +20,9 @@ export class ChamadoAberturaService {
     private readonly authorization: ChamadoAuthorizationService,
     private readonly chamadoConfiguracao: ChamadoConfiguracaoService,
     private readonly chamadoResponsavel: ChamadoResponsavelService,
-    private readonly chamadoAcompanhante: ChamadoAcompanhanteService
+    private readonly chamadoAcompanhante: ChamadoAcompanhanteService,
+    private readonly chamadoSla: ChamadoSlaService,
+    private readonly notificacao: ChamadoNotificacaoService
   ) {}
 
   async criarChamado(input: CriarChamadoInput, user: JwtPayload): Promise<string> {
@@ -51,6 +55,8 @@ export class ChamadoAberturaService {
       await this.chamadoConfiguracao.ensureCategoria(input.categoriaId, empresaId, true);
     }
 
+    const slaSnapshot = await this.chamadoSla.buildSlaSnapshot(empresaId, prioridade.id);
+
     const created = (await this.prisma.$transaction(async (tx) => {
       const db = tx as never as {
         chamadoSequencia: { upsert: Function };
@@ -78,6 +84,7 @@ export class ChamadoAberturaService {
           descricao,
           tipoId: tipo.id,
           prioridadeId: prioridade.id,
+          ...slaSnapshot,
           status: 'ABERTO'
         },
         include: chamadoSummaryInclude
@@ -121,6 +128,8 @@ export class ChamadoAberturaService {
 
       return chamado;
     })) as ChamadoRecord;
+
+    await this.notificacao.notifyCreated(created, user.sub);
 
     return created.id;
   }

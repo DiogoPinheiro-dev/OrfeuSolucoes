@@ -1,5 +1,6 @@
 import { apolloClient } from "../../src/lib/apolloClient";
 import {
+    ALTERAR_CATEGORIA_CHAMADO_MUTATION,
     ALTERAR_PRIORIDADE_CHAMADO_MUTATION,
     ALTERAR_STATUS_CHAMADO_MUTATION,
     ACOMPANHANTES_ELEGIVEIS_CHAMADO_QUERY,
@@ -10,23 +11,34 @@ import {
     ATRIBUIR_CHAMADO_MUTATION,
     CATEGORIAS_CHAMADO_QUERY,
     CHAMADOS_ARQUIVADOS_QUERY,
+    CHAMADO_NOTIFICACOES_QUERY,
+    CHAMADO_DASHBOARD_QUERY,
+    CHAMADO_RELATORIO_QUERY,
     CHAMADO_QUERY,
     CREATE_CHAMADO_CATEGORIA_MUTATION,
     CREATE_CHAMADO_PRIORIDADE_MUTATION,
     CREATE_CHAMADO_TIPO_MUTATION,
     CREATE_CHAMADO_RESPONSAVEL_MUTATION,
+    CREATE_CHAMADO_SLA_REGRA_MUTATION,
+    GOOGLE_EMAIL_CONTAS_QUERY, GOOGLE_EMAIL_SEND_AS_QUERY, CHAMADO_SOLUCOES_EMAILS_QUERY, GOOGLE_EMAIL_AUTH_URL_QUERY,
+    CREATE_GOOGLE_EMAIL_CONTA_MUTATION, UPDATE_GOOGLE_EMAIL_CONTA_MUTATION, DELETE_GOOGLE_EMAIL_CONTA_MUTATION,
+    CREATE_CHAMADO_SOLUCAO_EMAIL_MUTATION, UPDATE_CHAMADO_SOLUCAO_EMAIL_MUTATION, DELETE_CHAMADO_SOLUCAO_EMAIL_MUTATION,
     CRIAR_CHAMADO_MUTATION,
     DELETE_CHAMADO_CATEGORIA_MUTATION,
     DELETE_CHAMADO_PRIORIDADE_MUTATION,
     DELETE_CHAMADO_TIPO_MUTATION,
     DELETE_CHAMADO_RESPONSAVEL_MUTATION,
+    DELETE_CHAMADO_SLA_REGRA_MUTATION,
     ENCERRAR_CHAMADO_MUTATION,
     FILA_CHAMADOS_QUERY,
     LIBERAR_ATENDIMENTO_CHAMADO_MUTATION,
+    MARCAR_CHAMADO_NOTIFICACAO_LIDA_MUTATION,
+    MARCAR_TODAS_CHAMADO_NOTIFICACOES_LIDAS_MUTATION,
     MEUS_CHAMADOS_QUERY,
     OPCOES_ABERTURA_CHAMADO_QUERY,
     PRIORIDADES_CHAMADO_QUERY,
     REABRIR_CHAMADO_MUTATION,
+    REGRAS_SLA_CHAMADO_QUERY,
     RESPONSAVEIS_CHAMADO_OPTIONS_QUERY,
     RESPONSAVEIS_FILTRO_CHAMADO_QUERY,
     RESPONSAVEIS_PARA_ABERTURA_CHAMADO_QUERY,
@@ -38,7 +50,8 @@ import {
     UPDATE_CHAMADO_CATEGORIA_MUTATION,
     UPDATE_CHAMADO_PRIORIDADE_MUTATION,
     UPDATE_CHAMADO_TIPO_MUTATION,
-    UPDATE_CHAMADO_RESPONSAVEL_MUTATION
+    UPDATE_CHAMADO_RESPONSAVEL_MUTATION,
+    UPDATE_CHAMADO_SLA_REGRA_MUTATION
 } from "../graphql/operations";
 
 const graphqlUrl = import.meta.env.VITE_GRAPHQL_URL ?? "http://localhost:3001/graphql";
@@ -129,7 +142,6 @@ export const getCategoriasChamado = (ativas = true) =>
         select: (data) => data?.categoriasChamado ?? []
     });
 
-
 export const getTiposChamado = (ativas = true) =>
     query({
         query: TIPOS_CHAMADO_QUERY,
@@ -143,6 +155,14 @@ export const getPrioridadesChamado = (ativas = true) =>
         variables: { ativas },
         select: (data) => data?.prioridadesChamado ?? []
     });
+
+export const getRegrasSlaChamado = (ativas = true) =>
+    query({
+        query: REGRAS_SLA_CHAMADO_QUERY,
+        variables: { ativas },
+        select: (data) => data?.regrasSlaChamado ?? []
+    });
+
 export const getAtendentesDisponiveis = () =>
     query({
         query: ATENDENTES_DISPONIVEIS_QUERY,
@@ -314,6 +334,8 @@ export const alterarStatusChamado = (input) =>
         select: (data) => data?.alterarStatusChamado
     });
 
+export const alterarCategoriaChamado = (input) => mutate({ mutation: ALTERAR_CATEGORIA_CHAMADO_MUTATION, variables: { input: { ...input, categoriaId: input.categoriaId == null ? null : Number(input.categoriaId) } }, select: (data) => data?.alterarCategoriaChamado });
+
 export const alterarPrioridadeChamado = (input) =>
     mutate({
         mutation: ALTERAR_PRIORIDADE_CHAMADO_MUTATION,
@@ -448,6 +470,35 @@ export const deleteChamadoPrioridade = (id) =>
         variables: { id: Number(id) },
         select: (data) => data?.deleteChamadoPrioridade
     });
+const normalizeChamadoSlaRegraInput = (input) => ({
+    ...input,
+    ...(input.id !== undefined ? { id: Number(input.id) } : {}),
+    prioridadeId: Number(input.prioridadeId),
+    primeiraRespostaPrazoMinutos: Number(input.primeiraRespostaPrazoMinutos),
+    resolucaoPrazoMinutos: Number(input.resolucaoPrazoMinutos)
+});
+
+export const createChamadoSlaRegra = (input) =>
+    mutate({
+        mutation: CREATE_CHAMADO_SLA_REGRA_MUTATION,
+        variables: { input: normalizeChamadoSlaRegraInput(input) },
+        select: (data) => data?.createChamadoSlaRegra
+    });
+
+export const updateChamadoSlaRegra = (input) =>
+    mutate({
+        mutation: UPDATE_CHAMADO_SLA_REGRA_MUTATION,
+        variables: { input: normalizeChamadoSlaRegraInput(input) },
+        select: (data) => data?.updateChamadoSlaRegra
+    });
+
+export const deleteChamadoSlaRegra = (id) =>
+    mutate({
+        mutation: DELETE_CHAMADO_SLA_REGRA_MUTATION,
+        variables: { id: Number(id) },
+        select: (data) => data?.deleteChamadoSlaRegra
+    });
+
 export const createChamadoCategoria = (input) =>
     mutate({
         mutation: CREATE_CHAMADO_CATEGORIA_MUTATION,
@@ -468,3 +519,47 @@ export const deleteChamadoCategoria = (id) =>
         variables: { id: Number(id) },
         select: (data) => data?.deleteChamadoCategoria
     });
+
+export const getChamadoNotificacoes = (limite = 30) =>
+    apolloClient.query({
+        query: CHAMADO_NOTIFICACOES_QUERY,
+        variables: { limite },
+        fetchPolicy: "network-only"
+    }).then(({ data }) => ({
+        items: data.notificacoesChamado || [],
+        naoLidas: data.notificacoesChamadoNaoLidas || 0
+    }));
+
+export const marcarChamadoNotificacaoComoLida = (id) =>
+    apolloClient.mutate({
+        mutation: MARCAR_CHAMADO_NOTIFICACAO_LIDA_MUTATION,
+        variables: { id }
+    }).then(({ data }) => data.marcarChamadoNotificacaoComoLida);
+
+export const marcarTodasChamadoNotificacoesComoLidas = () =>
+    apolloClient.mutate({
+        mutation: MARCAR_TODAS_CHAMADO_NOTIFICACOES_LIDAS_MUTATION
+    }).then(({ data }) => data.marcarTodasChamadoNotificacoesComoLidas);
+export const getGoogleEmailContas = () => query({ query: GOOGLE_EMAIL_CONTAS_QUERY, select: (data) => data?.googleEmailContasChamado || [] });
+export const getGoogleEmailSendAs = (contaId) => query({ query: GOOGLE_EMAIL_SEND_AS_QUERY, variables: { contaId: Number(contaId) }, select: (data) => data?.googleEmailSendAs || [] });
+export const getChamadoSolucoesEmails = () => query({ query: CHAMADO_SOLUCOES_EMAILS_QUERY, select: (data) => data?.chamadoSolucoesEmails || [] });
+export const getGoogleEmailAuthUrl = (id) => query({ query: GOOGLE_EMAIL_AUTH_URL_QUERY, variables: { id: Number(id) }, select: (data) => data?.googleEmailAuthUrl });
+export const createGoogleEmailConta = (input) => mutate({ mutation: CREATE_GOOGLE_EMAIL_CONTA_MUTATION, variables: { input }, select: (data) => data?.createGoogleEmailConta });
+export const updateGoogleEmailConta = (input) => mutate({ mutation: UPDATE_GOOGLE_EMAIL_CONTA_MUTATION, variables: { input: { ...input, id: Number(input.id) } }, select: (data) => data?.updateGoogleEmailConta });
+export const deleteGoogleEmailConta = (id) => mutate({ mutation: DELETE_GOOGLE_EMAIL_CONTA_MUTATION, variables: { id: Number(id) }, select: (data) => data?.deleteGoogleEmailConta });
+export const createChamadoSolucaoEmail = (input) => mutate({ mutation: CREATE_CHAMADO_SOLUCAO_EMAIL_MUTATION, variables: { input: { ...input, solucaoId: Number(input.solucaoId), googleContaId: Number(input.googleContaId) } }, select: (data) => data?.createChamadoSolucaoEmail });
+export const updateChamadoSolucaoEmail = (input) => mutate({ mutation: UPDATE_CHAMADO_SOLUCAO_EMAIL_MUTATION, variables: { input: { ...input, id: Number(input.id), solucaoId: Number(input.solucaoId), googleContaId: Number(input.googleContaId) } }, select: (data) => data?.updateChamadoSolucaoEmail });
+export const deleteChamadoSolucaoEmail = (id) => mutate({ mutation: DELETE_CHAMADO_SOLUCAO_EMAIL_MUTATION, variables: { id: Number(id) }, select: (data) => data?.deleteChamadoSolucaoEmail });
+export const getChamadoDashboard = () => query({ query: CHAMADO_DASHBOARD_QUERY, select: (data) => data?.dashboardChamados });
+
+export const getChamadoRelatorio = (filtro) => query({ query: CHAMADO_RELATORIO_QUERY, variables: { filtro }, select: (data) => data?.relatorioChamados });
+export const downloadChamadoRelatorio = async (filtro, formato) => {
+    const params = new URLSearchParams({ formato });
+    Object.entries(filtro || {}).forEach(([key, value]) => { if (value !== "" && value != null && key !== "page" && key !== "pageSize") params.set(key, value); });
+    const response = await fetch(`${apiBaseUrl}/chamados/relatorios/exportar?${params}`, { headers: getAuthHeaders() });
+    if (!response.ok) throw new Error(await extractRestErrorMessage(response));
+    const blob = await response.blob();
+    const disposition = response.headers.get("content-disposition") || "";
+    const filename = disposition.match(/filename="?([^";]+)"?/i)?.[1] || `relatorio-chamados.${formato}`;
+    const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = filename; anchor.click(); URL.revokeObjectURL(url);
+};

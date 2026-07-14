@@ -28,6 +28,8 @@ model Usuario {
   chamadoHistoricos ChamadoHistorico[]
   chamadoResponsaveisConfigurados ChamadoResponsavel[]
   chamadoAnexos ChamadoAnexo[]
+  chamadoNotificacoes ChamadoNotificacao[]
+  googleEmailContasCriadas GoogleEmailConta[]
 
   @@map("Usuarios")
 }
@@ -90,9 +92,13 @@ model Empresa {
   chamadoResponsaveisConfigurados ChamadoResponsavel[]
   chamadoSequencia ChamadoSequencia?
   chamadoAnexos ChamadoAnexo[]
+  chamadoNotificacoes ChamadoNotificacao[]
   chamadoAcompanhantes ChamadoAcompanhante[]
   chamadoTipos ChamadoTipo[]
   chamadoPrioridades ChamadoPrioridade[]
+  chamadoSlaRegras ChamadoSlaRegra[]
+  googleEmailContas GoogleEmailConta[]
+  chamadoSolucaoEmails ChamadoSolucaoEmail[]
 
   @@map("Empresas")
 }
@@ -113,6 +119,7 @@ model Solucao {
   empresas EmpresaSolucao[]
   chamadoResponsavelSolucoes ChamadoResponsavelSolucao[]
   chamados Chamado[]
+  chamadoSolucaoEmails ChamadoSolucaoEmail[]
 
 
   @@map("Solucoes")
@@ -253,11 +260,17 @@ model Chamado {
   descricao          String   @map("Descricao")
   tipoId             Int      @map("TipoId")
   prioridadeId       Int      @map("PrioridadeId")
+  slaRegraId         Int?     @map("SlaRegraId")
   status             String   @default("ABERTO") @map("Status")
   criadoEm           DateTime @default(now()) @map("CriadoEm")
   atualizadoEm       DateTime @updatedAt @map("AtualizadoEm")
   primeiraRespostaEm DateTime? @map("PrimeiraRespostaEm")
+  primeiraRespostaLimiteEm DateTime? @map("PrimeiraRespostaLimiteEm")
   resolvidoEm        DateTime? @map("ResolvidoEm")
+  resolucaoLimiteEm  DateTime? @map("ResolucaoLimiteEm")
+  slaPausadoEm       DateTime? @map("SlaPausadoEm")
+  slaTempoPausadoMinutos Int   @default(0) @map("SlaTempoPausadoMinutos")
+  slaStatus          String   @default("SEM_SLA") @map("SlaStatus")
   encerradoEm        DateTime? @map("EncerradoEm")
   versao             Int      @default(1) @map("Versao")
 
@@ -271,6 +284,8 @@ model Chamado {
   funcionalidade Funcionalidade? @relation(fields: [funcionalidadeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   tipoConfiguracao ChamadoTipo @relation(fields: [tipoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   prioridadeConfiguracao ChamadoPrioridade @relation(fields: [prioridadeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  slaRegra ChamadoSlaRegra? @relation(fields: [slaRegraId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  notificacoes ChamadoNotificacao[]
   mensagens ChamadoMensagem[]
   historico ChamadoHistorico[]
   anexos ChamadoAnexo[]
@@ -287,6 +302,8 @@ model Chamado {
   @@index([empresaId, solucaoId], map: "IX_Chamados_EmpresaId_SolucaoId")
   @@index([empresaId, funcionalidadeId], map: "IX_Chamados_EmpresaId_FuncionalidadeId")
   @@index([empresaId, atualizadoEm], map: "IX_Chamados_EmpresaId_AtualizadoEm")
+  @@index([empresaId, slaStatus], map: "IX_Chamados_EmpresaId_SlaStatus")
+  @@index([empresaId, resolucaoLimiteEm], map: "IX_Chamados_EmpresaId_ResolucaoLimiteEm")
   @@map("Chamados")
 }
 
@@ -422,10 +439,31 @@ model ChamadoPrioridade {
 
   empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   chamados Chamado[]
+  slaRegras ChamadoSlaRegra[]
 
   @@unique([empresaId, nome], map: "UX_ChamadoPrioridades_EmpresaId_Nome")
   @@index([empresaId, ativo], map: "IX_ChamadoPrioridades_EmpresaId_Ativo")
   @@map("ChamadoPrioridades")
+}
+
+model ChamadoSlaRegra {
+  id                           Int      @id @default(autoincrement()) @map("Id")
+  empresaId                    Int      @map("EmpresaId")
+  prioridadeId                 Int      @map("PrioridadeId")
+  primeiraRespostaPrazoMinutos Int      @map("PrimeiraRespostaPrazoMinutos")
+  resolucaoPrazoMinutos        Int      @map("ResolucaoPrazoMinutos")
+  modoContagem                 String   @default("CORRIDO") @map("ModoContagem")
+  ativo                        Boolean  @default(true) @map("Ativo")
+  criadoEm                     DateTime @default(now()) @map("CriadoEm")
+  atualizadoEm                 DateTime @updatedAt @map("AtualizadoEm")
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  prioridade ChamadoPrioridade @relation(fields: [prioridadeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  chamados Chamado[]
+
+  @@unique([empresaId, prioridadeId], map: "UX_ChamadoSlaRegras_EmpresaId_PrioridadeId")
+  @@index([empresaId, ativo], map: "IX_ChamadoSlaRegras_EmpresaId_Ativo")
+  @@map("ChamadoSlaRegras")
 }
 
 model ChamadoResponsavel {
@@ -493,4 +531,67 @@ model ChamadoSequencia {
   empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("ChamadoSequencias")
+}
+
+model ChamadoNotificacao {
+  id          String    @id @default(uuid()) @db.UniqueIdentifier @map("Id")
+  empresaId   Int       @map("EmpresaId")
+  usuarioId   String    @db.UniqueIdentifier @map("UsuarioId")
+  chamadoId   String    @db.UniqueIdentifier @map("ChamadoId")
+  tipo        String    @map("Tipo")
+  titulo      String    @map("Titulo")
+  mensagem    String    @map("Mensagem")
+  eventoChave String    @unique(map: "UX_ChamadoNotificacoes_EventoChave") @map("EventoChave")
+  lidaEm      DateTime? @map("LidaEm")
+  criadoEm    DateTime  @default(now()) @map("CriadoEm")
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  chamado Chamado @relation(fields: [chamadoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([empresaId, usuarioId, lidaEm, criadoEm], map: "IX_ChamadoNotificacoes_Usuario")
+  @@index([chamadoId, criadoEm], map: "IX_ChamadoNotificacoes_Chamado")
+  @@map("ChamadoNotificacoes")
+}
+model GoogleEmailConta {
+  id                    Int       @id @default(autoincrement()) @map("Id")
+  empresaId             Int       @map("EmpresaId")
+  nome                  String    @map("Nome")
+  tipo                  String    @map("Tipo")
+  emailGoogle           String    @map("EmailGoogle")
+  refreshTokenCriptografado String? @db.NVarChar(Max) @map("RefreshTokenCriptografado")
+  conectadoEm           DateTime? @map("ConectadoEm")
+  criadoPorId           String    @db.UniqueIdentifier @map("CriadoPorId")
+  ativo                 Boolean   @default(true) @map("Ativo")
+  criadoEm              DateTime  @default(now()) @map("CriadoEm")
+  atualizadoEm          DateTime  @updatedAt @map("AtualizadoEm")
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  criadoPor Usuario @relation(fields: [criadoPorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  solucoes ChamadoSolucaoEmail[]
+
+  @@unique([empresaId, emailGoogle], map: "UX_GoogleEmailContas_EmpresaId_EmailGoogle")
+  @@index([empresaId, ativo], map: "IX_GoogleEmailContas_EmpresaId_Ativo")
+  @@map("GoogleEmailContas")
+}
+
+model ChamadoSolucaoEmail {
+  id               Int      @id @default(autoincrement()) @map("Id")
+  empresaId        Int      @map("EmpresaId")
+  solucaoId        Int      @map("SolucaoId")
+  googleContaId    Int      @map("GoogleContaId")
+  remetenteEmail   String   @map("RemetenteEmail")
+  remetenteNome    String?  @map("RemetenteNome")
+  responderParaEmail String? @map("ResponderParaEmail")
+  ativo            Boolean  @default(true) @map("Ativo")
+  criadoEm         DateTime @default(now()) @map("CriadoEm")
+  atualizadoEm     DateTime @updatedAt @map("AtualizadoEm")
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  solucao Solucao @relation(fields: [solucaoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  googleConta GoogleEmailConta @relation(fields: [googleContaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([empresaId, solucaoId], map: "UX_ChamadoSolucaoEmails_EmpresaId_SolucaoId")
+  @@index([googleContaId, ativo], map: "IX_ChamadoSolucaoEmails_GoogleContaId_Ativo")
+  @@map("ChamadoSolucaoEmails")
 }

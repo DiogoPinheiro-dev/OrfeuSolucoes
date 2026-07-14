@@ -4,6 +4,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
 import { JwtPayload } from '../auth/strategies/jwt-payload.type';
 import { ChamadosService } from './chamados.service';
+import { AlterarCategoriaChamadoInput } from './dto/alterar-categoria-chamado.input';
 import { AlterarPrioridadeChamadoInput } from './dto/alterar-prioridade-chamado.input';
 import { AlterarStatusChamadoInput } from './dto/alterar-status-chamado.input';
 import { AtribuirChamadoInput } from './dto/atribuir-chamado.input';
@@ -12,11 +13,18 @@ import { AtualizarChamadoAcompanhantesInput } from './dto/chamado-acompanhante.i
 import { ChamadoCategoriaType } from './dto/chamado-categoria.type';
 import { CreateChamadoPrioridadeInput, UpdateChamadoPrioridadeInput } from './dto/chamado-prioridade.input';
 import { ChamadoPrioridadeType } from './dto/chamado-prioridade.type';
+import { CreateChamadoSlaRegraInput, UpdateChamadoSlaRegraInput } from './dto/chamado-sla-regra.input';
+import { ChamadoSlaRegraType } from './dto/chamado-sla-regra.type';
 import { CreateChamadoTipoInput, UpdateChamadoTipoInput } from './dto/chamado-tipo.input';
 import { ChamadoTipoType } from './dto/chamado-tipo.type';
 import { CreateChamadoCategoriaInput, UpdateChamadoCategoriaInput } from './dto/chamado-categoria.input';
 import { CreateChamadoResponsavelInput, UpdateChamadoResponsavelInput } from './dto/chamado-responsavel.input';
 import { ChamadoFiltroInput } from './dto/chamado-filtro.input';
+import { ChamadoDashboardType } from './dto/chamado-dashboard.type';
+import { ChamadoRelatorioFiltroInput } from './dto/chamado-relatorio.input';
+import { ChamadoRelatorioPageType } from './dto/chamado-relatorio.type';
+import { ChamadoNotificacaoType } from './dto/chamado-notificacao.type';
+import { ChamadoSolucaoEmailType, CreateChamadoSolucaoEmailInput, CreateGoogleEmailContaInput, GoogleEmailContaType, GoogleSendAsType, UpdateChamadoSolucaoEmailInput, UpdateGoogleEmailContaInput } from './dto/chamado-google-email.type';
 import { ChamadoResponsavelOptionsType, ChamadoResponsavelType, ChamadoResponsavelUsuarioOptionType } from './dto/chamado-responsavel.type';
 import { ChamadoPageType, ChamadoType } from './dto/chamado.type';
 import { CriarChamadoInput } from './dto/criar-chamado.input';
@@ -26,6 +34,12 @@ import { ResponderChamadoInput } from './dto/responder-chamado.input';
 @Resolver(() => ChamadoType)
 export class ChamadosResolver {
   constructor(private readonly chamadosService: ChamadosService) {}
+
+  @Query(() => ChamadoRelatorioPageType)
+  relatorioChamados(@CurrentUser() user: JwtPayload, @Args('filtro', { type: () => ChamadoRelatorioFiltroInput, nullable: true }) filtro?: ChamadoRelatorioFiltroInput): Promise<ChamadoRelatorioPageType> { return this.chamadosService.relatorioChamados(filtro, user); }
+
+  @Query(() => ChamadoDashboardType)
+  dashboardChamados(@CurrentUser() user: JwtPayload): Promise<ChamadoDashboardType> { return this.chamadosService.dashboardChamados(user); }
 
   @Query(() => ChamadoPageType)
   meusChamados(
@@ -59,6 +73,30 @@ export class ChamadosResolver {
     return this.chamadosService.chamado(id, user);
   }
 
+  @Query(() => [ChamadoNotificacaoType])
+  notificacoesChamado(
+    @CurrentUser() user: JwtPayload,
+    @Args('limite', { type: () => Int, nullable: true, defaultValue: 30 }) limite?: number
+  ): Promise<ChamadoNotificacaoType[]> {
+    return this.chamadosService.notificacoesChamado(user, limite ?? 30);
+  }
+
+  @Query(() => Int)
+  notificacoesChamadoNaoLidas(@CurrentUser() user: JwtPayload): Promise<number> {
+    return this.chamadosService.notificacoesNaoLidas(user);
+  }
+
+  @Query(() => [GoogleEmailContaType])
+  googleEmailContasChamado(@CurrentUser() user: JwtPayload): Promise<GoogleEmailContaType[]> { return this.chamadosService.googleEmailContas(user); }
+
+  @Query(() => [GoogleSendAsType])
+  googleEmailSendAs(@Args('contaId', { type: () => Int }) contaId: number, @CurrentUser() user: JwtPayload): Promise<GoogleSendAsType[]> { return this.chamadosService.googleEmailSendAs(contaId, user); }
+
+  @Query(() => [ChamadoSolucaoEmailType])
+  chamadoSolucoesEmails(@CurrentUser() user: JwtPayload): Promise<ChamadoSolucaoEmailType[]> { return this.chamadosService.chamadoSolucoesEmails(user); }
+
+  @Query(() => String)
+  googleEmailAuthUrl(@Args('id', { type: () => Int }) id: number, @CurrentUser() user: JwtPayload): Promise<string> { return this.chamadosService.googleEmailAuthUrl(id, user); }
   @Query(() => [ChamadoCategoriaType])
   categoriasChamado(
     @CurrentUser() user: JwtPayload,
@@ -81,6 +119,14 @@ export class ChamadosResolver {
   ): Promise<ChamadoPrioridadeType[]> {
     return this.chamadosService.prioridadesChamado(user, ativas ?? true);
   }
+  @Query(() => [ChamadoSlaRegraType])
+  regrasSlaChamado(
+    @CurrentUser() user: JwtPayload,
+    @Args('ativas', { type: () => Boolean, nullable: true, defaultValue: true }) ativas?: boolean
+  ): Promise<ChamadoSlaRegraType[]> {
+    return this.chamadosService.regrasSlaChamado(user, ativas ?? true);
+  }
+
   @Query(() => [AtendenteChamadoType])
   atendentesDisponiveis(@CurrentUser() user: JwtPayload): Promise<AtendenteChamadoType[]> {
     return this.chamadosService.atendentesDisponiveis(user);
@@ -191,6 +237,11 @@ export class ChamadosResolver {
   }
 
   @Mutation(() => ChamadoType)
+  alterarCategoriaChamado(@Args('input') input: AlterarCategoriaChamadoInput, @CurrentUser() user: JwtPayload): Promise<ChamadoType> {
+    return this.chamadosService.alterarCategoriaChamado(input, user);
+  }
+
+  @Mutation(() => ChamadoType)
   alterarPrioridadeChamado(
     @Args('input') input: AlterarPrioridadeChamadoInput,
     @CurrentUser() user: JwtPayload
@@ -235,6 +286,18 @@ export class ChamadosResolver {
   }
 
 
+  @Mutation(() => GoogleEmailContaType)
+  createGoogleEmailConta(@Args('input') input: CreateGoogleEmailContaInput, @CurrentUser() user: JwtPayload): Promise<GoogleEmailContaType> { return this.chamadosService.createGoogleEmailConta(input, user); }
+  @Mutation(() => GoogleEmailContaType)
+  updateGoogleEmailConta(@Args('input') input: UpdateGoogleEmailContaInput, @CurrentUser() user: JwtPayload): Promise<GoogleEmailContaType> { return this.chamadosService.updateGoogleEmailConta(input, user); }
+  @Mutation(() => Boolean)
+  deleteGoogleEmailConta(@Args('id', { type: () => Int }) id: number, @CurrentUser() user: JwtPayload): Promise<boolean> { return this.chamadosService.deleteGoogleEmailConta(id, user); }
+  @Mutation(() => ChamadoSolucaoEmailType)
+  createChamadoSolucaoEmail(@Args('input') input: CreateChamadoSolucaoEmailInput, @CurrentUser() user: JwtPayload): Promise<ChamadoSolucaoEmailType> { return this.chamadosService.createChamadoSolucaoEmail(input, user); }
+  @Mutation(() => ChamadoSolucaoEmailType)
+  updateChamadoSolucaoEmail(@Args('input') input: UpdateChamadoSolucaoEmailInput, @CurrentUser() user: JwtPayload): Promise<ChamadoSolucaoEmailType> { return this.chamadosService.updateChamadoSolucaoEmail(input, user); }
+  @Mutation(() => Boolean)
+  deleteChamadoSolucaoEmail(@Args('id', { type: () => Int }) id: number, @CurrentUser() user: JwtPayload): Promise<boolean> { return this.chamadosService.deleteChamadoSolucaoEmail(id, user); }
   @Mutation(() => ChamadoResponsavelType)
   createChamadoResponsavel(
     @Args('input') input: CreateChamadoResponsavelInput,
@@ -243,7 +306,7 @@ export class ChamadosResolver {
     return this.chamadosService.createResponsavel(input, user);
   }
 
-  @Mutation(() => ChamadoResponsavelType)
+@Mutation(() => ChamadoResponsavelType)
   updateChamadoResponsavel(
     @Args('input') input: UpdateChamadoResponsavelInput,
     @CurrentUser() user: JwtPayload
@@ -258,6 +321,43 @@ export class ChamadosResolver {
   ): Promise<boolean> {
     return this.chamadosService.deleteResponsavel(id, user);
   }
+  @Mutation(() => Boolean)
+  marcarChamadoNotificacaoComoLida(
+    @Args('id') id: string,
+    @CurrentUser() user: JwtPayload
+  ): Promise<boolean> {
+    return this.chamadosService.marcarNotificacaoComoLida(id, user);
+  }
+
+  @Mutation(() => Int)
+  marcarTodasChamadoNotificacoesComoLidas(@CurrentUser() user: JwtPayload): Promise<number> {
+    return this.chamadosService.marcarTodasNotificacoesComoLidas(user);
+  }
+
+  @Mutation(() => ChamadoSlaRegraType)
+  createChamadoSlaRegra(
+    @Args('input') input: CreateChamadoSlaRegraInput,
+    @CurrentUser() user: JwtPayload
+  ): Promise<ChamadoSlaRegraType> {
+    return this.chamadosService.createRegraSla(input, user);
+  }
+
+  @Mutation(() => ChamadoSlaRegraType)
+  updateChamadoSlaRegra(
+    @Args('input') input: UpdateChamadoSlaRegraInput,
+    @CurrentUser() user: JwtPayload
+  ): Promise<ChamadoSlaRegraType> {
+    return this.chamadosService.updateRegraSla(input, user);
+  }
+
+  @Mutation(() => Boolean)
+  deleteChamadoSlaRegra(
+    @Args('id', { type: () => Int }) id: number,
+    @CurrentUser() user: JwtPayload
+  ): Promise<boolean> {
+    return this.chamadosService.deleteRegraSla(id, user);
+  }
+
   @Mutation(() => ChamadoTipoType)
   createChamadoTipo(
     @Args('input') input: CreateChamadoTipoInput,

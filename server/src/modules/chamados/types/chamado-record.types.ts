@@ -33,6 +33,19 @@ export type ChamadoConfiguracaoRecord = {
   atualizadoEm: Date;
 };
 
+export type ChamadoSlaRegraRecord = {
+  id: number;
+  empresaId: number;
+  prioridadeId: number;
+  primeiraRespostaPrazoMinutos: number;
+  resolucaoPrazoMinutos: number;
+  modoContagem: string;
+  ativo: boolean;
+  criadoEm: Date;
+  atualizadoEm: Date;
+  prioridade?: ChamadoConfiguracaoRecord | null;
+};
+
 export type ChamadoResponsavelFuncionalidadeRecord = {
   id: number;
   responsavelSolucaoId: number;
@@ -163,11 +176,17 @@ export type ChamadoRecord = {
   descricao: string;
   tipoId: number;
   prioridadeId: number;
+  slaRegraId?: number | null;
   status: string;
   criadoEm: Date;
   atualizadoEm: Date;
   primeiraRespostaEm?: Date | null;
+  primeiraRespostaLimiteEm?: Date | null;
   resolvidoEm?: Date | null;
+  resolucaoLimiteEm?: Date | null;
+  slaPausadoEm?: Date | null;
+  slaTempoPausadoMinutos?: number;
+  slaStatus?: string;
   encerradoEm?: Date | null;
   versao: number;
   solicitante?: UsuarioResumoRecord | null;
@@ -177,6 +196,7 @@ export type ChamadoRecord = {
   categoria?: ChamadoCategoriaRecord | null;
   tipoConfiguracao?: ChamadoConfiguracaoRecord | null;
   prioridadeConfiguracao?: ChamadoConfiguracaoRecord | null;
+  slaRegra?: ChamadoSlaRegraRecord | null;
   solucao?: { id: number; nome: string; slug: string } | null;
   funcionalidade?: { id: number; titulo: string; label?: string | null; slug: string } | null;
   mensagens?: ChamadoMensagemRecord[];
@@ -184,4 +204,3 @@ export type ChamadoRecord = {
   anexos?: ChamadoAnexoRecord[];
   acompanhantes?: ChamadoAcompanhanteRecord[];
 };
-

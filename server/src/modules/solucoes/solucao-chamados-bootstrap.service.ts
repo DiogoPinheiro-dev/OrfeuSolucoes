@@ -155,6 +155,7 @@ export class SolucaoChamadosBootstrapService {
           { chave: 'responder_chamado', nome: 'Responder chamado', configuracao: 'responder_chamado', ordem: 90, ativo: true },
           { chave: 'adicionar_nota_interna', nome: 'Adicionar nota interna', configuracao: 'adicionar_nota_interna', ordem: 100, ativo: true },
           { chave: 'alterar_prioridade', nome: 'Alterar prioridade', configuracao: 'alterar_prioridade', ordem: 110, ativo: true },
+          { chave: 'alterar_categoria', nome: 'Alterar categoria', configuracao: 'alterar_categoria', ordem: 115, ativo: true },
           { chave: 'alterar_status', nome: 'Alterar status', configuracao: 'alterar_status', ordem: 120, ativo: true },
           { chave: 'resolver_chamado', nome: 'Resolver chamado', configuracao: 'resolver_chamado', ordem: 130, ativo: true },
           { chave: 'encerrar_chamado', nome: 'Encerrar chamado', configuracao: 'encerrar_chamado', ordem: 140, ativo: true },
@@ -203,7 +204,40 @@ export class SolucaoChamadosBootstrapService {
         descricao: 'Configure as prioridades usadas na triagem e atendimento dos chamados.',
         ordem: 80,
         registryKey: 'controle-de-chamados.prioridades'
+      },
+      {
+        slug: 'sla',
+        titulo: 'Regras de SLA',
+        label: 'SLA',
+        descricao: 'Configure prazos de primeira resposta e resolucao por prioridade.',
+        ordem: 90,
+        registryKey: 'controle-de-chamados.sla'
+      },
+      {
+        slug: 'dashboard',
+        titulo: 'Dashboard de chamados',
+        label: 'Dashboard',
+        descricao: 'Acompanhe volume, SLA e tempos medios da operacao de atendimento.',
+        ordem: 45,
+        registryKey: 'controle-de-chamados.dashboard'
+      },
+      {
+        slug: 'relatorios',
+        titulo: 'Relatorios de chamados',
+        label: 'Relatorios',
+        descricao: 'Consulte chamados por periodo e filtros operacionais, com exportacao CSV ou Excel.',
+        ordem: 110,
+        registryKey: 'controle-de-chamados.relatorios'
+      },
+      {
+        slug: 'emails-solucoes',
+        titulo: 'E-mails por setor',
+        label: 'E-mails',
+        descricao: 'Conecte contas Google e configure o remetente usado por cada solucao.',
+        ordem: 100,
+        registryKey: 'controle-de-chamados.emails-solucoes'
       }
+
     ];
 
     for (const feature of features) {

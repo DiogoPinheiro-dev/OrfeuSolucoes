@@ -43,6 +43,10 @@ export function buildChamadoWhere(
     where.categoriaId = filtro.categoriaId;
   }
 
+  if (filtro?.somenteAtrasados) {
+    where.slaStatus = 'ATRASADO';
+  }
+
   if (filtro?.criadoDe || filtro?.criadoAte) {
     where.criadoEm = {
       ...(filtro.criadoDe ? { gte: new Date(filtro.criadoDe) } : {}),

@@ -6,6 +6,7 @@ import { getUserGroupLabel } from "../auth/hubConfig";
 import { useHubNavigation } from "../hooks/useHubNavigation";
 import { useAuth } from "../hooks/useAuth";
 import CustomDropdown from "./CustomDropdown";
+import ChamadoNotifications from "./ChamadoNotifications";
 
 import logo from "../assets/logo.ico";
 
@@ -225,6 +226,10 @@ export default function Header() {
                     <Link to="/" className="header-brand text-decoration-none" aria-label="Orfeu Soluções">
                         <img src={logo} alt="Orfeu Soluções" className="brand-logo" />
                     </Link>
+
+                    {isHubView && isAuthenticated && <ChamadoNotifications />}
+
+
 
                     {isHubView && (
                         <button

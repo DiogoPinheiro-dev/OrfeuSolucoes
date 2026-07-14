@@ -14,16 +14,23 @@ import { ChamadoAcompanhanteService } from '../src/modules/chamados/chamado-acom
 import { ChamadoAnexoService } from '../src/modules/chamados/chamado-anexo.service';
 import { ChamadoAtendimentoService } from '../src/modules/chamados/chamado-atendimento.service';
 import { ChamadoAuthorizationService } from '../src/modules/chamados/chamado-authorization.service';
+import { ChamadoCategoriaService } from '../src/modules/chamados/chamado-categoria.service';
 import { ChamadoCategoriaConfigService } from '../src/modules/chamados/chamado-categoria-config.service';
 import { ChamadoConfiguracaoService } from '../src/modules/chamados/chamado-configuracao.service';
+import { ChamadoDashboardService } from '../src/modules/chamados/chamado-dashboard.service';
 import { ChamadoHistoryService } from '../src/modules/chamados/chamado-history.service';
+import { ChamadoGoogleEmailService } from '../src/modules/chamados/chamado-google-email.service';
+import { ChamadoRelatorioService } from '../src/modules/chamados/chamado-relatorio.service';
 import { ChamadoMensagemService } from '../src/modules/chamados/chamado-mensagem.service';
+import { ChamadoNotificacaoService } from '../src/modules/chamados/chamado-notificacao.service';
 import { ChamadoPrioridadeConfigService } from '../src/modules/chamados/chamado-prioridade-config.service';
 import { ChamadoPrioridadeService } from '../src/modules/chamados/chamado-prioridade.service';
 import { ChamadoResponsavelElegibilidadeService } from '../src/modules/chamados/chamado-responsavel-elegibilidade.service';
 import { ChamadoResponsavelOptionsService } from '../src/modules/chamados/chamado-responsavel-options.service';
 import { ChamadoResponsavelVinculoService } from '../src/modules/chamados/chamado-responsavel-vinculo.service';
 import { ChamadoResponsavelService } from '../src/modules/chamados/chamado-responsavel.service';
+import { ChamadoSlaConfigService } from '../src/modules/chamados/chamado-sla-config.service';
+import { ChamadoSlaService } from '../src/modules/chamados/chamado-sla.service';
 import { ChamadoStatusService } from '../src/modules/chamados/chamado-status.service';
 import { ChamadoTipoConfigService } from '../src/modules/chamados/chamado-tipo-config.service';
 import { ChamadosService } from '../src/modules/chamados/chamados.service';
@@ -76,6 +83,8 @@ type ModelName =
   | 'chamadoCategoria'
   | 'chamadoTipo'
   | 'chamadoPrioridade'
+  | 'chamadoNotificacao'
+  | 'chamadoSlaRegra'
   | 'chamadoSequencia'
   | 'chamadoAcompanhante'
   | 'chamadoResponsavel'
@@ -103,6 +112,8 @@ const MODELS: ModelName[] = [
   'chamadoCategoria',
   'chamadoTipo',
   'chamadoPrioridade',
+  'chamadoNotificacao',
+  'chamadoSlaRegra',
   'chamadoSequencia',
   'chamadoAcompanhante',
   'chamadoResponsavel',
@@ -127,6 +138,8 @@ const INTEGER_ID_MODELS = new Set<ModelName>([
   'chamadoCategoria',
   'chamadoTipo',
   'chamadoPrioridade',
+  'chamadoNotificacao',
+  'chamadoSlaRegra',
   'chamadoSequencia',
   'chamadoAcompanhante'
 ]);
@@ -142,6 +155,7 @@ const COMPOSITE_KEYS: Record<string, string[]> = {
   empresaId_usuarioId: ['empresaId', 'usuarioId'],
   empresaId_numero: ['empresaId', 'numero'],
   empresaId_chave: ['empresaId', 'chave'],
+  empresaId_prioridadeId: ['empresaId', 'prioridadeId'],
   responsavelId_solucaoId: ['responsavelId', 'solucaoId'],
   responsavelSolucaoId_funcionalidadeId: ['responsavelSolucaoId', 'funcionalidadeId']
 };
@@ -301,6 +315,8 @@ class InMemoryPrismaService {
   public chamadoCategoria = new InMemoryDelegate(this, 'chamadoCategoria');
   public chamadoTipo = new InMemoryDelegate(this, 'chamadoTipo');
   public chamadoPrioridade = new InMemoryDelegate(this, 'chamadoPrioridade');
+  public chamadoNotificacao = new InMemoryDelegate(this, 'chamadoNotificacao');
+  public chamadoSlaRegra = new InMemoryDelegate(this, 'chamadoSlaRegra');
   public chamadoSequencia = new InMemoryDelegate(this, 'chamadoSequencia');
   public chamadoAcompanhante = new InMemoryDelegate(this, 'chamadoAcompanhante');
   public chamadoResponsavel = new InMemoryDelegate(this, 'chamadoResponsavel');
@@ -665,6 +681,12 @@ class InMemoryPrismaService {
         return this.data.chamadoTipo.find((tipo) => tipo.id === row.tipoId) ?? null;
       case 'chamado.prioridadeConfiguracao':
         return this.data.chamadoPrioridade.find((prioridade) => prioridade.id === row.prioridadeId) ?? null;
+      case 'chamado.slaRegra':
+        return row.slaRegraId ? this.data.chamadoSlaRegra.find((regra) => regra.id === row.slaRegraId) ?? null : null;
+      case 'chamadoNotificacao.chamado':
+        return this.data.chamado.find((chamado) => chamado.id === row.chamadoId) ?? null;
+      case 'chamadoSlaRegra.prioridade':
+        return this.data.chamadoPrioridade.find((prioridade) => prioridade.id === row.prioridadeId) ?? null;
       case 'chamado.mensagens':
         return this.data.chamadoMensagem.filter((mensagem) => mensagem.chamadoId === row.id);
       case 'chamado.historico':
@@ -741,6 +763,9 @@ class InMemoryPrismaService {
       'chamado.categoria': 'chamadoCategoria',
       'chamado.tipoConfiguracao': 'chamadoTipo',
       'chamado.prioridadeConfiguracao': 'chamadoPrioridade',
+      'chamado.slaRegra': 'chamadoSlaRegra',
+      'chamadoSlaRegra.prioridade': 'chamadoPrioridade',
+      'chamadoNotificacao.chamado': 'chamado',
       'chamado.mensagens': 'chamadoMensagem',
       'chamado.historico': 'chamadoHistorico',
       'chamado.anexos': 'chamadoAnexo',
@@ -843,6 +868,12 @@ class InMemoryPrismaService {
         row.criadoEm = row.criadoEm ?? now;
         row.atualizadoEm = row.atualizadoEm ?? now;
         row.primeiraRespostaEm = row.primeiraRespostaEm ?? null;
+        row.slaRegraId = row.slaRegraId ?? null;
+        row.primeiraRespostaLimiteEm = row.primeiraRespostaLimiteEm ?? null;
+        row.resolucaoLimiteEm = row.resolucaoLimiteEm ?? null;
+        row.slaPausadoEm = row.slaPausadoEm ?? null;
+        row.slaTempoPausadoMinutos = row.slaTempoPausadoMinutos ?? 0;
+        row.slaStatus = row.slaStatus ?? 'SEM_SLA';
         row.resolvidoEm = row.resolvidoEm ?? null;
         row.encerradoEm = row.encerradoEm ?? null;
         row.responsavelId = row.responsavelId ?? null;
@@ -893,6 +924,16 @@ class InMemoryPrismaService {
         row.descricao = row.descricao ?? null;
         row.cor = row.cor ?? null;
         row.ordem = row.ordem ?? 0;
+        row.ativo = row.ativo ?? true;
+        row.criadoEm = row.criadoEm ?? now;
+        row.atualizadoEm = row.atualizadoEm ?? now;
+        break;
+      case 'chamadoNotificacao':
+        row.lidaEm = row.lidaEm ?? null;
+        row.criadoEm = row.criadoEm ?? now;
+        break;
+      case 'chamadoSlaRegra':
+        row.modoContagem = row.modoContagem ?? 'CORRIDO';
         row.ativo = row.ativo ?? true;
         row.criadoEm = row.criadoEm ?? now;
         row.atualizadoEm = row.atualizadoEm ?? now;
@@ -949,6 +990,7 @@ type TestWorld = {
   authService: AuthService;
   servicosService: ServicosService;
   chamadosService: ChamadosService;
+  chamadoSlaService: ChamadoSlaService;
 };
 
 const asPrisma = (prisma: InMemoryPrismaService): PrismaService => prisma as unknown as PrismaService;
@@ -982,23 +1024,30 @@ function createWorld(): TestWorld {
   const anexoStorage = new TestChamadoAnexoStorage();
   const chamadoQueryService = new ChamadoQueryService(prismaService);
   const chamadoAuthorizationService = new ChamadoAuthorizationService(prismaService, solucoesService);
+  const chamadoRelatorioService = new ChamadoRelatorioService(prismaService, chamadoAuthorizationService);
+  const chamadoDashboardService = new ChamadoDashboardService(prismaService, chamadoAuthorizationService);
   const chamadoCategoriaConfigService = new ChamadoCategoriaConfigService(prismaService, chamadoAuthorizationService);
   const chamadoTipoConfigService = new ChamadoTipoConfigService(prismaService, chamadoAuthorizationService);
   const chamadoPrioridadeConfigService = new ChamadoPrioridadeConfigService(prismaService, chamadoAuthorizationService);
   const chamadoConfiguracaoService = new ChamadoConfiguracaoService(solucoesService, chamadoCategoriaConfigService, chamadoTipoConfigService, chamadoPrioridadeConfigService);
+  const chamadoSlaConfigService = new ChamadoSlaConfigService(prismaService, chamadoAuthorizationService);
+  const chamadoGoogleEmailService = { sendChamadoUpdate: async () => undefined } as unknown as ChamadoGoogleEmailService;
+  const chamadoNotificacaoService = new ChamadoNotificacaoService(prismaService, chamadoAuthorizationService, chamadoGoogleEmailService);
+  const chamadoSlaService = new ChamadoSlaService(prismaService, chamadoSlaConfigService, chamadoNotificacaoService);
   const chamadoResponsavelElegibilidadeService = new ChamadoResponsavelElegibilidadeService(prismaService, chamadoAuthorizationService);
   const chamadoResponsavelOptionsService = new ChamadoResponsavelOptionsService(prismaService, chamadoAuthorizationService, chamadoResponsavelElegibilidadeService);
   const chamadoResponsavelVinculoService = new ChamadoResponsavelVinculoService(prismaService);
   const chamadoResponsavelService = new ChamadoResponsavelService(prismaService, chamadoAuthorizationService, chamadoResponsavelElegibilidadeService, chamadoResponsavelOptionsService, chamadoResponsavelVinculoService);
   const chamadoAcompanhanteService = new ChamadoAcompanhanteService(prismaService, chamadoAuthorizationService, chamadoQueryService, chamadoResponsavelService);
   const chamadoAnexoService = new ChamadoAnexoService(prismaService, anexoStorage as any, chamadoQueryService, chamadoAuthorizationService);
-  const chamadoHistoryService = new ChamadoHistoryService(prismaService);
-  const chamadoMensagemService = new ChamadoMensagemService(prismaService, chamadoQueryService, chamadoAuthorizationService);
-  const chamadoPrioridadeService = new ChamadoPrioridadeService(chamadoAuthorizationService, chamadoQueryService, chamadoConfiguracaoService, chamadoHistoryService);
-  const chamadoStatusService = new ChamadoStatusService(chamadoQueryService, chamadoAuthorizationService, chamadoHistoryService);
+  const chamadoHistoryService = new ChamadoHistoryService(prismaService, chamadoNotificacaoService);
+  const chamadoCategoriaService = new ChamadoCategoriaService(chamadoAuthorizationService, chamadoQueryService, chamadoConfiguracaoService, chamadoHistoryService);
+  const chamadoMensagemService = new ChamadoMensagemService(prismaService, chamadoQueryService, chamadoAuthorizationService, chamadoSlaService, chamadoNotificacaoService);
+  const chamadoPrioridadeService = new ChamadoPrioridadeService(chamadoAuthorizationService, chamadoQueryService, chamadoConfiguracaoService, chamadoHistoryService, chamadoSlaService);
+  const chamadoStatusService = new ChamadoStatusService(chamadoQueryService, chamadoAuthorizationService, chamadoHistoryService, chamadoSlaService);
   const chamadoAtendimentoService = new ChamadoAtendimentoService(chamadoQueryService, chamadoAuthorizationService, chamadoHistoryService, chamadoResponsavelService, chamadoAcompanhanteService);
-  const chamadoAberturaService = new ChamadoAberturaService(prismaService, chamadoAuthorizationService, chamadoConfiguracaoService, chamadoResponsavelService, chamadoAcompanhanteService);
-  const chamadosService = new ChamadosService(chamadoAberturaService, chamadoAnexoService, chamadoAtendimentoService, chamadoQueryService, chamadoAuthorizationService, chamadoConfiguracaoService, chamadoMensagemService, chamadoPrioridadeService, chamadoResponsavelService, chamadoStatusService, chamadoAcompanhanteService);
+  const chamadoAberturaService = new ChamadoAberturaService(prismaService, chamadoAuthorizationService, chamadoConfiguracaoService, chamadoResponsavelService, chamadoAcompanhanteService, chamadoSlaService, chamadoNotificacaoService);
+  const chamadosService = new ChamadosService(chamadoAberturaService, chamadoDashboardService, chamadoRelatorioService, chamadoAnexoService, chamadoAtendimentoService, chamadoQueryService, chamadoAuthorizationService, chamadoConfiguracaoService, chamadoCategoriaService, chamadoMensagemService, chamadoPrioridadeService, chamadoResponsavelService, chamadoSlaConfigService, chamadoNotificacaoService, chamadoGoogleEmailService, chamadoStatusService, chamadoAcompanhanteService);
   const jwtService = new JwtService({ secret: 'integration-test-secret' });
   const configService = {
     get: (key: string) => ({ NODE_ENV: 'test', JWT_EXPIRES_IN: 3600 } as Record<string, unknown>)[key]
@@ -1016,7 +1065,8 @@ function createWorld(): TestWorld {
     usersService,
     authService,
     servicosService,
-    chamadosService
+    chamadosService,
+    chamadoSlaService
   };
 }
 
@@ -1183,10 +1233,14 @@ describe('Fluxos integrados do backend', () => {
       'abrir-chamado',
       'categorias',
       'chamados-arquivados',
+      'dashboard',
+      'emails-solucoes',
       'meus-chamados',
       'painel-atendimento',
       'prioridades',
+      'relatorios',
       'responsaveis',
+      'sla',
       'tipos'
     ]);
 
@@ -1258,7 +1312,7 @@ describe('Fluxos integrados do backend', () => {
     expect(usuario.grupo?.id).toBe(grupo.id);
     expect(usuario.empresas.map((item) => item.id)).toEqual([empresa.id]);
     expect(usuarioLogado.availableSolutions).toContain('controle-de-chamados');
-    expect(controleNoHub.funcionalidades).toHaveLength(8);
+    expect(controleNoHub.funcionalidades).toHaveLength(12);
     expect(atribuirChamado.permitido).toBe(true);
 
     const usuarios = await world.usersService.findAll(admin);
@@ -1287,7 +1341,7 @@ describe('Fluxos integrados do backend', () => {
   });
 
   it('executa o ciclo do controle de chamados com permissao, historico, mensagens e mudancas de status', async () => {
-    const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
+    const { world, admin } = await bootstrapBaseWorld();
     const controleChamados = expectDefined((await world.solucoesService.findAll()).find((solucao) => solucao.slug === 'controle-de-chamados'));
     const features = controleChamados.funcionalidades;
     const abrir = expectDefined(features.find((feature) => feature.slug === 'abrir-chamado'));
@@ -1343,6 +1397,21 @@ describe('Fluxos integrados do backend', () => {
       funcionalidadeIds: features.map((feature) => feature.id)
     }, admin);
     const chamadoConfigs = await seedChamadoConfiguracoes(world, empresa.id);
+    const adminEmpresa = { ...admin, empresaId: empresa.id };
+    const regraAlta = await world.chamadosService.createRegraSla({
+      prioridadeId: chamadoConfigs.prioridades.ALTA.id,
+      primeiraRespostaPrazoMinutos: 120,
+      resolucaoPrazoMinutos: 480,
+      modoContagem: 'CORRIDO',
+      ativo: true
+    }, adminEmpresa);
+    const regraUrgente = await world.chamadosService.createRegraSla({
+      prioridadeId: chamadoConfigs.prioridades.URGENTE.id,
+      primeiraRespostaPrazoMinutos: 30,
+      resolucaoPrazoMinutos: 120,
+      modoContagem: 'CORRIDO',
+      ativo: true
+    }, adminEmpresa);
 
     const solicitante = await world.usersService.create({
       nome: 'Solicitante Integracao',
@@ -1390,6 +1459,8 @@ describe('Fluxos integrados do backend', () => {
     expect(chamado.numero).toBe(1);
     expect(chamado.status).toBe('ABERTO');
     expect(chamado.solicitanteNome).toBe(solicitante.nome);
+    expect(chamado.slaRegraId).toBe(regraAlta.id);
+    expect(chamado.slaStatus).toBe('NO_PRAZO');
 
     const meusChamados = await world.chamadosService.meusChamados(solicitantePayload, { page: 1, pageSize: 10 });
     const fila = await world.chamadosService.filaChamados(atendentePayload, { page: 1, pageSize: 10 });
@@ -1417,6 +1488,23 @@ describe('Fluxos integrados do backend', () => {
     }, atendentePayload);
     expect(transferido.responsavelNome).toBe(atendente.nome);
     expect(transferido.historico.find((item) => item.evento === 'TRANSFERENCIA')?.valorNovo).toBe(atendente.nome);
+    const limiteAntesDaPausa = expectDefined(transferido.resolucaoLimiteEm);
+    const pausado = await world.chamadosService.alterarStatusChamado({
+      chamadoId: chamado.id,
+      status: 'PENDENTE'
+    }, atendentePayload);
+    expect(pausado.slaStatus).toBe('PAUSADO');
+    expect(pausado.slaPausadoEm).toBeInstanceOf(Date);
+
+    const retomado = await world.chamadosService.alterarStatusChamado({
+      chamadoId: chamado.id,
+      status: 'EM_ATENDIMENTO'
+    }, atendentePayload);
+    expect(retomado.slaStatus).not.toBe('PAUSADO');
+    expect(retomado.slaPausadoEm).toBeNull();
+    expect(retomado.slaTempoPausadoMinutos).toBeGreaterThanOrEqual(0);
+    expect(expectDefined(retomado.resolucaoLimiteEm).getTime()).toBeGreaterThanOrEqual(limiteAntesDaPausa.getTime());
+
 
     const respondido = await world.chamadosService.responderChamado({
       chamadoId: chamado.id,
@@ -1424,12 +1512,17 @@ describe('Fluxos integrados do backend', () => {
     }, atendentePayload);
     expect(respondido.mensagens).toHaveLength(1);
     expect(respondido.primeiraRespostaEm).toBeInstanceOf(Date);
+    expect(respondido.slaStatus).toMatch(/NO_PRAZO|PERTO_DO_VENCIMENTO/);
 
     const urgente = await world.chamadosService.alterarPrioridadeChamado({ chamadoId: chamado.id, prioridadeId: chamadoConfigs.prioridades.URGENTE.id }, atendentePayload);
     expect(urgente.prioridadeId).toBe(chamadoConfigs.prioridades.URGENTE.id);
+    expect(urgente.slaRegraId).toBe(regraUrgente.id);
+    expect(urgente.slaStatus).toMatch(/NO_PRAZO|PERTO_DO_VENCIMENTO/);
 
     const resolvido = await world.chamadosService.resolverChamado(chamado.id, atendentePayload, 'VPN restabelecida.');
     expect(resolvido.status).toBe('RESOLVIDO');
+    expect(resolvido.resolvidoEm).toBeInstanceOf(Date);
+    expect(resolvido.slaStatus).toMatch(/NO_PRAZO|ATRASADO/);
 
     const reaberto = await world.chamadosService.reabrirChamado(chamado.id, solicitantePayload, 'Problema voltou a ocorrer.');
     expect(reaberto.status).toBe('EM_ATENDIMENTO');
@@ -1449,7 +1542,17 @@ describe('Fluxos integrados do backend', () => {
       'ARQUIVAMENTO'
     ]));
 
-    const filaAposEncerramento = await world.chamadosService.filaChamados(atendentePayload, { page: 1, pageSize: 10 });
+        const notificacoesSolicitante = await world.chamadosService.notificacoesChamado(solicitantePayload);
+    expect(notificacoesSolicitante.map((item) => item.tipo)).toEqual(expect.arrayContaining([
+      'NOVA_RESPOSTA',
+      'CHAMADO_RESOLVIDO'
+    ]));
+    expect(await world.chamadosService.notificacoesNaoLidas(solicitantePayload)).toBeGreaterThan(0);
+    const notificacaoLida = expectDefined(notificacoesSolicitante[0]);
+    await expect(world.chamadosService.marcarNotificacaoComoLida(notificacaoLida.id, solicitantePayload)).resolves.toBe(true);
+    await expect(world.chamadosService.marcarTodasNotificacoesComoLidas(solicitantePayload)).resolves.toBeGreaterThanOrEqual(0);
+    expect(await world.chamadosService.notificacoesNaoLidas(solicitantePayload)).toBe(0);
+const filaAposEncerramento = await world.chamadosService.filaChamados(atendentePayload, { page: 1, pageSize: 10 });
     expect(filaAposEncerramento.items.map((item) => item.id)).not.toContain(chamado.id);
 
     const chamadoArquivadoDireto = await world.chamadosService.criarChamado({
@@ -1520,7 +1623,7 @@ describe('Fluxos integrados do backend', () => {
 
 
   it('valida cadastro de responsaveis por usuario e grupo com lideranca temporaria no chamado', async () => {
-    const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
+    const { world, admin } = await bootstrapBaseWorld();
     const controleChamados = expectDefined((await world.solucoesService.findAll()).find((solucao) => solucao.slug === 'controle-de-chamados'));
     const features = controleChamados.funcionalidades;
     const abrir = expectDefined(features.find((feature) => feature.slug === 'abrir-chamado'));
@@ -1653,7 +1756,7 @@ describe('Fluxos integrados do backend', () => {
     expect(reassumido.liderAtendimentoNome).toBe('Lider Backup');
   });
   it('permite que acompanhantes visualizem, respondam e anexem sem assumir responsabilidade', async () => {
-    const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
+    const { world, admin } = await bootstrapBaseWorld();
     const controleChamados = expectDefined((await world.solucoesService.findAll()).find((solucao) => solucao.slug === 'controle-de-chamados'));
     const features = controleChamados.funcionalidades;
     const abrir = expectDefined(features.find((feature) => feature.slug === 'abrir-chamado'));
@@ -1768,7 +1871,7 @@ describe('Fluxos integrados do backend', () => {
   });
 
   it('salva anexos no chamado e na resposta mantendo metadados, historico e download autorizado', async () => {
-    const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
+    const { world, admin } = await bootstrapBaseWorld();
     const controleChamados = expectDefined((await world.solucoesService.findAll()).find((solucao) => solucao.slug === 'controle-de-chamados'));
     const features = controleChamados.funcionalidades;
     const abrir = expectDefined(features.find((feature) => feature.slug === 'abrir-chamado'));
@@ -1881,7 +1984,7 @@ describe('Fluxos integrados do backend', () => {
   });
 
   it('gerencia tipos e prioridades configuraveis e usa apenas registros ativos nos chamados', async () => {
-    const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
+    const { world, admin } = await bootstrapBaseWorld();
     const controleChamados = expectDefined((await world.solucoesService.findAll()).find((solucao) => solucao.slug === 'controle-de-chamados'));
     const features = controleChamados.funcionalidades;
     const abrir = expectDefined(features.find((feature) => feature.slug === 'abrir-chamado'));
@@ -2000,7 +2103,7 @@ describe('Fluxos integrados do backend', () => {
   });
 
   it('filtra chamados por periodo, categoria, solicitante e responsaveis', async () => {
-    const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
+    const { world, admin } = await bootstrapBaseWorld();
     const controleChamados = expectDefined((await world.solucoesService.findAll()).find((solucao) => solucao.slug === 'controle-de-chamados'));
     const features = controleChamados.funcionalidades;
     const abrir = expectDefined(features.find((feature) => feature.slug === 'abrir-chamado'));
@@ -2263,6 +2366,209 @@ describe('Fluxos integrados do backend', () => {
       .rejects.toThrow('Apenas chamados resolvidos ou arquivados podem ser reabertos.');
   });
 
+  it('configura regras de SLA por prioridade e aplica os prazos na abertura do chamado', async () => {
+    const { world, admin } = await bootstrapBaseWorld();
+    const controleChamados = expectDefined((await world.solucoesService.findAll()).find((solucao) => solucao.slug === 'controle-de-chamados'));
+    const abrir = expectDefined(controleChamados.funcionalidades.find((feature) => feature.slug === 'abrir-chamado'));
+    const sla = expectDefined(controleChamados.funcionalidades.find((feature) => feature.slug === 'sla'));
+    const empresa = await world.empresasService.create({
+      nome: 'Empresa Regras SLA Integracao',
+      solucaoIds: [controleChamados.id],
+      funcionalidadeIds: controleChamados.funcionalidades.map((feature) => feature.id)
+    }, admin);
+    const adminEmpresa = { ...admin, empresaId: empresa.id };
+    const chamadoConfigs = await seedChamadoConfiguracoes(world, empresa.id);
+
+    expect(sla.registryKey).toBe('controle-de-chamados.sla');
+
+    const regra = await world.chamadosService.createRegraSla({
+      prioridadeId: chamadoConfigs.prioridades.ALTA.id,
+      primeiraRespostaPrazoMinutos: 120,
+      resolucaoPrazoMinutos: 480,
+      modoContagem: 'CORRIDO',
+      ativo: true
+    }, adminEmpresa);
+
+    expect(regra.prioridadeNome).toBe('Alta');
+    expect(regra.modoContagem).toBe('CORRIDO');
+
+    await expect(world.chamadosService.createRegraSla({
+      prioridadeId: chamadoConfigs.prioridades.ALTA.id,
+      primeiraRespostaPrazoMinutos: 60,
+      resolucaoPrazoMinutos: 240,
+      modoContagem: 'CORRIDO',
+      ativo: true
+    }, adminEmpresa)).rejects.toThrow('Ja existe uma regra de SLA para esta prioridade na empresa ativa.');
+
+    const chamadoComSla = await world.chamadosService.criarChamado({
+      titulo: 'Incidente com SLA',
+      descricao: 'Valida o calculo dos limites na abertura.',
+      tipoId: chamadoConfigs.tipos.INCIDENTE.id,
+      prioridadeId: chamadoConfigs.prioridades.ALTA.id,
+      solucaoId: controleChamados.id,
+      funcionalidadeId: abrir.id
+    }, adminEmpresa);
+
+    expect(chamadoComSla.slaRegraId).toBe(regra.id);
+    expect(chamadoComSla.slaStatus).toBe('NO_PRAZO');
+    expect(chamadoComSla.primeiraRespostaLimiteEm).toBeInstanceOf(Date);
+    expect(chamadoComSla.resolucaoLimiteEm).toBeInstanceOf(Date);
+    expect(expectDefined(chamadoComSla.primeiraRespostaLimiteEm).getTime()).toBeGreaterThan(chamadoComSla.criadoEm.getTime());
+    expect(expectDefined(chamadoComSla.resolucaoLimiteEm).getTime()).toBeGreaterThan(expectDefined(chamadoComSla.primeiraRespostaLimiteEm).getTime());
+    await world.prisma.chamado.update({
+      where: { id: chamadoComSla.id },
+      data: { primeiraRespostaLimiteEm: new Date(Date.now() - 60_000), slaStatus: 'NO_PRAZO' }
+    });
+    await expect(world.chamadoSlaService.refreshOpenSlaStatuses()).resolves.toBe(1);
+    expect((await world.chamadosService.chamado(chamadoComSla.id, adminEmpresa)).slaStatus).toBe('ATRASADO');
+    const somenteAtrasados = await world.chamadosService.filaChamados(adminEmpresa, { somenteAtrasados: true, page: 1, pageSize: 20 });
+    expect(somenteAtrasados.items.map((item) => item.id)).toEqual([chamadoComSla.id]);
+
+    const chamadoSemSla = await world.chamadosService.criarChamado({
+      titulo: 'Solicitacao sem SLA',
+      descricao: 'Prioridade ainda nao configurada para SLA.',
+      tipoId: chamadoConfigs.tipos.SOLICITACAO.id,
+      prioridadeId: chamadoConfigs.prioridades.MEDIA.id,
+      solucaoId: controleChamados.id,
+      funcionalidadeId: abrir.id
+    }, adminEmpresa);
+
+    expect(chamadoSemSla.slaRegraId).toBeNull();
+    expect(chamadoSemSla.slaStatus).toBe('SEM_SLA');
+    expect(chamadoSemSla.primeiraRespostaLimiteEm).toBeNull();
+    expect(chamadoSemSla.resolucaoLimiteEm).toBeNull();
+
+    const atualizada = await world.chamadosService.updateRegraSla({
+      id: regra.id,
+      primeiraRespostaPrazoMinutos: 90,
+      resolucaoPrazoMinutos: 360,
+      modoContagem: 'UTEIS'
+    }, adminEmpresa);
+
+    expect(atualizada.primeiraRespostaPrazoMinutos).toBe(90);
+    expect(atualizada.resolucaoPrazoMinutos).toBe(360);
+    expect(atualizada.modoContagem).toBe('UTEIS');
+    expect((await world.chamadosService.regrasSlaChamado(adminEmpresa, true)).map((item) => item.id)).toEqual([regra.id]);
+
+    await expect(world.chamadosService.deleteRegraSla(regra.id, adminEmpresa)).resolves.toBe(true);
+    expect(await world.chamadosService.regrasSlaChamado(adminEmpresa, true)).toEqual([]);
+    expect((await world.chamadosService.regrasSlaChamado(adminEmpresa, false))[0]?.ativo).toBe(false);
+  });
+  it('bloqueia alteracao de status, atribuicao e acesso entre empresas sem permissao', async () => {
+    const { world, admin } = await bootstrapBaseWorld();
+    const controleChamados = expectDefined((await world.solucoesService.findAll()).find((solucao) => solucao.slug === 'controle-de-chamados'));
+    const features = controleChamados.funcionalidades;
+    const abrir = expectDefined(features.find((feature) => feature.slug === 'abrir-chamado'));
+    const meus = expectDefined(features.find((feature) => feature.slug === 'meus-chamados'));
+    const painel = expectDefined(features.find((feature) => feature.slug === 'painel-atendimento'));
+
+    const grupoSolicitante = await world.gruposService.create({
+      nome: 'Solicitantes Permissoes Negativas Chamados',
+      descricao: 'Abre chamados para validar isolamento e permissoes.',
+      podeVisualizar: true,
+      podeIncluir: true,
+      podeAlterar: false,
+      podeExcluir: false,
+      solucaoIds: [controleChamados.id],
+      funcionalidadeIds: [abrir.id, meus.id],
+      funcionalidadePermissoes: [abrir, meus].map(buildPermissionForFeature)
+    });
+    const grupoRestrito = await world.gruposService.create({
+      nome: 'Atendimento Restrito Chamados',
+      descricao: 'Visualiza a fila, mas nao altera status nem atribui chamados.',
+      podeVisualizar: true,
+      podeIncluir: false,
+      podeAlterar: false,
+      podeExcluir: false,
+      solucaoIds: [controleChamados.id],
+      funcionalidadeIds: [painel.id],
+      funcionalidadePermissoes: [{
+        funcionalidadeId: painel.id,
+        podeVisualizar: true,
+        podeIncluir: false,
+        podeAlterar: false,
+        podeExcluir: false,
+        acoes: painel.acoes.map((acao) => ({
+          funcionalidadeId: painel.id,
+          acaoId: acao.id,
+          chave: acao.chave,
+          permitido: !['alterar_status', 'atribuir_chamado'].includes(acao.chave)
+        }))
+      }]
+    });
+
+    const empresaOrigem = await world.empresasService.create({
+      nome: 'Empresa Origem Permissoes Chamados',
+      solucaoIds: [controleChamados.id],
+      funcionalidadeIds: features.map((feature) => feature.id)
+    }, admin);
+    const empresaExterna = await world.empresasService.create({
+      nome: 'Empresa Externa Permissoes Chamados',
+      solucaoIds: [controleChamados.id],
+      funcionalidadeIds: features.map((feature) => feature.id)
+    }, admin);
+    const chamadoConfigs = await seedChamadoConfiguracoes(world, empresaOrigem.id);
+
+    const solicitante = await world.usersService.create({
+      nome: 'Solicitante Permissoes Chamados',
+      login: 'solicitante.permissoes.chamados',
+      email: 'solicitante.permissoes.chamados@orfeu.test',
+      senha: 'Senha@12345',
+      grupoId: grupoSolicitante.id,
+      empresaIds: [empresaOrigem.id]
+    });
+    const operadorRestrito = await world.usersService.create({
+      nome: 'Operador Restrito Chamados',
+      login: 'operador.restrito.chamados',
+      email: 'operador.restrito.chamados@orfeu.test',
+      senha: 'Senha@12345',
+      grupoId: grupoRestrito.id,
+      empresaIds: [empresaOrigem.id]
+    });
+    await world.usersService.create({
+      nome: 'Usuario Empresa Externa Chamados',
+      login: 'usuario.empresa.externa.chamados',
+      email: 'usuario.empresa.externa.chamados@orfeu.test',
+      senha: 'Senha@12345',
+      grupoId: grupoRestrito.id,
+      empresaIds: [empresaExterna.id]
+    });
+
+    const solicitantePayload = toJwtPayload(
+      (await world.authService.login('solicitante.permissoes.chamados', 'Senha@12345', empresaOrigem.id)).user,
+      empresaOrigem.id
+    );
+    const operadorRestritoPayload = toJwtPayload(
+      (await world.authService.login('operador.restrito.chamados', 'Senha@12345', empresaOrigem.id)).user,
+      empresaOrigem.id
+    );
+    const usuarioExternoPayload = toJwtPayload(
+      (await world.authService.login('usuario.empresa.externa.chamados', 'Senha@12345', empresaExterna.id)).user,
+      empresaExterna.id
+    );
+
+    const chamado = await world.chamadosService.criarChamado({
+      titulo: 'Validacao de permissoes negativas',
+      descricao: 'Chamado usado para validar status, atribuicao e isolamento por empresa.',
+      tipoId: chamadoConfigs.tipos.INCIDENTE.id,
+      prioridadeId: chamadoConfigs.prioridades.ALTA.id,
+      solucaoId: controleChamados.id,
+      funcionalidadeId: abrir.id
+    }, solicitantePayload);
+
+    await expect(world.chamadosService.alterarStatusChamado({
+      chamadoId: chamado.id,
+      status: 'EM_TRIAGEM'
+    }, operadorRestritoPayload)).rejects.toThrow('Usuario sem permissao para executar esta acao.');
+
+    await expect(world.chamadosService.atribuirChamado({
+      chamadoId: chamado.id,
+      responsavelId: operadorRestrito.id
+    }, operadorRestritoPayload)).rejects.toThrow('Usuario sem permissao para executar esta acao.');
+
+    await expect(world.chamadosService.chamado(chamado.id, usuarioExternoPayload))
+      .rejects.toThrow('Chamado nao encontrado.');
+  });
   it('atualiza, desativa e bloqueia responsaveis invalidos na abertura', async () => {
     const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
     const controleChamados = expectDefined((await world.solucoesService.findAll()).find((solucao) => solucao.slug === 'controle-de-chamados'));

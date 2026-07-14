@@ -4,6 +4,7 @@ import { ChamadoAnexoType } from '../dto/chamado-anexo.type';
 import { ChamadoCategoriaType } from '../dto/chamado-categoria.type';
 import { ChamadoPrioridadeType } from '../dto/chamado-prioridade.type';
 import { ChamadoResponsavelType } from '../dto/chamado-responsavel.type';
+import { ChamadoSlaRegraType } from '../dto/chamado-sla-regra.type';
 import { ChamadoTipoType } from '../dto/chamado-tipo.type';
 import { ChamadoHistoricoType, ChamadoMensagemType, ChamadoType } from '../dto/chamado.type';
 import {
@@ -15,6 +16,7 @@ import {
   ChamadoMensagemRecord,
   ChamadoRecord,
   ChamadoResponsavelRecord,
+  ChamadoSlaRegraRecord,
   ResponsavelSolucaoPayload,
   UsuarioResumoRecord
 } from '../types/chamado-record.types';
@@ -152,11 +154,17 @@ export function toChamadoType(chamado: ChamadoRecord): ChamadoType {
     prioridadeId: chamado.prioridadeId,
     prioridadeNome: chamado.prioridadeConfiguracao?.nome ?? '-',
     prioridadeCor: chamado.prioridadeConfiguracao?.cor ?? null,
+    slaRegraId: chamado.slaRegraId ?? null,
     status: chamado.status,
     criadoEm: chamado.criadoEm,
     atualizadoEm: chamado.atualizadoEm,
     primeiraRespostaEm: chamado.primeiraRespostaEm ?? null,
+    primeiraRespostaLimiteEm: chamado.primeiraRespostaLimiteEm ?? null,
     resolvidoEm: chamado.resolvidoEm ?? null,
+    resolucaoLimiteEm: chamado.resolucaoLimiteEm ?? null,
+    slaPausadoEm: chamado.slaPausadoEm ?? null,
+    slaTempoPausadoMinutos: chamado.slaTempoPausadoMinutos ?? 0,
+    slaStatus: chamado.slaStatus ?? 'SEM_SLA',
     encerradoEm: chamado.encerradoEm ?? null,
     versao: chamado.versao,
     mensagens: (chamado.mensagens ?? []).map((mensagem) => toMensagemType(mensagem)),
@@ -262,5 +270,20 @@ export function toPrioridadeType(prioridade: ChamadoConfiguracaoRecord): Chamado
     ativo: prioridade.ativo,
     criadoEm: prioridade.criadoEm,
     atualizadoEm: prioridade.atualizadoEm
+  };
+}
+
+export function toChamadoSlaRegraType(regra: ChamadoSlaRegraRecord): ChamadoSlaRegraType {
+  return {
+    id: regra.id,
+    empresaId: regra.empresaId,
+    prioridadeId: regra.prioridadeId,
+    prioridadeNome: regra.prioridade?.nome ?? '-',
+    primeiraRespostaPrazoMinutos: regra.primeiraRespostaPrazoMinutos,
+    resolucaoPrazoMinutos: regra.resolucaoPrazoMinutos,
+    modoContagem: regra.modoContagem,
+    ativo: regra.ativo,
+    criadoEm: regra.criadoEm,
+    atualizadoEm: regra.atualizadoEm
   };
 }

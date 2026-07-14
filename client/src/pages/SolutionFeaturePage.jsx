@@ -4,6 +4,8 @@ import { FEATURE_COMPONENT_REGISTRY, canAccessSolution, getFeatureBySlug, getSol
 import CategoriaChamadoManagement from "../components/CategoriaChamadoManagement";
 import ChamadoConfiguracaoManagement from "../components/ChamadoConfiguracaoManagement";
 import ChamadoCreate from "../components/ChamadoCreate";
+import ChamadoDashboard from "../components/ChamadoDashboard";
+import ChamadoRelatorio from "../components/ChamadoRelatorio";
 import ChamadosArquivados from "../components/ChamadosArquivados";
 import CompanyManagement from "../components/CompanyManagement";
 import FeatureManagement from "../components/FeatureManagement";
@@ -14,6 +16,8 @@ import MeusChamados from "../components/MeusChamados";
 import ResponsavelChamadoManagement from "../components/ResponsavelChamadoManagement";
 import PainelAtendimento from "../components/PainelAtendimento";
 import SolutionManagement from "../components/SolutionManagement";
+import SlaChamadoManagement from "../components/SlaChamadoManagement";
+import EmailSolucaoChamadoManagement from "../components/EmailSolucaoChamadoManagement";
 import UserManagement from "../components/UserManagement";
 import { useHubNavigation } from "../hooks/useHubNavigation";
 
@@ -29,10 +33,14 @@ const FEATURE_COMPONENTS = {
     "meus-chamados": MeusChamados,
     "painel-atendimento": PainelAtendimento,
     "chamados-arquivados": ChamadosArquivados,
+    "chamado-dashboard": ChamadoDashboard,
+    "chamado-relatorio": ChamadoRelatorio,
     "categoria-chamado-management": CategoriaChamadoManagement,
     "tipo-chamado-management": (props) => <ChamadoConfiguracaoManagement {...props} kind="tipos" />,
     "prioridade-chamado-management": (props) => <ChamadoConfiguracaoManagement {...props} kind="prioridades" />,
-    "responsavel-chamado-management": ResponsavelChamadoManagement
+    "responsavel-chamado-management": ResponsavelChamadoManagement,
+    "sla-chamado-management": SlaChamadoManagement,
+    "email-solucao-chamado-management": EmailSolucaoChamadoManagement
 };
 
 export default function SolutionFeaturePage() {

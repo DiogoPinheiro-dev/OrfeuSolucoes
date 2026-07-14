@@ -4,6 +4,7 @@ import {
   Controller,
   Get,
   Param,
+  Query,
   Post,
   Req,
   Res,
@@ -34,6 +35,23 @@ const ALLOWED_ANEXO_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.pdf', '.doc
 export class ChamadosController {
   constructor(private readonly chamadosService: ChamadosService) {}
 
+  @Get('relatorios/exportar')
+  async exportarRelatorio(
+    @Query() query: Record<string, string | undefined>,
+    @Req() request: Request & { user: JwtPayload },
+    @Res() response: Response
+  ): Promise<void> {
+    const formato = query.formato === 'xlsx' ? 'xlsx' : 'csv';
+    const numberOrUndefined = (value?: string) => value ? Number(value) : undefined;
+    const arquivo = await this.chamadosService.exportarRelatorioChamados({
+      criadoDe: query.criadoDe, criadoAte: query.criadoAte, responsavelId: query.responsavelId,
+      categoriaId: numberOrUndefined(query.categoriaId), prioridadeId: numberOrUndefined(query.prioridadeId),
+      slaStatus: query.slaStatus, status: query.status
+    }, formato, request.user);
+    response.setHeader('Content-Type', arquivo.mimeType);
+    response.setHeader('Content-Disposition', `attachment; filename="${arquivo.nome}"`);
+    response.send(arquivo.buffer);
+  }
   @Post(':id/anexos')
   @UseInterceptors(
     FilesInterceptor('files', MAX_ANEXO_FILES, {

@@ -15,6 +15,11 @@ export const chamadoSummaryInclude = {
   funcionalidade: { select: { id: true, titulo: true, label: true, slug: true } },
   tipoConfiguracao: true,
   prioridadeConfiguracao: true,
+  slaRegra: {
+    include: {
+      prioridade: true
+    }
+  },
   acompanhantes: {
     where: { ativo: true },
     include: {

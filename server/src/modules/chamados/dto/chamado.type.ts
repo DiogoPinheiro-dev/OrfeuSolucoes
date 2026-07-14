@@ -142,6 +142,9 @@ export class ChamadoType {
   @Field(() => String, { nullable: true })
   prioridadeCor?: string | null;
 
+  @Field(() => Int, { nullable: true })
+  slaRegraId?: number | null;
+
   @Field()
   status!: string;
 
@@ -155,7 +158,22 @@ export class ChamadoType {
   primeiraRespostaEm?: Date | null;
 
   @Field(() => Date, { nullable: true })
+  primeiraRespostaLimiteEm?: Date | null;
+
+  @Field(() => Date, { nullable: true })
   resolvidoEm?: Date | null;
+
+  @Field(() => Date, { nullable: true })
+  resolucaoLimiteEm?: Date | null;
+
+  @Field(() => Date, { nullable: true })
+  slaPausadoEm?: Date | null;
+
+  @Field(() => Int)
+  slaTempoPausadoMinutos!: number;
+
+  @Field()
+  slaStatus!: string;
 
   @Field(() => Date, { nullable: true })
   encerradoEm?: Date | null;

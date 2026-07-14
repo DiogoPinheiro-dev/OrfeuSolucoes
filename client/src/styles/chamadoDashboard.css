@@ -1,0 +1,13 @@
+.chamado-dashboard { display: grid; gap: 1.25rem; }
+.chamado-dashboard-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; }
+.chamado-dashboard-heading h2 { margin: .25rem 0; }
+.chamado-dashboard-heading p { margin: 0; color: var(--text-muted, #667085); }
+.chamado-dashboard-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: .85rem; }
+.chamado-dashboard-metric { background: var(--surface, #fff); border: 1px solid var(--border-color, #e4e7ec); border-radius: 14px; padding: 1rem; display: flex; gap: .8rem; align-items: center; box-shadow: 0 4px 16px rgba(16,24,40,.04); }
+.chamado-dashboard-metric > span { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 10px; background: #eef2ff; color: #3448c5; }
+.chamado-dashboard-metric div { display: grid; gap: .2rem; }.chamado-dashboard-metric small { color: var(--text-muted, #667085); }.chamado-dashboard-metric strong { font-size: 1.45rem; }
+.chamado-dashboard-metric.tone-danger > span { background: #fee4e2; color: #b42318; }.chamado-dashboard-metric.tone-warning > span { background: #fef0c7; color: #b54708; }.chamado-dashboard-metric.tone-success > span { background: #dcfae6; color: #067647; }
+.chamado-dashboard-rankings { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.chamado-dashboard-ranking { background: var(--surface, #fff); border: 1px solid var(--border-color, #e4e7ec); border-radius: 14px; padding: 1rem; min-width: 0; }.chamado-dashboard-ranking h3 { margin: 0 0 1rem; }.chamado-dashboard-ranking article { margin: .8rem 0; }.chamado-dashboard-ranking header { display: flex; justify-content: space-between; gap: .75rem; font-size: .9rem; }.dashboard-bar-track { height: 7px; background: #eef2f6; border-radius: 999px; overflow: hidden; margin-top: .35rem; }.dashboard-bar-track i { display: block; height: 100%; border-radius: inherit; background: #5265d6; }
+@media (max-width: 900px) { .chamado-dashboard-rankings { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .chamado-dashboard-heading { align-items: flex-start; flex-direction: column; }.chamado-dashboard-heading button { width: 100%; } }

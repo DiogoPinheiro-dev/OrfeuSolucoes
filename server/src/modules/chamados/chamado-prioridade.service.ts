@@ -5,6 +5,7 @@ import { AlterarPrioridadeChamadoInput } from './dto/alterar-prioridade-chamado.
 import { ChamadoAuthorizationService } from './chamado-authorization.service';
 import { ChamadoConfiguracaoService } from './chamado-configuracao.service';
 import { ChamadoHistoryService } from './chamado-history.service';
+import { ChamadoSlaService } from './chamado-sla.service';
 import { ChamadoQueryService } from './queries/chamado-query.service';
 
 @Injectable()
@@ -13,7 +14,8 @@ export class ChamadoPrioridadeService {
     private readonly authorization: ChamadoAuthorizationService,
     private readonly chamadoQuery: ChamadoQueryService,
     private readonly chamadoConfiguracao: ChamadoConfiguracaoService,
-    private readonly chamadoHistory: ChamadoHistoryService
+    private readonly chamadoHistory: ChamadoHistoryService,
+    private readonly chamadoSla: ChamadoSlaService
   ) {}
 
   async alterarPrioridadeChamado(input: AlterarPrioridadeChamadoInput, user: JwtPayload): Promise<string> {
@@ -27,11 +29,14 @@ export class ChamadoPrioridadeService {
       return chamado.id;
     }
 
+    const slaData = await this.chamadoSla.buildPriorityChangeSnapshot(chamado, prioridade.id);
+
     await this.chamadoHistory.updateChamadoWithHistory(
       chamado,
       user,
       {
         prioridadeId: prioridade.id,
+        ...slaData,
         versao: { increment: 1 }
       },
       [{

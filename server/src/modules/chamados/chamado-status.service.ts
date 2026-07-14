@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { JwtPayload } from '../auth/strategies/jwt-payload.type';
 import { ChamadoAuthorizationService } from './chamado-authorization.service';
 import { ChamadoHistoryService } from './chamado-history.service';
+import { ChamadoSlaService } from './chamado-sla.service';
 import { FEATURES, STATUS } from './constants/chamado.constants';
 import { AlterarStatusChamadoInput } from './dto/alterar-status-chamado.input';
 import { assertStatusTransition, isClosedStatus, isTerminalStatus } from './policies/chamado-status.policy';
@@ -12,7 +13,8 @@ export class ChamadoStatusService {
   constructor(
     private readonly chamadoQuery: ChamadoQueryService,
     private readonly authorization: ChamadoAuthorizationService,
-    private readonly chamadoHistory: ChamadoHistoryService
+    private readonly chamadoHistory: ChamadoHistoryService,
+    private readonly chamadoSla: ChamadoSlaService
   ) {}
 
   async alterarStatusChamado(input: AlterarStatusChamadoInput, user: JwtPayload): Promise<string> {
@@ -28,7 +30,13 @@ export class ChamadoStatusService {
 
     assertStatusTransition(chamado.status, status);
 
-    await this.chamadoHistory.updateStatus(chamado, user, status, input.observacao ?? null);
+    const slaData = status === 'PENDENTE'
+      ? this.chamadoSla.buildPauseData(chamado)
+      : chamado.status === 'PENDENTE'
+        ? this.chamadoSla.buildResumeData(chamado)
+        : {};
+
+    await this.chamadoHistory.updateStatus(chamado, user, status, input.observacao ?? null, slaData);
 
     return chamado.id;
   }
@@ -45,7 +53,7 @@ export class ChamadoStatusService {
 
     if (chamado.status !== 'RESOLVIDO') {
       await this.chamadoHistory.updateStatus(chamado, user, 'RESOLVIDO', observacao ?? null, {
-        resolvidoEm: new Date(),
+        ...this.chamadoSla.buildResolutionData(chamado),
         liderAtendimentoId: null,
         atendimentoAssumidoEm: null
       });
@@ -116,7 +124,7 @@ export class ChamadoStatusService {
       user,
       {
         status: 'EM_ATENDIMENTO',
-        resolvidoEm: null,
+        ...this.chamadoSla.buildReopenData(chamado),
         encerradoEm: null,
         versao: { increment: 1 }
       },
