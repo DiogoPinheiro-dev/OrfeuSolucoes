@@ -80,8 +80,8 @@
 
 .workspace-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
+  grid-template-columns: 1fr;
+  gap: 10px;
 }
 
 .workspace-panel-wide {
@@ -89,7 +89,12 @@
 }
 
 .workspace-panel-link {
-  display: block;
+  display: grid;
+  grid-template-columns: minmax(150px, 0.7fr) minmax(220px, 1.3fr) auto;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 22px;
+  border-radius: 18px;
   color: inherit;
   transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
 }
@@ -97,14 +102,48 @@
 .workspace-panel-link:hover,
 .workspace-panel-link:focus-visible {
   border-color: var(--accent-green);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-soft);
+  transform: translateY(-1px);
   outline: none;
 }
 
-.workspace-panel-link strong {
+.workspace-panel-link .workspace-label {
+  width: fit-content;
+  margin: 0;
+}
+
+.workspace-panel-link h2 {
+  margin: 0;
+  font-size: clamp(1.05rem, 2vw, 1.3rem);
+}
+
+.workspace-panel-link p {
+  display: -webkit-box;
+  margin: 4px 0 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: 1.45;
+}
+
+.workspace-panel-action {
   display: inline-flex;
-  margin-top: 16px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 104px;
+  padding: 9px 14px;
+  border: 1px solid var(--button-secondary-border);
+  border-radius: var(--button-radius);
+  background: var(--button-secondary-bg);
   color: var(--detail-accent-text);
+}
+
+.workspace-panel-link:hover .workspace-panel-action,
+.workspace-panel-link:focus-visible .workspace-panel-action {
+  border-color: var(--button-primary-hover-border);
+  background: var(--button-primary-hover-bg);
+  color: var(--button-primary-hover-text);
 }
 
 .workspace-feature-crud {
@@ -119,7 +158,21 @@
 }
 
 @media (max-width: 900px) {
-  .workspace-grid {
+  .workspace-panel-link {
+    grid-template-columns: 1fr auto;
+  }
+
+  .workspace-panel-link .workspace-label {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 600px) {
+  .workspace-panel-link {
     grid-template-columns: 1fr;
+  }
+
+  .workspace-panel-action {
+    width: fit-content;
   }
 }

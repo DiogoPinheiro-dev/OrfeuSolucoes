@@ -24,9 +24,9 @@ export default function ChamadoDashboard() {
   const load = async () => { setLoading(true); setError(""); try { setData(await getChamadoDashboard()); } catch (e) { setError(e.message || "Nao foi possivel carregar o dashboard."); } finally { setLoading(false); } };
   useEffect(() => { void load(); }, []);
   if (loading) return <div className="user-management-loading">Carregando dashboard...</div>;
-  if (error) return <div className="user-management-error" role="alert">{error}<button onClick={() => void load()}>Tentar novamente</button></div>;
+  if (error) return <div className="user-management-error" role="alert">{error}<button className="button-standard" onClick={() => void load()}>Tentar novamente</button></div>;
   return <div className="chamado-dashboard">
-    <div className="chamado-dashboard-heading"><div><span className="workspace-label">Gestao operacional</span><h2>Dashboard de chamados</h2><p>Visao consolidada da empresa selecionada.</p></div><button onClick={() => void load()}>Atualizar</button></div>
+    <div className="chamado-dashboard-heading"><div><span className="workspace-label">Gestao operacional</span><h2>Dashboard de chamados</h2><p>Visao consolidada da empresa selecionada.</p></div><button className="button-standard" onClick={() => void load()}>Atualizar</button></div>
     <section className="chamado-dashboard-metrics">
       <Metric icon={Inbox} label="Total abertos" value={data.totalAbertos}/><Metric icon={Headphones} label="Em atendimento" value={data.emAtendimento}/><Metric icon={PauseCircle} label="Pendentes" value={data.pendentes} tone="warning"/><Metric icon={CheckCircle2} label="Resolvidos" value={data.resolvidos} tone="success"/><Metric icon={Archive} label="Arquivados" value={data.arquivados}/><Metric icon={AlertTriangle} label="SLA atrasado" value={data.atrasados} tone="danger"/><Metric icon={Clock3} label="Media primeira resposta" value={duration(data.tempoMedioPrimeiraRespostaMinutos)}/><Metric icon={Timer} label="Media de resolucao" value={duration(data.tempoMedioResolucaoMinutos)}/>
     </section>

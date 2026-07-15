@@ -1,3 +1,4 @@
+import { ArrowUpRight } from "lucide-react";
 import { Link, Navigate, useParams } from "react-router-dom";
 
 import Footer from "../components/Footer";
@@ -70,7 +71,10 @@ export default function SolutionWorkspace() {
                                     <span className="workspace-label">{panel.label}</span>
                                     <h2>{panel.title}</h2>
                                     <p>{panel.description}</p>
-                                    <strong>Acessar funcionalidade</strong>
+                                    <span className="workspace-panel-action">
+                                        <span>Acessar</span>
+                                        <ArrowUpRight size={18} aria-hidden="true" />
+                                    </span>
                                 </Link>
                             ))}
                         </section>

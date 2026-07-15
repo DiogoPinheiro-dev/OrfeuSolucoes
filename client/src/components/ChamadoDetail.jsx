@@ -31,6 +31,7 @@ import {
     formatDateTime,
     prioridadeClassName,
     prioridadeLabel,
+    chamadoBadgeColorStyle,
     statusClassName,
     statusLabel,
     tipoClassName,
@@ -469,10 +470,10 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
                     <span className={statusClassName(chamado.status)}>
                         {statusLabel(chamado.status)}
                     </span>
-                    <span className={prioridadeClassName(chamado.prioridadeId)} style={chamado.prioridadeCor ? { backgroundColor: chamado.prioridadeCor } : undefined}>
+                    <span className={prioridadeClassName(chamado.prioridadeId)} style={chamadoBadgeColorStyle(chamado.prioridadeCor)}>
                         {chamado.prioridadeNome || prioridadeLabel(chamado.prioridadeId)}
                     </span>
-                    <span className={tipoClassName(chamado.tipoId)} style={chamado.tipoCor ? { backgroundColor: chamado.tipoCor } : undefined}>
+                    <span className={tipoClassName(chamado.tipoId)} style={chamadoBadgeColorStyle(chamado.tipoCor)}>
                         {chamado.tipoNome || tipoLabel(chamado.tipoId)}
                     </span>
                     <ChamadoSlaIndicator chamado={chamado} showWithoutSla detailed />

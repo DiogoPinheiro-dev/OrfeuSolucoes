@@ -1,5 +1,6 @@
 import { Bell, CheckCheck } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import {
     getChamadoNotificacoes,
@@ -11,7 +12,9 @@ import { formatDateTime } from "./chamadoLabels";
 export default function ChamadoNotifications() {
     const navigate = useNavigate();
     const rootRef = useRef(null);
+    const popoverRef = useRef(null);
     const [open, setOpen] = useState(false);
+    const [popoverStyle, setPopoverStyle] = useState({});
     const [items, setItems] = useState([]);
     const [naoLidas, setNaoLidas] = useState(0);
 
@@ -34,11 +37,32 @@ export default function ChamadoNotifications() {
 
     useEffect(() => {
         const close = (event) => {
-            if (rootRef.current && !rootRef.current.contains(event.target)) setOpen(false);
+            if (rootRef.current && !rootRef.current.contains(event.target)
+                && popoverRef.current && !popoverRef.current.contains(event.target)) setOpen(false);
         };
         document.addEventListener("mousedown", close);
         return () => document.removeEventListener("mousedown", close);
     }, []);
+
+    const positionPopover = useCallback(() => {
+        const trigger = rootRef.current?.getBoundingClientRect();
+        if (!trigger) return;
+        const viewportPadding = 16;
+        const width = Math.min(360, window.innerWidth - viewportPadding * 2);
+        const left = Math.min(Math.max(viewportPadding, trigger.left), window.innerWidth - width - viewportPadding);
+        setPopoverStyle({ left, top: trigger.bottom + 10, width });
+    }, []);
+
+    useEffect(() => {
+        if (!open) return undefined;
+        positionPopover();
+        window.addEventListener("resize", positionPopover);
+        window.addEventListener("scroll", positionPopover, true);
+        return () => {
+            window.removeEventListener("resize", positionPopover);
+            window.removeEventListener("scroll", positionPopover, true);
+        };
+    }, [open, positionPopover]);
 
     const openNotification = async (item) => {
         if (!item.lidaEm) {
@@ -66,8 +90,8 @@ export default function ChamadoNotifications() {
                 <Bell size={19} aria-hidden="true" />
                 {naoLidas > 0 && <span>{naoLidas > 99 ? "99+" : naoLidas}</span>}
             </button>
-            {open && (
-                <div className="chamado-notifications-popover">
+            {open && createPortal(
+                <div className="chamado-notifications-popover" ref={popoverRef} style={popoverStyle}>
                     <header>
                         <strong>Notificacoes</strong>
                         <button type="button" onClick={markAll} disabled={!naoLidas} title="Marcar todas como lidas">
@@ -85,7 +109,8 @@ export default function ChamadoNotifications() {
                             </button>
                         )) : <p>Nenhuma notificacao.</p>}
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

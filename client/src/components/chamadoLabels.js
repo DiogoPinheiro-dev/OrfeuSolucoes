@@ -58,6 +58,31 @@ export const tipoClassName = (value) => {
 
 export const tipoLabel = (value) => value || "-";
 
+const normalizeHexColor = (value) => {
+    const hex = String(value || "").trim().replace(/^#/, "");
+    if (/^[0-9a-f]{3}$/i.test(hex)) return hex.split("").map((character) => character + character).join("");
+    return /^[0-9a-f]{6}$/i.test(hex) ? hex : null;
+};
+
+export const chamadoBadgeColorStyle = (backgroundColor) => {
+    const hex = normalizeHexColor(backgroundColor);
+    if (!hex) return undefined;
+    const [red, green, blue] = [0, 2, 4].map((index) => parseInt(hex.slice(index, index + 2), 16));
+    const toLinear = (channel) => {
+        const value = channel / 255;
+        return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+    };
+    const luminance = 0.2126 * toLinear(red) + 0.7152 * toLinear(green) + 0.0722 * toLinear(blue);
+    const contrastWithDark = (luminance + 0.05) / 0.05;
+    const contrastWithWhite = 1.05 / (luminance + 0.05);
+    const useDarkText = contrastWithDark >= contrastWithWhite;
+    return {
+        backgroundColor: `#${hex}`,
+        borderColor: useDarkText ? "rgba(15, 23, 42, 0.42)" : `#${hex}`,
+        color: useDarkText ? "#000000" : "#ffffff"
+    };
+};
+
 export const formatDateTime = (value) => {
     if (!value) {
         return "-";

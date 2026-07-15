@@ -18,6 +18,7 @@ import {
     formatDateTime,
     prioridadeClassName,
     prioridadeLabel,
+    chamadoBadgeColorStyle,
     statusClassName,
     statusLabel,
     kanbanFilterStatusOptions,
@@ -111,9 +112,9 @@ function ChamadoCard({
                 <strong>{chamado.titulo}</strong>
             </div>
             <span className="chamado-card-meta">
-                <span className={tipoClassName(chamado.tipoId)} style={chamado.tipoCor ? { backgroundColor: chamado.tipoCor } : undefined}>{chamado.tipoNome || tipoLabel(chamado.tipoId)}</span>
+                <span className={tipoClassName(chamado.tipoId)} style={chamadoBadgeColorStyle(chamado.tipoCor)}>{chamado.tipoNome || tipoLabel(chamado.tipoId)}</span>
                 <span className={statusClassName(chamado.status)}>{statusLabel(chamado.status)}</span>
-                <span className={prioridadeClassName(chamado.prioridadeId)} style={chamado.prioridadeCor ? { backgroundColor: chamado.prioridadeCor } : undefined}>{chamado.prioridadeNome || prioridadeLabel(chamado.prioridadeId)}</span>
+                <span className={prioridadeClassName(chamado.prioridadeId)} style={chamadoBadgeColorStyle(chamado.prioridadeCor)}>{chamado.prioridadeNome || prioridadeLabel(chamado.prioridadeId)}</span>
                 {isAcompanhando && <span className="chamado-badge-acompanhando">Acompanhando</span>}
             </span>
             <small>
