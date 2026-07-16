@@ -118,7 +118,7 @@ function ChamadoCard({
                 {isAcompanhando && <span className="chamado-badge-acompanhando">Acompanhando</span>}
             </span>
             <small>
-                Solicitante: {chamado.solicitanteNome || "-"} - Responsavel: {chamado.responsavelNome || "Sem responsavel"}
+                Solicitante: {chamado.solicitanteNome || "-"} - Responsavel: {chamadoResponsavelLabel(chamado)}
             </small>
             <small>Atualizado em {formatDateTime(chamado.atualizadoEm)}</small>
         </article>
