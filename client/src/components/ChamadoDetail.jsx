@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import {
     alterarCategoriaChamado,
@@ -41,7 +41,6 @@ import {
 import "../styles/chamados.css";
 const usuarioDisplayName = (usuario) => usuario?.nome || usuario?.login || usuario?.email || null;
 const responsavelOptionLabel = (responsavel) => responsavel?.nome || responsavel?.login || responsavel?.email || "Responsavel";
-const responsavelOptionKey = (responsavel) => responsavel?.tipo === "GRUPO" ? `GRUPO:${responsavel.grupoId}` : `USUARIO:${responsavel.usuarioId || responsavel.id}`;
 const chamadoResponsavelKey = (chamado) => chamado?.responsavelGrupoId ? `GRUPO:${chamado.responsavelGrupoId}` : chamado?.responsavelId ? `USUARIO:${chamado.responsavelId}` : "";
 const chamadoResponsavelLabel = (chamado) => chamado?.responsavelGrupoNome || chamado?.responsavelNome || "Sem responsavel";
 const MAX_ANEXO_FILES = 5;
@@ -159,7 +158,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
         return `${formatHistoricoCampo(item.campo)}: ${formatHistoricoValor(item, item.valorAnterior)} -> ${formatHistoricoValor(item, item.valorNovo)}`;
     };
 
-    const load = async () => {
+    const load = useCallback(async () => {
         setError("");
         setLoading(true);
 
@@ -176,11 +175,11 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
         } finally {
             setLoading(false);
         }
-    };
+    }, [chamadoId]);
 
     useEffect(() => {
         void load();
-    }, [chamadoId]);
+    }, [load]);
 
     useEffect(() => {
         if (!showAtendimentoActions) { setPrioridades([]); setCategorias([]); return; }
@@ -228,7 +227,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
             .map((acompanhante) => acompanhante.usuarioId);
 
         setSelectedAcompanhanteIds(activeAcompanhantes);
-    }, [chamado?.id, chamado?.versao]);
+    }, [chamado?.acompanhantes]);
 
     useEffect(() => {
         if (!canManageAcompanhantes || !chamado?.id) {

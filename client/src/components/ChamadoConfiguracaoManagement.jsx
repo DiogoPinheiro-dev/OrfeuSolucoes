@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
     createChamadoPrioridade,
@@ -72,7 +72,7 @@ export default function ChamadoConfiguracaoManagement({ permissions, kind }) {
     const [form, setForm] = useState(initialForm);
     const [pendingDelete, setPendingDelete] = useState(null);
 
-    const loadItems = async () => {
+    const loadItems = useCallback(async () => {
         setError("");
         setLoading(true);
 
@@ -83,11 +83,11 @@ export default function ChamadoConfiguracaoManagement({ permissions, kind }) {
         } finally {
             setLoading(false);
         }
-    };
+    }, [settings]);
 
     useEffect(() => {
         void loadItems();
-    }, [kind]);
+    }, [loadItems]);
 
     const filteredItems = useMemo(() => {
         const term = search.toLowerCase().trim();

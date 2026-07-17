@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import {
@@ -12,9 +12,10 @@ import {
 import { canUseFeatureAction } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
 import ChamadoDetail from "./ChamadoDetail";
-import ChamadoSlaIndicator, { chamadoSlaDeadline } from "./ChamadoSlaIndicator";
+import ChamadoSlaIndicator from "./ChamadoSlaIndicator";
 import {
     archivedKanbanStatusOptions,
+    chamadoSlaDeadline,
     formatDateTime,
     prioridadeClassName,
     prioridadeLabel,
@@ -44,7 +45,6 @@ const initialFilters = {
 };
 
 const chamadoResponsavelLabel = (chamado) => chamado.responsavelGrupoNome || chamado.responsavelNome || "Sem responsavel";
-const chamadoAtendimentoLabel = (chamado) => chamado.liderAtendimentoNome ? ` Ãƒâ€šÃ‚Â· Atendimento: ${chamado.liderAtendimentoNome}` : "";
 const responsavelOptionLabel = (responsavel) => responsavel.responsavelNome || responsavel.usuarioNome || responsavel.grupoNome || "Responsavel";
 
 const uniqueResponsaveisBy = (responsaveis, keySelector) => {
@@ -135,7 +135,7 @@ export default function ChamadosList({ title, description, areaSlug, loadChamado
     const [responsaveis, setResponsaveis] = useState([]);
     const [solicitantes, setSolicitantes] = useState([]);
     const [prioridades, setPrioridades] = useState([]);
-    const [tipos, setTipos] = useState([]);
+    const [, setTipos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const kanbanRef = useRef(null);
@@ -208,7 +208,7 @@ export default function ChamadosList({ title, description, areaSlug, loadChamado
         return grouped;
     }, [orderedItems, kanbanColumns]);
 
-    const load = async () => {
+    const load = useCallback(async () => {
         setError("");
         setLoading(true);
 
@@ -220,7 +220,7 @@ export default function ChamadosList({ title, description, areaSlug, loadChamado
         } finally {
             setLoading(false);
         }
-    };
+    }, [filtro, loadChamados, pageSize]);
 
     useEffect(() => {
         let active = true;
@@ -263,7 +263,7 @@ export default function ChamadosList({ title, description, areaSlug, loadChamado
         if (!itemId) {
             void load();
         }
-    }, [itemId, filtro]);
+    }, [itemId, load]);
 
     useEffect(() => {
         const updateKanbanScrollWidth = () => {

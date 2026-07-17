@@ -1,4 +1,4 @@
-import { formatDateTime } from "./chamadoLabels";
+import { chamadoSlaDeadline, formatDateTime } from "./chamadoLabels";
 
 const SLA_LABELS = {
     NO_PRAZO: "No prazo",
@@ -8,12 +8,6 @@ const SLA_LABELS = {
     SEM_SLA: "Sem SLA"
 };
 
-export const chamadoSlaDeadline = (chamado) => {
-    if (!chamado) return null;
-    return chamado.primeiraRespostaEm
-        ? chamado.resolucaoLimiteEm || null
-        : chamado.primeiraRespostaLimiteEm || chamado.resolucaoLimiteEm || null;
-};
 
 export default function ChamadoSlaIndicator({ chamado, showWithoutSla = false, detailed = false }) {
     const status = chamado?.slaStatus || "SEM_SLA";

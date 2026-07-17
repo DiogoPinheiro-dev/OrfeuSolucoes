@@ -46,10 +46,12 @@ import { GruposUsuariosService } from '../src/modules/grupos-usuarios/grupos-usu
 import { ServicoCatalogService } from '../src/modules/servicos/servico-catalog.service';
 import { ServicosService } from '../src/modules/servicos/servicos.service';
 import { FuncionalidadeAcaoService } from '../src/modules/solucoes/funcionalidade-acao.service';
+import { FuncionalidadeAuthorizationService } from '../src/modules/solucoes/funcionalidade-authorization.service';
 import { HubNavigationService } from '../src/modules/solucoes/hub-navigation.service';
 import { SolucaoAcessoService } from '../src/modules/solucoes/solucao-acesso.service';
 import { SolucaoBootstrapService } from '../src/modules/solucoes/solucao-bootstrap.service';
 import { SolucaoChamadosBootstrapService } from '../src/modules/solucoes/solucao-chamados-bootstrap.service';
+import { SolucaoProjetosBootstrapService } from '../src/modules/solucoes/solucao-projetos-bootstrap.service';
 import { SolucaoCatalogService } from '../src/modules/solucoes/solucao-catalog.service';
 import { SolucaoQueryService } from '../src/modules/solucoes/solucao-query.service';
 import { SolucoesService } from '../src/modules/solucoes/solucoes.service';
@@ -1001,7 +1003,8 @@ function createWorld(): TestWorld {
   const funcionalidadeAcaoService = new FuncionalidadeAcaoService(prismaService);
   const solucaoAcessoService = new SolucaoAcessoService(prismaService, funcionalidadeAcaoService);
   const solucaoChamadosBootstrapService = new SolucaoChamadosBootstrapService(prismaService, funcionalidadeAcaoService, solucaoAcessoService);
-  const solucaoBootstrapService = new SolucaoBootstrapService(prismaService, funcionalidadeAcaoService, solucaoAcessoService, solucaoChamadosBootstrapService);
+  const solucaoProjetosBootstrapService = new SolucaoProjetosBootstrapService(prismaService, funcionalidadeAcaoService, solucaoAcessoService);
+  const solucaoBootstrapService = new SolucaoBootstrapService(prismaService, funcionalidadeAcaoService, solucaoAcessoService, solucaoChamadosBootstrapService, solucaoProjetosBootstrapService);
   const solucaoQueryService = new SolucaoQueryService(prismaService);
   const solucaoCatalogService = new SolucaoCatalogService(prismaService, funcionalidadeAcaoService, solucaoAcessoService);
   const hubNavigationService = new HubNavigationService(solucaoAcessoService, solucaoQueryService);
@@ -1023,7 +1026,8 @@ function createWorld(): TestWorld {
   const servicosService = new ServicosService(servicoCatalogService);
   const anexoStorage = new TestChamadoAnexoStorage();
   const chamadoQueryService = new ChamadoQueryService(prismaService);
-  const chamadoAuthorizationService = new ChamadoAuthorizationService(prismaService, solucoesService);
+  const funcionalidadeAuthorizationService = new FuncionalidadeAuthorizationService(solucoesService);
+  const chamadoAuthorizationService = new ChamadoAuthorizationService(prismaService, funcionalidadeAuthorizationService);
   const chamadoRelatorioService = new ChamadoRelatorioService(prismaService, chamadoAuthorizationService);
   const chamadoDashboardService = new ChamadoDashboardService(prismaService, chamadoAuthorizationService);
   const chamadoCategoriaConfigService = new ChamadoCategoriaConfigService(prismaService, chamadoAuthorizationService);
@@ -1204,6 +1208,26 @@ describe('Fluxos integrados do backend', () => {
     const solucoes = await world.solucoesService.findAll();
     const controleChamados = expectDefined(solucoes.find((solucao) => solucao.slug === 'controle-de-chamados'));
     const funcionalidadesControle = controleChamados.funcionalidades;
+    const projetos = expectDefined(solucoes.find((solucao) => solucao.slug === 'projetos'));
+    const cadastroProjetos = expectDefined(projetos.funcionalidades.find((funcionalidade) => funcionalidade.slug === 'cadastro-de-projetos'));
+    expect(projetos.funcionalidades.map((funcionalidade) => [funcionalidade.slug, funcionalidade.ordem])).toEqual([
+      ['cadastro-de-projetos', 10],
+      ['backlog-de-demandas', 20],
+      ['marcos-e-entregas', 30],
+      ['comunicacao-do-projeto', 40]
+    ]);
+    expect(cadastroProjetos.registryKey).toBe('projetos.cadastro-de-projetos');
+    expect(cadastroProjetos.acoes.map((acao) => acao.chave)).toEqual(expect.arrayContaining([
+      'visualizar',
+      'incluir',
+      'alterar',
+      'excluir',
+      'gerenciar_membros',
+      'alterar_status',
+      'reativar_projeto'
+    ]));
+    await world.solucoesService.ensureProjetosSolution();
+    expect((await world.solucoesService.findAll()).filter((solucao) => solucao.slug === 'projetos')).toHaveLength(1);
 
     const empresaPadraoAlterada = await world.empresasService.update({
       id: empresaInicialId,

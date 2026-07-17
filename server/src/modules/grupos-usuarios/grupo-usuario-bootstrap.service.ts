@@ -105,6 +105,7 @@ export class GrupoUsuarioBootstrapService {
     await this.ensureInitialAdminPasswordPolicy();
     await this.solucoesService.ensureDefaultConfiguradorFeatures();
     await this.solucoesService.ensureControleChamadosSolution();
+    await this.solucoesService.ensureProjetosSolution();
     await this.ensureInitialAdminSolutionAccess();
   }
 

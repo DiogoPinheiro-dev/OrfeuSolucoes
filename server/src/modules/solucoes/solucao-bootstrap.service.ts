@@ -5,6 +5,7 @@ import { FuncionalidadeAcaoService } from './funcionalidade-acao.service';
 import { SolucaoAcessoService } from './solucao-acesso.service';
 import { SolucaoChamadosBootstrapService } from './solucao-chamados-bootstrap.service';
 import { FuncionalidadeRecord } from './types/solucao-record.types';
+import { SolucaoProjetosBootstrapService } from './solucao-projetos-bootstrap.service';
 
 @Injectable()
 export class SolucaoBootstrapService {
@@ -12,7 +13,8 @@ export class SolucaoBootstrapService {
     private readonly prisma: PrismaService,
     private readonly funcionalidadeAcaoService: FuncionalidadeAcaoService,
     private readonly solucaoAcessoService: SolucaoAcessoService,
-    private readonly solucaoChamadosBootstrap: SolucaoChamadosBootstrapService
+    private readonly solucaoChamadosBootstrap: SolucaoChamadosBootstrapService,
+    private readonly solucaoProjetosBootstrap: SolucaoProjetosBootstrapService
   ) {}
 
   async ensureDefaultChamadoConfiguracoesForEmpresa(empresaId: number, force = false): Promise<void> {
@@ -92,6 +94,10 @@ export class SolucaoBootstrapService {
 
   async ensureControleChamadosSolution(): Promise<void> {
     return this.solucaoChamadosBootstrap.ensureControleChamadosSolution();
+  }
+
+  async ensureProjetosSolution(): Promise<void> {
+    return this.solucaoProjetosBootstrap.ensureProjetosSolution();
   }
 
   async mergeDuplicateConfiguradorFeature(solucaoId: number, duplicateSlug: string, targetSlug: string): Promise<void> {

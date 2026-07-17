@@ -1,18 +1,11 @@
 import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { JwtPayload } from '../auth/strategies/jwt-payload.type';
-import { SolucoesService } from '../solucoes/solucoes.service';
+import { FullAccessGroup, FuncionalidadeAuthorizationService } from '../solucoes/funcionalidade-authorization.service';
 import { FEATURES, SOLUTION_SLUG } from './constants/chamado.constants';
 import { usuarioLabel } from './mappers/chamado.mapper';
 import { isClosedStatus } from './policies/chamado-status.policy';
 import { ChamadoRecord } from './types/chamado-record.types';
-
-type FullAccessGroup = {
-  acessoEcommerce?: boolean | null;
-  acessoProjetos?: boolean | null;
-  acessoHoras?: boolean | null;
-  acessoConfigurador?: boolean | null;
-};
 
 type ChamadosAccessGroup = FullAccessGroup & {
   solucoes?: Array<{ solucao?: { slug: string } | null }>;
@@ -23,7 +16,7 @@ type ChamadosAccessGroup = FullAccessGroup & {
 export class ChamadoAuthorizationService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly solucoesService: SolucoesService
+    private readonly funcionalidadeAuthorization: FuncionalidadeAuthorizationService
   ) {}
 
   assertCompanyContext(user: JwtPayload): number {
@@ -35,42 +28,7 @@ export class ChamadoAuthorizationService {
   }
 
   async assertFeatureAction(user: JwtPayload, featureSlug: string, action: string): Promise<void> {
-    if (this.isSystemAdmin(user) || this.hasFullAccessGroup(user.grupo)) {
-      return;
-    }
-
-    const navigation = await this.solucoesService.myHubNavigation(user);
-    const solution = navigation.find((item) => item.slug === SOLUTION_SLUG);
-    const feature = solution?.funcionalidades.find((item) => item.slug === featureSlug);
-
-    if (!solution || !feature || feature.podeVisualizar === false) {
-      throw new ForbiddenException('Usuario sem permissao para acessar esta funcionalidade.');
-    }
-
-    const requestedAction = this.normalizeActionIdentifier(action);
-    const dynamicAction = feature.acoes.find((item) =>
-      this.normalizeActionIdentifier(item.chave) === requestedAction ||
-      this.normalizeActionIdentifier(item.configuracao ?? '') === requestedAction
-    );
-
-    if (dynamicAction) {
-      if (!dynamicAction.permitido) {
-        throw new ForbiddenException('Usuario sem permissao para executar esta acao.');
-      }
-
-      return;
-    }
-
-    const legacyPermission = {
-      visualizar: feature.podeVisualizar,
-      incluir: feature.podeIncluir,
-      alterar: feature.podeAlterar,
-      excluir: feature.podeExcluir
-    }[action];
-
-    if (!legacyPermission) {
-      throw new ForbiddenException('Usuario sem permissao para executar esta acao.');
-    }
+    return this.funcionalidadeAuthorization.assertFeatureAction(user, SOLUTION_SLUG, featureSlug, action);
   }
 
   async assertAnyFeatureAction(user: JwtPayload, featureSlug: string, actions: string[]): Promise<void> {
@@ -84,16 +42,7 @@ export class ChamadoAuthorizationService {
   }
 
   async canFeatureAction(user: JwtPayload, featureSlug: string, action: string): Promise<boolean> {
-    try {
-      await this.assertFeatureAction(user, featureSlug, action);
-      return true;
-    } catch (error) {
-      if (error instanceof ForbiddenException) {
-        return false;
-      }
-
-      throw error;
-    }
+    return this.funcionalidadeAuthorization.canFeatureAction(user, SOLUTION_SLUG, featureSlug, action);
   }
 
   async assertCanAttachFiles(user: JwtPayload, chamado: ChamadoRecord): Promise<void> {
@@ -258,12 +207,7 @@ export class ChamadoAuthorizationService {
   }
 
   hasFullAccessGroup(grupo?: FullAccessGroup | null): boolean {
-    return !!(
-      grupo?.acessoEcommerce &&
-      grupo.acessoProjetos &&
-      grupo.acessoHoras &&
-      grupo.acessoConfigurador
-    );
+    return this.funcionalidadeAuthorization.hasFullAccessGroup(grupo);
   }
 
   private async isUsuarioResponsavelOuLiderDoChamado(user: JwtPayload, chamado: ChamadoRecord): Promise<boolean> {
@@ -311,13 +255,4 @@ export class ChamadoAuthorizationService {
     return false;
   }
 
-  private normalizeActionIdentifier(value?: string | null): string {
-    return (value ?? '')
-      .trim()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '_')
-      .replace(/^_+|_+$/g, '');
-  }
 }

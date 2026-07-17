@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { createElement, useEffect, useState } from "react";
 import { AlertTriangle, Archive, CheckCircle2, Clock3, Headphones, Inbox, PauseCircle, Timer } from "lucide-react";
 import { getChamadoDashboard } from "../../services/Chamados/ChamadoService";
 import "../styles/chamadoDashboard.css";
@@ -10,8 +10,8 @@ const duration = (minutes) => {
   return hours < 24 ? `${hours.toFixed(hours < 10 ? 1 : 0)} h` : `${(hours / 24).toFixed(1)} dias`;
 };
 
-function Metric({ icon: Icon, label, value, tone = "default" }) {
-  return <article className={`chamado-dashboard-metric tone-${tone}`}><span><Icon size={20}/></span><div><small>{label}</small><strong>{value}</strong></div></article>;
+function Metric({ icon, label, value, tone = "default" }) {
+  return <article className={`chamado-dashboard-metric tone-${tone}`}><span>{createElement(icon, { size: 20 })}</span><div><small>{label}</small><strong>{value}</strong></div></article>;
 }
 
 function Ranking({ title, items }) {

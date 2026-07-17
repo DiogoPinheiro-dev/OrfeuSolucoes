@@ -35,6 +35,10 @@ export class SolucoesService {
   async ensureControleChamadosSolution(): Promise<void> {
     return this.solucaoBootstrapService.ensureControleChamadosSolution();
   }
+  async ensureProjetosSolution(): Promise<void> {
+    return this.solucaoBootstrapService.ensureProjetosSolution();
+  }
+
 
   async myHubNavigation(user: JwtPayload): Promise<SolucaoType[]> {
     return this.hubNavigationService.myHubNavigation(user);

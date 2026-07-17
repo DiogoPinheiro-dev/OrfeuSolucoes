@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Download, FileSpreadsheet, Filter, Search } from "lucide-react";
 import { downloadChamadoRelatorio, getAtendentesDisponiveis, getCategoriasChamado, getChamadoRelatorio, getPrioridadesChamado } from "../../services/Chamados/ChamadoService";
 import "../styles/chamadoRelatorio.css";
@@ -7,18 +7,18 @@ const initial = { criadoDe: "", criadoAte: "", responsavelId: "", categoriaId: "
 const label = (value) => ({ ABERTO:"Aberto", EM_TRIAGEM:"Em triagem", EM_ATENDIMENTO:"Em atendimento", PENDENTE:"Pendente", RESOLVIDO:"Resolvido", ARQUIVADO:"Arquivado", SEM_SLA:"Sem SLA", NO_PRAZO:"No prazo", PERTO_DO_VENCIMENTO:"Perto do vencimento", ATRASADO:"Atrasado", PAUSADO:"Pausado" }[value] || value);
 const date = (value) => value ? new Intl.DateTimeFormat("pt-BR", { dateStyle:"short", timeStyle:"short" }).format(new Date(value)) : "-";
 const minutes = (value) => value == null ? "-" : value < 60 ? `${Math.round(value)} min` : `${(value / 60).toFixed(1)} h`;
+const toPayload = (value) => Object.fromEntries(Object.entries(value).filter(([, item]) => item !== "" && item != null).map(([key,item]) => [key, ["categoriaId","prioridadeId","page","pageSize"].includes(key) ? Number(item) : item]));
 
 export default function ChamadoRelatorio() {
   const [filter, setFilter] = useState(initial); const [result, setResult] = useState({ items:[], total:0, page:1, totalPages:1 });
   const [options, setOptions] = useState({ categorias:[], prioridades:[], atendentes:[] }); const [loading, setLoading] = useState(true); const [exporting, setExporting] = useState(""); const [error, setError] = useState("");
-  const payload = (value = filter) => Object.fromEntries(Object.entries(value).filter(([, item]) => item !== "" && item != null).map(([key,item]) => [key, ["categoriaId","prioridadeId","page","pageSize"].includes(key) ? Number(item) : item]));
-  const load = async (next = filter) => { setLoading(true); setError(""); try { setResult(await getChamadoRelatorio(payload(next))); } catch(e) { setError(e.message || "Nao foi possivel carregar o relatorio."); } finally { setLoading(false); } };
-  useEffect(() => { Promise.all([getCategoriasChamado(true), getPrioridadesChamado(true), getAtendentesDisponiveis()]).then(([categorias,prioridades,atendentes]) => setOptions({categorias,prioridades,atendentes})).catch((e) => setError(e.message)); void load(initial); }, []);
+  const load = useCallback(async (next) => { setLoading(true); setError(""); try { setResult(await getChamadoRelatorio(toPayload(next))); } catch(e) { setError(e.message || "Nao foi possivel carregar o relatorio."); } finally { setLoading(false); } }, []);
+  useEffect(() => { Promise.all([getCategoriasChamado(true), getPrioridadesChamado(true), getAtendentesDisponiveis()]).then(([categorias,prioridades,atendentes]) => setOptions({categorias,prioridades,atendentes})).catch((e) => setError(e.message)); void load(initial); }, [load]);
   const change = ({target}) => setFilter((current) => ({...current,[target.name]:target.value,page:1}));
   const apply = (event) => { event.preventDefault(); void load(filter); };
   const clear = () => { setFilter(initial); void load(initial); };
   const go = (page) => { const next={...filter,page}; setFilter(next); void load(next); };
-  const exportFile = async (format) => { setExporting(format); setError(""); try { await downloadChamadoRelatorio(payload(filter),format); } catch(e) { setError(e.message); } finally { setExporting(""); } };
+  const exportFile = async (format) => { setExporting(format); setError(""); try { await downloadChamadoRelatorio(toPayload(filter),format); } catch(e) { setError(e.message); } finally { setExporting(""); } };
   return <div className="chamado-report">
     <header className="chamado-report-heading"><div><span className="workspace-label">Gestao operacional</span><h2>Relatorios de chamados</h2><p>Filtre a operacao e exporte os dados em CSV ou Excel.</p></div><div><button className="button-standard" onClick={() => void exportFile("csv")} disabled={!!exporting}><Download size={17}/> {exporting==="csv"?"Gerando...":"CSV"}</button><button className="button-standard" onClick={() => void exportFile("xlsx")} disabled={!!exporting}><FileSpreadsheet size={17}/> {exporting==="xlsx"?"Gerando...":"Excel"}</button></div></header>
     {error && <div className="user-management-error" role="alert">{error}</div>}

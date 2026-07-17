@@ -93,3 +93,13 @@ export const formatDateTime = (value) => {
         timeStyle: "short"
     }).format(new Date(value));
 };
+
+export const chamadoSlaDeadline = (chamado) => {
+    if (!chamado) {
+        return null;
+    }
+
+    return chamado.primeiraRespostaEm
+        ? chamado.resolucaoLimiteEm || null
+        : chamado.primeiraRespostaLimiteEm || chamado.resolucaoLimiteEm || null;
+};
