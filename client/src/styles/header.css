@@ -194,6 +194,7 @@
 }
 
 .header-actions .hub-user-card,
+.hub-sidebar-user-card .hub-user-card,
 .mobile-auth-actions .hub-user-card {
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr) 34px;
@@ -602,6 +603,7 @@
   .site-header--hub-sidebar.site-header--hub-collapsed .header-actions {
     display: flex;
     width: 100%;
+    margin-top: 0;
     padding-top: 0;
     border-top: 0;
     align-items: center;
@@ -1256,4 +1258,27 @@
   margin: 0;
   padding: 24px 14px;
   text-align: center;
+}
+
+.hub-sidebar-user-card {
+  display: none;
+}
+
+@media (min-width: 921px) {
+  .site-header--hub-sidebar .hub-sidebar-user-card {
+    display: block;
+    width: 100%;
+    margin-bottom: 6px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .site-header--hub-sidebar .hub-sidebar-user-card .hub-user-card {
+    display: grid;
+    width: 100%;
+  }
+
+  .site-header--hub-sidebar:not(.site-header--hub-collapsed) .header-actions:empty {
+    display: none;
+  }
 }

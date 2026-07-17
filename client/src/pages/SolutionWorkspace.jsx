@@ -69,10 +69,11 @@ export default function SolutionWorkspace() {
                                     key={panel.title}
                                 >
                                     <span className="workspace-label">{panel.label}</span>
-                                    <h2>{panel.title}</h2>
-                                    <p>{panel.description}</p>
+                                    <span className="workspace-panel-copy">
+                                        <h2>{panel.title}</h2>
+                                        <p>{panel.description}</p>
+                                    </span>
                                     <span className="workspace-panel-action">
-                                        <span>Acessar</span>
                                         <ArrowUpRight size={18} aria-hidden="true" />
                                     </span>
                                 </Link>

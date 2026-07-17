@@ -140,3 +140,29 @@
   background: var(--accent-green);
   color: var(--button-primary-text);
 }
+
+.custom-dropdown__menu--portal {
+  position: fixed;
+  right: auto;
+  bottom: auto;
+  z-index: 4000;
+}
+
+.custom-dropdown__menu--hub {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(23, 50, 77, 0.97);
+  box-shadow: 0 12px 24px rgba(15, 41, 67, 0.22);
+}
+
+.custom-dropdown__menu--hub .custom-dropdown__option {
+  color: var(--button-primary-text);
+}
+
+.custom-dropdown__menu--hub .custom-dropdown__option:hover,
+.custom-dropdown__menu--hub .custom-dropdown__option:focus-visible {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.custom-dropdown__menu--hub .custom-dropdown__option--selected {
+  background: var(--accent-green);
+}

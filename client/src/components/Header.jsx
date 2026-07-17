@@ -128,6 +128,7 @@ export default function Header() {
         <label className="hub-company-switcher">
             <CustomDropdown
                 className="custom-dropdown--hub"
+                menuPlacement={isHubView ? "right" : "default"}
                 value={selectedCompanyId}
                 onChange={handleCompanyChange}
                 disabled={switchingCompany}
@@ -266,6 +267,11 @@ export default function Header() {
                 <ul className={`nav-links list-unstyled mb-0 ${open ? "open" : ""}`}>
                     {isHubView ? (
                         <>
+                            {isAuthenticated && (
+                                <li className="hub-sidebar-user-card">
+                                    {userCard}
+                                </li>
+                            )}
                             <li>
                                 <Link className={hubLinkClass("/hub")} to="/hub" onClick={closeMenu}>
                                     Hub
@@ -385,7 +391,7 @@ export default function Header() {
                                     Acessar hub
                                 </button>
                             )}
-                            {userCard}
+                            {(!isHubView || isHubSidebarCollapsed) && userCard}
                         </>
                     ) : (
                         <>
