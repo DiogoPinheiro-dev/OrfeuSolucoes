@@ -42,6 +42,7 @@ import { PrismaModule } from './prisma/prisma.module';
     SolucoesModule,
     AuthModule,
     ChamadosModule,
+    ProjetosModule,
     ServicosModule
   ],
   providers: [HealthResolver]

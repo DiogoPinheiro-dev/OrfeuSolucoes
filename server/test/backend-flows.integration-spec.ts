@@ -1898,8 +1898,24 @@ describe('Fluxos integrados do backend', () => {
       'alterar_status',
       'reativar_projeto'
     ]));
+    const projetosAntesDoSegundoBootstrap = projetos.funcionalidades.map((funcionalidade) => ({
+      id: funcionalidade.id,
+      slug: funcionalidade.slug,
+      ordem: funcionalidade.ordem,
+      registryKey: funcionalidade.registryKey,
+      acoes: funcionalidade.acoes.map((acao) => acao.chave).sort()
+    }));
     await world.solucoesService.ensureProjetosSolution();
-    expect((await world.solucoesService.findAll()).filter((solucao) => solucao.slug === 'projetos')).toHaveLength(1);
+    const solucoesAposSegundoBootstrap = await world.solucoesService.findAll();
+    const projetosAposSegundoBootstrap = expectDefined(solucoesAposSegundoBootstrap.find((solucao) => solucao.slug === 'projetos'));
+    expect(solucoesAposSegundoBootstrap.filter((solucao) => solucao.slug === 'projetos')).toHaveLength(1);
+    expect(projetosAposSegundoBootstrap.funcionalidades.map((funcionalidade) => ({
+      id: funcionalidade.id,
+      slug: funcionalidade.slug,
+      ordem: funcionalidade.ordem,
+      registryKey: funcionalidade.registryKey,
+      acoes: funcionalidade.acoes.map((acao) => acao.chave).sort()
+    }))).toEqual(projetosAntesDoSegundoBootstrap);
 
     const empresaPadraoAlterada = await world.empresasService.update({
       id: empresaInicialId,

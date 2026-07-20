@@ -15,6 +15,7 @@ import Header from "../components/Header";
 import MeusChamados from "../components/MeusChamados";
 import ResponsavelChamadoManagement from "../components/ResponsavelChamadoManagement";
 import PainelAtendimento from "../components/PainelAtendimento";
+import ProjectManagement from "../components/ProjectManagement";
 import SolutionManagement from "../components/SolutionManagement";
 import SlaChamadoManagement from "../components/SlaChamadoManagement";
 import EmailSolucaoChamadoManagement from "../components/EmailSolucaoChamadoManagement";
@@ -40,7 +41,8 @@ const FEATURE_COMPONENTS = {
     "prioridade-chamado-management": (props) => <ChamadoConfiguracaoManagement {...props} kind="prioridades" />,
     "responsavel-chamado-management": ResponsavelChamadoManagement,
     "sla-chamado-management": SlaChamadoManagement,
-    "email-solucao-chamado-management": EmailSolucaoChamadoManagement
+    "email-solucao-chamado-management": EmailSolucaoChamadoManagement,
+    "project-management": ProjectManagement
 };
 
 export default function SolutionFeaturePage() {

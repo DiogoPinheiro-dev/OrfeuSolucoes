@@ -39,6 +39,12 @@ input AtualizarChamadoAcompanhantesInput {
   usuarioIds: [String!]
 }
 
+input AtualizarCicloProjetoInput {
+  projetoId: String!
+  saude: ProjetoSaude
+  situacao: ProjetoSituacao
+}
+
 type AuthPayloadType {
   accessToken: String!
   user: UserType!
@@ -461,6 +467,20 @@ input CreateGrupoUsuarioInput {
   solucaoIds: [Int!]
 }
 
+input CreateProjetoInput {
+  chave: String!
+  descricao: String
+  fimPrevistoEm: String
+  inicioPrevistoEm: String
+  metodologia: ProjetoMetodologia!
+  nome: String!
+  objetivo: String
+  participantes: [ProjetoMembroInput!] = []
+  responsavelId: String!
+  saude: ProjetoSaude = EM_DIA
+  situacao: ProjetoSituacao = RASCUNHO
+}
+
 input CreateServicoInput {
   desconto: Float
   descricao: String
@@ -644,9 +664,11 @@ type Mutation {
   alterarPrioridadeChamado(input: AlterarPrioridadeChamadoInput!): ChamadoType!
   alterarStatusChamado(input: AlterarStatusChamadoInput!): ChamadoType!
   arquivarChamado(id: String!, observacao: String): ChamadoType!
+  arquivarProjeto(id: String!): ProjetoType!
   assumirChamado(id: String!): ChamadoType!
   atribuirChamado(input: AtribuirChamadoInput!): ChamadoType!
   atualizarAcompanhantesChamado(input: AtualizarChamadoAcompanhantesInput!): ChamadoType!
+  atualizarSituacaoProjeto(input: AtualizarCicloProjetoInput!): ProjetoType!
   changePassword(input: ChangePasswordInput!): AuthPayloadType!
   createChamadoCategoria(input: CreateChamadoCategoriaInput!): ChamadoCategoriaType!
   createChamadoPrioridade(input: CreateChamadoPrioridadeInput!): ChamadoPrioridadeType!
@@ -658,6 +680,7 @@ type Mutation {
   createFuncionalidade(input: CreateFuncionalidadeInput!): FuncionalidadeType!
   createGoogleEmailConta(input: CreateGoogleEmailContaInput!): GoogleEmailContaType!
   createGrupoUsuario(input: CreateGrupoUsuarioInput!): GrupoUsuarioType!
+  createProjeto(input: CreateProjetoInput!): ProjetoType!
   createServico(input: CreateServicoInput!): ServicoType!
   createSolucao(input: CreateSolucaoInput!): SolucaoType!
   createUser(input: CreateUserInput!): UserType!
@@ -683,6 +706,7 @@ type Mutation {
   marcarChamadoNotificacaoComoLida(id: String!): Boolean!
   marcarTodasChamadoNotificacoesComoLidas: Int!
   reabrirChamado(id: String!, observacao: String): ChamadoType!
+  reativarProjeto(id: String!): ProjetoType!
   resolverChamado(id: String!, observacao: String): ChamadoType!
   responderChamado(input: ResponderChamadoInput!): ChamadoType!
   switchCompany(input: SwitchCompanyInput!): AuthPayloadType!
@@ -697,9 +721,114 @@ type Mutation {
   updateFuncionalidade(input: UpdateFuncionalidadeInput!): FuncionalidadeType!
   updateGoogleEmailConta(input: UpdateGoogleEmailContaInput!): GoogleEmailContaType!
   updateGrupoUsuario(input: UpdateGrupoUsuarioInput!): GrupoUsuarioType!
+  updateProjeto(input: UpdateProjetoInput!): ProjetoType!
+  updateProjetoEquipe(input: UpdateProjetoEquipeInput!): ProjetoType!
   updateServico(input: UpdateServicoInput!): ServicoType!
   updateSolucao(input: UpdateSolucaoInput!): SolucaoType!
   updateUser(input: UpdateUserInput!): UserType!
+}
+
+input ProjetoFiltroInput {
+  incluirArquivados: Boolean = false
+  limite: Int = 20
+  metodologia: ProjetoMetodologia
+  pagina: Int = 1
+  saude: ProjetoSaude
+  situacao: ProjetoSituacao
+  termo: String
+}
+
+input ProjetoMembroInput {
+  papel: ProjetoPapel!
+  usuarioId: String!
+}
+
+type ProjetoMembroType {
+  id: Int!
+  incluidoEm: DateTime!
+  papel: ProjetoPapel!
+  usuario: ProjetoUsuarioType!
+  usuarioId: String!
+}
+
+enum ProjetoMetodologia {
+  HIBRIDA
+  KANBAN
+  OUTRA
+  SCRUM
+}
+
+type ProjetoPageType {
+  items: [ProjetoType!]!
+  limite: Int!
+  pagina: Int!
+  total: Int!
+  totalPaginas: Int!
+}
+
+enum ProjetoPapel {
+  MEMBRO
+  OBSERVADOR
+  RESPONSAVEL
+}
+
+type ProjetoPermissoesType {
+  podeAlterar: Boolean!
+  podeAlterarStatus: Boolean!
+  podeArquivar: Boolean!
+  podeGerenciarMembros: Boolean!
+  podeReativar: Boolean!
+  podeVisualizar: Boolean!
+}
+
+enum ProjetoSaude {
+  ATRASADO
+  EM_DIA
+  EM_RISCO
+}
+
+enum ProjetoSituacao {
+  CANCELADO
+  CONCLUIDO
+  EM_ANDAMENTO
+  PAUSADO
+  PLANEJADO
+  RASCUNHO
+}
+
+type ProjetoType {
+  arquivadoEm: DateTime
+  arquivadoPor: ProjetoUsuarioType
+  atualizadoEm: DateTime!
+  chave: String!
+  criadoEm: DateTime!
+  criadoPor: ProjetoUsuarioType!
+  descricao: String
+  empresaId: Int!
+  fimPrevistoEm: DateTime
+  fimRealEm: DateTime
+  id: String!
+  inicioPrevistoEm: DateTime
+  inicioRealEm: DateTime
+  membros: [ProjetoMembroType!]!
+  metodologia: ProjetoMetodologia!
+  meuPapel: ProjetoPapel
+  nome: String!
+  objetivo: String
+  permissoes: ProjetoPermissoesType!
+  responsavel: ProjetoUsuarioType!
+  responsavelId: String!
+  saude: ProjetoSaude!
+  situacao: ProjetoSituacao!
+}
+
+type ProjetoUsuarioType {
+  email: String!
+  grupoId: Int
+  grupoNome: String
+  id: String!
+  login: String
+  nome: String
 }
 
 type Query {
@@ -724,6 +853,9 @@ type Query {
   notificacoesChamadoNaoLidas: Int!
   opcoesAberturaChamado: ChamadoResponsavelOptionsType!
   prioridadesChamado(ativas: Boolean = true): [ChamadoPrioridadeType!]!
+  projeto(id: String!): ProjetoType!
+  projetoParticipantesDisponiveis: [ProjetoUsuarioType!]!
+  projetos(filtro: ProjetoFiltroInput): ProjetoPageType!
   regrasSlaChamado(ativas: Boolean = true): [ChamadoSlaRegraType!]!
   relatorioChamados(filtro: ChamadoRelatorioFiltroInput): ChamadoRelatorioPageType!
   responsaveisChamado(ativas: Boolean = false): [ChamadoResponsavelType!]!
@@ -732,6 +864,7 @@ type Query {
   responsaveisParaAberturaChamado(funcionalidadeId: Int, solucaoId: Int!): [AtendenteChamadoType!]!
   servicos: [ServicoType!]!
   solucoes: [SolucaoType!]!
+  sugerirChaveProjeto(nome: String!): String!
   tiposChamado(ativas: Boolean = true): [ChamadoTipoType!]!
   users: [UserType!]!
 }
@@ -867,6 +1000,22 @@ input UpdateGrupoUsuarioInput {
   podeIncluir: Boolean
   podeVisualizar: Boolean
   solucaoIds: [Int!]
+}
+
+input UpdateProjetoEquipeInput {
+  participantes: [ProjetoMembroInput!] = []
+  projetoId: String!
+  responsavelId: String!
+}
+
+input UpdateProjetoInput {
+  descricao: String
+  fimPrevistoEm: String
+  id: String!
+  inicioPrevistoEm: String
+  metodologia: ProjetoMetodologia
+  nome: String
+  objetivo: String
 }
 
 input UpdateServicoInput {

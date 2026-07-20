@@ -15,7 +15,8 @@ export const FEATURE_COMPONENT_REGISTRY = {
     "controle-de-chamados.prioridades": "prioridade-chamado-management",
     "controle-de-chamados.responsaveis": "responsavel-chamado-management",
     "controle-de-chamados.sla": "sla-chamado-management",
-    "controle-de-chamados.emails-solucoes": "email-solucao-chamado-management"
+    "controle-de-chamados.emails-solucoes": "email-solucao-chamado-management",
+    "projetos.cadastro-de-projetos": "project-management"
 };
 
 export const normalizeSolutions = (solutions = []) =>

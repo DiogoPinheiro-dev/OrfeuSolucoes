@@ -14,6 +14,9 @@ import { ProjetosService } from './projetos.service';
   imports: [PrismaModule, SolucoesModule],
   providers: [
     ProjetoAuthorizationService,
+    ProjetoCatalogService,
+    ProjetoEquipeService,
+    ProjetoLifecycleService,
     ProjetoKeyService,
     ProjetoQueryService,
     ProjetosService,

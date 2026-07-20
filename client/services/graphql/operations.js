@@ -1361,3 +1361,62 @@ export const ALTERAR_CATEGORIA_CHAMADO_MUTATION = gql`
   ${CHAMADO_FIELDS}
   mutation AlterarCategoriaChamado($input: AlterarCategoriaChamadoInput!) { alterarCategoriaChamado(input: $input) { ...ChamadoFields } }
 `;
+
+const PROJETO_FIELDS = gql`
+  fragment ProjetoFields on ProjetoType {
+    id empresaId chave nome objetivo descricao metodologia situacao saude
+    inicioPrevistoEm fimPrevistoEm inicioRealEm fimRealEm responsavelId
+    responsavel { id nome login email grupoId grupoNome }
+    criadoPor { id nome login email grupoId grupoNome }
+    arquivadoEm
+    arquivadoPor { id nome login email grupoId grupoNome }
+    criadoEm atualizadoEm
+    membros { id usuarioId papel incluidoEm usuario { id nome login email grupoId grupoNome } }
+    meuPapel
+    permissoes { podeVisualizar podeAlterar podeGerenciarMembros podeAlterarStatus podeArquivar podeReativar }
+  }
+`;
+
+export const PROJETOS_QUERY = gql`
+  ${PROJETO_FIELDS}
+  query Projetos($filtro: ProjetoFiltroInput) {
+    projetos(filtro: $filtro) { items { ...ProjetoFields } total pagina limite totalPaginas }
+  }
+`;
+export const PROJETO_QUERY = gql`
+  ${PROJETO_FIELDS}
+  query Projeto($id: String!) { projeto(id: $id) { ...ProjetoFields } }
+`;
+export const SUGERIR_CHAVE_PROJETO_QUERY = gql`
+  query SugerirChaveProjeto($nome: String!) { sugerirChaveProjeto(nome: $nome) }
+`;
+export const PROJETO_PARTICIPANTES_DISPONIVEIS_QUERY = gql`
+  query ProjetoParticipantesDisponiveis {
+    projetoParticipantesDisponiveis { id nome login email grupoId grupoNome }
+  }
+`;
+
+export const CREATE_PROJETO_MUTATION = gql`
+  ${PROJETO_FIELDS}
+  mutation CreateProjeto($input: CreateProjetoInput!) { createProjeto(input: $input) { ...ProjetoFields } }
+`;
+export const UPDATE_PROJETO_MUTATION = gql`
+  ${PROJETO_FIELDS}
+  mutation UpdateProjeto($input: UpdateProjetoInput!) { updateProjeto(input: $input) { ...ProjetoFields } }
+`;
+export const UPDATE_PROJETO_EQUIPE_MUTATION = gql`
+  ${PROJETO_FIELDS}
+  mutation UpdateProjetoEquipe($input: UpdateProjetoEquipeInput!) { updateProjetoEquipe(input: $input) { ...ProjetoFields } }
+`;
+export const ATUALIZAR_CICLO_PROJETO_MUTATION = gql`
+  ${PROJETO_FIELDS}
+  mutation AtualizarSituacaoProjeto($input: AtualizarCicloProjetoInput!) { atualizarSituacaoProjeto(input: $input) { ...ProjetoFields } }
+`;
+export const ARQUIVAR_PROJETO_MUTATION = gql`
+  ${PROJETO_FIELDS}
+  mutation ArquivarProjeto($id: String!) { arquivarProjeto(id: $id) { ...ProjetoFields } }
+`;
+export const REATIVAR_PROJETO_MUTATION = gql`
+  ${PROJETO_FIELDS}
+  mutation ReativarProjeto($id: String!) { reativarProjeto(id: $id) { ...ProjetoFields } }
+`;

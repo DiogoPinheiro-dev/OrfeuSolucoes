@@ -1,0 +1,288 @@
+.project-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+  padding: 12px 16px;
+  border: 1px solid #d83a3a;
+  border-radius: 12px;
+  background: #fff0f0;
+  color: #8e2020;
+}
+
+.project-alert button,
+.crud-pagination button {
+  padding: 8px 12px;
+  border: 1px solid var(--button-primary-border);
+  border-radius: 9px;
+  background: var(--button-primary-bg);
+  color: var(--button-primary-text);
+  cursor: pointer;
+}
+
+.crud-pagination button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.crud-filters label {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.crud-filters select {
+  min-width: 150px;
+  padding: 9px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  background: var(--surface-white);
+  color: var(--primary);
+}
+
+.crud-filters .project-archive-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.project-badge {
+  display: inline-flex;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #e8edf2;
+  color: #344150;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.health-em_dia { background: #dff5e7; color: #176436; }
+.health-em_risco { background: #fff1c7; color: #765400; }
+.health-atrasado { background: #ffe0e0; color: #8e2020; }
+.status-concluido { background: #dff5e7; color: #176436; }
+.status-cancelado { background: #ececec; color: #555; }
+
+.project-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.project-detail-field {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.project-detail-field span,
+.project-team span,
+.project-team small {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.project-permissions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.project-permissions span {
+  padding: 6px 9px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+}
+
+.project-permissions .allowed { background: #dff5e7; color: #176436; }
+.project-permissions .denied { background: #ececec; color: #666; }
+
+.project-team {
+  display: grid;
+  gap: 10px;
+}
+
+.project-team article {
+  display: grid;
+  grid-template-columns: 1.5fr 1.5fr 1fr 1fr;
+  gap: 10px;
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.project-detail-error { color: #8e2020; }
+
+@media (max-width: 760px) {
+  .project-detail-grid { grid-template-columns: 1fr; }
+  .project-team article { grid-template-columns: 1fr; }
+  .crud-pagination { align-items: stretch; flex-direction: column; }
+}
+
+.project-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+  padding: 12px 16px;
+  border: 1px solid #45a66b;
+  border-radius: 12px;
+  background: #e8f8ee;
+  color: #176436;
+}
+
+.project-notice button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.project-context-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.project-context-actions:empty { display: none; }
+
+.project-context-actions button,
+.project-key-control button {
+  padding: 9px 12px;
+  border: 1px solid var(--button-primary-border);
+  border-radius: 9px;
+  background: var(--button-primary-bg);
+  color: var(--button-primary-text);
+  cursor: pointer;
+}
+
+.project-form {
+  display: grid;
+  gap: 14px;
+}
+
+.project-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.project-form label,
+.project-form fieldset {
+  display: grid;
+  gap: 6px;
+  color: var(--primary);
+  font-size: 0.86rem;
+}
+
+.project-form input,
+.project-form select,
+.project-form textarea {
+  width: 100%;
+  padding: 10px 11px;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  background: var(--surface-white);
+  color: var(--primary);
+  font: inherit;
+}
+
+.project-form textarea { resize: vertical; }
+.project-form-wide { grid-column: 1 / -1; }
+
+.project-key-control {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.project-member-picker {
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.project-member-picker > div {
+  display: grid;
+  grid-template-columns: 1fr 150px;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.project-member-picker > div > label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.project-member-picker input[type="checkbox"] { width: auto; }
+.project-member-picker label span { display: grid; }
+.project-member-picker small,
+.project-form-note { color: var(--muted); }
+
+@media (max-width: 760px) {
+  .project-form-grid { grid-template-columns: 1fr; }
+  .project-form-wide { grid-column: auto; }
+  .project-member-picker > div { grid-template-columns: 1fr; }
+  .project-context-actions { flex-direction: column; }
+}
+.project-archive-confirm {
+  display: grid;
+  gap: 12px;
+}
+
+.project-archive-confirm p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.project-archive-confirm > strong {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-soft);
+  color: var(--primary);
+}
+
+.crud-modal-actions button.danger[type="submit"] {
+  border-color: var(--danger-text);
+  background: var(--danger-text);
+  color: #fff;
+}
+
+.crud-modal-actions button.danger[type="submit"]:hover,
+.crud-modal-actions button.danger[type="submit"]:focus-visible {
+  filter: brightness(0.9);
+}
+.project-name-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.project-archived-badge {
+  display: inline-flex;
+  padding: 4px 8px;
+  border: 1px solid #777f89;
+  border-radius: 999px;
+  background: #eceff2;
+  color: #4d5661;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}

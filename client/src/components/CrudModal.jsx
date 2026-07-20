@@ -3,7 +3,8 @@ import "../styles/crudModal.css";
 const modeLabel = {
     create: "Incluir",
     edit: "Alterar",
-    view: "Visualizar"
+    view: "Visualizar",
+    archive: "Confirmar"
 };
 
 export function CrudModal({
