@@ -30,6 +30,10 @@ model Usuario {
   chamadoAnexos ChamadoAnexo[]
   chamadoNotificacoes ChamadoNotificacao[]
   googleEmailContasCriadas GoogleEmailConta[]
+  projetosCriados Projeto[] @relation("ProjetoCriador")
+  projetosResponsavel Projeto[] @relation("ProjetoResponsavel")
+  projetosArquivados Projeto[] @relation("ProjetoArquivadoPor")
+  projetosParticipacoes ProjetoMembro[]
 
   @@map("Usuarios")
 }
@@ -99,10 +103,59 @@ model Empresa {
   chamadoSlaRegras ChamadoSlaRegra[]
   googleEmailContas GoogleEmailConta[]
   chamadoSolucaoEmails ChamadoSolucaoEmail[]
+  projetos Projeto[]
 
   @@map("Empresas")
 }
 
+model Projeto {
+  id               String    @id @default(uuid()) @db.UniqueIdentifier @map("Id")
+  empresaId        Int       @map("EmpresaId")
+  chave            String    @db.NVarChar(10) @map("Chave")
+  nome             String    @db.NVarChar(200) @map("Nome")
+  objetivo         String?   @db.NVarChar(500) @map("Objetivo")
+  descricao        String?   @map("Descricao")
+  metodologia      String    @db.NVarChar(20) @map("Metodologia")
+  situacao         String    @db.NVarChar(20) @map("Situacao")
+  saude            String    @db.NVarChar(20) @map("Saude")
+  inicioPrevistoEm DateTime? @db.Date @map("InicioPrevistoEm")
+  fimPrevistoEm    DateTime? @db.Date @map("FimPrevistoEm")
+  inicioRealEm     DateTime? @db.Date @map("InicioRealEm")
+  fimRealEm        DateTime? @db.Date @map("FimRealEm")
+  responsavelId    String    @db.UniqueIdentifier @map("ResponsavelId")
+  criadoPorId      String    @db.UniqueIdentifier @map("CriadoPorId")
+  arquivadoEm      DateTime? @map("ArquivadoEm")
+  arquivadoPorId   String?   @db.UniqueIdentifier @map("ArquivadoPorId")
+  criadoEm         DateTime  @default(now()) @map("CriadoEm")
+  atualizadoEm     DateTime  @updatedAt @map("AtualizadoEm")
+
+  empresa      Empresa  @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  responsavel  Usuario  @relation("ProjetoResponsavel", fields: [responsavelId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  criadoPor    Usuario  @relation("ProjetoCriador", fields: [criadoPorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  arquivadoPor Usuario? @relation("ProjetoArquivadoPor", fields: [arquivadoPorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  membros      ProjetoMembro[]
+
+  @@unique([empresaId, chave], map: "UX_Projetos_EmpresaId_Chave")
+  @@index([empresaId, arquivadoEm], map: "IX_Projetos_EmpresaId_ArquivadoEm")
+  @@index([empresaId, atualizadoEm], map: "IX_Projetos_EmpresaId_AtualizadoEm")
+  @@index([empresaId, responsavelId], map: "IX_Projetos_EmpresaId_ResponsavelId")
+  @@map("Projetos")
+}
+
+model ProjetoMembro {
+  id         Int      @id @default(autoincrement()) @map("Id")
+  projetoId  String   @db.UniqueIdentifier @map("ProjetoId")
+  usuarioId  String   @db.UniqueIdentifier @map("UsuarioId")
+  papel      String   @db.NVarChar(20) @map("Papel")
+  incluidoEm DateTime @default(now()) @map("IncluidoEm")
+
+  projeto Projeto @relation(fields: [projetoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([projetoId, usuarioId], map: "UX_ProjetoMembros_ProjetoId_UsuarioId")
+  @@index([usuarioId], map: "IX_ProjetoMembros_UsuarioId")
+  @@map("ProjetoMembros")
+}
 model Solucao {
   id                  Int      @id @default(autoincrement()) @map("Id")
   slug                String   @unique(map: "UX_Solucoes_Slug") @map("Slug")
