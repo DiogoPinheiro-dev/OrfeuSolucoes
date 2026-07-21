@@ -1,288 +1,781 @@
-.project-alert {
+.project-management {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.project-management .project-alert,
+.project-management .project-notice {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 12px;
   padding: 12px 16px;
-  border: 1px solid #d83a3a;
-  border-radius: 12px;
-  background: #fff0f0;
-  color: #8e2020;
+  border: 1px solid var(--line);
 }
 
-.project-alert button,
-.crud-pagination button {
-  padding: 8px 12px;
+.project-management .project-context-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.project-management .project-context-actions:empty {
+  display: none;
+}
+
+.project-management .project-context-actions button,
+.project-management .project-key-control button {
   border: 1px solid var(--button-primary-border);
-  border-radius: 9px;
   background: var(--button-primary-bg);
   color: var(--button-primary-text);
   cursor: pointer;
 }
 
-.crud-pagination button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.crud-filters label {
+.project-management .crud-filters label {
   display: grid;
-  gap: 5px;
-  color: var(--muted);
-  font-size: 0.8rem;
 }
 
-.crud-filters select {
-  min-width: 150px;
+.project-management .crud-filters select {
+  width: 100%;
   padding: 9px 10px;
   border: 1px solid var(--line-strong);
-  border-radius: 9px;
   background: var(--surface-white);
   color: var(--primary);
 }
 
-.crud-filters .project-archive-filter {
-  display: flex;
+.project-management .project-name-cell {
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin-top: 20px;
+  min-width: 0;
 }
 
-.project-badge {
+.project-management .project-badge,
+.project-management .project-archived-badge {
   display: inline-flex;
-  padding: 4px 8px;
   border-radius: 999px;
-  background: #e8edf2;
-  color: #344150;
   font-size: 0.76rem;
   font-weight: 700;
 }
 
-.health-em_dia { background: #dff5e7; color: #176436; }
-.health-em_risco { background: #fff1c7; color: #765400; }
-.health-atrasado { background: #ffe0e0; color: #8e2020; }
-.status-concluido { background: #dff5e7; color: #176436; }
-.status-cancelado { background: #ececec; color: #555; }
-
-.project-detail-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+.project-management .project-archived-badge {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-.project-detail-field {
-  display: grid;
-  gap: 4px;
-  padding: 10px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-}
-
-.project-detail-field span,
-.project-team span,
-.project-team small {
-  color: var(--muted);
-  font-size: 0.8rem;
-}
-
-.project-permissions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.project-permissions span {
-  padding: 6px 9px;
-  border-radius: 999px;
-  font-size: 0.78rem;
-}
-
-.project-permissions .allowed { background: #dff5e7; color: #176436; }
-.project-permissions .denied { background: #ececec; color: #666; }
-
-.project-team {
-  display: grid;
-  gap: 10px;
-}
-
-.project-team article {
-  display: grid;
-  grid-template-columns: 1.5fr 1.5fr 1fr 1fr;
-  gap: 10px;
-  padding: 10px;
-  border-bottom: 1px solid var(--line);
-}
-
-.project-detail-error { color: #8e2020; }
-
-@media (max-width: 760px) {
-  .project-detail-grid { grid-template-columns: 1fr; }
-  .project-team article { grid-template-columns: 1fr; }
-  .crud-pagination { align-items: stretch; flex-direction: column; }
-}
-
-.project-notice {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 12px;
-  padding: 12px 16px;
-  border: 1px solid #45a66b;
-  border-radius: 12px;
-  background: #e8f8ee;
-  color: #176436;
-}
-
-.project-notice button {
-  border: 0;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  font-weight: 700;
-}
-
-.project-context-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.project-context-actions:empty { display: none; }
-
-.project-context-actions button,
-.project-key-control button {
-  padding: 9px 12px;
+.project-management .crud-pagination button {
+  padding: 8px 12px;
   border: 1px solid var(--button-primary-border);
-  border-radius: 9px;
   background: var(--button-primary-bg);
   color: var(--button-primary-text);
   cursor: pointer;
 }
 
-.project-form {
-  display: grid;
-  gap: 14px;
+.project-management .crud-pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
-.project-form-grid {
+.project-management .project-form {
+  display: grid;
+}
+
+.project-management .project-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
   margin: 0;
   padding: 0;
   border: 0;
 }
 
-.project-form label,
-.project-form fieldset {
+.project-management .project-form label,
+.project-management .project-form fieldset {
   display: grid;
-  gap: 6px;
   color: var(--primary);
-  font-size: 0.86rem;
 }
 
-.project-form input,
-.project-form select,
-.project-form textarea {
+.project-management .project-form input,
+.project-management .project-form select,
+.project-management .project-form textarea {
   width: 100%;
-  padding: 10px 11px;
   border: 1px solid var(--line-strong);
-  border-radius: 9px;
   background: var(--surface-white);
   color: var(--primary);
   font: inherit;
 }
 
-.project-form textarea { resize: vertical; }
-.project-form-wide { grid-column: 1 / -1; }
+.project-management .project-form textarea {
+  resize: vertical;
+}
 
-.project-key-control {
+.project-management .project-form-wide {
+  grid-column: 1 / -1;
+}
+
+.project-management .project-key-control {
   display: grid;
-  grid-template-columns: 1fr auto;
   gap: 8px;
 }
 
-.project-member-picker {
-  margin-top: 14px;
-  padding: 12px;
+.project-management .project-member-picker {
+  display: grid;
   border: 1px solid var(--line);
-  border-radius: 10px;
 }
 
-.project-member-picker > div {
+.project-management .project-member-picker > div {
   display: grid;
-  grid-template-columns: 1fr 150px;
+  grid-template-columns: minmax(0, 1fr) 150px;
   align-items: center;
   gap: 12px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--line);
 }
 
-.project-member-picker > div > label {
+.project-management .project-member-picker > div > label {
   display: flex;
   align-items: center;
   gap: 9px;
 }
 
-.project-member-picker input[type="checkbox"] { width: auto; }
-.project-member-picker label span { display: grid; }
-.project-member-picker small,
-.project-form-note { color: var(--muted); }
-
-@media (max-width: 760px) {
-  .project-form-grid { grid-template-columns: 1fr; }
-  .project-form-wide { grid-column: auto; }
-  .project-member-picker > div { grid-template-columns: 1fr; }
-  .project-context-actions { flex-direction: column; }
+.project-management .project-member-picker label span {
+  display: grid;
 }
-.project-archive-confirm {
+
+.project-management .project-member-picker small,
+.project-management .project-form-note {
+  color: var(--muted);
+}
+
+.project-management .project-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.project-management .project-detail-field {
+  display: grid;
+  border: 1px solid var(--line);
+}
+
+.project-management .project-permissions {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.project-management .project-permissions span {
+  padding: 6px 9px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+}
+
+.project-management .project-team {
+  display: grid;
+}
+
+.project-management .project-team article {
+  display: grid;
+  gap: 10px;
+}
+
+.project-management .project-team span,
+.project-management .project-team small {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.project-management .project-archive-confirm {
   display: grid;
   gap: 12px;
 }
 
-.project-archive-confirm p {
+.project-management .project-archive-confirm p {
   margin: 0;
   color: var(--muted);
   line-height: 1.5;
 }
 
-.project-archive-confirm > strong {
-  padding: 12px;
+.project-management .project-archive-confirm > strong {
   border: 1px solid var(--line);
-  border-radius: 10px;
   background: var(--surface-soft);
   color: var(--primary);
 }
 
-.crud-modal-actions button.danger[type="submit"] {
+.project-management .crud-modal-actions button.danger[type="submit"] {
   border-color: var(--danger-text);
   background: var(--danger-text);
-  color: #fff;
+  color: var(--button-primary-text);
 }
 
-.crud-modal-actions button.danger[type="submit"]:hover,
-.crud-modal-actions button.danger[type="submit"]:focus-visible {
-  filter: brightness(0.9);
+.project-management .crud-modal-actions button.danger[type="submit"]:hover,
+.project-management .crud-modal-actions button.danger[type="submit"]:focus-visible {
+  border-color: var(--danger-text);
+  background: color-mix(in srgb, var(--danger-text) 88%, black);
+  color: var(--button-primary-text);
 }
-.project-name-cell {
+
+.project-management .project-alert,
+.project-management .project-notice {
+  min-height: 52px;
+  margin: 0;
+  border-radius: 14px;
+  box-shadow: var(--shadow-soft);
+}
+
+.project-management .project-alert {
+  border-color: color-mix(in srgb, var(--danger-text) 28%, var(--line));
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+.project-management .project-notice {
+  border-color: color-mix(in srgb, var(--success-text) 28%, var(--line));
+  background: var(--success-soft);
+  color: var(--success-text);
+}
+
+.project-management .project-alert button,
+.project-management .project-notice button {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 8px 13px;
+  border: 1px solid currentColor;
+  border-radius: var(--button-radius);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.project-management .project-alert button:hover,
+.project-management .project-alert button:focus-visible,
+.project-management .project-notice button:hover,
+.project-management .project-notice button:focus-visible {
+  background: currentColor;
+  color: var(--surface-white);
+  outline: none;
+}
+
+.project-management .project-context-actions {
+  min-height: 0;
+  margin: 0;
+}
+
+.project-management .project-context-actions button {
+  min-height: 40px;
+  padding: 9px 15px;
+  border-radius: var(--button-radius);
+  font: inherit;
+  font-weight: 700;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.project-management .project-context-actions button:hover,
+.project-management .project-context-actions button:focus-visible,
+.project-management .project-key-control button:hover,
+.project-management .project-key-control button:focus-visible {
+  border-color: var(--button-primary-hover-border);
+  background: var(--button-primary-hover-bg);
+  color: var(--button-primary-hover-text);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.project-management .crud-filters {
+  align-items: end;
+  gap: 10px 12px;
+}
+
+.project-management .crud-filters label {
+  min-width: 160px;
+  gap: 7px;
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.project-management .crud-filters select {
+  min-height: 42px;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 400;
+}
+
+.project-management .crud-filters select:focus-visible,
+.project-management .project-form input:focus-visible,
+.project-management .project-form select:focus-visible,
+.project-management .project-form textarea:focus-visible {
+  border-color: var(--button-primary-bg);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--button-primary-bg) 16%, transparent);
+  outline: none;
+}
+
+.project-management .crud-filters .project-archive-filter {
   display: inline-flex;
+  min-width: auto;
+  min-height: 42px;
+  margin: 0;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-white);
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.project-management .project-archive-filter input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--button-primary-bg);
+}
+
+.project-management .crud-table {
+  min-width: 1040px;
+}
+
+.project-management .crud-table th:first-child,
+.project-management .crud-table td:first-child {
+  width: auto;
+  text-align: left;
+}
+
+.project-management .project-name-cell {
+  max-width: 300px;
+}
+
+.project-management .project-name-cell > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.project-management .project-badge,
+.project-management .project-archived-badge {
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  min-height: 26px;
+  padding: 5px 9px;
+  border: 1px solid transparent;
+  line-height: 1;
+  white-space: nowrap;
 }
 
-.project-archived-badge {
-  display: inline-flex;
-  padding: 4px 8px;
-  border: 1px solid #777f89;
-  border-radius: 999px;
-  background: #eceff2;
-  color: #4d5661;
+.project-management .project-badge {
+  background: var(--surface-muted);
+  color: var(--secondary);
+}
+
+.project-management .status-rascunho {
+  border-color: var(--line-strong);
+  background: var(--surface-muted);
+  color: var(--muted);
+}
+
+.project-management .status-planejado {
+  border-color: color-mix(in srgb, var(--secondary) 18%, var(--line));
+  background: var(--detail-accent-bg);
+  color: var(--detail-accent-text);
+}
+
+.project-management .status-em_andamento,
+.project-management .status-concluido,
+.project-management .health-em_dia {
+  border-color: color-mix(in srgb, var(--success-text) 18%, var(--line));
+  background: var(--success-soft);
+  color: var(--success-text);
+}
+
+.project-management .status-pausado,
+.project-management .health-em_risco {
+  border-color: color-mix(in srgb, #8a6300 18%, var(--line));
+  background: #fff4d6;
+  color: #765400;
+}
+
+.project-management .status-cancelado {
+  border-color: var(--line-strong);
+  background: var(--surface-muted);
+  color: var(--muted);
+}
+
+.project-management .health-atrasado {
+  border-color: color-mix(in srgb, var(--danger-text) 18%, var(--line));
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+.project-management .project-archived-badge {
+  border-color: var(--line-strong);
+  background: var(--surface-muted);
+  color: var(--muted);
+}
+
+.project-management .crud-pagination {
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.project-management .crud-pagination span {
+  margin-right: auto;
+}
+
+.project-management .crud-pagination button {
+  min-height: 38px;
+  border-radius: var(--button-radius);
+  font: inherit;
+  font-weight: 700;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.project-management .crud-pagination button:hover:not(:disabled),
+.project-management .crud-pagination button:focus-visible:not(:disabled) {
+  border-color: var(--button-primary-hover-border);
+  background: var(--button-primary-hover-bg);
+  color: var(--button-primary-hover-text);
+  outline: none;
+}
+
+.project-management .crud-modal form {
+  gap: 16px;
+  padding: 20px 22px 22px;
+}
+
+.project-management .project-form {
+  gap: 16px;
+}
+
+.project-management .project-form-grid {
+  gap: 16px;
+}
+
+.project-management .project-form label,
+.project-management .project-form fieldset {
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.project-management .project-form fieldset {
+  min-width: 0;
+}
+
+.project-management .project-form input,
+.project-management .project-form select,
+.project-management .project-form textarea {
+  min-height: 44px;
+  padding: 11px 13px;
+  border-radius: 10px;
+  font-weight: 400;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.project-management .project-form textarea {
+  min-height: 92px;
+  line-height: 1.5;
+}
+
+.project-management .project-form input:disabled,
+.project-management .project-form select:disabled,
+.project-management .project-form textarea:disabled {
+  background: var(--surface-soft);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.project-management .project-key-control {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.project-management .project-key-control button {
+  min-width: 88px;
+  border-radius: var(--button-radius);
+  font: inherit;
+  font-weight: 700;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.project-management .crud-modal-tab-panel > fieldset:not(.project-form-grid, .project-member-picker) {
+  gap: 8px;
+  margin: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+}
+
+.project-management .project-form legend {
+  padding: 0 6px;
+  color: var(--detail-accent-text);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.project-management .project-member-picker {
+  max-height: 330px;
+  margin: 0;
+  padding: 14px;
+  overflow-y: auto;
+  border-radius: 14px;
+  background: var(--surface-soft);
+}
+
+.project-management .project-member-picker > div {
+  min-height: 58px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-white);
+}
+
+.project-management .project-member-picker > div + div {
+  margin-top: 8px;
+}
+
+.project-management .project-member-picker > div > label {
+  min-width: 0;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.project-management .project-member-picker input[type="checkbox"] {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--button-primary-bg);
+}
+
+.project-management .project-member-picker label span {
+  min-width: 0;
+  gap: 3px;
+}
+
+.project-management .project-member-picker label span,
+.project-management .project-member-picker small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.project-management .project-member-picker small {
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.project-management .project-form-note {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--surface-muted);
+  line-height: 1.5;
+}
+
+.project-management .project-detail-error {
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px solid color-mix(in srgb, var(--danger-text) 22%, var(--line));
+  border-radius: 12px;
+  background: var(--danger-bg);
+  color: var(--danger-text);
+  line-height: 1.45;
+}
+
+.project-management .project-detail-grid {
+  gap: 12px;
+}
+
+.project-management .project-detail-field {
+  align-content: start;
+  min-width: 0;
+  min-height: 76px;
+  gap: 7px;
+  padding: 13px 14px;
+  border-radius: 14px;
+  background: var(--surface-soft);
+}
+
+.project-management .project-detail-field span {
+  color: var(--detail-accent-text);
   font-size: 0.72rem;
   font-weight: 700;
-  line-height: 1;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.07em;
+}
+
+.project-management .project-detail-field strong {
+  overflow-wrap: anywhere;
+  color: var(--primary);
+  font-size: 0.94rem;
+  line-height: 1.45;
+}
+
+.project-management .crud-modal form > h4 {
+  margin: 2px 0 -4px;
+  color: var(--primary);
+}
+
+.project-management .project-permissions {
+  gap: 7px;
+}
+
+.project-management .project-permissions span {
+  border: 1px solid var(--line);
+  font-weight: 700;
+}
+
+.project-management .project-permissions .allowed {
+  border-color: color-mix(in srgb, var(--success-text) 18%, var(--line));
+  background: var(--success-soft);
+  color: var(--success-text);
+}
+
+.project-management .project-permissions .denied {
+  border-color: var(--line-strong);
+  background: var(--surface-muted);
+  color: var(--muted);
+}
+
+.project-management .project-team {
+  gap: 8px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.project-management .project-team article {
+  grid-template-columns: minmax(140px, 1.2fr) minmax(180px, 1.4fr) minmax(100px, 0.7fr) minmax(130px, 0.8fr);
+  align-items: center;
+  min-height: 58px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-white);
+}
+
+.project-management .project-team article:last-child {
+  border-bottom: 0;
+}
+
+.project-management .project-team strong {
+  color: var(--primary);
+  overflow-wrap: anywhere;
+}
+
+.project-management .project-team span,
+.project-management .project-team small {
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+}
+
+.project-management .project-archive-confirm > strong {
+  padding: 14px;
+  border-radius: 14px;
+}
+
+.project-management .crud-modal-actions button:disabled,
+.project-management .project-key-control button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
+@media (max-width: 760px) {
+  .project-management {
+    gap: 10px;
+  }
+
+  .project-management .project-alert,
+  .project-management .project-notice {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .project-management .project-context-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .project-management .crud-filters label,
+  .project-management .crud-filters .project-archive-filter {
+    flex: 1 1 180px;
+  }
+
+  .project-management .crud-pagination {
+    align-items: stretch;
+    flex-direction: row;
+  }
+
+  .project-management .crud-pagination span {
+    flex: 1 0 100%;
+    margin: 0;
+    text-align: center;
+  }
+
+  .project-management .crud-pagination button {
+    flex: 1 1 120px;
+  }
+
+  .project-management .crud-modal form {
+    padding: 16px;
+  }
+
+  .project-management .project-team {
+    border: 0;
+  }
+
+  .project-management .project-team article {
+    grid-template-columns: 1fr;
+    gap: 5px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface-soft);
+  }
+}
+
+@media (max-width: 520px) {
+  .project-management .crud-filters {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .project-management .crud-filters label,
+  .project-management .crud-filters .project-archive-filter {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .project-management .project-key-control {
+    grid-template-columns: 1fr;
+  }
+
+  .project-management .project-key-control button {
+    width: 100%;
+  }
+
+  .project-management .project-member-picker {
+    max-height: none;
+  }
+
+  .project-management .crud-modal-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .project-management .crud-modal-actions button {
+    width: 100%;
+  }
+}
+@media (max-width: 760px) {
+  .project-management .project-form-grid,
+  .project-management .project-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .project-management .project-form-wide {
+    grid-column: auto;
+  }
+
+  .project-management .project-member-picker > div {
+    grid-template-columns: 1fr;
+  }
 }
