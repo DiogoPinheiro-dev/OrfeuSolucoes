@@ -1,4 +1,5 @@
 import { apolloClient } from "../../src/lib/apolloClient";
+import { toServiceError } from "../graphql/serviceError";
 import {
     CREATE_USER_MUTATION,
     DELETE_USER_MUTATION,
@@ -6,15 +7,6 @@ import {
     USERS_QUERY
 } from "../graphql/operations";
 
-const extractErrorMessage = (error) => {
-    const gqlError = error?.graphQLErrors?.[0]?.message;
-
-    if (gqlError) {
-        return gqlError;
-    }
-
-    return error?.message || "Erro inesperado ao comunicar com o servidor.";
-};
 
 export const getUsers = async () => {
     try {
@@ -25,7 +17,7 @@ export const getUsers = async () => {
 
         return response?.data?.users ?? [];
     } catch (error) {
-        throw new Error(extractErrorMessage(error));
+        throw toServiceError(error);
     }
 };
 
@@ -47,7 +39,7 @@ export const createUser = async ({ nome, login, email, senha, empresaIds, grupoI
 
         return response?.data?.createUser;
     } catch (error) {
-        throw new Error(extractErrorMessage(error));
+        throw toServiceError(error);
     }
 };
 
@@ -73,7 +65,7 @@ export const updateUser = async ({ id, nome, login, email, senha, empresaIds, gr
 
         return response?.data?.updateUser;
     } catch (error) {
-        throw new Error(extractErrorMessage(error));
+        throw toServiceError(error);
     }
 };
 
@@ -86,6 +78,6 @@ export const deleteUser = async (id) => {
 
         return response?.data?.deleteUser;
     } catch (error) {
-        throw new Error(extractErrorMessage(error));
+        throw toServiceError(error);
     }
 };

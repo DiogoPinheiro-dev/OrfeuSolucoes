@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { createSolucao, deleteSolucao, getSolucoes, updateSolucao } from "../../services/Solucoes/SolucaoService";
 import { canUseFeatureAction } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
+import { useFormFieldErrors } from "../hooks/useFormFieldErrors";
 import ConfirmDialog from "./ConfirmDialog";
+import FormFieldError from "./FormFieldError";
 import CrudGrid from "./CrudGrid";
 import { FieldHelpDialog, HelpButton } from "./FieldHelp";
 import { CrudModal } from "./CrudModal";
@@ -86,6 +88,10 @@ const normalizePayload = (form) => ({
     somenteAdminSistema: !!form.somenteAdminSistema
 });
 
+const SOLUTION_FORM_ID = "solution-registration-form";
+const SOLUTION_FIELD_ORDER = ["nome", "slug", "eyebrow", "descricao", "ordem"];
+const SOLUTION_FIELD_MATCHERS = { slug: [/identificador.*uso/i, /slug/i] };
+
 export default function SolutionManagement({ permissions }) {
     const { user: currentUser } = useAuth();
     const [solucoes, setSolucoes] = useState([]);
@@ -100,7 +106,19 @@ export default function SolutionManagement({ permissions }) {
     const [form, setForm] = useState(initialForm);
     const [pendingDelete, setPendingDelete] = useState(null);
     const [activeHelp, setActiveHelp] = useState(null);
-
+    const {
+        applyError: applyFormError,
+        clearErrors: clearFormErrors,
+        clearFieldError,
+        fieldErrorProps,
+        fieldErrors,
+        generalError: formError,
+        showFieldErrors
+    } = useFormFieldErrors({
+        formId: SOLUTION_FORM_ID,
+        fieldOrder: SOLUTION_FIELD_ORDER,
+        fieldMatchers: SOLUTION_FIELD_MATCHERS
+    });
     const loadSolucoes = async () => {
         setError("");
         setLoading(true);
@@ -134,11 +152,13 @@ export default function SolutionManagement({ permissions }) {
 
     const openModal = (mode, solucao = null) => {
         setError("");
+        clearFormErrors();
         setModalMode(mode);
         setForm(solucao ? normalizeForm(solucao) : initialForm);
     };
 
     const closeModal = () => {
+        clearFormErrors();
         setModalMode(null);
         setForm(initialForm);
         setSaving(false);
@@ -147,6 +167,8 @@ export default function SolutionManagement({ permissions }) {
 
     const handleChange = (event) => {
         const { checked, name, type, value } = event.target;
+
+        clearFieldError(name);
 
         setForm((current) => ({
             ...current,
@@ -158,8 +180,12 @@ export default function SolutionManagement({ permissions }) {
         event.preventDefault();
         setError("");
 
-        if (!form.nome.trim() || !form.slug.trim()) {
-            setError("Preencha nome e identificador da solucao.");
+        const localErrors = {};
+        if (!form.nome.trim()) localErrors.nome = "Preencha o nome.";
+        if (!form.slug.trim()) localErrors.slug = "Preencha o identificador.";
+
+        if (Object.keys(localErrors).length) {
+            showFieldErrors(localErrors);
             return;
         }
 
@@ -179,7 +205,7 @@ export default function SolutionManagement({ permissions }) {
             closeModal();
             await loadSolucoes();
         } catch (saveError) {
-            setError(saveError.message || "Nao foi possivel salvar a solucao.");
+            applyFormError(saveError, "Nao foi possivel salvar a solucao.");
         } finally {
             setSaving(false);
         }
@@ -283,6 +309,8 @@ export default function SolutionManagement({ permissions }) {
             {modalMode && (
                 <CrudModal
                     mode={modalMode}
+                    formId={SOLUTION_FORM_ID}
+                    noValidate
                     title="Solucao"
                     ariaLabel="Cadastro de solucao"
                     onClose={closeModal}
@@ -297,21 +325,23 @@ export default function SolutionManagement({ permissions }) {
                             )}
                         </>
                     )}
+
                 >
+                    {formError && <div className="crud-error" role="alert">{formError}</div>}
                     <div className="field-help-field">
                         <span className="field-help-label">
-                            <label htmlFor="solucao-nome">Nome</label>
+                            <label htmlFor="solucao-nome">Nome <FormFieldError formId={SOLUTION_FORM_ID} field="nome" errors={fieldErrors} /></label>
                             <HelpButton help={fieldHelp.nome} onHelp={setActiveHelp} />
                         </span>
-                        <input id="solucao-nome" name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || saving} required />
+                        <input id="solucao-nome" name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || saving} {...fieldErrorProps("nome")} />
                     </div>
 
                     <div className="field-help-field">
                         <span className="field-help-label">
-                            <label htmlFor="solucao-slug">Identificador</label>
+                            <label htmlFor="solucao-slug">Identificador <FormFieldError formId={SOLUTION_FORM_ID} field="slug" errors={fieldErrors} /></label>
                             <HelpButton help={fieldHelp.slug} onHelp={setActiveHelp} />
                         </span>
-                        <input id="solucao-slug" name="slug" value={form.slug || ""} onChange={handleChange} disabled={readonly || saving} required />
+                        <input id="solucao-slug" name="slug" value={form.slug || ""} onChange={handleChange} disabled={readonly || saving} {...fieldErrorProps("slug")} />
                     </div>
 
                     <div className="field-help-field">

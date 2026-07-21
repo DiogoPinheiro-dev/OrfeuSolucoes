@@ -9,11 +9,15 @@ import {
 } from "../../services/Chamados/ChamadoService";
 import { canUseFeatureAction } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
+import { useFormFieldErrors } from "../hooks/useFormFieldErrors";
 import ConfirmDialog from "./ConfirmDialog";
+import FormFieldError from "./FormFieldError";
 import CrudGrid from "./CrudGrid";
 import { CrudModal } from "./CrudModal";
 
 import "../styles/chamados.css";
+
+const RESPONSIBLE_FORM_ID = "ticket-responsible-registration-form";
 
 const initialForm = {
     id: "",
@@ -74,7 +78,19 @@ export default function ResponsavelChamadoManagement({ permissions }) {
     const [modalMode, setModalMode] = useState(null);
     const [form, setForm] = useState(initialForm);
     const [pendingDelete, setPendingDelete] = useState(null);
-
+    const {
+        applyError: applyFormError,
+        clearErrors: clearFormErrors,
+        clearFieldError,
+        fieldErrorProps,
+        fieldErrors,
+        generalError: formError,
+        showFieldErrors
+    } = useFormFieldErrors({
+        formId: RESPONSIBLE_FORM_ID,
+        fieldOrder: ["tipo", "usuarioId", "grupoId", "solucaoIds", "funcionalidadeIds"],
+        fieldMatchers: { usuarioId: [/responsavel.*cadastro/i], grupoId: [/responsavel.*cadastro/i] }
+    });
     const loadData = async () => {
         setError("");
         setLoading(true);
@@ -140,6 +156,7 @@ export default function ResponsavelChamadoManagement({ permissions }) {
 
     const openModal = (mode, responsavel = null) => {
         setError("");
+        clearFormErrors();
         setModalMode(mode);
 
         if (!responsavel) {
@@ -178,12 +195,14 @@ export default function ResponsavelChamadoManagement({ permissions }) {
     };
 
     const closeModal = () => {
+        clearFormErrors();
         setModalMode(null);
         setForm(initialForm);
         setSaving(false);
     };
 
     const handleTipoChange = (event) => {
+        clearFieldError("tipo");
         const tipo = event.target.value;
 
         setForm((current) => ({
@@ -195,6 +214,7 @@ export default function ResponsavelChamadoManagement({ permissions }) {
     };
 
     const handleUsuarioChange = (event) => {
+        clearFieldError("usuarioId");
         const { value } = event.target;
 
         setForm((current) => ({
@@ -204,6 +224,7 @@ export default function ResponsavelChamadoManagement({ permissions }) {
     };
 
     const handleGrupoChange = (event) => {
+        clearFieldError("grupoId");
         const { value } = event.target;
 
         setForm((current) => ({
@@ -213,6 +234,7 @@ export default function ResponsavelChamadoManagement({ permissions }) {
     };
 
     const handleToggleSolucao = (solucaoId, checked) => {
+        clearFieldError("solucaoIds");
         const solucaoIdString = idKey(solucaoId);
         const solucao = (options.solucoes || []).find((item) => idKey(item.id) === solucaoIdString);
         const funcionalidadeIdsDaSolucao = new Set((solucao?.funcionalidades || []).map((funcionalidade) => idKey(funcionalidade.id)));
@@ -243,6 +265,7 @@ export default function ResponsavelChamadoManagement({ permissions }) {
     };
 
     const handleToggleResponsavelGeral = (solucaoId, checked) => {
+        clearFieldError("funcionalidadeIds");
         const solucaoIdString = idKey(solucaoId);
         const solucao = (options.solucoes || []).find((item) => idKey(item.id) === solucaoIdString);
         const funcionalidadeIdsDaSolucao = new Set((solucao?.funcionalidades || []).map((funcionalidade) => idKey(funcionalidade.id)));
@@ -274,6 +297,7 @@ export default function ResponsavelChamadoManagement({ permissions }) {
     };
 
     const handleToggleFuncionalidade = (funcionalidadeId, checked) => {
+        clearFieldError("funcionalidadeIds");
         const funcionalidadeIdString = idKey(funcionalidadeId);
 
         setForm((current) => {
@@ -293,34 +317,23 @@ export default function ResponsavelChamadoManagement({ permissions }) {
     };
 
     const validateSelection = () => {
-        if (form.tipo === "GRUPO") {
-            if (!form.grupoId) {
-                return "Selecione o grupo responsavel.";
-            }
-        } else if (!form.usuarioId) {
-            return "Selecione o usuario responsavel.";
-        }
-
-        if (!form.solucaoIds?.length) {
-            return "Selecione pelo menos uma solucao.";
-        }
+        const errors = {};
+        if (form.tipo === "GRUPO" && !form.grupoId) errors.grupoId = "Selecione o grupo responsavel.";
+        if (form.tipo !== "GRUPO" && !form.usuarioId) errors.usuarioId = "Selecione o usuario responsavel.";
+        if (!form.solucaoIds?.length) errors.solucaoIds = "Selecione pelo menos uma solucao.";
 
         for (const solucaoId of form.solucaoIds || []) {
             const solucao = (options.solucoes || []).find((item) => idKey(item.id) === idKey(solucaoId));
-
-            if (selectedGeralSolucaoIdSet.has(idKey(solucaoId))) {
-                continue;
-            }
-
+            if (selectedGeralSolucaoIdSet.has(idKey(solucaoId))) continue;
             const hasFuncionalidadeSelecionada = (solucao?.funcionalidades || [])
                 .some((funcionalidade) => selectedFuncionalidadeIdSet.has(idKey(funcionalidade.id)));
-
             if (!hasFuncionalidadeSelecionada) {
-                return `Marque "Responsavel geral?" ou selecione pelo menos uma funcionalidade para ${solucao?.nome || "a solucao selecionada"}.`;
+                errors.funcionalidadeIds = `Marque "Responsavel geral?" ou selecione pelo menos uma funcionalidade para ${solucao?.nome || "a solucao selecionada"}.`;
+                break;
             }
         }
 
-        return "";
+        return errors;
     };
 
     const buildPayload = () => ({
@@ -348,10 +361,10 @@ export default function ResponsavelChamadoManagement({ permissions }) {
         event.preventDefault();
         setError("");
 
-        const validationError = validateSelection();
+        const validationErrors = validateSelection();
 
-        if (validationError) {
-            setError(validationError);
+        if (Object.keys(validationErrors).length) {
+            showFieldErrors(validationErrors);
             return;
         }
 
@@ -371,7 +384,7 @@ export default function ResponsavelChamadoManagement({ permissions }) {
             closeModal();
             await loadData();
         } catch (saveError) {
-            setError(saveError.message || "Nao foi possivel salvar o responsavel.");
+            applyFormError(saveError, "Nao foi possivel salvar o responsavel.");
         } finally {
             setSaving(false);
         }
@@ -474,6 +487,8 @@ export default function ResponsavelChamadoManagement({ permissions }) {
             {modalMode && (
                 <CrudModal
                     mode={modalMode}
+                    formId={RESPONSIBLE_FORM_ID}
+                    noValidate
                     title="Responsavel por atendimento"
                     ariaLabel="Responsavel por atendimento"
                     onClose={closeModal}
@@ -489,6 +504,7 @@ export default function ResponsavelChamadoManagement({ permissions }) {
                         </>
                     )}
                 >
+                    {formError && <div className="crud-error" role="alert">{formError}</div>}
                     <label>
                         <span>Tipo de responsavel</span>
                         <select name="tipo" value={form.tipo} onChange={handleTipoChange} disabled={alvoDisabled} required>
@@ -499,8 +515,8 @@ export default function ResponsavelChamadoManagement({ permissions }) {
 
                     {form.tipo === "GRUPO" ? (
                         <label>
-                            <span>Grupo responsavel</span>
-                            <select name="grupoId" value={form.grupoId || ""} onChange={handleGrupoChange} disabled={alvoDisabled} required>
+                            <span>Grupo responsavel <FormFieldError formId={RESPONSIBLE_FORM_ID} field="grupoId" errors={fieldErrors} /></span>
+                            <select name="grupoId" value={form.grupoId || ""} onChange={handleGrupoChange} disabled={alvoDisabled} {...fieldErrorProps("grupoId")}>
                                 <option value="">Selecione</option>
                                 {(options.grupos || []).map((grupo) => (
                                     <option key={grupo.id} value={grupo.id}>
@@ -511,8 +527,8 @@ export default function ResponsavelChamadoManagement({ permissions }) {
                         </label>
                     ) : (
                         <label>
-                            <span>Usuario responsavel</span>
-                            <select name="usuarioId" value={form.usuarioId || ""} onChange={handleUsuarioChange} disabled={alvoDisabled} required>
+                            <span>Usuario responsavel <FormFieldError formId={RESPONSIBLE_FORM_ID} field="usuarioId" errors={fieldErrors} /></span>
+                            <select name="usuarioId" value={form.usuarioId || ""} onChange={handleUsuarioChange} disabled={alvoDisabled} {...fieldErrorProps("usuarioId")}>
                                 <option value="">Selecione</option>
                                 {(options.usuarios || []).map((usuario) => (
                                     <option key={usuario.id} value={usuario.id}>
@@ -526,13 +542,16 @@ export default function ResponsavelChamadoManagement({ permissions }) {
                     <fieldset className="responsavel-checkbox-group">
                         <legend>Solucoes</legend>
                         <small>Marque uma ou mais solucoes. Depois defina se o responsavel sera geral ou por funcionalidades especificas.</small>
+                        <FormFieldError formId={RESPONSIBLE_FORM_ID} field="solucaoIds" errors={fieldErrors} />
 
                         <div className="responsavel-checkbox-list">
                             {(options.solucoes || []).map((solucao) => (
                                 <label className="responsavel-checkbox-option" key={solucao.id}>
                                     <input
                                         type="checkbox"
+                                        name="solucaoIds"
                                         checked={selectedSolucaoIdSet.has(idKey(solucao.id))}
+                                        {...fieldErrorProps("solucaoIds")}
                                         onChange={(event) => handleToggleSolucao(solucao.id, event.target.checked)}
                                         disabled={readonly || saving}
                                     />
@@ -573,7 +592,9 @@ export default function ResponsavelChamadoManagement({ permissions }) {
                                                     <label className="responsavel-checkbox-option" key={funcionalidade.id}>
                                                         <input
                                                             type="checkbox"
+                                                            name="funcionalidadeIds"
                                                             checked={selectedFuncionalidadeIdSet.has(idKey(funcionalidade.id))}
+                                                            {...fieldErrorProps("funcionalidadeIds")}
                                                             onChange={(event) => handleToggleFuncionalidade(funcionalidade.id, event.target.checked)}
                                                             disabled={readonly || saving}
                                                         />

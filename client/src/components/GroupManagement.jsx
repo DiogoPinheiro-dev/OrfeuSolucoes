@@ -10,11 +10,23 @@ import { getSolucoes } from "../../services/Solucoes/SolucaoService";
 import ConfirmDialog from "./ConfirmDialog";
 import CrudGrid from "./CrudGrid";
 import { FieldHelpDialog, HelpButton } from "./FieldHelp";
+import FormFieldError from "./FormFieldError";
 import { CrudModal, CrudModalTabPanel, CrudModalTabs } from "./CrudModal";
 import { useAuth } from "../hooks/useAuth";
+import { useFormFieldErrors } from "../hooks/useFormFieldErrors";
 import { canUseFeatureAction } from "../auth/hubConfig";
 
 import "../styles/userManagement.css";
+
+const GROUP_FORM_ID = "group-registration-form";
+const GROUP_FIELD_ORDER = ["nome", "descricao", "solucaoIds", "funcionalidadeIds"];
+const GROUP_FIELD_TABS = {
+    nome: "main",
+    descricao: "main",
+    solucaoIds: "solutions",
+    funcionalidadeIds: "features"
+};
+const GROUP_FIELD_MATCHERS = { nome: [/grupo.*cadastrado/i, /nome/i] };
 
 const initialForm = {
     id: "",
@@ -140,6 +152,21 @@ export default function GroupManagement({ permissions }) {
     const [activeTab, setActiveTab] = useState("main");
     const [pendingDelete, setPendingDelete] = useState(null);
     const [activeHelp, setActiveHelp] = useState(null);
+    const {
+        applyError: applyFormError,
+        clearErrors: clearFormErrors,
+        clearFieldError,
+        fieldErrorProps,
+        fieldErrors,
+        generalError: formError,
+        showFieldErrors
+    } = useFormFieldErrors({
+        formId: GROUP_FORM_ID,
+        fieldOrder: GROUP_FIELD_ORDER,
+        fieldTabs: GROUP_FIELD_TABS,
+        fieldMatchers: GROUP_FIELD_MATCHERS,
+        setActiveTab
+    });
 
     const loadGroups = async () => {
         setError("");
@@ -177,12 +204,14 @@ export default function GroupManagement({ permissions }) {
 
     const openModal = (mode, group = null) => {
         setError("");
+        clearFormErrors();
         setModalMode(mode);
         setActiveTab("main");
         setForm(group ? normalizeGroupForm(group) : initialForm);
     };
 
     const closeModal = () => {
+        clearFormErrors();
         setModalMode(null);
         setForm(initialForm);
         setSaving(false);
@@ -192,6 +221,8 @@ export default function GroupManagement({ permissions }) {
 
     const handleChange = (event) => {
         const { checked, name, type, value } = event.target;
+
+        clearFieldError(name);
 
         setForm((current) => ({
             ...current,
@@ -204,8 +235,7 @@ export default function GroupManagement({ permissions }) {
         setError("");
 
         if (!form.nome.trim()) {
-            setActiveTab("main");
-            setError("Preencha o nome do grupo.");
+            showFieldErrors({ nome: "Preencha o nome do grupo." });
             return;
         }
 
@@ -237,7 +267,7 @@ export default function GroupManagement({ permissions }) {
             closeModal();
             await loadGroups();
         } catch (saveError) {
-            setError(saveError.message || "Não foi possível salvar o grupo.");
+            applyFormError(saveError, "Nao foi possivel salvar o grupo.");
         } finally {
             setSaving(false);
         }
@@ -260,6 +290,7 @@ export default function GroupManagement({ permissions }) {
     };
 
     const toggleSolucao = (solucao) => {
+        clearFieldError("solucaoIds");
         setForm((current) => {
             const selected = current.solucaoIds.includes(solucao.id);
             const funcionalidadeIds = solucao.funcionalidades?.map((funcionalidade) => funcionalidade.id) || [];
@@ -285,6 +316,7 @@ export default function GroupManagement({ permissions }) {
     };
 
     const toggleFuncionalidade = (funcionalidade) => {
+        clearFieldError("funcionalidadeIds");
         setForm((current) => {
             const funcionalidadeId = funcionalidade.id;
             const selected = current.funcionalidadeIds.includes(funcionalidadeId);
@@ -447,6 +479,8 @@ export default function GroupManagement({ permissions }) {
             {modalMode && (
                 <CrudModal
                     mode={modalMode}
+                    formId={GROUP_FORM_ID}
+                    noValidate
                     title="Grupo de usuários"
                     ariaLabel="Cadastro de grupo"
                     onClose={closeModal}
@@ -473,21 +507,23 @@ export default function GroupManagement({ permissions }) {
                                 ]}
                             />
 
+                            {formError && <div className="crud-error" role="alert">{formError}</div>}
+
                             <CrudModalTabPanel active={activeTab === "main"}>
                             <div className="field-help-field">
                                 <span className="field-help-label">
-                                    <label htmlFor="grupo-nome">Nome</label>
+                                    <label htmlFor="grupo-nome">Nome <FormFieldError formId={GROUP_FORM_ID} field="nome" errors={fieldErrors} /></label>
                                     <HelpButton help={fieldHelp.nome} onHelp={setActiveHelp} />
                                 </span>
-                                <input id="grupo-nome" name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || saving} required />
+                                <input id="grupo-nome" name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || saving} {...fieldErrorProps("nome")} />
                             </div>
 
                             <div className="field-help-field">
                                 <span className="field-help-label">
-                                    <label htmlFor="grupo-descricao">Descrição</label>
+                                    <label htmlFor="grupo-descricao">Descrição <FormFieldError formId={GROUP_FORM_ID} field="descricao" errors={fieldErrors} /></label>
                                     <HelpButton help={fieldHelp.descricao} onHelp={setActiveHelp} />
                                 </span>
-                                <input id="grupo-descricao" name="descricao" value={form.descricao || ""} onChange={handleChange} disabled={readonly || saving} />
+                                <input id="grupo-descricao" name="descricao" value={form.descricao || ""} onChange={handleChange} disabled={readonly || saving} {...fieldErrorProps("descricao")} />
                             </div>
                             </CrudModalTabPanel>
 
@@ -505,7 +541,9 @@ export default function GroupManagement({ permissions }) {
                                         <label key={solucao.id} className="user-permission-option">
                                             <input
                                                 type="checkbox"
+                                                name="solucaoIds"
                                                 checked={form.solucaoIds.includes(solucao.id)}
+                                                {...fieldErrorProps("solucaoIds")}
                                                 onChange={() => toggleSolucao(solucao)}
                                                 disabled={readonly || saving}
                                             />
@@ -536,7 +574,9 @@ export default function GroupManagement({ permissions }) {
                                                     <label className="user-permission-option">
                                                         <input
                                                             type="checkbox"
+                                                            name="funcionalidadeIds"
                                                             checked={selected}
+                                                            {...fieldErrorProps("funcionalidadeIds")}
                                                             onChange={() => toggleFuncionalidade(funcionalidade)}
                                                             disabled={disabled}
                                                         />

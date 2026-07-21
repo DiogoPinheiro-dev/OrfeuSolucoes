@@ -1,4 +1,5 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { FormFieldConflictException } from '../../common/exceptions/form-field.exception';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
 import { UserType } from './dto/user.type';
@@ -25,14 +26,14 @@ export class UserCatalogService {
     const userExists = await this.prisma.usuario.findUnique({ where: { email } });
 
     if (userExists) {
-      throw new ConflictException('Email ja esta em uso.');
+      throw new FormFieldConflictException('email', 'E-mail ja esta em uso.');
     }
 
     if (login) {
       const loginExists = (await this.prisma.usuario.findFirst({ where: { login } as never })) as UsuarioWithRole | null;
 
       if (loginExists) {
-        throw new ConflictException('Login ja esta em uso.');
+        throw new FormFieldConflictException('login', 'Login ja esta em uso.');
       }
     }
 
@@ -97,7 +98,7 @@ export class UserCatalogService {
       const emailOwner = await this.prisma.usuario.findUnique({ where: { email } });
 
       if (emailOwner && emailOwner.id !== input.id) {
-        throw new ConflictException('Email ja esta em uso.');
+        throw new FormFieldConflictException('email', 'E-mail ja esta em uso.');
       }
 
       data.email = email;
@@ -110,7 +111,7 @@ export class UserCatalogService {
         const loginOwner = (await this.prisma.usuario.findFirst({ where: { login } as never })) as UsuarioWithRole | null;
 
         if (loginOwner && loginOwner.id !== input.id) {
-          throw new ConflictException('Login ja esta em uso.');
+          throw new FormFieldConflictException('login', 'Login ja esta em uso.');
         }
       }
 

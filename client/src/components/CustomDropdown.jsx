@@ -6,8 +6,10 @@ import "../styles/customDropdown.css";
 
 export default function CustomDropdown({
     ariaLabel,
+    ariaDescribedBy,
     className = "",
     disabled = false,
+    invalid = false,
     menuPlacement = "default",
     name,
     onChange,
@@ -155,6 +157,9 @@ export default function CustomDropdown({
                 aria-haspopup="listbox"
                 aria-label={ariaLabel}
                 aria-controls={`${id}-listbox`}
+                aria-describedby={ariaDescribedBy}
+                aria-invalid={invalid ? "true" : undefined}
+                data-form-field={name}
             >
                 <span className={`custom-dropdown__value${selectedOption ? "" : " custom-dropdown__value--placeholder"}`}>
                     {selectedOption?.label || placeholder}

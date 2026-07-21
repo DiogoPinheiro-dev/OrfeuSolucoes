@@ -1,4 +1,5 @@
 import { apolloClient } from "../../src/lib/apolloClient";
+import { toServiceError } from "../graphql/serviceError";
 import {
     CREATE_EMPRESA_MUTATION,
     DELETE_EMPRESA_MUTATION,
@@ -6,15 +7,6 @@ import {
     UPDATE_EMPRESA_MUTATION
 } from "../graphql/operations";
 
-const extractErrorMessage = (error) => {
-    const gqlError = error?.graphQLErrors?.[0]?.message;
-
-    if (gqlError) {
-        return gqlError;
-    }
-
-    return error?.message || "Erro inesperado ao comunicar com o servidor.";
-};
 
 export const getEmpresas = async () => {
     try {
@@ -25,7 +17,7 @@ export const getEmpresas = async () => {
 
         return response?.data?.empresas ?? [];
     } catch (error) {
-        throw new Error(extractErrorMessage(error));
+        throw toServiceError(error);
     }
 };
 
@@ -52,7 +44,7 @@ export const createEmpresa = async ({
 
         return response?.data?.createEmpresa;
     } catch (error) {
-        throw new Error(extractErrorMessage(error));
+        throw toServiceError(error);
     }
 };
 
@@ -74,7 +66,7 @@ export const updateEmpresa = async ({ id, nome, acessoProjetos, acessoHoras, sol
 
         return response?.data?.updateEmpresa;
     } catch (error) {
-        throw new Error(extractErrorMessage(error));
+        throw toServiceError(error);
     }
 };
 
@@ -87,6 +79,6 @@ export const deleteEmpresa = async (id) => {
 
         return response?.data?.deleteEmpresa;
     } catch (error) {
-        throw new Error(extractErrorMessage(error));
+        throw toServiceError(error);
     }
 };

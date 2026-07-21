@@ -12,7 +12,9 @@ import {
 } from "../../services/Chamados/ChamadoService";
 import { canUseFeatureAction } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
+import { useFormFieldErrors } from "../hooks/useFormFieldErrors";
 import ConfirmDialog from "./ConfirmDialog";
+import FormFieldError from "./FormFieldError";
 import CrudGrid from "./CrudGrid";
 import { CrudModal } from "./CrudModal";
 
@@ -60,6 +62,7 @@ const config = {
 export default function ChamadoConfiguracaoManagement({ permissions, kind }) {
     const { user } = useAuth();
     const settings = config[kind] || config.tipos;
+    const formId = `ticket-${kind}-registration-form`;
     const [items, setItems] = useState([]);
     const [selectedId, setSelectedId] = useState("");
     const [selectedIds, setSelectedIds] = useState([]);
@@ -71,7 +74,15 @@ export default function ChamadoConfiguracaoManagement({ permissions, kind }) {
     const [modalMode, setModalMode] = useState(null);
     const [form, setForm] = useState(initialForm);
     const [pendingDelete, setPendingDelete] = useState(null);
-
+    const {
+        applyError: applyFormError,
+        clearErrors: clearFormErrors,
+        clearFieldError,
+        fieldErrorProps,
+        fieldErrors,
+        generalError: formError,
+        showFieldErrors
+    } = useFormFieldErrors({ formId, fieldOrder: ["nome", "descricao", "cor", "ordem"] });
     const loadItems = useCallback(async () => {
         setError("");
         setLoading(true);
@@ -105,11 +116,13 @@ export default function ChamadoConfiguracaoManagement({ permissions, kind }) {
 
     const openModal = (mode, item = null) => {
         setError("");
+        clearFormErrors();
         setModalMode(mode);
         setForm(item ? { ...initialForm, ...item, descricao: item.descricao || "", cor: item.cor || "" } : initialForm);
     };
 
     const closeModal = () => {
+        clearFormErrors();
         setModalMode(null);
         setForm(initialForm);
         setSaving(false);
@@ -117,6 +130,8 @@ export default function ChamadoConfiguracaoManagement({ permissions, kind }) {
 
     const handleChange = (event) => {
         const { checked, name, type, value } = event.target;
+
+        clearFieldError(name);
 
         setForm((current) => ({
             ...current,
@@ -129,7 +144,7 @@ export default function ChamadoConfiguracaoManagement({ permissions, kind }) {
         setError("");
 
         if (!form.nome.trim()) {
-            setError(`Preencha o nome de ${settings.singular.toLowerCase()}.`);
+            showFieldErrors({ nome: `Preencha o nome de ${settings.singular.toLowerCase()}.` });
             return;
         }
 
@@ -155,7 +170,7 @@ export default function ChamadoConfiguracaoManagement({ permissions, kind }) {
             closeModal();
             await loadItems();
         } catch (saveError) {
-            setError(saveError.message || `Nao foi possivel salvar ${settings.singular.toLowerCase()}.`);
+            applyFormError(saveError, `Nao foi possivel salvar ${settings.singular.toLowerCase()}.`);
         } finally {
             setSaving(false);
         }
@@ -255,6 +270,8 @@ export default function ChamadoConfiguracaoManagement({ permissions, kind }) {
             {modalMode && (
                 <CrudModal
                     mode={modalMode}
+                    formId={formId}
+                    noValidate
                     title={settings.singular}
                     ariaLabel={settings.singular}
                     onClose={closeModal}
@@ -271,9 +288,10 @@ export default function ChamadoConfiguracaoManagement({ permissions, kind }) {
                     )}
                 >
 
+                    {formError && <div className="crud-error" role="alert">{formError}</div>}
                     <label>
-                        <span>Nome</span>
-                        <input name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || saving} required />
+                        <span>Nome <FormFieldError formId={formId} field="nome" errors={fieldErrors} /></span>
+                        <input name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || saving} {...fieldErrorProps("nome")} />
                     </label>
 
                     <label>

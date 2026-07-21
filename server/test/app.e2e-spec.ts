@@ -10,6 +10,7 @@ import { join } from 'node:path';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import type { Request, Response } from 'express';
 import * as request from 'supertest';
+import { createFormValidationException } from '../src/common/exceptions/form-field.exception';
 import { HealthResolver } from '../src/health.resolver';
 import { GqlAuthGuard } from '../src/modules/auth/guards/gql-auth.guard';
 import { ChamadosController } from '../src/modules/chamados/chamados.controller';
@@ -190,7 +191,8 @@ describe('Chamados GraphQL e HTTP e2e', () => {
       new ValidationPipe({
         whitelist: true,
         forbidNonWhitelisted: true,
-        transform: true
+        transform: true,
+        exceptionFactory: createFormValidationException
       })
     );
     await app.init();

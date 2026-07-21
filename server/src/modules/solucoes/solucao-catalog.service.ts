@@ -1,4 +1,5 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { FormFieldConflictException } from '../../common/exceptions/form-field.exception';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateFuncionalidadeInput } from './dto/create-funcionalidade.input';
 import { CreateSolucaoInput } from './dto/create-solucao.input';
@@ -28,7 +29,7 @@ export class SolucaoCatalogService {
     })) as SolucaoRecord | null;
 
     if (existing) {
-      throw new ConflictException('Solucao ja cadastrada.');
+      throw new FormFieldConflictException('slug', 'Solucao ja cadastrada com este identificador.');
     }
 
     const created = (await (this.prisma as never as { solucao: { create: Function } }).solucao.create({
@@ -50,6 +51,16 @@ export class SolucaoCatalogService {
 
   async update(input: UpdateSolucaoInput): Promise<SolucaoType> {
     await this.ensureSolucao(input.id);
+
+    if (input.slug !== undefined) {
+      const slug = normalizeSlug(input.slug);
+      const existing = (await (this.prisma as never as { solucao: { findUnique: Function } }).solucao.findUnique({
+        where: { slug }
+      })) as SolucaoRecord | null;
+      if (existing && existing.id !== input.id) {
+        throw new FormFieldConflictException('slug', 'Solucao ja cadastrada com este identificador.');
+      }
+    }
 
     const updated = (await (this.prisma as never as { solucao: { update: Function } }).solucao.update({
       where: { id: input.id },

@@ -9,7 +9,9 @@ import {
 } from "../../services/Chamados/ChamadoService";
 import { canUseFeatureAction } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
+import { useFormFieldErrors } from "../hooks/useFormFieldErrors";
 import ConfirmDialog from "./ConfirmDialog";
+import FormFieldError from "./FormFieldError";
 import CrudGrid from "./CrudGrid";
 import { CrudModal } from "./CrudModal";
 
@@ -37,6 +39,10 @@ const prazoLabel = (minutes) => {
     return `${value} minutos`;
 };
 
+const SLA_FORM_ID = "sla-registration-form";
+const SLA_FIELD_ORDER = ["prioridadeId", "primeiraRespostaPrazoMinutos", "resolucaoPrazoMinutos", "modoContagem"];
+const SLA_FIELD_MATCHERS = { prioridadeId: [/prioridade.*cadastrada/i, /prioridade/i] };
+
 export default function SlaChamadoManagement({ permissions }) {
     const { user } = useAuth();
     const [regras, setRegras] = useState([]);
@@ -51,7 +57,19 @@ export default function SlaChamadoManagement({ permissions }) {
     const [modalMode, setModalMode] = useState(null);
     const [form, setForm] = useState(initialForm);
     const [pendingDelete, setPendingDelete] = useState(null);
-
+    const {
+        applyError: applyFormError,
+        clearErrors: clearFormErrors,
+        clearFieldError,
+        fieldErrorProps,
+        fieldErrors,
+        generalError: formError,
+        showFieldErrors
+    } = useFormFieldErrors({
+        formId: SLA_FORM_ID,
+        fieldOrder: SLA_FIELD_ORDER,
+        fieldMatchers: SLA_FIELD_MATCHERS
+    });
     const loadData = async () => {
         setError("");
         setLoading(true);
@@ -91,11 +109,13 @@ export default function SlaChamadoManagement({ permissions }) {
 
     const openModal = (mode, regra = null) => {
         setError("");
+        clearFormErrors();
         setModalMode(mode);
         setForm(regra ? { ...initialForm, ...regra, prioridadeId: String(regra.prioridadeId) } : initialForm);
     };
 
     const closeModal = () => {
+        clearFormErrors();
         setModalMode(null);
         setForm(initialForm);
         setSaving(false);
@@ -103,6 +123,8 @@ export default function SlaChamadoManagement({ permissions }) {
 
     const handleChange = (event) => {
         const { checked, name, type, value } = event.target;
+
+        clearFieldError(name);
 
         setForm((current) => ({
             ...current,
@@ -114,13 +136,13 @@ export default function SlaChamadoManagement({ permissions }) {
         event.preventDefault();
         setError("");
 
-        if (!form.prioridadeId) {
-            setError("Selecione a prioridade da regra de SLA.");
-            return;
-        }
+        const localErrors = {};
+        if (!form.prioridadeId) localErrors.prioridadeId = "Selecione a prioridade da regra de SLA.";
+        if (form.primeiraRespostaPrazoMinutos < 1) localErrors.primeiraRespostaPrazoMinutos = "Informe um prazo maior que zero.";
+        if (form.resolucaoPrazoMinutos < 1) localErrors.resolucaoPrazoMinutos = "Informe um prazo maior que zero.";
 
-        if (form.primeiraRespostaPrazoMinutos < 1 || form.resolucaoPrazoMinutos < 1) {
-            setError("Os prazos de SLA devem ser maiores que zero.");
+        if (Object.keys(localErrors).length) {
+            showFieldErrors(localErrors);
             return;
         }
 
@@ -146,7 +168,7 @@ export default function SlaChamadoManagement({ permissions }) {
             closeModal();
             await loadData();
         } catch (saveError) {
-            setError(saveError.message || "Nao foi possivel salvar a regra de SLA.");
+            applyFormError(saveError, "Nao foi possivel salvar a regra de SLA.");
         } finally {
             setSaving(false);
         }
@@ -243,6 +265,8 @@ export default function SlaChamadoManagement({ permissions }) {
             {modalMode && (
                 <CrudModal
                     mode={modalMode}
+                    formId={SLA_FORM_ID}
+                    noValidate
                     title="Regra de SLA"
                     ariaLabel="Regra de SLA"
                     onClose={closeModal}
@@ -258,9 +282,10 @@ export default function SlaChamadoManagement({ permissions }) {
                         </>
                     )}
                 >
+                    {formError && <div className="crud-error" role="alert">{formError}</div>}
                     <label>
-                        <span>Prioridade</span>
-                        <select name="prioridadeId" value={form.prioridadeId || ""} onChange={handleChange} disabled={readonly || saving} required>
+                        <span>Prioridade <FormFieldError formId={SLA_FORM_ID} field="prioridadeId" errors={fieldErrors} /></span>
+                        <select name="prioridadeId" value={form.prioridadeId || ""} onChange={handleChange} disabled={readonly || saving} {...fieldErrorProps("prioridadeId")}>
                             <option value="">Selecione</option>
                             {prioridades.map((prioridade) => (
                                 <option key={prioridade.id} value={prioridade.id}>
@@ -272,13 +297,13 @@ export default function SlaChamadoManagement({ permissions }) {
 
                     <div className="chamado-form-grid chamado-config-grid">
                         <label>
-                            <span>Prazo da primeira resposta (minutos)</span>
-                            <input type="number" name="primeiraRespostaPrazoMinutos" min="1" value={form.primeiraRespostaPrazoMinutos} onChange={handleChange} disabled={readonly || saving} required />
+                            <span>Prazo da primeira resposta (minutos) <FormFieldError formId={SLA_FORM_ID} field="primeiraRespostaPrazoMinutos" errors={fieldErrors} /></span>
+                            <input type="number" name="primeiraRespostaPrazoMinutos" min="1" value={form.primeiraRespostaPrazoMinutos} onChange={handleChange} disabled={readonly || saving} {...fieldErrorProps("primeiraRespostaPrazoMinutos")} />
                         </label>
 
                         <label>
-                            <span>Prazo de resolucao (minutos)</span>
-                            <input type="number" name="resolucaoPrazoMinutos" min="1" value={form.resolucaoPrazoMinutos} onChange={handleChange} disabled={readonly || saving} required />
+                            <span>Prazo de resolucao (minutos) <FormFieldError formId={SLA_FORM_ID} field="resolucaoPrazoMinutos" errors={fieldErrors} /></span>
+                            <input type="number" name="resolucaoPrazoMinutos" min="1" value={form.resolucaoPrazoMinutos} onChange={handleChange} disabled={readonly || saving} {...fieldErrorProps("resolucaoPrazoMinutos")} />
                         </label>
                     </div>
 

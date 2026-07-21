@@ -1,4 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { FormFieldBadRequestException } from '../../common/exceptions/form-field.exception';
 import { PrismaService } from '../../prisma/prisma.service';
 import { JwtPayload } from '../auth/strategies/jwt-payload.type';
 import { ChamadoAuthorizationService } from './chamado-authorization.service';
@@ -123,7 +124,7 @@ export class ChamadoSlaConfigService {
     }) as { id: number } | null;
 
     if (regraExistente) {
-      throw new BadRequestException('Ja existe uma regra de SLA para esta prioridade na empresa ativa.');
+      throw new FormFieldBadRequestException('prioridadeId', 'Ja existe uma regra de SLA para esta prioridade na empresa ativa.');
     }
   }
 

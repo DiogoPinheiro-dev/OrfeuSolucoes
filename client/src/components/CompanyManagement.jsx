@@ -5,13 +5,19 @@ import { getSolucoes } from "../../services/Solucoes/SolucaoService";
 import { getUsers } from "../../services/Users/UserService";
 import { canUseFeatureAction, isGroupAdmin } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
+import { useFormFieldErrors } from "../hooks/useFormFieldErrors";
 import ConfirmDialog from "./ConfirmDialog";
+import FormFieldError from "./FormFieldError";
 import CrudGrid from "./CrudGrid";
 import { FieldHelpDialog, HelpButton } from "./FieldHelp";
 import { CrudModal, CrudModalTabPanel, CrudModalTabs } from "./CrudModal";
 
 import "../styles/companyManagement.css";
 import "../styles/userManagement.css";
+
+const COMPANY_FORM_ID = "company-registration-form";
+const COMPANY_FIELD_ORDER = ["nome", "solucaoIds"];
+const COMPANY_FIELD_TABS = { nome: "main", solucaoIds: "solutions" };
 
 const initialForm = {
     id: "",
@@ -55,7 +61,20 @@ export default function CompanyManagement({ permissions }) {
     const [activeTab, setActiveTab] = useState("main");
     const [pendingDelete, setPendingDelete] = useState(null);
     const [activeHelp, setActiveHelp] = useState(null);
-
+    const {
+        applyError: applyFormError,
+        clearErrors: clearFormErrors,
+        clearFieldError,
+        fieldErrorProps,
+        fieldErrors,
+        generalError: formError,
+        showFieldErrors
+    } = useFormFieldErrors({
+        formId: COMPANY_FORM_ID,
+        fieldOrder: COMPANY_FIELD_ORDER,
+        fieldTabs: COMPANY_FIELD_TABS,
+        setActiveTab
+    });
     const getFuncionalidadeIdsBySolucaoIds = (solucaoIds) =>
         solucoes
             .filter((solucao) => solucaoIds.includes(solucao.id))
@@ -98,6 +117,7 @@ export default function CompanyManagement({ permissions }) {
 
     const openModal = (mode, empresa = null) => {
         setError("");
+        clearFormErrors();
         setModalMode(mode);
         setActiveTab("main");
         setForm(
@@ -112,6 +132,7 @@ export default function CompanyManagement({ permissions }) {
     };
 
     const closeModal = () => {
+        clearFormErrors();
         setModalMode(null);
         setForm(initialForm);
         setSaving(false);
@@ -121,6 +142,8 @@ export default function CompanyManagement({ permissions }) {
 
     const handleChange = (event) => {
         const { checked, name, type, value } = event.target;
+
+        clearFieldError(name);
 
         setForm((current) => ({
             ...current,
@@ -133,8 +156,7 @@ export default function CompanyManagement({ permissions }) {
         setError("");
 
         if (!form.nome.trim()) {
-            setActiveTab("main");
-            setError("Preencha o nome da empresa.");
+            showFieldErrors({ nome: "Preencha o nome da empresa." });
             return;
         }
 
@@ -163,7 +185,7 @@ export default function CompanyManagement({ permissions }) {
             closeModal();
             await loadEmpresas();
         } catch (saveError) {
-            setError(saveError.message || "Não foi possível salvar a empresa.");
+            applyFormError(saveError, "Nao foi possivel salvar a empresa.");
         } finally {
             setSaving(false);
         }
@@ -236,6 +258,7 @@ export default function CompanyManagement({ permissions }) {
     };
 
     const toggleSolucao = (solucao) => {
+        clearFieldError("solucaoIds");
         setForm((current) => {
             const selected = current.solucaoIds.includes(solucao.id);
             const solucaoIds = selected
@@ -305,6 +328,8 @@ export default function CompanyManagement({ permissions }) {
             {modalMode && (
                 <CrudModal
                     mode={modalMode}
+                    formId={COMPANY_FORM_ID}
+                    noValidate
                     title="Empresa"
                     ariaLabel="Cadastro de empresa"
                     onClose={closeModal}
@@ -332,13 +357,15 @@ export default function CompanyManagement({ permissions }) {
                                 ]}
                             />
 
+                            {formError && <div className="crud-error" role="alert">{formError}</div>}
+
                             <CrudModalTabPanel active={activeTab === "main"}>
                             <div className="field-help-field">
                                 <span className="field-help-label">
-                                    <label htmlFor="empresa-nome">Nome</label>
+                                    <label htmlFor="empresa-nome">Nome <FormFieldError formId={COMPANY_FORM_ID} field="nome" errors={fieldErrors} /></label>
                                     <HelpButton help={fieldHelp.nome} onHelp={setActiveHelp} />
                                 </span>
-                                <input id="empresa-nome" name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || saving} required />
+                                <input id="empresa-nome" name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || saving} {...fieldErrorProps("nome")} />
                             </div>
                             </CrudModalTabPanel>
 
@@ -352,8 +379,9 @@ export default function CompanyManagement({ permissions }) {
                                     <label key={solucao.id}>
                                         <input
                                             type="checkbox"
+                                            name="solucaoIds"
                                             checked={form.solucaoIds.includes(solucao.id)}
-                                            onChange={() => toggleSolucao(solucao)}
+                                            onChange={() => toggleSolucao(solucao)} {...fieldErrorProps("solucaoIds")}
                                             disabled={readonly || saving}
                                         />
                                         {solucao.nome}

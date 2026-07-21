@@ -102,7 +102,6 @@ model Empresa {
   chamadoPrioridades ChamadoPrioridade[]
   chamadoSlaRegras ChamadoSlaRegra[]
   googleEmailContas GoogleEmailConta[]
-  chamadoSolucaoEmails ChamadoSolucaoEmail[]
   projetos Projeto[]
 
   @@map("Empresas")
@@ -172,7 +171,6 @@ model Solucao {
   empresas EmpresaSolucao[]
   chamadoResponsavelSolucoes ChamadoResponsavelSolucao[]
   chamados Chamado[]
-  chamadoSolucaoEmails ChamadoSolucaoEmail[]
 
 
   @@map("Solucoes")
@@ -616,35 +614,15 @@ model GoogleEmailConta {
   conectadoEm           DateTime? @map("ConectadoEm")
   criadoPorId           String    @db.UniqueIdentifier @map("CriadoPorId")
   ativo                 Boolean   @default(true) @map("Ativo")
+  principal             Boolean   @default(false) @map("Principal")
   criadoEm              DateTime  @default(now()) @map("CriadoEm")
   atualizadoEm          DateTime  @updatedAt @map("AtualizadoEm")
 
   empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   criadoPor Usuario @relation(fields: [criadoPorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  solucoes ChamadoSolucaoEmail[]
 
   @@unique([empresaId, emailGoogle], map: "UX_GoogleEmailContas_EmpresaId_EmailGoogle")
   @@index([empresaId, ativo], map: "IX_GoogleEmailContas_EmpresaId_Ativo")
+  @@index([empresaId, principal], map: "IX_GoogleEmailContas_EmpresaId_Principal")
   @@map("GoogleEmailContas")
-}
-
-model ChamadoSolucaoEmail {
-  id               Int      @id @default(autoincrement()) @map("Id")
-  empresaId        Int      @map("EmpresaId")
-  solucaoId        Int      @map("SolucaoId")
-  googleContaId    Int      @map("GoogleContaId")
-  remetenteEmail   String   @map("RemetenteEmail")
-  remetenteNome    String?  @map("RemetenteNome")
-  responderParaEmail String? @map("ResponderParaEmail")
-  ativo            Boolean  @default(true) @map("Ativo")
-  criadoEm         DateTime @default(now()) @map("CriadoEm")
-  atualizadoEm     DateTime @updatedAt @map("AtualizadoEm")
-
-  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  solucao Solucao @relation(fields: [solucaoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  googleConta GoogleEmailConta @relation(fields: [googleContaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@unique([empresaId, solucaoId], map: "UX_ChamadoSolucaoEmails_EmpresaId_SolucaoId")
-  @@index([googleContaId, ativo], map: "IX_ChamadoSolucaoEmails_GoogleContaId_Ativo")
-  @@map("ChamadoSolucaoEmails")
 }

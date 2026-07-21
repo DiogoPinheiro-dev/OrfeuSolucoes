@@ -18,7 +18,7 @@ import PainelAtendimento from "../components/PainelAtendimento";
 import ProjectManagement from "../components/ProjectManagement";
 import SolutionManagement from "../components/SolutionManagement";
 import SlaChamadoManagement from "../components/SlaChamadoManagement";
-import EmailSolucaoChamadoManagement from "../components/EmailSolucaoChamadoManagement";
+import GoogleEmailManagement from "../components/GoogleEmailManagement";
 import UserManagement from "../components/UserManagement";
 import { useHubNavigation } from "../hooks/useHubNavigation";
 
@@ -41,7 +41,7 @@ const FEATURE_COMPONENTS = {
     "prioridade-chamado-management": (props) => <ChamadoConfiguracaoManagement {...props} kind="prioridades" />,
     "responsavel-chamado-management": ResponsavelChamadoManagement,
     "sla-chamado-management": SlaChamadoManagement,
-    "email-solucao-chamado-management": EmailSolucaoChamadoManagement,
+    "email-solucao-chamado-management": GoogleEmailManagement,
     "project-management": ProjectManagement
 };
 

@@ -1,4 +1,5 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { FormFieldConflictException } from '../../common/exceptions/form-field.exception';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SolucoesService } from '../solucoes/solucoes.service';
 import { CreateGrupoUsuarioInput } from './dto/create-grupo-usuario.input';
@@ -44,7 +45,7 @@ export class GrupoUsuarioCatalogService {
     })) as GrupoUsuarioRecord | null;
 
     if (existing) {
-      throw new ConflictException('Grupo de usuario ja cadastrado.');
+      throw new FormFieldConflictException('nome', 'Grupo de usuario ja cadastrado com este nome.');
     }
 
     const created = (await (this.prisma as never as { grupoUsuario: { create: Function } }).grupoUsuario.create({
@@ -79,6 +80,16 @@ export class GrupoUsuarioCatalogService {
 
     if (!current) {
       throw new NotFoundException('Grupo de usuario nao encontrado.');
+    }
+
+    if (input.nome !== undefined) {
+      const nome = input.nome.trim();
+      const existing = (await (this.prisma as never as { grupoUsuario: { findUnique: Function } }).grupoUsuario.findUnique({
+        where: { nome }
+      })) as GrupoUsuarioRecord | null;
+      if (existing && existing.id !== input.id) {
+        throw new FormFieldConflictException('nome', 'Grupo de usuario ja cadastrado com este nome.');
+      }
     }
 
     const updated = (await (this.prisma as never as { grupoUsuario: { update: Function } }).grupoUsuario.update({

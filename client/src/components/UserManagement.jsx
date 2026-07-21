@@ -5,9 +5,11 @@ import { getGruposUsuarios } from "../../services/GruposUsuarios/GrupoUsuarioSer
 import { createUser, deleteUser, getUsers, updateUser } from "../../services/Users/UserService";
 import { canUseFeatureAction, isGroupAdmin } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
+import { useFormFieldErrors } from "../hooks/useFormFieldErrors";
 import ConfirmDialog from "./ConfirmDialog";
 import CrudGrid from "./CrudGrid";
 import { FieldHelpDialog, HelpButton } from "./FieldHelp";
+import FormFieldError from "./FormFieldError";
 import { CrudModal, CrudModalTabPanel, CrudModalTabs } from "./CrudModal";
 import CustomDropdown from "./CustomDropdown";
 import PasswordInput from "./PasswordInput";
@@ -25,6 +27,23 @@ const initialForm = {
 };
 
 const EMPRESAS_PAGE_SIZE = 5;
+const USER_FORM_ID = "user-registration-form";
+const USER_FIELD_ORDER = ["nome", "login", "email", "senha", "grupoId", "empresaIds"];
+const USER_FIELD_TABS = {
+    nome: "main",
+    login: "main",
+    email: "main",
+    senha: "main",
+    grupoId: "main",
+    empresaIds: "companies"
+};
+const USER_FIELD_MATCHERS = {
+    login: [/login/i],
+    email: [/e-?mail/i],
+    senha: [/senha/i],
+    empresaIds: [/empresa/i],
+    grupoId: [/grupo/i]
+};
 
 const isProtectedAdminUser = (user) => !!user?.padraoSistema;
 
@@ -73,6 +92,21 @@ export default function UserManagement({ permissions }) {
     const [empresasPage, setEmpresasPage] = useState(1);
     const [pendingDelete, setPendingDelete] = useState(null);
     const [activeHelp, setActiveHelp] = useState(null);
+    const {
+        applyError: applyFormError,
+        clearErrors: clearFormErrors,
+        clearFieldError,
+        fieldErrorProps,
+        fieldErrors,
+        generalError: formError,
+        showFieldErrors
+    } = useFormFieldErrors({
+        formId: USER_FORM_ID,
+        fieldOrder: USER_FIELD_ORDER,
+        fieldTabs: USER_FIELD_TABS,
+        fieldMatchers: USER_FIELD_MATCHERS,
+        setActiveTab
+    });
 
     const loadUsers = async () => {
         setError("");
@@ -129,6 +163,7 @@ export default function UserManagement({ permissions }) {
 
     const openModal = (mode, user = null) => {
         setError("");
+        clearFormErrors();
         setModalMode(mode);
         setActiveTab("main");
         setEmpresasPage(1);
@@ -146,6 +181,7 @@ export default function UserManagement({ permissions }) {
     };
 
     const closeModal = () => {
+        clearFormErrors();
         setModalMode(null);
         setForm(initialForm);
         setSaving(false);
@@ -161,9 +197,11 @@ export default function UserManagement({ permissions }) {
             ...current,
             [name]: type === "checkbox" ? checked : value
         }));
+        clearFieldError(name);
     };
 
     const toggleEmpresa = (empresaId) => {
+        clearFieldError("empresaIds");
         setForm((current) => {
             const selected = current.empresaIds.includes(empresaId);
 
@@ -180,9 +218,12 @@ export default function UserManagement({ permissions }) {
         event.preventDefault();
         setError("");
 
-        if (!form.email.trim() || !form.login.trim() || (modalMode === "create" && !form.senha)) {
-            setActiveTab("main");
-            setError("Preencha login, e-mail e senha para salvar o usuário.");
+        const missingFields = {};
+        if (!form.login.trim()) missingFields.login = "Informe o login.";
+        if (!form.email.trim()) missingFields.email = "Informe o e-mail.";
+        if (modalMode === "create" && !form.senha) missingFields.senha = "Informe a senha.";
+        if (Object.keys(missingFields).length) {
+            showFieldErrors(missingFields);
             return;
         }
 
@@ -217,7 +258,7 @@ export default function UserManagement({ permissions }) {
             closeModal();
             await loadUsers();
         } catch (saveError) {
-            setError(saveError.message || "Não foi possível salvar o usuário.");
+            applyFormError(saveError, "Nao foi possivel salvar o usuario.");
         } finally {
             setSaving(false);
         }
@@ -345,6 +386,8 @@ export default function UserManagement({ permissions }) {
                     ariaLabel="Cadastro de usuário"
                     onClose={closeModal}
                     onSubmit={handleSubmit}
+                    formId={USER_FORM_ID}
+                    noValidate
                     actions={(
                         <>
                             <button type="button" onClick={closeModal}>Fechar</button>
@@ -366,19 +409,23 @@ export default function UserManagement({ permissions }) {
                                 ]}
                             />
 
+                            {formError && <div className="user-management-error" role="alert">{formError}</div>}
+
                             <CrudModalTabPanel active={activeTab === "main"}>
                             <div className="field-help-field">
                                 <span className="field-help-label">
                                     <label htmlFor="usuario-nome">Nome</label>
                                     <HelpButton help={fieldHelp.nome} onHelp={setActiveHelp} />
+                                    <FormFieldError formId={USER_FORM_ID} field="nome" message={fieldErrors.nome} />
                                 </span>
-                                <input id="usuario-nome" name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || saving} />
+                                <input id="usuario-nome" name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || saving} {...fieldErrorProps("nome")} />
                             </div>
 
                             <div className="field-help-field">
                                 <span className="field-help-label">
                                     <label htmlFor="usuario-login">Login</label>
                                     <HelpButton help={fieldHelp.login} onHelp={setActiveHelp} />
+                                    <FormFieldError formId={USER_FORM_ID} field="login" message={fieldErrors.login} />
                                 </span>
                                 <input
                                     id="usuario-login"
@@ -387,6 +434,7 @@ export default function UserManagement({ permissions }) {
                                     onChange={handleChange}
                                     disabled={readonly || saving}
                                     required
+                                    {...fieldErrorProps("login")}
                                 />
                             </div>
 
@@ -394,6 +442,7 @@ export default function UserManagement({ permissions }) {
                                 <span className="field-help-label">
                                     <label htmlFor="usuario-email">E-mail</label>
                                     <HelpButton help={fieldHelp.email} onHelp={setActiveHelp} />
+                                    <FormFieldError formId={USER_FORM_ID} field="email" message={fieldErrors.email} />
                                 </span>
                                 <input
                                     id="usuario-email"
@@ -403,6 +452,7 @@ export default function UserManagement({ permissions }) {
                                     onChange={handleChange}
                                     disabled={readonly || saving}
                                     required
+                                    {...fieldErrorProps("email")}
                                 />
                             </div>
 
@@ -412,6 +462,7 @@ export default function UserManagement({ permissions }) {
                                         <label htmlFor="usuario-senha">Senha</label>
                                         <HelpButton help={fieldHelp.senha} onHelp={setActiveHelp} />
                                         {modalMode === "edit" && <small>preencha apenas para alterar.</small>}
+                                        <FormFieldError formId={USER_FORM_ID} field="senha" message={fieldErrors.senha} />
                                     </span>
                                     <PasswordInput
                                         id="usuario-senha"
@@ -421,6 +472,7 @@ export default function UserManagement({ permissions }) {
                                         disabled={saving}
                                         required={modalMode === "create"}
                                         minLength={6}
+                                        {...fieldErrorProps("senha")}
                                     />
                                 </div>
                             )}
@@ -429,6 +481,7 @@ export default function UserManagement({ permissions }) {
                                 <span className="field-help-label">
                                     <span>Grupo</span>
                                     <HelpButton help={fieldHelp.grupo} onHelp={setActiveHelp} />
+                                    <FormFieldError formId={USER_FORM_ID} field="grupoId" message={fieldErrors.grupoId} />
                                 </span>
                                 <CustomDropdown
                                     name="grupoId"
@@ -443,6 +496,8 @@ export default function UserManagement({ permissions }) {
                                             label: grupo.nome
                                         }))
                                     ]}
+                                    invalid={!!fieldErrors.grupoId}
+                                    ariaDescribedBy={fieldErrorProps("grupoId")["aria-describedby"]}
                                 />
                             </div>
                             </CrudModalTabPanel>
@@ -452,6 +507,7 @@ export default function UserManagement({ permissions }) {
                                     <div>
                                         <span>Empresas vinculadas</span>
                                         <HelpButton help={fieldHelp.empresas} onHelp={setActiveHelp} />
+                                        <FormFieldError formId={USER_FORM_ID} field="empresaIds" message={fieldErrors.empresaIds} />
                                         <strong>
                                             {form.empresaIds.length === 1
                                                 ? "1 empresa selecionada"
@@ -486,9 +542,11 @@ export default function UserManagement({ permissions }) {
                                                         <label className="user-company-row" key={empresa.id}>
                                                             <input
                                                                 type="checkbox"
+                                                                name="empresaIds"
                                                                 checked={form.empresaIds.includes(empresaId)}
                                                                 onChange={() => toggleEmpresa(empresaId)}
                                                                 disabled={saving}
+                                                                {...fieldErrorProps("empresaIds")}
                                                             />
                                                             <span>{empresa.nome || `Empresa ${empresa.id}`}</span>
                                                         </label>

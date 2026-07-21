@@ -301,18 +301,6 @@ type ChamadoSlaRegraType {
   resolucaoPrazoMinutos: Int!
 }
 
-type ChamadoSolucaoEmailType {
-  ativo: Boolean!
-  googleContaId: Int!
-  googleContaNome: String!
-  id: Int!
-  remetenteEmail: String!
-  remetenteNome: String
-  responderParaEmail: String
-  solucaoId: Int!
-  solucaoNome: String!
-}
-
 type ChamadoTipoType {
   ativo: Boolean!
   atualizadoEm: DateTime!
@@ -405,15 +393,6 @@ input CreateChamadoSlaRegraInput {
   resolucaoPrazoMinutos: Int!
 }
 
-input CreateChamadoSolucaoEmailInput {
-  ativo: Boolean
-  googleContaId: Int!
-  remetenteEmail: String!
-  remetenteNome: String
-  responderParaEmail: String
-  solucaoId: Int!
-}
-
 input CreateChamadoTipoInput {
   ativo: Boolean = true
   cor: String
@@ -448,6 +427,7 @@ input CreateGoogleEmailContaInput {
   ativo: Boolean
   emailGoogle: String!
   nome: String!
+  principal: Boolean
   tipo: String!
 }
 
@@ -620,14 +600,8 @@ type GoogleEmailContaType {
   emailGoogle: String!
   id: Int!
   nome: String!
+  principal: Boolean!
   tipo: String!
-}
-
-type GoogleSendAsType {
-  email: String!
-  nome: String
-  padrao: Boolean!
-  verificado: Boolean!
 }
 
 type GrupoUsuarioType {
@@ -674,7 +648,6 @@ type Mutation {
   createChamadoPrioridade(input: CreateChamadoPrioridadeInput!): ChamadoPrioridadeType!
   createChamadoResponsavel(input: CreateChamadoResponsavelInput!): ChamadoResponsavelType!
   createChamadoSlaRegra(input: CreateChamadoSlaRegraInput!): ChamadoSlaRegraType!
-  createChamadoSolucaoEmail(input: CreateChamadoSolucaoEmailInput!): ChamadoSolucaoEmailType!
   createChamadoTipo(input: CreateChamadoTipoInput!): ChamadoTipoType!
   createEmpresa(input: CreateEmpresaInput!): EmpresaType!
   createFuncionalidade(input: CreateFuncionalidadeInput!): FuncionalidadeType!
@@ -689,7 +662,6 @@ type Mutation {
   deleteChamadoPrioridade(id: Int!): Boolean!
   deleteChamadoResponsavel(id: Int!): Boolean!
   deleteChamadoSlaRegra(id: Int!): Boolean!
-  deleteChamadoSolucaoEmail(id: Int!): Boolean!
   deleteChamadoTipo(id: Int!): Boolean!
   deleteEmpresa(id: Int!): Boolean!
   deleteFuncionalidade(id: Int!): Boolean!
@@ -715,7 +687,6 @@ type Mutation {
   updateChamadoPrioridade(input: UpdateChamadoPrioridadeInput!): ChamadoPrioridadeType!
   updateChamadoResponsavel(input: UpdateChamadoResponsavelInput!): ChamadoResponsavelType!
   updateChamadoSlaRegra(input: UpdateChamadoSlaRegraInput!): ChamadoSlaRegraType!
-  updateChamadoSolucaoEmail(input: UpdateChamadoSolucaoEmailInput!): ChamadoSolucaoEmailType!
   updateChamadoTipo(input: UpdateChamadoTipoInput!): ChamadoTipoType!
   updateEmpresa(input: UpdateEmpresaInput!): EmpresaType!
   updateFuncionalidade(input: UpdateFuncionalidadeInput!): FuncionalidadeType!
@@ -836,14 +807,12 @@ type Query {
   atendentesDisponiveis: [AtendenteChamadoType!]!
   categoriasChamado(ativas: Boolean = true): [ChamadoCategoriaType!]!
   chamado(id: String!): ChamadoType!
-  chamadoSolucoesEmails: [ChamadoSolucaoEmailType!]!
   chamadosArquivados(filtro: ChamadoFiltroInput): ChamadoPageType!
   dashboardChamados: ChamadoDashboardType!
   empresas: [EmpresaType!]!
   filaChamados(filtro: ChamadoFiltroInput): ChamadoPageType!
   googleEmailAuthUrl(id: Int!): String!
   googleEmailContasChamado: [GoogleEmailContaType!]!
-  googleEmailSendAs(contaId: Int!): [GoogleSendAsType!]!
   gruposUsuarios: [GrupoUsuarioType!]!
   health: String!
   me: UserType!
@@ -934,16 +903,6 @@ input UpdateChamadoSlaRegraInput {
   resolucaoPrazoMinutos: Int
 }
 
-input UpdateChamadoSolucaoEmailInput {
-  ativo: Boolean
-  googleContaId: Int
-  id: Int!
-  remetenteEmail: String
-  remetenteNome: String
-  responderParaEmail: String
-  solucaoId: Int
-}
-
 input UpdateChamadoTipoInput {
   ativo: Boolean
   cor: String
@@ -982,6 +941,7 @@ input UpdateGoogleEmailContaInput {
   emailGoogle: String
   id: Int!
   nome: String
+  principal: Boolean
   tipo: String
 }
 

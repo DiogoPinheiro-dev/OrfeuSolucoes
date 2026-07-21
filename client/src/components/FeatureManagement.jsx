@@ -8,13 +8,20 @@ import {
 } from "../../services/Solucoes/SolucaoService";
 import { canUseFeatureAction } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
+import { useFormFieldErrors } from "../hooks/useFormFieldErrors";
 import ConfirmDialog from "./ConfirmDialog";
+import FormFieldError from "./FormFieldError";
 import CrudGrid from "./CrudGrid";
 import { FieldHelpDialog, HelpButton } from "./FieldHelp";
 import { CrudModal, CrudModalTabPanel, CrudModalTabs } from "./CrudModal";
 import CustomDropdown from "./CustomDropdown";
 
 import "../styles/userManagement.css";
+
+const FEATURE_FORM_ID = "feature-registration-form";
+const FEATURE_FIELD_ORDER = ["solucaoId", "titulo", "slug", "label", "descricao", "ordem", "acoes"];
+const FEATURE_FIELD_TABS = { solucaoId: "main", titulo: "main", slug: "main", label: "main", descricao: "main", ordem: "main", acoes: "actions" };
+const FEATURE_FIELD_MATCHERS = { slug: [/identificador.*uso/i, /slug/i] };
 
 const initialForm = {
     id: "",
@@ -182,7 +189,21 @@ export default function FeatureManagement({ permissions }) {
     const [activeTab, setActiveTab] = useState("main");
     const [pendingDelete, setPendingDelete] = useState(null);
     const [activeHelp, setActiveHelp] = useState(null);
-
+    const {
+        applyError: applyFormError,
+        clearErrors: clearFormErrors,
+        clearFieldError,
+        fieldErrorProps,
+        fieldErrors,
+        generalError: formError,
+        showFieldErrors
+    } = useFormFieldErrors({
+        formId: FEATURE_FORM_ID,
+        fieldOrder: FEATURE_FIELD_ORDER,
+        fieldTabs: FEATURE_FIELD_TABS,
+        fieldMatchers: FEATURE_FIELD_MATCHERS,
+        setActiveTab
+    });
     const features = useMemo(() => flattenFeatures(solucoes), [solucoes]);
 
     const filteredFeatures = useMemo(() => {
@@ -218,12 +239,14 @@ export default function FeatureManagement({ permissions }) {
 
     const openModal = (mode, feature = null) => {
         setError("");
+        clearFormErrors();
         setModalMode(mode);
         setForm(feature ? normalizeFeatureForm(feature) : initialForm);
         setActiveTab("main");
     };
 
     const closeModal = () => {
+        clearFormErrors();
         setModalMode(null);
         setForm(initialForm);
         setSaving(false);
@@ -234,6 +257,8 @@ export default function FeatureManagement({ permissions }) {
     const handleChange = (event) => {
         const { checked, name, type, value } = event.target;
 
+        clearFieldError(name);
+
         setForm((current) => ({
             ...current,
             [name]: type === "checkbox" ? checked : value
@@ -241,6 +266,7 @@ export default function FeatureManagement({ permissions }) {
     };
 
     const handleActionChange = (index, field, value) => {
+        clearFieldError("acoes");
         setForm((current) => ({
             ...current,
             acoes: current.acoes.map((acao, actionIndex) =>
@@ -270,15 +296,14 @@ export default function FeatureManagement({ permissions }) {
         event.preventDefault();
         setError("");
 
-        if (!form.solucaoId || !form.titulo.trim() || !form.slug.trim()) {
-            setActiveTab("main");
-            setError("Preencha solução, título e slug da funcionalidade.");
-            return;
-        }
+        const localErrors = {};
+        if (!form.solucaoId) localErrors.solucaoId = "Selecione a solucao.";
+        if (!form.titulo.trim()) localErrors.titulo = "Preencha o titulo da funcionalidade.";
+        if (!form.slug.trim()) localErrors.slug = "Preencha o identificador da funcionalidade.";
+        if (form.acoes.some((acao) => !acao.nome.trim())) localErrors.acoes = "Preencha o nome de todas as acoes da funcionalidade.";
 
-        if (form.acoes.some((acao) => !acao.nome.trim())) {
-            setActiveTab("actions");
-            setError("Preencha o nome de todas as ações da funcionalidade.");
+        if (Object.keys(localErrors).length) {
+            showFieldErrors(localErrors);
             return;
         }
 
@@ -298,7 +323,7 @@ export default function FeatureManagement({ permissions }) {
             closeModal();
             await loadSolucoes();
         } catch (saveError) {
-            setError(saveError.message || "Não foi possível salvar a funcionalidade.");
+            applyFormError(saveError, "Nao foi possivel salvar a funcionalidade.");
         } finally {
             setSaving(false);
         }
@@ -401,6 +426,8 @@ export default function FeatureManagement({ permissions }) {
             {modalMode && (
                 <CrudModal
                     mode={modalMode}
+                    formId={FEATURE_FORM_ID}
+                    noValidate
                     title="Funcionalidade"
                     ariaLabel="Cadastro de funcionalidade"
                     onClose={closeModal}
@@ -426,10 +453,12 @@ export default function FeatureManagement({ permissions }) {
                                 ]}
                             />
 
+                            {formError && <div className="crud-error" role="alert">{formError}</div>}
+
                             <CrudModalTabPanel active={activeTab === "main"}>
                                     <div className="field-help-field">
                                         <span className="field-help-label">
-                                            <span>Solução</span>
+                                            <span>Solução <FormFieldError formId={FEATURE_FORM_ID} field="solucaoId" errors={fieldErrors} /></span>
                                             <HelpButton help={fieldHelp.solucao} onHelp={setActiveHelp} />
                                         </span>
                                         <CustomDropdown
@@ -437,6 +466,8 @@ export default function FeatureManagement({ permissions }) {
                                             value={form.solucaoId || ""}
                                             onChange={handleChange}
                                             disabled={readonly || saving}
+                                            invalid={!!fieldErrors.solucaoId}
+                                            ariaDescribedBy={fieldErrorProps("solucaoId")["aria-describedby"]}
                                             ariaLabel="Selecionar solução da funcionalidade"
                                             options={[
                                                 { value: "", label: "Selecione uma solução" },
@@ -450,18 +481,18 @@ export default function FeatureManagement({ permissions }) {
 
                                     <div className="field-help-field">
                                         <span className="field-help-label">
-                                            <label htmlFor="funcionalidade-titulo">Título</label>
+                                            <label htmlFor="funcionalidade-titulo">Título <FormFieldError formId={FEATURE_FORM_ID} field="titulo" errors={fieldErrors} /></label>
                                             <HelpButton help={fieldHelp.titulo} onHelp={setActiveHelp} />
                                         </span>
-                                        <input id="funcionalidade-titulo" name="titulo" value={form.titulo || ""} onChange={handleChange} disabled={readonly || saving} required />
+                                        <input id="funcionalidade-titulo" name="titulo" value={form.titulo || ""} onChange={handleChange} disabled={readonly || saving} {...fieldErrorProps("titulo")} />
                                     </div>
 
                                     <div className="field-help-field">
                                         <span className="field-help-label">
-                                            <label htmlFor="funcionalidade-slug">Identificador</label>
+                                            <label htmlFor="funcionalidade-slug">Identificador <FormFieldError formId={FEATURE_FORM_ID} field="slug" errors={fieldErrors} /></label>
                                             <HelpButton help={fieldHelp.slug} onHelp={setActiveHelp} />
                                         </span>
-                                        <input id="funcionalidade-slug" name="slug" value={form.slug || ""} onChange={handleChange} disabled={readonly || saving} required />
+                                        <input id="funcionalidade-slug" name="slug" value={form.slug || ""} onChange={handleChange} disabled={readonly || saving} {...fieldErrorProps("slug")} />
                                     </div>
 
                                     <div className="field-help-field">
@@ -520,7 +551,7 @@ export default function FeatureManagement({ permissions }) {
                             <CrudModalTabPanel active={activeTab === "actions"} className="user-company-section" aria-label="Ações da funcionalidade">
                                     <div className="user-company-header">
                                         <div>
-                                            <span>Ações da funcionalidade</span>
+                                            <span>Ações da funcionalidade</span> <FormFieldError formId={FEATURE_FORM_ID} field="acoes" errors={fieldErrors} />
                                             <HelpButton help={fieldHelp.acoes} onHelp={setActiveHelp} />
                                             <strong>Opções exibidas no grid de permissões</strong>
                                         </div>
@@ -538,11 +569,12 @@ export default function FeatureManagement({ permissions }) {
                                                     <label>
                                                         Nome
                                                         <HelpButton help={fieldHelp.nomeAcao} onHelp={setActiveHelp} />
-                                                        <input
+                                                        <input                                                            name="acoes"
+
                                                             value={acao.nome || ""}
+                                                            {...fieldErrorProps("acoes")}
                                                             onChange={(event) => handleActionChange(index, "nome", event.target.value)}
                                                             disabled={readonly || saving}
-                                                            required
                                                         />
                                                     </label>
                                                     <label>

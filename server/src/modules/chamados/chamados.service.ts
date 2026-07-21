@@ -39,7 +39,7 @@ import { ChamadoDashboardType } from './dto/chamado-dashboard.type';
 import { ChamadoRelatorioFiltroInput } from './dto/chamado-relatorio.input';
 import { ChamadoRelatorioPageType } from './dto/chamado-relatorio.type';
 import { ChamadoNotificacaoType } from './dto/chamado-notificacao.type';
-import { ChamadoSolucaoEmailType, CreateChamadoSolucaoEmailInput, CreateGoogleEmailContaInput, GoogleEmailContaType, GoogleSendAsType, UpdateChamadoSolucaoEmailInput, UpdateGoogleEmailContaInput } from './dto/chamado-google-email.type';
+import { CreateGoogleEmailContaInput, GoogleEmailContaType, UpdateGoogleEmailContaInput } from './dto/chamado-google-email.type';
 import { ChamadoPageType, ChamadoType } from './dto/chamado.type';
 import { CriarChamadoInput } from './dto/criar-chamado.input';
 import { ResponderChamadoInput } from './dto/responder-chamado.input';
@@ -281,15 +281,10 @@ export class ChamadosService {
   }
 
   async googleEmailContas(user: JwtPayload): Promise<GoogleEmailContaType[]> { return this.chamadoGoogleEmail.contas(user); }
-  async googleEmailSendAs(contaId: number, user: JwtPayload): Promise<GoogleSendAsType[]> { return this.chamadoGoogleEmail.sendAs(contaId, user); }
-  async chamadoSolucoesEmails(user: JwtPayload): Promise<ChamadoSolucaoEmailType[]> { return this.chamadoGoogleEmail.solucoesEmails(user); }
   async googleEmailAuthUrl(id: number, user: JwtPayload): Promise<string> { return this.chamadoGoogleEmail.authUrl(id, user); }
   async createGoogleEmailConta(input: CreateGoogleEmailContaInput, user: JwtPayload): Promise<GoogleEmailContaType> { return this.chamadoGoogleEmail.createConta(input, user); }
   async updateGoogleEmailConta(input: UpdateGoogleEmailContaInput, user: JwtPayload): Promise<GoogleEmailContaType> { return this.chamadoGoogleEmail.updateConta(input, user); }
   async deleteGoogleEmailConta(id: number, user: JwtPayload): Promise<boolean> { return this.chamadoGoogleEmail.deleteConta(id, user); }
-  async createChamadoSolucaoEmail(input: CreateChamadoSolucaoEmailInput, user: JwtPayload): Promise<ChamadoSolucaoEmailType> { return this.chamadoGoogleEmail.createSolucaoEmail(input, user); }
-  async updateChamadoSolucaoEmail(input: UpdateChamadoSolucaoEmailInput, user: JwtPayload): Promise<ChamadoSolucaoEmailType> { return this.chamadoGoogleEmail.updateSolucaoEmail(input, user); }
-  async deleteChamadoSolucaoEmail(id: number, user: JwtPayload): Promise<boolean> { return this.chamadoGoogleEmail.deleteSolucaoEmail(id, user); }
   async regrasSlaChamado(user: JwtPayload, ativas = true): Promise<ChamadoSlaRegraType[]> {
     return this.chamadoSlaConfig.regrasSlaChamado(user, ativas);
   }

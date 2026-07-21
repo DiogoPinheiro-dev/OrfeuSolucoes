@@ -1,4 +1,5 @@
 import { apolloClient } from "../../src/lib/apolloClient";
+import { toServiceError } from "../graphql/serviceError";
 import {
     ARQUIVAR_PROJETO_MUTATION,
     ATUALIZAR_CICLO_PROJETO_MUTATION,
@@ -12,14 +13,6 @@ import {
     UPDATE_PROJETO_MUTATION
 } from "../graphql/operations";
 
-const extractErrorMessage = (error) => {
-    const message = error?.graphQLErrors?.[0]?.message || error?.networkError?.result?.errors?.[0]?.message || error?.message;
-    if (message === "Bad Request Exception") {
-        const validation = error?.graphQLErrors?.[0]?.extensions?.originalError?.message;
-        if (Array.isArray(validation)) return validation.join(" ");
-    }
-    return message || "Erro inesperado ao comunicar com o servidor.";
-};
 
 const execute = async ({ document, variables, select, mutation = false }) => {
     try {
@@ -28,7 +21,7 @@ const execute = async ({ document, variables, select, mutation = false }) => {
             : await apolloClient.query({ query: document, variables, fetchPolicy: "network-only" });
         return select(response.data);
     } catch (error) {
-        throw new Error(extractErrorMessage(error));
+        throw toServiceError(error);
     }
 };
 

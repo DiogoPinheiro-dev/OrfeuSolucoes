@@ -1,5 +1,6 @@
 import { apolloClient } from "../../src/lib/apolloClient";
 import { notifyHubNavigationChanged } from "../../src/auth/hubNavigationEvents";
+import { toServiceError } from "../graphql/serviceError";
 import {
     CREATE_SOLUCAO_MUTATION,
     CREATE_FUNCIONALIDADE_MUTATION,
@@ -11,11 +12,6 @@ import {
     UPDATE_FUNCIONALIDADE_MUTATION
 } from "../graphql/operations";
 
-const extractErrorMessage = (error) => {
-    const gqlError = error?.graphQLErrors?.[0]?.message;
-
-    return gqlError || error?.message || "Erro inesperado ao comunicar com o servidor.";
-};
 
 export const getMyHubNavigation = async () => {
     try {
@@ -26,7 +22,7 @@ export const getMyHubNavigation = async () => {
 
         return response?.data?.myHubNavigation ?? [];
     } catch (error) {
-        throw new Error(extractErrorMessage(error));
+        throw toServiceError(error);
     }
 };
 
@@ -39,7 +35,7 @@ export const getSolucoes = async () => {
 
         return response?.data?.solucoes ?? [];
     } catch (error) {
-        throw new Error(extractErrorMessage(error));
+        throw toServiceError(error);
     }
 };
 
@@ -56,7 +52,7 @@ export const createSolucao = async (input) => {
 
         return solucao;
     } catch (error) {
-        throw new Error(extractErrorMessage(error));
+        throw toServiceError(error);
     }
 };
 
@@ -78,7 +74,7 @@ export const updateSolucao = async (input) => {
 
         return solucao;
     } catch (error) {
-        throw new Error(extractErrorMessage(error));
+        throw toServiceError(error);
     }
 };
 
@@ -95,7 +91,7 @@ export const deleteSolucao = async (id) => {
 
         return deleted;
     } catch (error) {
-        throw new Error(extractErrorMessage(error));
+        throw toServiceError(error);
     }
 };
 
@@ -112,7 +108,7 @@ export const createFuncionalidade = async (input) => {
 
         return funcionalidade;
     } catch (error) {
-        throw new Error(extractErrorMessage(error));
+        throw toServiceError(error);
     }
 };
 
@@ -134,7 +130,7 @@ export const updateFuncionalidade = async (input) => {
 
         return funcionalidade;
     } catch (error) {
-        throw new Error(extractErrorMessage(error));
+        throw toServiceError(error);
     }
 };
 
@@ -151,6 +147,6 @@ export const deleteFuncionalidade = async (id) => {
 
         return deleted;
     } catch (error) {
-        throw new Error(extractErrorMessage(error));
+        throw toServiceError(error);
     }
 };

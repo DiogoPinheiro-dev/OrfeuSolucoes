@@ -135,7 +135,7 @@ export default function ProjectManagement({ permissions }) {
             }
             setEditor(null);
             await loadProjects();
-        } catch (saveError) { setEditorError(saveError.message); } finally { setSaving(false); }
+        } catch (saveError) { setEditorError(saveError); } finally { setSaving(false); }
     };
 
     const saveCycle = async (event) => {

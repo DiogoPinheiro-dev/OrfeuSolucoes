@@ -166,3 +166,24 @@
   background: var(--danger-text);
   color: var(--button-primary-text);
 }
+
+.form-field-error {
+  color: var(--danger-text);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.crud-modal [aria-invalid="true"] {
+  border-color: var(--danger-text) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger-text) 14%, transparent);
+}
+
+.crud-modal .field-help-label:has(.form-field-error) {
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.crud-modal label:has(> .form-field-error) {
+  align-items: start;
+}

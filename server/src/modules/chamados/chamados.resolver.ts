@@ -24,7 +24,7 @@ import { ChamadoDashboardType } from './dto/chamado-dashboard.type';
 import { ChamadoRelatorioFiltroInput } from './dto/chamado-relatorio.input';
 import { ChamadoRelatorioPageType } from './dto/chamado-relatorio.type';
 import { ChamadoNotificacaoType } from './dto/chamado-notificacao.type';
-import { ChamadoSolucaoEmailType, CreateChamadoSolucaoEmailInput, CreateGoogleEmailContaInput, GoogleEmailContaType, GoogleSendAsType, UpdateChamadoSolucaoEmailInput, UpdateGoogleEmailContaInput } from './dto/chamado-google-email.type';
+import { CreateGoogleEmailContaInput, GoogleEmailContaType, UpdateGoogleEmailContaInput } from './dto/chamado-google-email.type';
 import { ChamadoResponsavelOptionsType, ChamadoResponsavelType, ChamadoResponsavelUsuarioOptionType } from './dto/chamado-responsavel.type';
 import { ChamadoPageType, ChamadoType } from './dto/chamado.type';
 import { CriarChamadoInput } from './dto/criar-chamado.input';
@@ -88,12 +88,6 @@ export class ChamadosResolver {
 
   @Query(() => [GoogleEmailContaType])
   googleEmailContasChamado(@CurrentUser() user: JwtPayload): Promise<GoogleEmailContaType[]> { return this.chamadosService.googleEmailContas(user); }
-
-  @Query(() => [GoogleSendAsType])
-  googleEmailSendAs(@Args('contaId', { type: () => Int }) contaId: number, @CurrentUser() user: JwtPayload): Promise<GoogleSendAsType[]> { return this.chamadosService.googleEmailSendAs(contaId, user); }
-
-  @Query(() => [ChamadoSolucaoEmailType])
-  chamadoSolucoesEmails(@CurrentUser() user: JwtPayload): Promise<ChamadoSolucaoEmailType[]> { return this.chamadosService.chamadoSolucoesEmails(user); }
 
   @Query(() => String)
   googleEmailAuthUrl(@Args('id', { type: () => Int }) id: number, @CurrentUser() user: JwtPayload): Promise<string> { return this.chamadosService.googleEmailAuthUrl(id, user); }
@@ -292,12 +286,6 @@ export class ChamadosResolver {
   updateGoogleEmailConta(@Args('input') input: UpdateGoogleEmailContaInput, @CurrentUser() user: JwtPayload): Promise<GoogleEmailContaType> { return this.chamadosService.updateGoogleEmailConta(input, user); }
   @Mutation(() => Boolean)
   deleteGoogleEmailConta(@Args('id', { type: () => Int }) id: number, @CurrentUser() user: JwtPayload): Promise<boolean> { return this.chamadosService.deleteGoogleEmailConta(id, user); }
-  @Mutation(() => ChamadoSolucaoEmailType)
-  createChamadoSolucaoEmail(@Args('input') input: CreateChamadoSolucaoEmailInput, @CurrentUser() user: JwtPayload): Promise<ChamadoSolucaoEmailType> { return this.chamadosService.createChamadoSolucaoEmail(input, user); }
-  @Mutation(() => ChamadoSolucaoEmailType)
-  updateChamadoSolucaoEmail(@Args('input') input: UpdateChamadoSolucaoEmailInput, @CurrentUser() user: JwtPayload): Promise<ChamadoSolucaoEmailType> { return this.chamadosService.updateChamadoSolucaoEmail(input, user); }
-  @Mutation(() => Boolean)
-  deleteChamadoSolucaoEmail(@Args('id', { type: () => Int }) id: number, @CurrentUser() user: JwtPayload): Promise<boolean> { return this.chamadosService.deleteChamadoSolucaoEmail(id, user); }
   @Mutation(() => ChamadoResponsavelType)
   createChamadoResponsavel(
     @Args('input') input: CreateChamadoResponsavelInput,

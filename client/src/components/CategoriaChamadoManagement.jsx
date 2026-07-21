@@ -8,11 +8,15 @@ import {
 } from "../../services/Chamados/ChamadoService";
 import { canUseFeatureAction } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
+import { useFormFieldErrors } from "../hooks/useFormFieldErrors";
 import ConfirmDialog from "./ConfirmDialog";
+import FormFieldError from "./FormFieldError";
 import CrudGrid from "./CrudGrid";
 import { CrudModal } from "./CrudModal";
 
 import "../styles/chamados.css";
+
+const CATEGORY_FORM_ID = "ticket-category-registration-form";
 
 const initialForm = {
     id: "",
@@ -36,7 +40,15 @@ export default function CategoriaChamadoManagement({ permissions }) {
     const [modalMode, setModalMode] = useState(null);
     const [form, setForm] = useState(initialForm);
     const [pendingDelete, setPendingDelete] = useState(null);
-
+    const {
+        applyError: applyFormError,
+        clearErrors: clearFormErrors,
+        clearFieldError,
+        fieldErrorProps,
+        fieldErrors,
+        generalError: formError,
+        showFieldErrors
+    } = useFormFieldErrors({ formId: CATEGORY_FORM_ID, fieldOrder: ["nome", "descricao"] });
     const loadCategorias = async () => {
         setError("");
         setLoading(true);
@@ -70,11 +82,13 @@ export default function CategoriaChamadoManagement({ permissions }) {
 
     const openModal = (mode, categoria = null) => {
         setError("");
+        clearFormErrors();
         setModalMode(mode);
         setForm(categoria ? { ...initialForm, ...categoria, descricao: categoria.descricao || "" } : initialForm);
     };
 
     const closeModal = () => {
+        clearFormErrors();
         setModalMode(null);
         setForm(initialForm);
         setSaving(false);
@@ -82,6 +96,8 @@ export default function CategoriaChamadoManagement({ permissions }) {
 
     const handleChange = (event) => {
         const { checked, name, type, value } = event.target;
+
+        clearFieldError(name);
 
         setForm((current) => ({
             ...current,
@@ -94,7 +110,7 @@ export default function CategoriaChamadoManagement({ permissions }) {
         setError("");
 
         if (!form.nome.trim()) {
-            setError("Preencha o nome da categoria.");
+            showFieldErrors({ nome: "Preencha o nome da categoria." });
             return;
         }
 
@@ -118,7 +134,7 @@ export default function CategoriaChamadoManagement({ permissions }) {
             closeModal();
             await loadCategorias();
         } catch (saveError) {
-            setError(saveError.message || "Nao foi possivel salvar a categoria.");
+            applyFormError(saveError, "Nao foi possivel salvar a categoria.");
         } finally {
             setSaving(false);
         }
@@ -218,6 +234,8 @@ export default function CategoriaChamadoManagement({ permissions }) {
             {modalMode && (
                 <CrudModal
                     mode={modalMode}
+                    formId={CATEGORY_FORM_ID}
+                    noValidate
                     title="Categoria de chamado"
                     ariaLabel="Categoria de chamado"
                     onClose={closeModal}
@@ -233,9 +251,10 @@ export default function CategoriaChamadoManagement({ permissions }) {
                         </>
                     )}
                 >
+                    {formError && <div className="crud-error" role="alert">{formError}</div>}
                     <label>
-                        <span>Nome</span>
-                        <input name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || saving} required />
+                        <span>Nome <FormFieldError formId={CATEGORY_FORM_ID} field="nome" errors={fieldErrors} /></span>
+                        <input name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || saving} {...fieldErrorProps("nome")} />
                     </label>
 
                     <label>

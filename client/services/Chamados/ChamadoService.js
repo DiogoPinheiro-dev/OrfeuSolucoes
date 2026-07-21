@@ -1,4 +1,5 @@
 import { apolloClient } from "../../src/lib/apolloClient";
+import { toServiceError } from "../graphql/serviceError";
 import {
     ALTERAR_CATEGORIA_CHAMADO_MUTATION,
     ALTERAR_PRIORIDADE_CHAMADO_MUTATION,
@@ -20,9 +21,8 @@ import {
     CREATE_CHAMADO_TIPO_MUTATION,
     CREATE_CHAMADO_RESPONSAVEL_MUTATION,
     CREATE_CHAMADO_SLA_REGRA_MUTATION,
-    GOOGLE_EMAIL_CONTAS_QUERY, GOOGLE_EMAIL_SEND_AS_QUERY, CHAMADO_SOLUCOES_EMAILS_QUERY, GOOGLE_EMAIL_AUTH_URL_QUERY,
+    GOOGLE_EMAIL_CONTAS_QUERY, GOOGLE_EMAIL_AUTH_URL_QUERY,
     CREATE_GOOGLE_EMAIL_CONTA_MUTATION, UPDATE_GOOGLE_EMAIL_CONTA_MUTATION, DELETE_GOOGLE_EMAIL_CONTA_MUTATION,
-    CREATE_CHAMADO_SOLUCAO_EMAIL_MUTATION, UPDATE_CHAMADO_SOLUCAO_EMAIL_MUTATION, DELETE_CHAMADO_SOLUCAO_EMAIL_MUTATION,
     CRIAR_CHAMADO_MUTATION,
     DELETE_CHAMADO_CATEGORIA_MUTATION,
     DELETE_CHAMADO_PRIORIDADE_MUTATION,
@@ -74,12 +74,6 @@ const extractRestErrorMessage = async (response) => {
     }
 };
 
-const extractErrorMessage = (error) => {
-    const gqlError = error?.graphQLErrors?.[0]?.message;
-
-    return gqlError || error?.message || "Erro inesperado ao comunicar com o servidor.";
-};
-
 const query = async ({ query, variables, select }) => {
     try {
         const response = await apolloClient.query({
@@ -90,7 +84,7 @@ const query = async ({ query, variables, select }) => {
 
         return select(response?.data);
     } catch (error) {
-        throw new Error(extractErrorMessage(error));
+        throw toServiceError(error);
     }
 };
 
@@ -103,7 +97,7 @@ const mutate = async ({ mutation, variables, select }) => {
 
         return select(response?.data);
     } catch (error) {
-        throw new Error(extractErrorMessage(error));
+        throw toServiceError(error);
     }
 };
 
@@ -541,15 +535,10 @@ export const marcarTodasChamadoNotificacoesComoLidas = () =>
         mutation: MARCAR_TODAS_CHAMADO_NOTIFICACOES_LIDAS_MUTATION
     }).then(({ data }) => data.marcarTodasChamadoNotificacoesComoLidas);
 export const getGoogleEmailContas = () => query({ query: GOOGLE_EMAIL_CONTAS_QUERY, select: (data) => data?.googleEmailContasChamado || [] });
-export const getGoogleEmailSendAs = (contaId) => query({ query: GOOGLE_EMAIL_SEND_AS_QUERY, variables: { contaId: Number(contaId) }, select: (data) => data?.googleEmailSendAs || [] });
-export const getChamadoSolucoesEmails = () => query({ query: CHAMADO_SOLUCOES_EMAILS_QUERY, select: (data) => data?.chamadoSolucoesEmails || [] });
 export const getGoogleEmailAuthUrl = (id) => query({ query: GOOGLE_EMAIL_AUTH_URL_QUERY, variables: { id: Number(id) }, select: (data) => data?.googleEmailAuthUrl });
 export const createGoogleEmailConta = (input) => mutate({ mutation: CREATE_GOOGLE_EMAIL_CONTA_MUTATION, variables: { input }, select: (data) => data?.createGoogleEmailConta });
 export const updateGoogleEmailConta = (input) => mutate({ mutation: UPDATE_GOOGLE_EMAIL_CONTA_MUTATION, variables: { input: { ...input, id: Number(input.id) } }, select: (data) => data?.updateGoogleEmailConta });
 export const deleteGoogleEmailConta = (id) => mutate({ mutation: DELETE_GOOGLE_EMAIL_CONTA_MUTATION, variables: { id: Number(id) }, select: (data) => data?.deleteGoogleEmailConta });
-export const createChamadoSolucaoEmail = (input) => mutate({ mutation: CREATE_CHAMADO_SOLUCAO_EMAIL_MUTATION, variables: { input: { ...input, solucaoId: Number(input.solucaoId), googleContaId: Number(input.googleContaId) } }, select: (data) => data?.createChamadoSolucaoEmail });
-export const updateChamadoSolucaoEmail = (input) => mutate({ mutation: UPDATE_CHAMADO_SOLUCAO_EMAIL_MUTATION, variables: { input: { ...input, id: Number(input.id), solucaoId: Number(input.solucaoId), googleContaId: Number(input.googleContaId) } }, select: (data) => data?.updateChamadoSolucaoEmail });
-export const deleteChamadoSolucaoEmail = (id) => mutate({ mutation: DELETE_CHAMADO_SOLUCAO_EMAIL_MUTATION, variables: { id: Number(id) }, select: (data) => data?.deleteChamadoSolucaoEmail });
 export const getChamadoDashboard = () => query({ query: CHAMADO_DASHBOARD_QUERY, select: (data) => data?.dashboardChamados });
 
 export const getChamadoRelatorio = (filtro) => query({ query: CHAMADO_RELATORIO_QUERY, variables: { filtro }, select: (data) => data?.relatorioChamados });

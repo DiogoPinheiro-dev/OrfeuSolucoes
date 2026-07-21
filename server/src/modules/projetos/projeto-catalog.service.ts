@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { FormFieldBadRequestException } from '../../common/exceptions/form-field.exception';
 import { PrismaService } from '../../prisma/prisma.service';
 import { JwtPayload } from '../auth/strategies/jwt-payload.type';
 import { CreateProjetoInput, ProjetoMembroInput } from './dto/create-projeto.input';
@@ -48,7 +49,7 @@ export class ProjetoCatalogService {
       where: { empresaId_chave: { empresaId, chave } },
       select: { id: true }
     })) {
-      throw new BadRequestException('Ja existe um projeto com esta chave na empresa.');
+      throw new FormFieldBadRequestException('chave', 'Ja existe um projeto com esta chave na empresa.');
     }
 
     const projetoId = await this.prisma.$transaction(async (tx) => {

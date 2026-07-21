@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{EVENTO_TITULO}}</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background: #eef4f8;
+        color: #0f2740;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+      table {
+        border-spacing: 0;
+      }
+      .shell {
+        width: 100%;
+        background: #eef4f8;
+        padding: 28px 12px;
+      }
+      .card {
+        width: 100%;
+        max-width: 680px;
+        margin: 0 auto;
+        background: #ffffff;
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 8px 30px rgba(15, 39, 64, 0.1);
+      }
+      .header {
+        padding: 28px 34px;
+        background: #12314c;
+        color: #ffffff;
+      }
+      .eyebrow {
+        margin: 0 0 8px;
+        color: #b9d7ee;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .title {
+        margin: 0;
+        font-size: 25px;
+        line-height: 1.25;
+      }
+      .content {
+        padding: 30px 34px;
+      }
+      .event {
+        margin-bottom: 26px;
+        padding: 18px 20px;
+        background: #eff7fc;
+        border-left: 4px solid #1f6f9f;
+        border-radius: 10px;
+      }
+      .event-title {
+        margin: 0 0 8px;
+        font-size: 17px;
+        color: #12314c;
+      }
+      .event-text,
+      .description {
+        margin: 0;
+        color: #49657c;
+        font-size: 14px;
+        line-height: 1.65;
+        white-space: pre-line;
+      }
+      .section-title {
+        margin: 26px 0 12px;
+        color: #12314c;
+        font-size: 16px;
+      }
+      .ticket-title {
+        margin: 0 0 14px;
+        color: #0f2740;
+        font-size: 22px;
+        line-height: 1.35;
+      }
+      .badges {
+        margin: 0 0 18px;
+      }
+      .badge {
+        display: inline-block;
+        margin: 0 6px 6px 0;
+        padding: 7px 11px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .details {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 8px;
+        margin: 0 -8px;
+      }
+      .detail {
+        width: 50%;
+        padding: 13px 14px;
+        vertical-align: top;
+        background: #f6f9fb;
+        border-radius: 10px;
+      }
+      .label {
+        display: block;
+        margin-bottom: 5px;
+        color: #607c93;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      .value {
+        color: #12314c;
+        font-size: 14px;
+        line-height: 1.4;
+      }
+      .button {
+        display: inline-block;
+        margin-top: 26px;
+        padding: 13px 22px;
+        background: #12314c;
+        color: #ffffff !important;
+        border-radius: 999px;
+        font-size: 14px;
+        font-weight: 700;
+        text-decoration: none;
+      }
+      .footer {
+        padding: 20px 34px;
+        background: #f6f9fb;
+        color: #607c93;
+        font-size: 12px;
+        line-height: 1.5;
+      }
+      @media only screen and (max-width: 600px) {
+        .shell {
+          padding: 0;
+        }
+        .card {
+          border-radius: 0;
+        }
+        .header,
+        .content,
+        .footer {
+          padding-left: 20px;
+          padding-right: 20px;
+        }
+        .detail {
+          display: block;
+          width: auto;
+          margin-bottom: 8px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <table role="presentation" class="shell">
+      <tr>
+        <td>
+          <table role="presentation" class="card">
+            <tr>
+              <td class="header">
+                <p class="eyebrow">Controle de Chamados · {{EMPRESA_NOME}}</p>
+                <h1 class="title">Chamado #{{CHAMADO_NUMERO}}</h1>
+              </td>
+            </tr>
+            <tr>
+              <td class="content">
+                <div class="event">
+                  <h2 class="event-title">{{EVENTO_TITULO}}</h2>
+                  <p class="event-text">{{EVENTO_DESCRICAO}}</p>
+                </div>
+
+                <h2 class="ticket-title">{{CHAMADO_TITULO}}</h2>
+                <div class="badges">
+                  <span
+                    class="badge"
+                    style="background: {{CHAMADO_STATUS_COR}}; color: {{CHAMADO_STATUS_TEXTO_COR}};"
+                    >{{CHAMADO_STATUS}}</span
+                  >
+                  <span
+                    class="badge"
+                    style="background: {{TIPO_COR}}; color: {{TIPO_TEXTO_COR}};"
+                    >Tipo: {{TIPO_NOME}}</span
+                  >
+                  <span
+                    class="badge"
+                    style="background: {{PRIORIDADE_COR}}; color: {{PRIORIDADE_TEXTO_COR}};"
+                    >Prioridade: {{PRIORIDADE_NOME}}</span
+                  >
+                </div>
+
+                <h3 class="section-title">Descrição</h3>
+                <p class="description">{{CHAMADO_DESCRICAO}}</p>
+
+                <h3 class="section-title">Dados do chamado</h3>
+                <table role="presentation" class="details">
+                  <tr>
+                    <td class="detail">
+                      <span class="label">Solicitante</span
+                      ><span class="value"
+                        >{{SOLICITANTE_NOME}}<br />{{SOLICITANTE_EMAIL}}</span
+                      >
+                    </td>
+                    <td class="detail">
+                      <span class="label">Responsável</span
+                      ><span class="value"
+                        >{{RESPONSAVEL_NOME}}<br />{{RESPONSAVEL_EMAIL}}</span
+                      >
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="detail">
+                      <span class="label">Grupo responsável</span
+                      ><span class="value">{{GRUPO_RESPONSAVEL_NOME}}</span>
+                    </td>
+                    <td class="detail">
+                      <span class="label">Líder do atendimento</span
+                      ><span class="value">{{LIDER_ATENDIMENTO_NOME}}</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="detail">
+                      <span class="label">Categoria</span
+                      ><span class="value">{{CATEGORIA_NOME}}</span>
+                    </td>
+                    <td class="detail">
+                      <span class="label">SLA</span
+                      ><span class="value">{{SLA_STATUS}}</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="detail">
+                      <span class="label">Solução</span
+                      ><span class="value">{{SOLUCAO_NOME}}</span>
+                    </td>
+                    <td class="detail">
+                      <span class="label">Funcionalidade</span
+                      ><span class="value">{{FUNCIONALIDADE_NOME}}</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="detail">
+                      <span class="label">Criado em</span
+                      ><span class="value">{{CRIADO_EM}}</span>
+                    </td>
+                    <td class="detail">
+                      <span class="label">Atualizado em</span
+                      ><span class="value">{{ATUALIZADO_EM}}</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="detail">
+                      <span class="label">Primeira resposta limite</span
+                      ><span class="value"
+                        >{{PRIMEIRA_RESPOSTA_LIMITE_EM}}</span
+                      >
+                    </td>
+                    <td class="detail">
+                      <span class="label">Resolução limite</span
+                      ><span class="value">{{RESOLUCAO_LIMITE_EM}}</span>
+                    </td>
+                  </tr>
+                </table>
+
+                <a class="button" href="{{CHAMADO_URL}}">Abrir chamado</a>
+              </td>
+            </tr>
+            <tr>
+              <td class="footer">
+                Esta mensagem foi enviada automaticamente pelo Controle de
+                Chamados. Responda ao e-mail para falar com o solicitante.
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

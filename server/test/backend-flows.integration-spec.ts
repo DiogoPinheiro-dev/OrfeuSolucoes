@@ -18,6 +18,7 @@ import { ChamadoCategoriaService } from '../src/modules/chamados/chamado-categor
 import { ChamadoCategoriaConfigService } from '../src/modules/chamados/chamado-categoria-config.service';
 import { ChamadoConfiguracaoService } from '../src/modules/chamados/chamado-configuracao.service';
 import { ChamadoDashboardService } from '../src/modules/chamados/chamado-dashboard.service';
+import { ChamadoEmailTemplateService } from '../src/modules/chamados/chamado-email-template.service';
 import { ChamadoHistoryService } from '../src/modules/chamados/chamado-history.service';
 import { ChamadoGoogleEmailService } from '../src/modules/chamados/chamado-google-email.service';
 import { ChamadoRelatorioService } from '../src/modules/chamados/chamado-relatorio.service';
@@ -102,6 +103,7 @@ type ModelName =
   | 'chamadoResponsavelSolucao'
   | 'chamadoResponsavelFuncionalidade'
   | 'chamadoAnexo'
+  | 'googleEmailConta'
   | 'projeto'
   | 'projetoMembro';
 
@@ -133,6 +135,7 @@ const MODELS: ModelName[] = [
   'chamadoResponsavelSolucao',
   'chamadoResponsavelFuncionalidade',
   'chamadoAnexo',
+  'googleEmailConta',
   'projeto',
   'projetoMembro'
 ];
@@ -157,6 +160,7 @@ const INTEGER_ID_MODELS = new Set<ModelName>([
   'chamadoSlaRegra',
   'chamadoSequencia',
   'chamadoAcompanhante',
+  'googleEmailConta',
   'projetoMembro'
 ]);
 
@@ -340,6 +344,7 @@ class InMemoryPrismaService {
   public chamadoResponsavelSolucao = new InMemoryDelegate(this, 'chamadoResponsavelSolucao');
   public chamadoResponsavelFuncionalidade = new InMemoryDelegate(this, 'chamadoResponsavelFuncionalidade');
   public chamadoAnexo = new InMemoryDelegate(this, 'chamadoAnexo');
+  public googleEmailConta = new InMemoryDelegate(this, 'googleEmailConta');
   public projeto = new InMemoryDelegate(this, 'projeto');
   public projetoMembro = new InMemoryDelegate(this, 'projetoMembro');
 
@@ -721,6 +726,8 @@ class InMemoryPrismaService {
         return this.data.funcionalidade.find((funcionalidade) => funcionalidade.id === row.funcionalidadeId) ?? null;
       case 'chamado.solicitante':
         return this.data.usuario.find((usuario) => usuario.id === row.solicitanteId) ?? null;
+      case 'chamado.empresa':
+        return this.data.empresa.find((empresa) => empresa.id === row.empresaId) ?? null;
       case 'chamado.responsavel':
         return row.responsavelId ? this.data.usuario.find((usuario) => usuario.id === row.responsavelId) ?? null : null;
       case 'chamado.responsavelGrupo':
@@ -1102,6 +1109,7 @@ type TestWorld = {
   servicosService: ServicosService;
   chamadosService: ChamadosService;
   chamadoSlaService: ChamadoSlaService;
+  chamadoGoogleEmailService: ChamadoGoogleEmailService;
   projetosService: ProjetosService;
 };
 
@@ -1152,7 +1160,15 @@ function createWorld(): TestWorld {
   const chamadoPrioridadeConfigService = new ChamadoPrioridadeConfigService(prismaService, chamadoAuthorizationService);
   const chamadoConfiguracaoService = new ChamadoConfiguracaoService(solucoesService, chamadoCategoriaConfigService, chamadoTipoConfigService, chamadoPrioridadeConfigService);
   const chamadoSlaConfigService = new ChamadoSlaConfigService(prismaService, chamadoAuthorizationService);
-  const chamadoGoogleEmailService = { sendChamadoUpdate: async () => undefined } as unknown as ChamadoGoogleEmailService;
+  const chamadoEmailConfigService = {
+    get: (key: string) => ({
+      JWT_SECRET: 'integration-test-secret',
+      GOOGLE_OAUTH_CLIENT_ID: 'integration-client-id',
+      GOOGLE_OAUTH_CLIENT_SECRET: 'integration-client-secret',
+      GOOGLE_TOKEN_ENCRYPTION_KEY: 'integration-encryption-key'
+    } as Record<string, string>)[key]
+  } as ConfigService;
+  const chamadoGoogleEmailService = new ChamadoGoogleEmailService(prismaService, chamadoEmailConfigService, chamadoAuthorizationService);
   const chamadoNotificacaoService = new ChamadoNotificacaoService(prismaService, chamadoAuthorizationService, chamadoGoogleEmailService);
   const chamadoSlaService = new ChamadoSlaService(prismaService, chamadoSlaConfigService, chamadoNotificacaoService);
   const chamadoResponsavelElegibilidadeService = new ChamadoResponsavelElegibilidadeService(prismaService, chamadoAuthorizationService);
@@ -1187,6 +1203,7 @@ function createWorld(): TestWorld {
     authService,
     servicosService,
     chamadosService,
+    chamadoGoogleEmailService,
     chamadoSlaService,
     projetosService
   };
@@ -2011,6 +2028,19 @@ describe('Fluxos integrados do backend', () => {
       senha: 'Senha@12345',
       grupoId: grupo.id,
       empresaIds: [empresa.id]
+    });
+
+    await expect(world.usersService.create({
+      nome: 'Usuario com login duplicado',
+      login: 'usuario.fluxo',
+      email: 'outro.usuario.fluxo@orfeu.test',
+      senha: 'Senha@12345',
+      grupoId: grupo.id,
+      empresaIds: [empresa.id]
+    })).rejects.toMatchObject({
+      response: {
+        fieldErrors: { login: 'Login ja esta em uso.' }
+      }
     });
 
     const login = await world.authService.login('usuario.fluxo', 'Senha@12345', empresa.id);
@@ -3506,6 +3536,248 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
     expect(arquivadosFiltrados.items.map((item) => item.id)).toEqual([chamadoMouse.id]);
     expect((await world.chamadosService.meusChamados(solicitanteAPayload, { termo: 'Mouse', page: 1, pageSize: 10 })).items).toEqual([]);
   });
+  it('usa a conta principal e envia para solicitante, responsaveis e acompanhantes sem duplicar emails', async () => {
+    const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
+    const tipoEmail = await world.prisma.chamadoTipo.create({
+      data: {
+        empresaId: empresaInicialId,
+        nome: 'Incidente por e-mail',
+        cor: '#2563eb',
+        ordem: 1,
+        ativo: true
+      }
+    });
+    const prioridadeEmail = await world.prisma.chamadoPrioridade.create({
+      data: {
+        empresaId: empresaInicialId,
+        nome: 'Alta por e-mail',
+        cor: '#991b1b',
+        ordem: 1,
+        ativo: true
+      }
+    });
+    const controleChamados = expectDefined((await world.solucoesService.findAll()).find((item) => item.slug === 'controle-de-chamados'));
+    const abrirChamado = expectDefined(controleChamados.funcionalidades.find((item) => item.slug === 'abrir-chamado'));
+
+    const contaInicial = await world.chamadoGoogleEmailService.createConta(
+      {
+        nome: 'Remetente inicial',
+        tipo: 'GOOGLE_WORKSPACE',
+        emailGoogle: 'inicial@orfeu.test',
+        ativo: true
+      },
+      admin
+    );
+    expect(contaInicial.principal).toBe(true);
+    const authUrl = new URL(await world.chamadoGoogleEmailService.authUrl(contaInicial.id, admin));
+    expect(authUrl.searchParams.get('scope')?.split(' ').sort()).toEqual(['email', 'https://www.googleapis.com/auth/gmail.send', 'openid']);
+    expect(authUrl.searchParams.get('scope')).not.toContain('gmail.readonly');
+
+    const contaSecundaria = await world.chamadoGoogleEmailService.createConta(
+      {
+        nome: 'Remetente secundario',
+        tipo: 'GOOGLE_WORKSPACE',
+        emailGoogle: 'secundario@orfeu.test',
+        ativo: true,
+        principal: true
+      },
+      admin
+    );
+    expect(contaSecundaria.principal).toBe(true);
+    expect(expectDefined(world.prisma.data.googleEmailConta.find((item) => item.id === contaInicial.id)).principal).toBe(false);
+
+    const contaPrincipal = await world.chamadoGoogleEmailService.updateConta(
+      {
+        id: contaInicial.id,
+        ativo: true,
+        principal: true
+      },
+      admin
+    );
+    expect(contaPrincipal.principal).toBe(true);
+    expect(expectDefined(world.prisma.data.googleEmailConta.find((item) => item.id === contaSecundaria.id)).principal).toBe(false);
+
+    const grupoResponsavel = await world.prisma.grupoUsuario.create({
+      data: { nome: 'Responsaveis de e-mail', podeVisualizar: true }
+    });
+    const solicitante = await world.prisma.usuario.create({
+      data: {
+        id: randomUUID(),
+        nome: 'Solicitante Integracao',
+        login: 'solicitante.email.integracao',
+        email: 'Solicitante.Email@Orfeu.Test',
+        senhaHash: 'hash'
+      }
+    });
+    const responsavelUm = await world.prisma.usuario.create({
+      data: {
+        id: randomUUID(),
+        nome: 'Responsavel Um',
+        login: 'responsavel.email.um',
+        email: 'responsavel.um@orfeu.test',
+        senhaHash: 'hash',
+        grupoId: grupoResponsavel.id
+      }
+    });
+    const responsavelDois = await world.prisma.usuario.create({
+      data: {
+        id: randomUUID(),
+        nome: 'Responsavel Dois',
+        login: 'responsavel.email.dois',
+        email: 'responsavel.dois@orfeu.test',
+        senhaHash: 'hash',
+        grupoId: grupoResponsavel.id
+      }
+    });
+    const acompanhante = await world.prisma.usuario.create({
+      data: {
+        id: randomUUID(),
+        nome: 'Usuario em copia',
+        login: 'copia.email.integracao',
+        email: 'copia@orfeu.test',
+        senhaHash: 'hash'
+      }
+    });
+
+    for (const usuario of [solicitante, responsavelUm, responsavelDois, acompanhante]) {
+      await world.prisma.empresaUsuario.create({
+        data: { empresaId: empresaInicialId, usuarioId: usuario.id }
+      });
+    }
+
+    const chamado = await world.prisma.chamado.create({
+      data: {
+        id: randomUUID(),
+        empresaId: empresaInicialId,
+        numero: 9876,
+        titulo: 'Validar destinatarios automaticos',
+        descricao: 'Cenario <integrado> & detalhado de e-mail.',
+        solicitanteId: solicitante.id,
+        responsavelGrupoId: grupoResponsavel.id,
+        liderAtendimentoId: responsavelUm.id,
+        tipoId: tipoEmail.id,
+        prioridadeId: prioridadeEmail.id,
+        solucaoId: controleChamados.id,
+        funcionalidadeId: abrirChamado.id
+      }
+    });
+    await world.prisma.chamadoAcompanhante.create({
+      data: {
+        chamadoId: chamado.id,
+        usuarioId: responsavelDois.id,
+        adicionadoPorId: solicitante.id,
+        ativo: true
+      }
+    });
+    await world.prisma.chamadoAcompanhante.create({
+      data: {
+        chamadoId: chamado.id,
+        usuarioId: acompanhante.id,
+        adicionadoPorId: solicitante.id,
+        ativo: true
+      }
+    });
+
+    const contaPrincipalPersistida = expectDefined(world.prisma.data.googleEmailConta.find((item) => item.id === contaInicial.id));
+    contaPrincipalPersistida.refreshTokenCriptografado = (world.chamadoGoogleEmailService as any).encrypt('refresh-token');
+    contaPrincipalPersistida.conectadoEm = new Date();
+
+    let mensagemMime = '';
+    const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.includes('oauth2.googleapis.com/token')) {
+        return new Response(JSON.stringify({ access_token: 'access-token', expires_in: 3600 }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      mensagemMime = Buffer.from(JSON.parse(String(init?.body)).raw, 'base64url').toString('utf8');
+      return new Response(JSON.stringify({ id: 'gmail-message-id' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    });
+
+    try {
+      await world.chamadoGoogleEmailService.sendChamadoUpdate(chamado.id, 'Atualizacao integrada', 'O chamado recebeu uma atualizacao.');
+    } finally {
+      fetchSpy.mockRestore();
+    }
+
+    expect(mensagemMime).toContain('From: Solicitante Integracao via Controle de Chamados <inicial@orfeu.test>');
+    expect(mensagemMime).toContain('Reply-To: solicitante.email@orfeu.test');
+
+    const bcc = expectDefined(mensagemMime.split('\r\n').find((line) => line.startsWith('Bcc: ')))
+      .slice(5)
+      .split(', ')
+      .sort();
+    expect(bcc).toEqual(['copia@orfeu.test', 'responsavel.dois@orfeu.test', 'responsavel.um@orfeu.test', 'solicitante.email@orfeu.test']);
+
+    expect(mensagemMime).toContain('Content-Type: multipart/alternative;');
+    const boundary = expectDefined(mensagemMime.match(/boundary=([^\r\n]+)/)?.[1]);
+    const mimeParts = mensagemMime.split('--' + boundary);
+    const decodePart = (contentType: string) => {
+      const part = expectDefined(mimeParts.find((item) => item.includes('Content-Type: ' + contentType)));
+      const encoded = part.split('\r\n\r\n')[1] || '';
+      return Buffer.from(encoded.replace(/\s/g, ''), 'base64').toString('utf8');
+    };
+    const textBody = decodePart('text/plain');
+    const htmlBody = decodePart('text/html');
+
+    expect(textBody).toContain('Chamado #9876 - Validar destinatarios automaticos');
+    expect(textBody).toContain('Tipo: Incidente por e-mail');
+    expect(textBody).toContain('Prioridade: Alta por e-mail');
+    expect(htmlBody).toContain('<!doctype html>');
+    expect(htmlBody).toContain('O chamado recebeu uma atualizacao.');
+    expect(htmlBody).toContain('Responsaveis de e-mail');
+    expect(htmlBody).toContain('Cenario &lt;integrado&gt; &amp; detalhado de e-mail.');
+    expect(htmlBody).toContain('background: #2563eb;');
+    expect(htmlBody).toContain('background: #991b1b;');
+    expect(htmlBody).not.toContain('{{');
+  });
+
+  it('permite substituir a aparencia do email por um arquivo HTML configurado', async () => {
+    const templateDirectory = mkdtempSync(join(tmpdir(), 'orfeu-chamado-email-'));
+    const templatePath = join(templateDirectory, 'custom.html');
+    writeFileSync(templatePath, '<article><h1>{{CHAMADO_TITULO}}</h1><i>{{TIPO_COR}}</i><p>{{SOLICITANTE_NOME}}</p></article>', 'utf8');
+    const config = {
+      get: (key: string) =>
+        (
+          ({
+            CHAMADO_EMAIL_TEMPLATE_PATH: templatePath,
+            CHAMADO_APP_URL: 'https://chamados.orfeu.test/atendimento',
+            CHAMADO_EMAIL_TIMEZONE: 'America/Sao_Paulo'
+          }) as Record<string, string>
+        )[key]
+    } as ConfigService;
+    const service = new ChamadoEmailTemplateService(config);
+
+    const result = await service.render({
+      assunto: 'Atualizacao customizada',
+      descricaoEvento: 'Evento integrado',
+      chamado: {
+        id: 'chamado-customizado',
+        numero: 42,
+        titulo: 'Falha <critica>',
+        descricao: 'Descricao customizada',
+        status: 'ABERTO',
+        slaStatus: 'NO_PRAZO',
+        criadoEm: new Date('2026-07-21T12:00:00.000Z'),
+        atualizadoEm: new Date('2026-07-21T13:00:00.000Z'),
+        solicitante: { nome: 'Diogo & Equipe', email: 'diogo@orfeu.test' },
+        tipoConfiguracao: { nome: 'Incidente', cor: '#1d4ed8' },
+        prioridadeConfiguracao: { nome: 'Alta', cor: '#991b1b' }
+      }
+    });
+
+    expect(result.html).toContain('<article>');
+    expect(result.html).toContain('Falha &lt;critica&gt;');
+    expect(result.html).toContain('<i>#1d4ed8</i>');
+    expect(result.html).toContain('Diogo &amp; Equipe');
+    expect(result.html).not.toContain('{{');
+    expect(result.text).toContain('Acessar chamado: https://chamados.orfeu.test/atendimento/chamado-customizado');
+  });
+
   it('mantem o CRUD de servicos consistente no mesmo ciclo de persistencia em memoria', async () => {
     const { world } = await bootstrapBaseWorld();
     const criado = await world.servicosService.create({

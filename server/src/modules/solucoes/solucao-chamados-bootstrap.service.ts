@@ -231,9 +231,9 @@ export class SolucaoChamadosBootstrapService {
       },
       {
         slug: 'emails-solucoes',
-        titulo: 'E-mails por setor',
-        label: 'E-mails',
-        descricao: 'Conecte contas Google e configure o remetente usado por cada solucao.',
+        titulo: 'Configuracao de e-mail',
+        label: 'E-mail',
+        descricao: 'Conecte a conta Google principal usada nas notificacoes automaticas dos chamados.',
         ordem: 100,
         registryKey: 'controle-de-chamados.emails-solucoes'
       }

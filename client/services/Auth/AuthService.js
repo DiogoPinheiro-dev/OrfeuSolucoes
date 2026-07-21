@@ -10,16 +10,8 @@ import {
     SWITCH_COMPANY_MUTATION
 } from "../graphql/operations";
 import { clearSession, setSession } from "./session";
+import { toServiceError } from "../graphql/serviceError";
 
-const extractErrorMessage = (error) => {
-    const gqlError = error?.graphQLErrors?.[0]?.message;
-
-    if (gqlError) {
-        return gqlError;
-    }
-
-    return error?.message || "Erro inesperado ao comunicar com o servidor.";
-};
 
 export const login = async ({ loginOrEmail, email, password, empresaId }) => {
     try {
@@ -44,7 +36,7 @@ export const login = async ({ loginOrEmail, email, password, empresaId }) => {
 
         return payload.user;
     } catch (error) {
-        throw new Error(extractErrorMessage(error));
+        throw toServiceError(error);
     }
 };
 
@@ -62,7 +54,7 @@ export const getLoginCompanies = async ({ loginOrEmail, password }) => {
 
         return response?.data?.loginCompanies ?? [];
     } catch (error) {
-        throw new Error(extractErrorMessage(error));
+        throw toServiceError(error);
     }
 };
 
@@ -75,7 +67,7 @@ export const getEmpresas = async () => {
 
         return response?.data?.empresas ?? [];
     } catch (error) {
-        throw new Error(extractErrorMessage(error));
+        throw toServiceError(error);
     }
 };
 
@@ -95,7 +87,7 @@ export const register = async ({ nome, login, email, password }) => {
 
         return response?.data?.createUser;
     } catch (error) {
-        throw new Error(extractErrorMessage(error));
+        throw toServiceError(error);
     }
 };
 
@@ -108,7 +100,7 @@ export const getCurrentUser = async () => {
 
         return response?.data?.me ?? null;
     } catch (error) {
-        throw new Error(extractErrorMessage(error));
+        throw toServiceError(error);
     }
 };
 
@@ -130,7 +122,7 @@ export const changePassword = async ({ novaSenha }) => {
 
         return payload.user;
     } catch (error) {
-        throw new Error(extractErrorMessage(error));
+        throw toServiceError(error);
     }
 };
 
@@ -155,7 +147,7 @@ export const switchCompany = async ({ empresaId }) => {
 
         return payload.user;
     } catch (error) {
-        throw new Error(extractErrorMessage(error));
+        throw toServiceError(error);
     }
 };
 

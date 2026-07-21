@@ -1,5 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { FormFieldBadRequestException } from '../../common/exceptions/form-field.exception';
 import { JwtPayload } from '../auth/strategies/jwt-payload.type';
 import { ChamadoAuthorizationService } from './chamado-authorization.service';
 import { FEATURES } from './constants/chamado.constants';
@@ -138,7 +139,7 @@ export class ChamadoResponsavelService {
     }) as ChamadoResponsavelRecord | null;
 
     if (existing?.ativo) {
-      throw new BadRequestException('Este responsavel ja possui cadastro nesta empresa. Use a alteracao para ajustar os vinculos.');
+      throw new FormFieldBadRequestException(alvo.tipo === 'USUARIO' ? 'usuarioId' : 'grupoId', 'Este responsavel ja possui cadastro nesta empresa. Use a alteracao para ajustar os vinculos.');
     }
 
     if (existing) {
@@ -192,7 +193,7 @@ export class ChamadoResponsavelService {
       });
 
       if (duplicated) {
-        throw new BadRequestException('Este responsavel ja possui cadastro nesta empresa.');
+        throw new FormFieldBadRequestException(alvo.tipo === 'USUARIO' ? 'usuarioId' : 'grupoId', 'Este responsavel ja possui cadastro nesta empresa.');
       }
     }
 
@@ -336,7 +337,7 @@ export class ChamadoResponsavelService {
 
     if (tipo === 'USUARIO') {
       if (!usuarioId) {
-        throw new BadRequestException('Selecione o usuario responsavel.');
+        throw new FormFieldBadRequestException('usuarioId', 'Selecione o usuario responsavel.');
       }
 
       await this.ensureUsuarioElegivelResponsavel(usuarioId, empresaId);
@@ -344,7 +345,7 @@ export class ChamadoResponsavelService {
     }
 
     if (!grupoId || !Number.isInteger(grupoId) || grupoId <= 0) {
-      throw new BadRequestException('Selecione o grupo responsavel.');
+      throw new FormFieldBadRequestException('grupoId', 'Selecione o grupo responsavel.');
     }
 
     await this.ensureGrupoElegivelResponsavel(grupoId, empresaId);

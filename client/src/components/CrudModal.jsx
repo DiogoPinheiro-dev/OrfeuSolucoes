@@ -13,6 +13,8 @@ export function CrudModal({
     ariaLabel,
     onClose,
     onSubmit,
+    formId,
+    noValidate = false,
     formClassName = "user-form",
     children,
     actions
@@ -28,7 +30,7 @@ export function CrudModal({
                     <button type="button" onClick={onClose} aria-label="Fechar">X</button>
                 </header>
 
-                <form className={formClassName} onSubmit={onSubmit}>
+                <form id={formId} className={formClassName} onSubmit={onSubmit} noValidate={noValidate}>
                     {children}
                     {actions && <div className="crud-modal-actions">{actions}</div>}
                 </form>

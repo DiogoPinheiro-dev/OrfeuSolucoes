@@ -1,4 +1,5 @@
 import { apolloClient } from "../../src/lib/apolloClient";
+import { toServiceError } from "../graphql/serviceError";
 import {
     CREATE_GRUPO_USUARIO_MUTATION,
     DELETE_GRUPO_USUARIO_MUTATION,
@@ -6,11 +7,6 @@ import {
     UPDATE_GRUPO_USUARIO_MUTATION
 } from "../graphql/operations";
 
-const extractErrorMessage = (error) => {
-    const gqlError = error?.graphQLErrors?.[0]?.message;
-
-    return gqlError || error?.message || "Erro inesperado ao comunicar com o servidor.";
-};
 
 export const getGruposUsuarios = async () => {
     try {
@@ -21,7 +17,7 @@ export const getGruposUsuarios = async () => {
 
         return response?.data?.gruposUsuarios ?? [];
     } catch (error) {
-        throw new Error(extractErrorMessage(error));
+        throw toServiceError(error);
     }
 };
 
@@ -34,7 +30,7 @@ export const createGrupoUsuario = async (input) => {
 
         return response?.data?.createGrupoUsuario;
     } catch (error) {
-        throw new Error(extractErrorMessage(error));
+        throw toServiceError(error);
     }
 };
 
@@ -52,7 +48,7 @@ export const updateGrupoUsuario = async (input) => {
 
         return response?.data?.updateGrupoUsuario;
     } catch (error) {
-        throw new Error(extractErrorMessage(error));
+        throw toServiceError(error);
     }
 };
 
@@ -65,6 +61,6 @@ export const deleteGrupoUsuario = async (id) => {
 
         return response?.data?.deleteGrupoUsuario;
     } catch (error) {
-        throw new Error(extractErrorMessage(error));
+        throw toServiceError(error);
     }
 };
