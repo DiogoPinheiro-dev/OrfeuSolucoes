@@ -18,6 +18,12 @@ input AlterarStatusChamadoInput {
   status: String!
 }
 
+input AlterarStatusProjetoItemInput {
+  id: String!
+  status: ProjetoItemStatus!
+  versao: Int!
+}
+
 type AtendenteChamadoType {
   email: String
   grupoId: Int
@@ -461,6 +467,20 @@ input CreateProjetoInput {
   situacao: ProjetoSituacao = RASCUNHO
 }
 
+input CreateProjetoItemInput {
+  descricao: String
+  estimativaMinutos: Int
+  fimPrevistoEm: String
+  inicioPrevistoEm: String
+  paiId: String
+  prioridade: ProjetoItemPrioridade = MEDIA
+  projetoId: String!
+  responsavelId: String
+  status: ProjetoItemStatus = ABERTO
+  tipo: ProjetoItemTipo!
+  titulo: String!
+}
+
 input CreateServicoInput {
   desconto: Float
   descricao: String
@@ -633,12 +653,20 @@ input LoginInput {
   senha: String!
 }
 
+input MoverProjetoItemBacklogInput {
+  backlogVersao: Int!
+  direcao: ProjetoBacklogDirecao!
+  itemId: String!
+}
+
 type Mutation {
   alterarCategoriaChamado(input: AlterarCategoriaChamadoInput!): ChamadoType!
   alterarPrioridadeChamado(input: AlterarPrioridadeChamadoInput!): ChamadoType!
   alterarStatusChamado(input: AlterarStatusChamadoInput!): ChamadoType!
+  alterarStatusProjetoItem(input: AlterarStatusProjetoItemInput!): ProjetoItemType!
   arquivarChamado(id: String!, observacao: String): ChamadoType!
   arquivarProjeto(id: String!): ProjetoType!
+  arquivarProjetoItem(input: VersionarProjetoItemInput!): ProjetoItemType!
   assumirChamado(id: String!): ChamadoType!
   atribuirChamado(input: AtribuirChamadoInput!): ChamadoType!
   atualizarAcompanhantesChamado(input: AtualizarChamadoAcompanhantesInput!): ChamadoType!
@@ -654,6 +682,7 @@ type Mutation {
   createGoogleEmailConta(input: CreateGoogleEmailContaInput!): GoogleEmailContaType!
   createGrupoUsuario(input: CreateGrupoUsuarioInput!): GrupoUsuarioType!
   createProjeto(input: CreateProjetoInput!): ProjetoType!
+  createProjetoItem(input: CreateProjetoItemInput!): ProjetoItemType!
   createServico(input: CreateServicoInput!): ServicoType!
   createSolucao(input: CreateSolucaoInput!): SolucaoType!
   createUser(input: CreateUserInput!): UserType!
@@ -677,8 +706,10 @@ type Mutation {
   logout: Boolean!
   marcarChamadoNotificacaoComoLida(id: String!): Boolean!
   marcarTodasChamadoNotificacoesComoLidas: Int!
+  moverProjetoItemBacklog(input: MoverProjetoItemBacklogInput!): ProjetoBacklogMovimentoType!
   reabrirChamado(id: String!, observacao: String): ChamadoType!
   reativarProjeto(id: String!): ProjetoType!
+  reativarProjetoItem(input: VersionarProjetoItemInput!): ProjetoItemType!
   resolverChamado(id: String!, observacao: String): ChamadoType!
   responderChamado(input: ResponderChamadoInput!): ChamadoType!
   switchCompany(input: SwitchCompanyInput!): AuthPayloadType!
@@ -694,9 +725,29 @@ type Mutation {
   updateGrupoUsuario(input: UpdateGrupoUsuarioInput!): GrupoUsuarioType!
   updateProjeto(input: UpdateProjetoInput!): ProjetoType!
   updateProjetoEquipe(input: UpdateProjetoEquipeInput!): ProjetoType!
+  updateProjetoItem(input: UpdateProjetoItemInput!): ProjetoItemType!
   updateServico(input: UpdateServicoInput!): ServicoType!
   updateSolucao(input: UpdateSolucaoInput!): SolucaoType!
   updateUser(input: UpdateUserInput!): UserType!
+}
+
+enum ProjetoBacklogDirecao {
+  DESCER
+  FUNDO
+  SUBIR
+  TOPO
+}
+
+type ProjetoBacklogMovimentoType {
+  backlogVersao: Int!
+  itemId: String!
+}
+
+type ProjetoBacklogProjetoType {
+  arquivadoEm: DateTime
+  chave: String!
+  id: String!
+  nome: String!
 }
 
 input ProjetoFiltroInput {
@@ -707,6 +758,96 @@ input ProjetoFiltroInput {
   saude: ProjetoSaude
   situacao: ProjetoSituacao
   termo: String
+}
+
+input ProjetoItemFiltroInput {
+  incluirArquivados: Boolean = false
+  limite: Int = 20
+  pagina: Int = 1
+  prioridade: ProjetoItemPrioridade
+  projetoId: String!
+  responsavelId: String
+  status: ProjetoItemStatus
+  termo: String
+  tipo: ProjetoItemTipo
+}
+
+type ProjetoItemHistoricoType {
+  criadoEm: DateTime!
+  dados: String
+  evento: String!
+  id: String!
+  usuario: ProjetoUsuarioType
+}
+
+type ProjetoItemPageType {
+  backlogVersao: Int!
+  items: [ProjetoItemType!]!
+  limite: Int!
+  pagina: Int!
+  permissoes: ProjetoItemPermissoesType!
+  total: Int!
+  totalPaginas: Int!
+}
+
+type ProjetoItemPermissoesType {
+  podeAlterar: Boolean!
+  podeAlterarStatus: Boolean!
+  podeArquivar: Boolean!
+  podeCriar: Boolean!
+  podePriorizar: Boolean!
+  podeReativar: Boolean!
+  podeVisualizar: Boolean!
+}
+
+enum ProjetoItemPrioridade {
+  ALTA
+  BAIXA
+  CRITICA
+  MEDIA
+}
+
+enum ProjetoItemStatus {
+  ABERTO
+  CANCELADO
+  CONCLUIDO
+  EM_ANDAMENTO
+}
+
+enum ProjetoItemTipo {
+  BUG
+  HISTORIA
+  MELHORIA
+  TAREFA
+}
+
+type ProjetoItemType {
+  arquivadoEm: DateTime
+  arquivadoPor: ProjetoUsuarioType
+  atualizadoEm: DateTime!
+  autor: ProjetoUsuarioType!
+  autorId: String!
+  chave: String!
+  concluidoEm: DateTime
+  criadoEm: DateTime!
+  descricao: String
+  empresaId: Int!
+  estimativaMinutos: Int
+  fimPrevistoEm: DateTime
+  id: String!
+  inicioPrevistoEm: DateTime
+  numero: Int!
+  ordemBacklog: Int!
+  paiId: String
+  permissoes: ProjetoItemPermissoesType!
+  prioridade: ProjetoItemPrioridade!
+  projetoId: String!
+  responsavel: ProjetoUsuarioType
+  responsavelId: String
+  status: ProjetoItemStatus!
+  tipo: ProjetoItemTipo!
+  titulo: String!
+  versao: Int!
 }
 
 input ProjetoMembroInput {
@@ -823,6 +964,11 @@ type Query {
   opcoesAberturaChamado: ChamadoResponsavelOptionsType!
   prioridadesChamado(ativas: Boolean = true): [ChamadoPrioridadeType!]!
   projeto(id: String!): ProjetoType!
+  projetoBacklogProjetos(incluirArquivados: Boolean = false): [ProjetoBacklogProjetoType!]!
+  projetoBacklogResponsaveis(projetoId: String!): [ProjetoUsuarioType!]!
+  projetoItem(id: String!): ProjetoItemType!
+  projetoItemHistorico(id: String!): [ProjetoItemHistoricoType!]!
+  projetoItens(filtro: ProjetoItemFiltroInput!): ProjetoItemPageType!
   projetoParticipantesDisponiveis: [ProjetoUsuarioType!]!
   projetos(filtro: ProjetoFiltroInput): ProjetoPageType!
   regrasSlaChamado(ativas: Boolean = true): [ChamadoSlaRegraType!]!
@@ -978,6 +1124,20 @@ input UpdateProjetoInput {
   objetivo: String
 }
 
+input UpdateProjetoItemInput {
+  descricao: String
+  estimativaMinutos: Int
+  fimPrevistoEm: String
+  id: String!
+  inicioPrevistoEm: String
+  paiId: String
+  prioridade: ProjetoItemPrioridade
+  responsavelId: String
+  tipo: ProjetoItemTipo
+  titulo: String
+  versao: Int!
+}
+
 input UpdateServicoInput {
   desconto: Float
   descricao: String
@@ -1024,4 +1184,9 @@ type UserType {
   podeExcluir: Boolean!
   podeIncluir: Boolean!
   podeVisualizar: Boolean!
+}
+
+input VersionarProjetoItemInput {
+  id: String!
+  versao: Int!
 }

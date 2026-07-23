@@ -1415,3 +1415,98 @@ export const REATIVAR_PROJETO_MUTATION = gql`
   ${PROJETO_FIELDS}
   mutation ReativarProjeto($id: String!) { reativarProjeto(id: $id) { ...ProjetoFields } }
 `;
+
+const PROJETO_ITEM_FIELDS = gql`
+  fragment ProjetoItemFields on ProjetoItemType {
+    id empresaId projetoId numero chave ordemBacklog tipo titulo descricao
+    status prioridade responsavelId
+    responsavel { id nome login email grupoId grupoNome }
+    autorId
+    autor { id nome login email grupoId grupoNome }
+    paiId inicioPrevistoEm fimPrevistoEm estimativaMinutos concluidoEm versao
+    arquivadoEm
+    arquivadoPor { id nome login email grupoId grupoNome }
+    criadoEm atualizadoEm
+    permissoes {
+      podeVisualizar podeCriar podeAlterar podeAlterarStatus
+      podeArquivar podeReativar podePriorizar
+    }
+  }
+`;
+
+export const PROJETO_BACKLOG_PROJETOS_QUERY = gql`
+  query ProjetoBacklogProjetos($incluirArquivados: Boolean) {
+    projetoBacklogProjetos(incluirArquivados: $incluirArquivados) {
+      id chave nome arquivadoEm
+    }
+  }
+`;
+export const PROJETO_BACKLOG_RESPONSAVEIS_QUERY = gql`
+  query ProjetoBacklogResponsaveis($projetoId: String!) {
+    projetoBacklogResponsaveis(projetoId: $projetoId) {
+      id nome login email grupoId grupoNome
+    }
+  }
+`;
+export const PROJETO_ITENS_QUERY = gql`
+  ${PROJETO_ITEM_FIELDS}
+  query ProjetoItens($filtro: ProjetoItemFiltroInput!) {
+    projetoItens(filtro: $filtro) {
+      items { ...ProjetoItemFields }
+      total pagina limite totalPaginas backlogVersao
+      permissoes {
+        podeVisualizar podeCriar podeAlterar podeAlterarStatus
+        podeArquivar podeReativar podePriorizar
+      }
+    }
+  }
+`;
+export const PROJETO_ITEM_QUERY = gql`
+  ${PROJETO_ITEM_FIELDS}
+  query ProjetoItem($id: String!) {
+    projetoItem(id: $id) { ...ProjetoItemFields }
+  }
+`;
+export const PROJETO_ITEM_HISTORICO_QUERY = gql`
+  query ProjetoItemHistorico($id: String!) {
+    projetoItemHistorico(id: $id) {
+      id evento dados criadoEm
+      usuario { id nome login email grupoId grupoNome }
+    }
+  }
+`;
+export const CREATE_PROJETO_ITEM_MUTATION = gql`
+  ${PROJETO_ITEM_FIELDS}
+  mutation CreateProjetoItem($input: CreateProjetoItemInput!) {
+    createProjetoItem(input: $input) { ...ProjetoItemFields }
+  }
+`;
+export const UPDATE_PROJETO_ITEM_MUTATION = gql`
+  ${PROJETO_ITEM_FIELDS}
+  mutation UpdateProjetoItem($input: UpdateProjetoItemInput!) {
+    updateProjetoItem(input: $input) { ...ProjetoItemFields }
+  }
+`;
+export const ALTERAR_STATUS_PROJETO_ITEM_MUTATION = gql`
+  ${PROJETO_ITEM_FIELDS}
+  mutation AlterarStatusProjetoItem($input: AlterarStatusProjetoItemInput!) {
+    alterarStatusProjetoItem(input: $input) { ...ProjetoItemFields }
+  }
+`;
+export const ARQUIVAR_PROJETO_ITEM_MUTATION = gql`
+  ${PROJETO_ITEM_FIELDS}
+  mutation ArquivarProjetoItem($input: VersionarProjetoItemInput!) {
+    arquivarProjetoItem(input: $input) { ...ProjetoItemFields }
+  }
+`;
+export const REATIVAR_PROJETO_ITEM_MUTATION = gql`
+  ${PROJETO_ITEM_FIELDS}
+  mutation ReativarProjetoItem($input: VersionarProjetoItemInput!) {
+    reativarProjetoItem(input: $input) { ...ProjetoItemFields }
+  }
+`;
+export const MOVER_PROJETO_ITEM_BACKLOG_MUTATION = gql`
+  mutation MoverProjetoItemBacklog($input: MoverProjetoItemBacklogInput!) {
+    moverProjetoItemBacklog(input: $input) { itemId backlogVersao }
+  }
+`;

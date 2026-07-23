@@ -1,11 +1,10 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { JwtPayload } from '../auth/strategies/jwt-payload.type';
 import { FuncionalidadeAuthorizationService } from '../solucoes/funcionalidade-authorization.service';
+import { PROJETOS_SOLUTION_SLUG, ProjetoAcao, ProjetoFuncionalidade, ProjetoFuncionalidadeSlug } from './constants/projeto-operacional.constants';
 import { ProjetoPapel, ProjetoPermissoesEfetivas, ProjetoRecord } from './types/projeto.types';
 
-const SOLUTION_SLUG = 'projetos';
-const FEATURE_SLUG = 'cadastro-de-projetos';
 
 @Injectable()
 export class ProjetoAuthorizationService {
@@ -20,15 +19,53 @@ export class ProjetoAuthorizationService {
   }
 
   async assertReadAccess(user: JwtPayload): Promise<number> {
+    return this.assertFeatureActionAccess(user, ProjetoFuncionalidade.CADASTRO, ProjetoAcao.VISUALIZAR);
+  }
+
+  async assertFeatureActionAccess(
+    user: JwtPayload,
+    featureSlug: ProjetoFuncionalidadeSlug,
+    action: string
+  ): Promise<number> {
     const empresaId = this.assertCompanyContext(user);
-    await this.funcionalidadeAuthorization.assertFeatureAction(user, SOLUTION_SLUG, FEATURE_SLUG, 'visualizar');
+    await this.funcionalidadeAuthorization.assertFeatureAction(
+      user,
+      PROJETOS_SOLUTION_SLUG,
+      featureSlug,
+      action
+    );
     return empresaId;
   }
 
   async assertCreateAccess(user: JwtPayload): Promise<number> {
-    const empresaId = this.assertCompanyContext(user);
-    await this.funcionalidadeAuthorization.assertFeatureAction(user, SOLUTION_SLUG, FEATURE_SLUG, 'incluir');
-    return empresaId;
+    return this.assertFeatureActionAccess(user, ProjetoFuncionalidade.CADASTRO, ProjetoAcao.INCLUIR);
+  }
+
+  assertWritableProject(projeto: Pick<ProjetoRecord, 'arquivadoEm'>): void {
+    if (projeto.arquivadoEm) {
+      throw new BadRequestException('O projeto arquivado esta disponivel somente para consulta.');
+    }
+  }
+
+  async assertOperationalAction(
+    user: JwtPayload,
+    projeto: ProjetoRecord | null,
+    empresaId: number,
+    papel: ProjetoPapel | null,
+    featureSlug: ProjetoFuncionalidadeSlug,
+    action: string,
+    allowedRoles: ProjetoPapel[],
+    operation: string
+  ): Promise<void> {
+    this.assertVisibleProject(projeto, user, empresaId);
+    this.assertWritableProject(projeto);
+    if (this.isSystemAdmin(user)) return;
+
+    if (!papel || !allowedRoles.includes(papel)) {
+      throw new ForbiddenException(`Usuario sem permissao para ${operation} neste projeto.`);
+    }
+
+    await this.assertFeatureActionAccess(user, featureSlug, action);
   }
   visibilityWhere(user: JwtPayload): Prisma.ProjetoWhereInput {
     if (this.isSystemAdmin(user)) {
@@ -59,7 +96,12 @@ export class ProjetoAuthorizationService {
     const actions = ['alterar', 'gerenciar_membros', 'alterar_status', 'excluir', 'reativar_projeto'];
     const entries = await Promise.all(actions.map(async (action) => [
       action,
-      await this.funcionalidadeAuthorization.canFeatureAction(user, SOLUTION_SLUG, FEATURE_SLUG, action)
+      await this.funcionalidadeAuthorization.canFeatureAction(
+        user,
+        PROJETOS_SOLUTION_SLUG,
+        ProjetoFuncionalidade.CADASTRO,
+        action
+      )
     ] as const));
 
     return Object.fromEntries(entries);
@@ -74,7 +116,12 @@ export class ProjetoAuthorizationService {
       throw new ForbiddenException('Usuario sem permissao para alterar este projeto.');
     }
 
-    await this.funcionalidadeAuthorization.assertFeatureAction(user, SOLUTION_SLUG, FEATURE_SLUG, 'alterar');
+    await this.funcionalidadeAuthorization.assertFeatureAction(
+      user,
+      PROJETOS_SOLUTION_SLUG,
+      ProjetoFuncionalidade.CADASTRO,
+      ProjetoAcao.ALTERAR
+    );
   }
   async assertCanManageTeam(user: JwtPayload, papel: ProjetoPapel | null): Promise<void> {
     await this.assertRoleAction(user, papel, [ProjetoPapel.RESPONSAVEL], 'gerenciar_membros', 'gerenciar a equipe');
@@ -135,7 +182,12 @@ export class ProjetoAuthorizationService {
       throw new ForbiddenException(`Usuario sem permissao para ${operation} este projeto.`);
     }
 
-    await this.funcionalidadeAuthorization.assertFeatureAction(user, SOLUTION_SLUG, FEATURE_SLUG, action);
+    await this.funcionalidadeAuthorization.assertFeatureAction(
+      user,
+      PROJETOS_SOLUTION_SLUG,
+      ProjetoFuncionalidade.CADASTRO,
+      action
+    );
   }
   isSystemAdmin(user?: { login?: string | null } | null): boolean {
     return this.funcionalidadeAuthorization.isSystemAdmin(user);
@@ -151,8 +203,8 @@ export class ProjetoAuthorizationService {
   } | null): boolean {
     return !!grupo && (
       this.funcionalidadeAuthorization.hasFullAccessGroup(grupo) ||
-      (grupo.solucoes ?? []).some((item) => item.solucao?.slug === SOLUTION_SLUG) ||
-      (grupo.funcionalidades ?? []).some((item) => item.funcionalidade?.solucao?.slug === SOLUTION_SLUG)
+      (grupo.solucoes ?? []).some((item) => item.solucao?.slug === PROJETOS_SOLUTION_SLUG) ||
+      (grupo.funcionalidades ?? []).some((item) => item.funcionalidade?.solucao?.slug === PROJETOS_SOLUTION_SLUG)
     );
   }
 }

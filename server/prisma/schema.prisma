@@ -8,55 +8,60 @@ datasource db {
 }
 
 model Usuario {
-  id        String  @id @default(uuid()) @db.UniqueIdentifier @map("Id")
-  nome      String? @map("Nome")
-  login     String? @map("Login")
-  email     String  @unique(map: "UX_Usuarios_Email") @map("Email")
-  senhaHash String  @map("Senha")
-  grupoId   Int?    @map("GrupoId")
+  id               String  @id @default(uuid()) @map("Id") @db.UniqueIdentifier
+  nome             String? @map("Nome")
+  login            String? @map("Login")
+  email            String  @unique(map: "UX_Usuarios_Email") @map("Email")
+  senhaHash        String  @map("Senha")
+  grupoId          Int?    @map("GrupoId")
   deveAlterarSenha Boolean @default(false) @map("DeveAlterarSenha")
-  padraoSistema Boolean @default(false) @map("PadraoSistema")
+  padraoSistema    Boolean @default(false) @map("PadraoSistema")
 
-  empresas EmpresaUsuario[]
-  grupo    GrupoUsuario? @relation(fields: [grupoId], references: [id])
-  chamadosSolicitados Chamado[] @relation("ChamadoSolicitante")
-  chamadosResponsavel Chamado[] @relation("ChamadoResponsavel")
-  chamadosLiderAtendimento Chamado[] @relation("ChamadoLiderAtendimento")
-  chamadosAcompanhando ChamadoAcompanhante[] @relation("ChamadoAcompanhanteUsuario")
-  chamadosAcompanhantesAdicionados ChamadoAcompanhante[] @relation("ChamadoAcompanhanteAdicionadoPor")
-  chamadoMensagens ChamadoMensagem[]
-  chamadoHistoricos ChamadoHistorico[]
-  chamadoResponsaveisConfigurados ChamadoResponsavel[]
-  chamadoAnexos ChamadoAnexo[]
-  chamadoNotificacoes ChamadoNotificacao[]
-  googleEmailContasCriadas GoogleEmailConta[]
-  projetosCriados Projeto[] @relation("ProjetoCriador")
-  projetosResponsavel Projeto[] @relation("ProjetoResponsavel")
-  projetosArquivados Projeto[] @relation("ProjetoArquivadoPor")
-  projetosParticipacoes ProjetoMembro[]
+  empresas                         EmpresaUsuario[]
+  grupo                            GrupoUsuario?                @relation(fields: [grupoId], references: [id])
+  chamadosSolicitados              Chamado[]                    @relation("ChamadoSolicitante")
+  chamadosResponsavel              Chamado[]                    @relation("ChamadoResponsavel")
+  chamadosLiderAtendimento         Chamado[]                    @relation("ChamadoLiderAtendimento")
+  chamadosAcompanhando             ChamadoAcompanhante[]        @relation("ChamadoAcompanhanteUsuario")
+  chamadosAcompanhantesAdicionados ChamadoAcompanhante[]        @relation("ChamadoAcompanhanteAdicionadoPor")
+  chamadoMensagens                 ChamadoMensagem[]
+  chamadoHistoricos                ChamadoHistorico[]
+  chamadoResponsaveisConfigurados  ChamadoResponsavel[]
+  chamadoAnexos                    ChamadoAnexo[]
+  chamadoNotificacoes              ChamadoNotificacao[]
+  googleEmailContasCriadas         GoogleEmailConta[]
+  projetosCriados                  Projeto[]                    @relation("ProjetoCriador")
+  projetosResponsavel              Projeto[]                    @relation("ProjetoResponsavel")
+  projetosArquivados               Projeto[]                    @relation("ProjetoArquivadoPor")
+  projetosParticipacoes            ProjetoMembro[]
+  projetoEventos                   ProjetoEvento[]
+  projetoOperacoesIdempotentes     ProjetoOperacaoIdempotente[]
+  projetoItensResponsavel          ProjetoItem[]                @relation("ProjetoItemResponsavel")
+  projetoItensAutor                ProjetoItem[]                @relation("ProjetoItemAutor")
+  projetoItensArquivados           ProjetoItem[]                @relation("ProjetoItemArquivadoPor")
 
   @@map("Usuarios")
 }
 
 model GrupoUsuario {
-  id              Int     @id @default(autoincrement()) @map("Id")
-  nome            String  @unique(map: "UX_GruposUsuarios_Nome") @map("Nome")
-  descricao       String? @map("Descricao")
-  acessoEcommerce Boolean @default(false) @map("AcessoEcommerce")
-  acessoProjetos  Boolean @default(false) @map("AcessoProjetos")
-  acessoHoras     Boolean @default(false) @map("AcessoHoras")
+  id                 Int     @id @default(autoincrement()) @map("Id")
+  nome               String  @unique(map: "UX_GruposUsuarios_Nome") @map("Nome")
+  descricao          String? @map("Descricao")
+  acessoEcommerce    Boolean @default(false) @map("AcessoEcommerce")
+  acessoProjetos     Boolean @default(false) @map("AcessoProjetos")
+  acessoHoras        Boolean @default(false) @map("AcessoHoras")
   acessoConfigurador Boolean @default(false) @map("AcessoConfigurador")
-  padraoSistema Boolean @default(false) @map("PadraoSistema")
-  podeVisualizar Boolean @default(true) @map("PodeVisualizar")
-  podeIncluir    Boolean @default(false) @map("PodeIncluir")
-  podeAlterar    Boolean @default(false) @map("PodeAlterar")
-  podeExcluir    Boolean @default(false) @map("PodeExcluir")
+  padraoSistema      Boolean @default(false) @map("PadraoSistema")
+  podeVisualizar     Boolean @default(true) @map("PodeVisualizar")
+  podeIncluir        Boolean @default(false) @map("PodeIncluir")
+  podeAlterar        Boolean @default(false) @map("PodeAlterar")
+  podeExcluir        Boolean @default(false) @map("PodeExcluir")
 
-  usuarios Usuario[]
-  solucoes GrupoSolucao[]
-  funcionalidades GrupoFuncionalidade[]
-  funcionalidadeAcoes GrupoFuncionalidadeAcao[]
-  chamadosResponsavelGrupo Chamado[] @relation("ChamadoResponsavelGrupo")
+  usuarios                        Usuario[]
+  solucoes                        GrupoSolucao[]
+  funcionalidades                 GrupoFuncionalidade[]
+  funcionalidadeAcoes             GrupoFuncionalidadeAcao[]
+  chamadosResponsavelGrupo        Chamado[]                 @relation("ChamadoResponsavelGrupo")
   chamadoResponsaveisConfigurados ChamadoResponsavel[]
 
   @@map("GruposUsuarios")
@@ -66,73 +71,81 @@ model Servico {
   id        Int      @id @default(autoincrement()) @map("Id")
   titulo    String?  @map("Titulo")
   descricao String?  @map("Descricao")
-  valor     Decimal? @db.Decimal(18, 2) @map("Valor")
-  desconto  Decimal? @db.Decimal(18, 2) @map("Desconto")
+  valor     Decimal? @map("Valor") @db.Decimal(18, 2)
+  desconto  Decimal? @map("Desconto") @db.Decimal(18, 2)
   vendas    Int?     @map("Vendas")
 
   @@map("Servicos")
 }
 
 model Empresa {
-  id              Int      @id @default(autoincrement()) @map("Id")
-  nome            String?  @map("Nome")
-  acessoEcommerce Boolean  @default(false) @map("AcessoEcommerce")
-  acessoProjetos  Boolean  @default(false) @map("AcessoProjetos")
-  acessoHoras     Boolean  @default(false) @map("AcessoHoras")
-  padraoSistema   Boolean  @default(false) @map("PadraoSistema")
+  id              Int     @id @default(autoincrement()) @map("Id")
+  nome            String? @map("Nome")
+  acessoEcommerce Boolean @default(false) @map("AcessoEcommerce")
+  acessoProjetos  Boolean @default(false) @map("AcessoProjetos")
+  acessoHoras     Boolean @default(false) @map("AcessoHoras")
+  padraoSistema   Boolean @default(false) @map("PadraoSistema")
   // cnpj        String?  @map("CNPJ")
   // endereco    String?  @map("Endereco")
   // telefone    String?  @map("Telefone")
   // email       String?  @map("Email")
   // descricao   String?  @map("Descricao")
 
-  usuarios EmpresaUsuario[]
-  solucoes EmpresaSolucao[]
-  funcionalidades EmpresaFuncionalidade[]
-  chamados Chamado[]
-  chamadoCategorias ChamadoCategoria[]
-  chamadoMensagens ChamadoMensagem[]
-  chamadoHistoricos ChamadoHistorico[]
+  usuarios                        EmpresaUsuario[]
+  solucoes                        EmpresaSolucao[]
+  funcionalidades                 EmpresaFuncionalidade[]
+  chamados                        Chamado[]
+  chamadoCategorias               ChamadoCategoria[]
+  chamadoMensagens                ChamadoMensagem[]
+  chamadoHistoricos               ChamadoHistorico[]
   chamadoResponsaveisConfigurados ChamadoResponsavel[]
-  chamadoSequencia ChamadoSequencia?
-  chamadoAnexos ChamadoAnexo[]
-  chamadoNotificacoes ChamadoNotificacao[]
-  chamadoAcompanhantes ChamadoAcompanhante[]
-  chamadoTipos ChamadoTipo[]
-  chamadoPrioridades ChamadoPrioridade[]
-  chamadoSlaRegras ChamadoSlaRegra[]
-  googleEmailContas GoogleEmailConta[]
-  projetos Projeto[]
+  chamadoSequencia                ChamadoSequencia?
+  chamadoAnexos                   ChamadoAnexo[]
+  chamadoNotificacoes             ChamadoNotificacao[]
+  chamadoAcompanhantes            ChamadoAcompanhante[]
+  chamadoTipos                    ChamadoTipo[]
+  chamadoPrioridades              ChamadoPrioridade[]
+  chamadoSlaRegras                ChamadoSlaRegra[]
+  googleEmailContas               GoogleEmailConta[]
+  projetos                        Projeto[]
+  projetoEventos                  ProjetoEvento[]
+  projetoOperacoesIdempotentes    ProjetoOperacaoIdempotente[]
+  projetoItens                    ProjetoItem[]
 
   @@map("Empresas")
 }
 
 model Projeto {
-  id               String    @id @default(uuid()) @db.UniqueIdentifier @map("Id")
+  id               String    @id @default(uuid()) @map("Id") @db.UniqueIdentifier
   empresaId        Int       @map("EmpresaId")
-  chave            String    @db.NVarChar(10) @map("Chave")
-  nome             String    @db.NVarChar(200) @map("Nome")
-  objetivo         String?   @db.NVarChar(500) @map("Objetivo")
+  chave            String    @map("Chave") @db.NVarChar(10)
+  nome             String    @map("Nome") @db.NVarChar(200)
+  objetivo         String?   @map("Objetivo") @db.NVarChar(500)
   descricao        String?   @map("Descricao")
-  metodologia      String    @db.NVarChar(20) @map("Metodologia")
-  situacao         String    @db.NVarChar(20) @map("Situacao")
-  saude            String    @db.NVarChar(20) @map("Saude")
-  inicioPrevistoEm DateTime? @db.Date @map("InicioPrevistoEm")
-  fimPrevistoEm    DateTime? @db.Date @map("FimPrevistoEm")
-  inicioRealEm     DateTime? @db.Date @map("InicioRealEm")
-  fimRealEm        DateTime? @db.Date @map("FimRealEm")
-  responsavelId    String    @db.UniqueIdentifier @map("ResponsavelId")
-  criadoPorId      String    @db.UniqueIdentifier @map("CriadoPorId")
+  metodologia      String    @map("Metodologia") @db.NVarChar(20)
+  situacao         String    @map("Situacao") @db.NVarChar(20)
+  saude            String    @map("Saude") @db.NVarChar(20)
+  inicioPrevistoEm DateTime? @map("InicioPrevistoEm") @db.Date
+  fimPrevistoEm    DateTime? @map("FimPrevistoEm") @db.Date
+  inicioRealEm     DateTime? @map("InicioRealEm") @db.Date
+  fimRealEm        DateTime? @map("FimRealEm") @db.Date
+  responsavelId    String    @map("ResponsavelId") @db.UniqueIdentifier
+  criadoPorId      String    @map("CriadoPorId") @db.UniqueIdentifier
   arquivadoEm      DateTime? @map("ArquivadoEm")
-  arquivadoPorId   String?   @db.UniqueIdentifier @map("ArquivadoPorId")
+  arquivadoPorId   String?   @map("ArquivadoPorId") @db.UniqueIdentifier
   criadoEm         DateTime  @default(now()) @map("CriadoEm")
   atualizadoEm     DateTime  @updatedAt @map("AtualizadoEm")
+  backlogVersao    Int       @default(0) @map("BacklogVersao")
 
-  empresa      Empresa  @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  responsavel  Usuario  @relation("ProjetoResponsavel", fields: [responsavelId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  criadoPor    Usuario  @relation("ProjetoCriador", fields: [criadoPorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  arquivadoPor Usuario? @relation("ProjetoArquivadoPor", fields: [arquivadoPorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  membros      ProjetoMembro[]
+  empresa               Empresa                      @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  responsavel           Usuario                      @relation("ProjetoResponsavel", fields: [responsavelId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  criadoPor             Usuario                      @relation("ProjetoCriador", fields: [criadoPorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  arquivadoPor          Usuario?                     @relation("ProjetoArquivadoPor", fields: [arquivadoPorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  membros               ProjetoMembro[]
+  eventos               ProjetoEvento[]
+  sequencias            ProjetoSequencia[]
+  operacoesIdempotentes ProjetoOperacaoIdempotente[]
+  itens                 ProjetoItem[]
 
   @@unique([empresaId, chave], map: "UX_Projetos_EmpresaId_Chave")
   @@index([empresaId, arquivadoEm], map: "IX_Projetos_EmpresaId_ArquivadoEm")
@@ -143,9 +156,9 @@ model Projeto {
 
 model ProjetoMembro {
   id         Int      @id @default(autoincrement()) @map("Id")
-  projetoId  String   @db.UniqueIdentifier @map("ProjetoId")
-  usuarioId  String   @db.UniqueIdentifier @map("UsuarioId")
-  papel      String   @db.NVarChar(20) @map("Papel")
+  projetoId  String   @map("ProjetoId") @db.UniqueIdentifier
+  usuarioId  String   @map("UsuarioId") @db.UniqueIdentifier
+  papel      String   @map("Papel") @db.NVarChar(20)
   incluidoEm DateTime @default(now()) @map("IncluidoEm")
 
   projeto Projeto @relation(fields: [projetoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -155,46 +168,145 @@ model ProjetoMembro {
   @@index([usuarioId], map: "IX_ProjetoMembros_UsuarioId")
   @@map("ProjetoMembros")
 }
+
+model ProjetoEvento {
+  id         String   @id @default(uuid()) @map("Id") @db.UniqueIdentifier
+  empresaId  Int      @map("EmpresaId")
+  projetoId  String   @map("ProjetoId") @db.UniqueIdentifier
+  usuarioId  String?  @map("UsuarioId") @db.UniqueIdentifier
+  entidade   String   @map("Entidade") @db.NVarChar(40)
+  entidadeId String   @map("EntidadeId") @db.NVarChar(100)
+  evento     String   @map("Evento") @db.NVarChar(60)
+  dados      String?  @map("Dados") @db.NVarChar(Max)
+  criadoEm   DateTime @default(now()) @map("CriadoEm")
+
+  empresa Empresa  @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  projeto Projeto  @relation(fields: [projetoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuario Usuario? @relation(fields: [usuarioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([empresaId, projetoId, criadoEm], map: "IX_ProjetoEventos_EmpresaId_ProjetoId_CriadoEm")
+  @@index([projetoId, entidade, entidadeId], map: "IX_ProjetoEventos_ProjetoId_Entidade_EntidadeId")
+  @@map("ProjetoEventos")
+}
+
+model ProjetoSequencia {
+  id            Int      @id @default(autoincrement()) @map("Id")
+  projetoId     String   @map("ProjetoId") @db.UniqueIdentifier
+  namespace     String   @map("Namespace") @db.NVarChar(40)
+  proximoNumero Int      @default(1) @map("ProximoNumero")
+  atualizadoEm  DateTime @updatedAt @map("AtualizadoEm")
+
+  projeto Projeto @relation(fields: [projetoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([projetoId, namespace], map: "UX_ProjetoSequencias_ProjetoId_Namespace")
+  @@map("ProjetoSequencias")
+}
+
+model ProjetoOperacaoIdempotente {
+  id             String    @id @default(uuid()) @map("Id") @db.UniqueIdentifier
+  empresaId      Int       @map("EmpresaId")
+  projetoId      String    @map("ProjetoId") @db.UniqueIdentifier
+  usuarioId      String    @map("UsuarioId") @db.UniqueIdentifier
+  operacao       String    @map("Operacao") @db.NVarChar(60)
+  chave          String    @map("Chave") @db.NVarChar(100)
+  requisicaoHash String    @map("RequisicaoHash") @db.NVarChar(64)
+  status         String    @map("Status") @db.NVarChar(20)
+  resposta       String?   @map("Resposta") @db.NVarChar(Max)
+  erro           String?   @map("Erro") @db.NVarChar(Max)
+  expiraEm       DateTime? @map("ExpiraEm")
+  criadoEm       DateTime  @default(now()) @map("CriadoEm")
+  atualizadoEm   DateTime  @updatedAt @map("AtualizadoEm")
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  projeto Projeto @relation(fields: [projetoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([projetoId, usuarioId, operacao, chave], map: "UX_ProjetoOperacoesIdempotentes_Escopo")
+  @@index([empresaId, projetoId, status, expiraEm], map: "IX_ProjetoOperacoesIdempotentes_EmpresaId_ProjetoId_Status_ExpiraEm")
+  @@map("ProjetoOperacoesIdempotentes")
+}
+
+model ProjetoItem {
+  id                String    @id @default(uuid()) @map("Id") @db.UniqueIdentifier
+  empresaId         Int       @map("EmpresaId")
+  projetoId         String    @map("ProjetoId") @db.UniqueIdentifier
+  numero            Int       @map("Numero")
+  chave             String    @map("Chave") @db.NVarChar(30)
+  ordemBacklog      Int       @map("OrdemBacklog")
+  tipo              String    @map("Tipo") @db.NVarChar(20)
+  titulo            String    @map("Titulo") @db.NVarChar(200)
+  descricao         String?   @map("Descricao") @db.NVarChar(Max)
+  status            String    @map("Status") @db.NVarChar(20)
+  prioridade        String    @map("Prioridade") @db.NVarChar(20)
+  responsavelId     String?   @map("ResponsavelId") @db.UniqueIdentifier
+  autorId           String    @map("AutorId") @db.UniqueIdentifier
+  paiId             String?   @map("PaiId") @db.UniqueIdentifier
+  inicioPrevistoEm  DateTime? @map("InicioPrevistoEm") @db.Date
+  fimPrevistoEm     DateTime? @map("FimPrevistoEm") @db.Date
+  estimativaMinutos Int?      @map("EstimativaMinutos")
+  concluidoEm       DateTime? @map("ConcluidoEm")
+  versao            Int       @default(1) @map("Versao")
+  arquivadoEm       DateTime? @map("ArquivadoEm")
+  arquivadoPorId    String?   @map("ArquivadoPorId") @db.UniqueIdentifier
+  criadoEm          DateTime  @default(now()) @map("CriadoEm")
+  atualizadoEm      DateTime  @updatedAt @map("AtualizadoEm")
+
+  empresa      Empresa       @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  projeto      Projeto       @relation(fields: [projetoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  responsavel  Usuario?      @relation("ProjetoItemResponsavel", fields: [responsavelId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  autor        Usuario       @relation("ProjetoItemAutor", fields: [autorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  arquivadoPor Usuario?      @relation("ProjetoItemArquivadoPor", fields: [arquivadoPorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  pai          ProjetoItem?  @relation("ProjetoItemHierarquia", fields: [paiId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  subtarefas   ProjetoItem[] @relation("ProjetoItemHierarquia")
+
+  @@unique([projetoId, numero], map: "UX_ProjetoItens_ProjetoId_Numero")
+  @@unique([projetoId, chave], map: "UX_ProjetoItens_ProjetoId_Chave")
+  @@index([empresaId, projetoId, arquivadoEm], map: "IX_ProjetoItens_EmpresaId_ProjetoId_ArquivadoEm")
+  @@index([projetoId, status, prioridade], map: "IX_ProjetoItens_ProjetoId_Status_Prioridade")
+  @@index([projetoId, ordemBacklog, numero], map: "IX_ProjetoItens_ProjetoId_OrdemBacklog_Numero")
+  @@index([projetoId, responsavelId], map: "IX_ProjetoItens_ProjetoId_ResponsavelId")
+  @@index([paiId], map: "IX_ProjetoItens_PaiId")
+  @@map("ProjetoItens")
+}
+
 model Solucao {
-  id                  Int      @id @default(autoincrement()) @map("Id")
-  slug                String   @unique(map: "UX_Solucoes_Slug") @map("Slug")
-  nome                String   @map("Nome")
-  descricao           String?  @map("Descricao")
-  eyebrow             String?  @map("Eyebrow")
-  ordem               Int      @default(0) @map("Ordem")
-  ativo               Boolean  @default(true) @map("Ativo")
-  exibirNoHub         Boolean  @default(true) @map("ExibirNoHub")
-  somenteAdminSistema Boolean  @default(false) @map("SomenteAdminSistema")
+  id                  Int     @id @default(autoincrement()) @map("Id")
+  slug                String  @unique(map: "UX_Solucoes_Slug") @map("Slug")
+  nome                String  @map("Nome")
+  descricao           String? @map("Descricao")
+  eyebrow             String? @map("Eyebrow")
+  ordem               Int     @default(0) @map("Ordem")
+  ativo               Boolean @default(true) @map("Ativo")
+  exibirNoHub         Boolean @default(true) @map("ExibirNoHub")
+  somenteAdminSistema Boolean @default(false) @map("SomenteAdminSistema")
 
-  funcionalidades Funcionalidade[]
-  grupos GrupoSolucao[]
-  empresas EmpresaSolucao[]
+  funcionalidades            Funcionalidade[]
+  grupos                     GrupoSolucao[]
+  empresas                   EmpresaSolucao[]
   chamadoResponsavelSolucoes ChamadoResponsavelSolucao[]
-  chamados Chamado[]
-
+  chamados                   Chamado[]
 
   @@map("Solucoes")
 }
 
 model Funcionalidade {
-  id                  Int      @id @default(autoincrement()) @map("Id")
-  solucaoId           Int      @map("SolucaoId")
-  slug                String   @map("Slug")
-  titulo              String   @map("Titulo")
-  label               String?  @map("Label")
-  descricao           String?  @map("Descricao")
-  ordem               Int      @default(0) @map("Ordem")
-  ativo               Boolean  @default(true) @map("Ativo")
-  registryKey         String?  @map("RegistryKey")
-  somenteAdminSistema Boolean  @default(false) @map("SomenteAdminSistema")
+  id                  Int     @id @default(autoincrement()) @map("Id")
+  solucaoId           Int     @map("SolucaoId")
+  slug                String  @map("Slug")
+  titulo              String  @map("Titulo")
+  label               String? @map("Label")
+  descricao           String? @map("Descricao")
+  ordem               Int     @default(0) @map("Ordem")
+  ativo               Boolean @default(true) @map("Ativo")
+  registryKey         String? @map("RegistryKey")
+  somenteAdminSistema Boolean @default(false) @map("SomenteAdminSistema")
 
-  solucao Solucao @relation(fields: [solucaoId], references: [id], onDelete: Cascade)
-  grupos GrupoFuncionalidade[]
-  empresas EmpresaFuncionalidade[]
-  acoes FuncionalidadeAcao[]
+  solucao                           Solucao                            @relation(fields: [solucaoId], references: [id], onDelete: Cascade)
+  grupos                            GrupoFuncionalidade[]
+  empresas                          EmpresaFuncionalidade[]
+  acoes                             FuncionalidadeAcao[]
   chamadoResponsavelFuncionalidades ChamadoResponsavelFuncionalidade[]
-  chamados Chamado[]
-
+  chamados                          Chamado[]
 
   @@unique([solucaoId, slug], map: "UX_Funcionalidades_SolucaoId_Slug")
   @@map("Funcionalidades")
@@ -205,8 +317,8 @@ model GrupoSolucao {
   grupoId   Int @map("GrupoId")
   solucaoId Int @map("SolucaoId")
 
-  grupo GrupoUsuario @relation(fields: [grupoId], references: [id], onDelete: Cascade)
-  solucao Solucao @relation(fields: [solucaoId], references: [id], onDelete: Cascade)
+  grupo   GrupoUsuario @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+  solucao Solucao      @relation(fields: [solucaoId], references: [id], onDelete: Cascade)
 
   @@unique([grupoId, solucaoId], map: "UX_GrupoSolucoes_GrupoId_SolucaoId")
   @@map("GrupoSolucoes")
@@ -235,23 +347,23 @@ model FuncionalidadeAcao {
   acaoPadrao       Boolean @default(false) @map("AcaoPadrao")
   configuracao     String? @map("Configuracao")
 
-  funcionalidade Funcionalidade @relation(fields: [funcionalidadeId], references: [id], onDelete: Cascade)
-  grupos GrupoFuncionalidadeAcao[]
+  funcionalidade Funcionalidade            @relation(fields: [funcionalidadeId], references: [id], onDelete: Cascade)
+  grupos         GrupoFuncionalidadeAcao[]
 
   @@unique([funcionalidadeId, chave], map: "UX_FuncionalidadeAcoes_FuncionalidadeId_Chave")
   @@map("FuncionalidadeAcoes")
 }
 
 model GrupoFuncionalidade {
-  id               Int @id @default(autoincrement()) @map("Id")
-  grupoId          Int @map("GrupoId")
-  funcionalidadeId Int @map("FuncionalidadeId")
+  id               Int     @id @default(autoincrement()) @map("Id")
+  grupoId          Int     @map("GrupoId")
+  funcionalidadeId Int     @map("FuncionalidadeId")
   podeVisualizar   Boolean @default(true) @map("PodeVisualizar")
   podeIncluir      Boolean @default(false) @map("PodeIncluir")
   podeAlterar      Boolean @default(false) @map("PodeAlterar")
   podeExcluir      Boolean @default(false) @map("PodeExcluir")
 
-  grupo GrupoUsuario @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+  grupo          GrupoUsuario   @relation(fields: [grupoId], references: [id], onDelete: Cascade)
   funcionalidade Funcionalidade @relation(fields: [funcionalidadeId], references: [id], onDelete: Cascade)
 
   @@unique([grupoId, funcionalidadeId], map: "UX_GrupoFuncionalidades_GrupoId_FuncionalidadeId")
@@ -259,12 +371,12 @@ model GrupoFuncionalidade {
 }
 
 model GrupoFuncionalidadeAcao {
-  id                    Int     @id @default(autoincrement()) @map("Id")
-  grupoId               Int     @map("GrupoId")
-  funcionalidadeAcaoId  Int     @map("FuncionalidadeAcaoId")
-  permitido             Boolean @default(false) @map("Permitido")
+  id                   Int     @id @default(autoincrement()) @map("Id")
+  grupoId              Int     @map("GrupoId")
+  funcionalidadeAcaoId Int     @map("FuncionalidadeAcaoId")
+  permitido            Boolean @default(false) @map("Permitido")
 
-  grupo GrupoUsuario @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+  grupo              GrupoUsuario       @relation(fields: [grupoId], references: [id], onDelete: Cascade)
   funcionalidadeAcao FuncionalidadeAcao @relation(fields: [funcionalidadeAcaoId], references: [id], onDelete: Cascade)
 
   @@unique([grupoId, funcionalidadeAcaoId], map: "UX_GrupoFuncionalidadeAcoes_GrupoId_FuncionalidadeAcaoId")
@@ -273,10 +385,10 @@ model GrupoFuncionalidadeAcao {
 
 model EmpresaFuncionalidade {
   id               Int @id @default(autoincrement()) @map("Id")
-  empresaId         Int @map("EmpresaId")
+  empresaId        Int @map("EmpresaId")
   funcionalidadeId Int @map("FuncionalidadeId")
 
-  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  empresa        Empresa        @relation(fields: [empresaId], references: [id], onDelete: Cascade)
   funcionalidade Funcionalidade @relation(fields: [funcionalidadeId], references: [id], onDelete: Cascade)
 
   @@unique([empresaId, funcionalidadeId], map: "UX_EmpresaFuncionalidades_EmpresaId_FuncionalidadeId")
@@ -284,9 +396,9 @@ model EmpresaFuncionalidade {
 }
 
 model EmpresaUsuario {
-  id         Int      @id @default(autoincrement()) @map("Id")
-  empresaId  Int      @map("EmpresaId")
-  usuarioId  String   @db.UniqueIdentifier @map("UsuarioId")
+  id        Int    @id @default(autoincrement()) @map("Id")
+  empresaId Int    @map("EmpresaId")
+  usuarioId String @map("UsuarioId") @db.UniqueIdentifier
 
   empresa Empresa @relation(fields: [empresaId], references: [id])
   usuario Usuario @relation(fields: [usuarioId], references: [id])
@@ -296,51 +408,51 @@ model EmpresaUsuario {
 }
 
 model Chamado {
-  id                 String   @id @default(uuid()) @db.UniqueIdentifier @map("Id")
-  numero             Int      @map("Numero")
-  empresaId          Int      @map("EmpresaId")
-  solicitanteId      String   @db.UniqueIdentifier @map("SolicitanteId")
-  responsavelId      String?  @db.UniqueIdentifier @map("ResponsavelId")
-  responsavelGrupoId Int?     @map("ResponsavelGrupoId")
-  liderAtendimentoId String?  @db.UniqueIdentifier @map("LiderAtendimentoId")
-  atendimentoAssumidoEm DateTime? @map("AtendimentoAssumidoEm")
-  categoriaId        Int?     @map("CategoriaId")
-  solucaoId          Int?     @map("SolucaoId")
-  funcionalidadeId   Int?     @map("FuncionalidadeId")
-  titulo             String   @map("Titulo")
-  descricao          String   @map("Descricao")
-  tipoId             Int      @map("TipoId")
-  prioridadeId       Int      @map("PrioridadeId")
-  slaRegraId         Int?     @map("SlaRegraId")
-  status             String   @default("ABERTO") @map("Status")
-  criadoEm           DateTime @default(now()) @map("CriadoEm")
-  atualizadoEm       DateTime @updatedAt @map("AtualizadoEm")
-  primeiraRespostaEm DateTime? @map("PrimeiraRespostaEm")
+  id                       String    @id @default(uuid()) @map("Id") @db.UniqueIdentifier
+  numero                   Int       @map("Numero")
+  empresaId                Int       @map("EmpresaId")
+  solicitanteId            String    @map("SolicitanteId") @db.UniqueIdentifier
+  responsavelId            String?   @map("ResponsavelId") @db.UniqueIdentifier
+  responsavelGrupoId       Int?      @map("ResponsavelGrupoId")
+  liderAtendimentoId       String?   @map("LiderAtendimentoId") @db.UniqueIdentifier
+  atendimentoAssumidoEm    DateTime? @map("AtendimentoAssumidoEm")
+  categoriaId              Int?      @map("CategoriaId")
+  solucaoId                Int?      @map("SolucaoId")
+  funcionalidadeId         Int?      @map("FuncionalidadeId")
+  titulo                   String    @map("Titulo")
+  descricao                String    @map("Descricao")
+  tipoId                   Int       @map("TipoId")
+  prioridadeId             Int       @map("PrioridadeId")
+  slaRegraId               Int?      @map("SlaRegraId")
+  status                   String    @default("ABERTO") @map("Status")
+  criadoEm                 DateTime  @default(now()) @map("CriadoEm")
+  atualizadoEm             DateTime  @updatedAt @map("AtualizadoEm")
+  primeiraRespostaEm       DateTime? @map("PrimeiraRespostaEm")
   primeiraRespostaLimiteEm DateTime? @map("PrimeiraRespostaLimiteEm")
-  resolvidoEm        DateTime? @map("ResolvidoEm")
-  resolucaoLimiteEm  DateTime? @map("ResolucaoLimiteEm")
-  slaPausadoEm       DateTime? @map("SlaPausadoEm")
-  slaTempoPausadoMinutos Int   @default(0) @map("SlaTempoPausadoMinutos")
-  slaStatus          String   @default("SEM_SLA") @map("SlaStatus")
-  encerradoEm        DateTime? @map("EncerradoEm")
-  versao             Int      @default(1) @map("Versao")
+  resolvidoEm              DateTime? @map("ResolvidoEm")
+  resolucaoLimiteEm        DateTime? @map("ResolucaoLimiteEm")
+  slaPausadoEm             DateTime? @map("SlaPausadoEm")
+  slaTempoPausadoMinutos   Int       @default(0) @map("SlaTempoPausadoMinutos")
+  slaStatus                String    @default("SEM_SLA") @map("SlaStatus")
+  encerradoEm              DateTime? @map("EncerradoEm")
+  versao                   Int       @default(1) @map("Versao")
 
-  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  solicitante Usuario @relation("ChamadoSolicitante", fields: [solicitanteId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  responsavel Usuario? @relation("ChamadoResponsavel", fields: [responsavelId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  responsavelGrupo GrupoUsuario? @relation("ChamadoResponsavelGrupo", fields: [responsavelGrupoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  liderAtendimento Usuario? @relation("ChamadoLiderAtendimento", fields: [liderAtendimentoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  categoria ChamadoCategoria? @relation(fields: [categoriaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  solucao Solucao? @relation(fields: [solucaoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  funcionalidade Funcionalidade? @relation(fields: [funcionalidadeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  tipoConfiguracao ChamadoTipo @relation(fields: [tipoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  prioridadeConfiguracao ChamadoPrioridade @relation(fields: [prioridadeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  slaRegra ChamadoSlaRegra? @relation(fields: [slaRegraId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  notificacoes ChamadoNotificacao[]
-  mensagens ChamadoMensagem[]
-  historico ChamadoHistorico[]
-  anexos ChamadoAnexo[]
-  acompanhantes ChamadoAcompanhante[]
+  empresa                Empresa               @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  solicitante            Usuario               @relation("ChamadoSolicitante", fields: [solicitanteId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  responsavel            Usuario?              @relation("ChamadoResponsavel", fields: [responsavelId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  responsavelGrupo       GrupoUsuario?         @relation("ChamadoResponsavelGrupo", fields: [responsavelGrupoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  liderAtendimento       Usuario?              @relation("ChamadoLiderAtendimento", fields: [liderAtendimentoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  categoria              ChamadoCategoria?     @relation(fields: [categoriaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  solucao                Solucao?              @relation(fields: [solucaoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  funcionalidade         Funcionalidade?       @relation(fields: [funcionalidadeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tipoConfiguracao       ChamadoTipo           @relation(fields: [tipoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  prioridadeConfiguracao ChamadoPrioridade     @relation(fields: [prioridadeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  slaRegra               ChamadoSlaRegra?      @relation(fields: [slaRegraId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  notificacoes           ChamadoNotificacao[]
+  mensagens              ChamadoMensagem[]
+  historico              ChamadoHistorico[]
+  anexos                 ChamadoAnexo[]
+  acompanhantes          ChamadoAcompanhante[]
 
   @@unique([empresaId, numero], map: "UX_Chamados_EmpresaId_Numero")
   @@index([empresaId, status], map: "IX_Chamados_EmpresaId_Status")
@@ -358,20 +470,19 @@ model Chamado {
   @@map("Chamados")
 }
 
-
 model ChamadoAcompanhante {
-  id             String   @id @default(uuid()) @db.UniqueIdentifier @map("Id")
-  chamadoId      String   @db.UniqueIdentifier @map("ChamadoId")
+  id              String   @id @default(uuid()) @map("Id") @db.UniqueIdentifier
+  chamadoId       String   @map("ChamadoId") @db.UniqueIdentifier
   empresaId       Int      @map("EmpresaId")
-  usuarioId       String   @db.UniqueIdentifier @map("UsuarioId")
-  adicionadoPorId String?  @db.UniqueIdentifier @map("AdicionadoPorId")
+  usuarioId       String   @map("UsuarioId") @db.UniqueIdentifier
+  adicionadoPorId String?  @map("AdicionadoPorId") @db.UniqueIdentifier
   ativo           Boolean  @default(true) @map("Ativo")
   criadoEm        DateTime @default(now()) @map("CriadoEm")
   atualizadoEm    DateTime @updatedAt @map("AtualizadoEm")
 
-  chamado       Chamado @relation(fields: [chamadoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  empresa       Empresa @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  usuario       Usuario @relation("ChamadoAcompanhanteUsuario", fields: [usuarioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  chamado       Chamado  @relation(fields: [chamadoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  empresa       Empresa  @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuario       Usuario  @relation("ChamadoAcompanhanteUsuario", fields: [usuarioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   adicionadoPor Usuario? @relation("ChamadoAcompanhanteAdicionadoPor", fields: [adicionadoPorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@unique([chamadoId, usuarioId], map: "UX_ChamadoAcompanhantes_ChamadoId_UsuarioId")
@@ -379,31 +490,31 @@ model ChamadoAcompanhante {
   @@index([empresaId, usuarioId, ativo], map: "IX_ChamadoAcompanhantes_EmpresaId_UsuarioId_Ativo")
   @@map("ChamadoAcompanhantes")
 }
+
 model ChamadoMensagem {
-  id        String   @id @default(uuid()) @db.UniqueIdentifier @map("Id")
-  chamadoId String   @db.UniqueIdentifier @map("ChamadoId")
+  id        String   @id @default(uuid()) @map("Id") @db.UniqueIdentifier
+  chamadoId String   @map("ChamadoId") @db.UniqueIdentifier
   empresaId Int      @map("EmpresaId")
-  autorId   String   @db.UniqueIdentifier @map("AutorId")
+  autorId   String   @map("AutorId") @db.UniqueIdentifier
   tipo      String   @default("PUBLICA") @map("Tipo")
   conteudo  String   @map("Conteudo")
   criadoEm  DateTime @default(now()) @map("CriadoEm")
 
-  chamado Chamado @relation(fields: [chamadoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  autor Usuario @relation(fields: [autorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  anexos ChamadoAnexo[]
+  chamado Chamado        @relation(fields: [chamadoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  empresa Empresa        @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  autor   Usuario        @relation(fields: [autorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  anexos  ChamadoAnexo[]
 
   @@index([empresaId, chamadoId, criadoEm], map: "IX_ChamadoMensagens_EmpresaId_ChamadoId_CriadoEm")
   @@map("ChamadoMensagens")
 }
 
-
 model ChamadoAnexo {
-  id           String   @id @default(uuid()) @db.UniqueIdentifier @map("Id")
-  chamadoId    String   @db.UniqueIdentifier @map("ChamadoId")
+  id           String   @id @default(uuid()) @map("Id") @db.UniqueIdentifier
+  chamadoId    String   @map("ChamadoId") @db.UniqueIdentifier
   empresaId    Int      @map("EmpresaId")
-  autorId      String   @db.UniqueIdentifier @map("AutorId")
-  mensagemId   String?  @db.UniqueIdentifier @map("MensagemId")
+  autorId      String   @map("AutorId") @db.UniqueIdentifier
+  mensagemId   String?  @map("MensagemId") @db.UniqueIdentifier
   nomeOriginal String   @map("NomeOriginal")
   nomeArquivo  String   @map("NomeArquivo")
   caminho      String   @map("Caminho")
@@ -411,9 +522,9 @@ model ChamadoAnexo {
   tamanho      Int      @map("Tamanho")
   criadoEm     DateTime @default(now()) @map("CriadoEm")
 
-  chamado Chamado @relation(fields: [chamadoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  autor Usuario @relation(fields: [autorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  chamado  Chamado          @relation(fields: [chamadoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  empresa  Empresa          @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  autor    Usuario          @relation(fields: [autorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   mensagem ChamadoMensagem? @relation(fields: [mensagemId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([empresaId, chamadoId, criadoEm], map: "IX_ChamadoAnexos_EmpresaId_ChamadoId_CriadoEm")
@@ -421,11 +532,12 @@ model ChamadoAnexo {
   @@index([autorId], map: "IX_ChamadoAnexos_AutorId")
   @@map("ChamadoAnexos")
 }
+
 model ChamadoHistorico {
-  id            String   @id @default(uuid()) @db.UniqueIdentifier @map("Id")
-  chamadoId     String   @db.UniqueIdentifier @map("ChamadoId")
+  id            String   @id @default(uuid()) @map("Id") @db.UniqueIdentifier
+  chamadoId     String   @map("ChamadoId") @db.UniqueIdentifier
   empresaId     Int      @map("EmpresaId")
-  usuarioId     String?  @db.UniqueIdentifier @map("UsuarioId")
+  usuarioId     String?  @map("UsuarioId") @db.UniqueIdentifier
   evento        String   @map("Evento")
   campo         String?  @map("Campo")
   valorAnterior String?  @map("ValorAnterior")
@@ -433,8 +545,8 @@ model ChamadoHistorico {
   observacao    String?  @map("Observacao")
   criadoEm      DateTime @default(now()) @map("CriadoEm")
 
-  chamado Chamado @relation(fields: [chamadoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  chamado Chamado  @relation(fields: [chamadoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  empresa Empresa  @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   usuario Usuario? @relation(fields: [usuarioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([empresaId, chamadoId, criadoEm], map: "IX_ChamadoHistorico_EmpresaId_ChamadoId_CriadoEm")
@@ -442,34 +554,33 @@ model ChamadoHistorico {
 }
 
 model ChamadoCategoria {
-  id          Int      @id @default(autoincrement()) @map("Id")
-  empresaId   Int      @map("EmpresaId")
-  nome        String   @map("Nome")
-  descricao   String?  @map("Descricao")
-  ativo       Boolean  @default(true) @map("Ativo")
-  criadoEm    DateTime @default(now()) @map("CriadoEm")
+  id           Int      @id @default(autoincrement()) @map("Id")
+  empresaId    Int      @map("EmpresaId")
+  nome         String   @map("Nome")
+  descricao    String?  @map("Descricao")
+  ativo        Boolean  @default(true) @map("Ativo")
+  criadoEm     DateTime @default(now()) @map("CriadoEm")
   atualizadoEm DateTime @updatedAt @map("AtualizadoEm")
 
-  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  empresa  Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   chamados Chamado[]
 
   @@unique([empresaId, nome], map: "UX_ChamadoCategorias_EmpresaId_Nome")
   @@map("ChamadoCategorias")
 }
 
-
 model ChamadoTipo {
-  id          Int      @id @default(autoincrement()) @map("Id")
-  empresaId   Int      @map("EmpresaId")
-  nome        String   @map("Nome")
-  descricao   String?  @map("Descricao")
-  cor         String?  @map("Cor")
-  ordem       Int      @default(0) @map("Ordem")
-  ativo       Boolean  @default(true) @map("Ativo")
-  criadoEm    DateTime @default(now()) @map("CriadoEm")
+  id           Int      @id @default(autoincrement()) @map("Id")
+  empresaId    Int      @map("EmpresaId")
+  nome         String   @map("Nome")
+  descricao    String?  @map("Descricao")
+  cor          String?  @map("Cor")
+  ordem        Int      @default(0) @map("Ordem")
+  ativo        Boolean  @default(true) @map("Ativo")
+  criadoEm     DateTime @default(now()) @map("CriadoEm")
   atualizadoEm DateTime @updatedAt @map("AtualizadoEm")
 
-  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  empresa  Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   chamados Chamado[]
 
   @@unique([empresaId, nome], map: "UX_ChamadoTipos_EmpresaId_Nome")
@@ -478,18 +589,18 @@ model ChamadoTipo {
 }
 
 model ChamadoPrioridade {
-  id          Int      @id @default(autoincrement()) @map("Id")
-  empresaId   Int      @map("EmpresaId")
-  nome        String   @map("Nome")
-  descricao   String?  @map("Descricao")
-  cor         String?  @map("Cor")
-  ordem       Int      @default(0) @map("Ordem")
-  ativo       Boolean  @default(true) @map("Ativo")
-  criadoEm    DateTime @default(now()) @map("CriadoEm")
+  id           Int      @id @default(autoincrement()) @map("Id")
+  empresaId    Int      @map("EmpresaId")
+  nome         String   @map("Nome")
+  descricao    String?  @map("Descricao")
+  cor          String?  @map("Cor")
+  ordem        Int      @default(0) @map("Ordem")
+  ativo        Boolean  @default(true) @map("Ativo")
+  criadoEm     DateTime @default(now()) @map("CriadoEm")
   atualizadoEm DateTime @updatedAt @map("AtualizadoEm")
 
-  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  chamados Chamado[]
+  empresa   Empresa           @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  chamados  Chamado[]
   slaRegras ChamadoSlaRegra[]
 
   @@unique([empresaId, nome], map: "UX_ChamadoPrioridades_EmpresaId_Nome")
@@ -508,9 +619,9 @@ model ChamadoSlaRegra {
   criadoEm                     DateTime @default(now()) @map("CriadoEm")
   atualizadoEm                 DateTime @updatedAt @map("AtualizadoEm")
 
-  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  empresa    Empresa           @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   prioridade ChamadoPrioridade @relation(fields: [prioridadeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  chamados Chamado[]
+  chamados   Chamado[]
 
   @@unique([empresaId, prioridadeId], map: "UX_ChamadoSlaRegras_EmpresaId_PrioridadeId")
   @@index([empresaId, ativo], map: "IX_ChamadoSlaRegras_EmpresaId_Ativo")
@@ -518,18 +629,18 @@ model ChamadoSlaRegra {
 }
 
 model ChamadoResponsavel {
-  id          Int      @id @default(autoincrement()) @map("Id")
-  empresaId   Int      @map("EmpresaId")
-  tipo        String   @default("USUARIO") @map("Tipo")
-  usuarioId   String?  @db.UniqueIdentifier @map("UsuarioId")
-  grupoId     Int?     @map("GrupoId")
-  ativo       Boolean  @default(true) @map("Ativo")
-  criadoEm    DateTime @default(now()) @map("CriadoEm")
+  id           Int      @id @default(autoincrement()) @map("Id")
+  empresaId    Int      @map("EmpresaId")
+  tipo         String   @default("USUARIO") @map("Tipo")
+  usuarioId    String?  @map("UsuarioId") @db.UniqueIdentifier
+  grupoId      Int?     @map("GrupoId")
+  ativo        Boolean  @default(true) @map("Ativo")
+  criadoEm     DateTime @default(now()) @map("CriadoEm")
   atualizadoEm DateTime @updatedAt @map("AtualizadoEm")
 
-  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  usuario Usuario? @relation(fields: [usuarioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  grupo GrupoUsuario? @relation(fields: [grupoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  empresa  Empresa                     @relation(fields: [empresaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  usuario  Usuario?                    @relation(fields: [usuarioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  grupo    GrupoUsuario?               @relation(fields: [grupoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   solucoes ChamadoResponsavelSolucao[]
 
   @@index([empresaId, ativo], map: "IX_ChamadoResponsaveis_EmpresaId_Ativo")
@@ -540,16 +651,16 @@ model ChamadoResponsavel {
 }
 
 model ChamadoResponsavelSolucao {
-  id                Int      @id @default(autoincrement()) @map("Id")
-  responsavelId      Int      @map("ResponsavelId")
-  solucaoId          Int      @map("SolucaoId")
-  responsavelGeral   Boolean  @default(false) @map("ResponsavelGeral")
-  ativo              Boolean  @default(true) @map("Ativo")
-  criadoEm           DateTime @default(now()) @map("CriadoEm")
-  atualizadoEm       DateTime @updatedAt @map("AtualizadoEm")
+  id               Int      @id @default(autoincrement()) @map("Id")
+  responsavelId    Int      @map("ResponsavelId")
+  solucaoId        Int      @map("SolucaoId")
+  responsavelGeral Boolean  @default(false) @map("ResponsavelGeral")
+  ativo            Boolean  @default(true) @map("Ativo")
+  criadoEm         DateTime @default(now()) @map("CriadoEm")
+  atualizadoEm     DateTime @updatedAt @map("AtualizadoEm")
 
-  responsavel ChamadoResponsavel @relation(fields: [responsavelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  solucao Solucao @relation(fields: [solucaoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  responsavel     ChamadoResponsavel                 @relation(fields: [responsavelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  solucao         Solucao                            @relation(fields: [solucaoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   funcionalidades ChamadoResponsavelFuncionalidade[]
 
   @@unique([responsavelId, solucaoId], map: "UX_ChamadoResponsavelSolucoes_ResponsavelId_SolucaoId")
@@ -558,15 +669,15 @@ model ChamadoResponsavelSolucao {
 }
 
 model ChamadoResponsavelFuncionalidade {
-  id                    Int      @id @default(autoincrement()) @map("Id")
-  responsavelSolucaoId   Int      @map("ResponsavelSolucaoId")
-  funcionalidadeId       Int      @map("FuncionalidadeId")
-  ativo                  Boolean  @default(true) @map("Ativo")
-  criadoEm               DateTime @default(now()) @map("CriadoEm")
-  atualizadoEm           DateTime @updatedAt @map("AtualizadoEm")
+  id                   Int      @id @default(autoincrement()) @map("Id")
+  responsavelSolucaoId Int      @map("ResponsavelSolucaoId")
+  funcionalidadeId     Int      @map("FuncionalidadeId")
+  ativo                Boolean  @default(true) @map("Ativo")
+  criadoEm             DateTime @default(now()) @map("CriadoEm")
+  atualizadoEm         DateTime @updatedAt @map("AtualizadoEm")
 
   responsavelSolucao ChamadoResponsavelSolucao @relation(fields: [responsavelSolucaoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  funcionalidade Funcionalidade @relation(fields: [funcionalidadeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  funcionalidade     Funcionalidade            @relation(fields: [funcionalidadeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@unique([responsavelSolucaoId, funcionalidadeId], map: "UX_ChamadoResponsavelFuncionalidades_ResponsavelSolucaoId_FuncionalidadeId")
   @@index([funcionalidadeId], map: "IX_ChamadoResponsavelFuncionalidades_FuncionalidadeId")
@@ -585,10 +696,10 @@ model ChamadoSequencia {
 }
 
 model ChamadoNotificacao {
-  id          String    @id @default(uuid()) @db.UniqueIdentifier @map("Id")
+  id          String    @id @default(uuid()) @map("Id") @db.UniqueIdentifier
   empresaId   Int       @map("EmpresaId")
-  usuarioId   String    @db.UniqueIdentifier @map("UsuarioId")
-  chamadoId   String    @db.UniqueIdentifier @map("ChamadoId")
+  usuarioId   String    @map("UsuarioId") @db.UniqueIdentifier
+  chamadoId   String    @map("ChamadoId") @db.UniqueIdentifier
   tipo        String    @map("Tipo")
   titulo      String    @map("Titulo")
   mensagem    String    @map("Mensagem")
@@ -604,21 +715,22 @@ model ChamadoNotificacao {
   @@index([chamadoId, criadoEm], map: "IX_ChamadoNotificacoes_Chamado")
   @@map("ChamadoNotificacoes")
 }
-model GoogleEmailConta {
-  id                    Int       @id @default(autoincrement()) @map("Id")
-  empresaId             Int       @map("EmpresaId")
-  nome                  String    @map("Nome")
-  tipo                  String    @map("Tipo")
-  emailGoogle           String    @map("EmailGoogle")
-  refreshTokenCriptografado String? @db.NVarChar(Max) @map("RefreshTokenCriptografado")
-  conectadoEm           DateTime? @map("ConectadoEm")
-  criadoPorId           String    @db.UniqueIdentifier @map("CriadoPorId")
-  ativo                 Boolean   @default(true) @map("Ativo")
-  principal             Boolean   @default(false) @map("Principal")
-  criadoEm              DateTime  @default(now()) @map("CriadoEm")
-  atualizadoEm          DateTime  @updatedAt @map("AtualizadoEm")
 
-  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+model GoogleEmailConta {
+  id                        Int       @id @default(autoincrement()) @map("Id")
+  empresaId                 Int       @map("EmpresaId")
+  nome                      String    @map("Nome")
+  tipo                      String    @map("Tipo")
+  emailGoogle               String    @map("EmailGoogle")
+  refreshTokenCriptografado String?   @map("RefreshTokenCriptografado") @db.NVarChar(Max)
+  conectadoEm               DateTime? @map("ConectadoEm")
+  criadoPorId               String    @map("CriadoPorId") @db.UniqueIdentifier
+  ativo                     Boolean   @default(true) @map("Ativo")
+  principal                 Boolean   @default(false) @map("Principal")
+  criadoEm                  DateTime  @default(now()) @map("CriadoEm")
+  atualizadoEm              DateTime  @updatedAt @map("AtualizadoEm")
+
+  empresa   Empresa @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   criadoPor Usuario @relation(fields: [criadoPorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@unique([empresaId, emailGoogle], map: "UX_GoogleEmailContas_EmpresaId_EmailGoogle")

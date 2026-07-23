@@ -70,6 +70,7 @@ export type ProjetoRecord = {
   arquivadoPorId?: string | null;
   criadoEm: Date;
   atualizadoEm: Date;
+  backlogVersao: number;
   responsavel: ProjetoUsuarioRecord;
   criadoPor: ProjetoUsuarioRecord;
   arquivadoPor?: ProjetoUsuarioRecord | null;
