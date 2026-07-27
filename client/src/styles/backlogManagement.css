@@ -73,6 +73,7 @@
 
 .backlog-toolbar label {
   flex: 1 1 170px;
+  font-weight: 400;
 }
 
 .backlog-toolbar .backlog-project-selector {
@@ -91,6 +92,7 @@
   background: var(--surface-white);
   color: var(--primary);
   font: inherit;
+  font-weight: 400;
 }
 
 .backlog-toolbar input:focus-visible,
@@ -177,7 +179,7 @@
   color: inherit;
   cursor: pointer;
   font: inherit;
-  font-weight: 700;
+  font-weight: 400;
   text-align: left;
 }
 

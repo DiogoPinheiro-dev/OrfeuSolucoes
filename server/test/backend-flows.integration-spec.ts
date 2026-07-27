@@ -62,6 +62,10 @@ import { ProjetoMarcoEntregaAuthorizationService } from '../src/modules/projetos
 import { ProjetoMarcoEntregaService } from '../src/modules/projetos/projeto-marco-entrega.service';
 import { ProjetoCronogramaAuthorizationService } from '../src/modules/projetos/projeto-cronograma-authorization.service';
 import { ProjetoCronogramaService } from '../src/modules/projetos/projeto-cronograma.service';
+import { ProjetoComunicacaoAuthorizationService } from '../src/modules/projetos/projeto-comunicacao-authorization.service';
+import { ProjetoComunicacaoService } from '../src/modules/projetos/projeto-comunicacao.service';
+import { validateProjetoAnexoFile } from '../src/modules/projetos/policies/projeto-anexo.policy';
+import { ProjetoAnexoStorageService } from '../src/modules/projetos/projeto-anexo-storage.service';
 import {
   ProjetoSprintDestinoIncompletos,
   ProjetoSprintStatus
@@ -144,7 +148,11 @@ type ModelName =
   | 'projetoMarcoItem'
   | 'projetoEntrega'
   | 'projetoEntregaItem'
-  | 'projetoItemDependencia';
+  | 'projetoItemDependencia'
+  | 'projetoAtualizacao'
+  | 'projetoAtualizacaoHistorico'
+  | 'projetoComentario'
+  | 'projetoAnexo';
 
 const MODELS: ModelName[] = [
   'usuario',
@@ -187,7 +195,11 @@ const MODELS: ModelName[] = [
   'projetoMarcoItem',
   'projetoEntrega',
   'projetoEntregaItem',
-  'projetoItemDependencia'
+  'projetoItemDependencia',
+  'projetoAtualizacao',
+  'projetoAtualizacaoHistorico',
+  'projetoComentario',
+  'projetoAnexo'
 ];
 
 const INTEGER_ID_MODELS = new Set<ModelName>([
@@ -413,6 +425,10 @@ class InMemoryPrismaService {
   public projetoEntrega = new InMemoryDelegate(this, 'projetoEntrega');
   public projetoEntregaItem = new InMemoryDelegate(this, 'projetoEntregaItem');
   public projetoItemDependencia = new InMemoryDelegate(this, 'projetoItemDependencia');
+  public projetoAtualizacao = new InMemoryDelegate(this, 'projetoAtualizacao');
+  public projetoAtualizacaoHistorico = new InMemoryDelegate(this, 'projetoAtualizacaoHistorico');
+  public projetoComentario = new InMemoryDelegate(this, 'projetoComentario');
+  public projetoAnexo = new InMemoryDelegate(this, 'projetoAnexo');
 
   async $transaction<T>(callback: (tx: this) => Promise<T>): Promise<T> {
     const dataSnapshot = Object.fromEntries(
@@ -953,7 +969,24 @@ class InMemoryPrismaService {
         return this.data.projetoItem.find((item) => item.id === row.bloqueadorId) ?? null;
       case 'projetoItemDependencia.bloqueado':
         return this.data.projetoItem.find((item) => item.id === row.bloqueadoId) ?? null;
-      case 'projetoSequencia.projeto':
+      case 'projetoAtualizacao.autor':
+        return this.data.usuario.find((usuario) => usuario.id === row.autorId) ?? null;
+      case 'projetoAtualizacao.historico':
+        return this.data.projetoAtualizacaoHistorico.filter((entry) => entry.atualizacaoId === row.id);
+      case 'projetoAtualizacao.anexos':
+        return this.data.projetoAnexo.filter((anexo) => anexo.atualizacaoId === row.id);
+      case 'projetoAtualizacaoHistorico.editor':
+        return this.data.usuario.find((usuario) => usuario.id === row.editorId) ?? null;
+      case 'projetoComentario.autor':
+        return this.data.usuario.find((usuario) => usuario.id === row.autorId) ?? null;
+      case 'projetoComentario.item':
+        return row.itemId ? this.data.projetoItem.find((item) => item.id === row.itemId) ?? null : null;
+      case 'projetoComentario.atualizacao':
+        return row.atualizacaoId ? this.data.projetoAtualizacao.find((item) => item.id === row.atualizacaoId) ?? null : null;
+      case 'projetoComentario.anexos':
+        return this.data.projetoAnexo.filter((anexo) => anexo.comentarioId === row.id);
+      case 'projetoAnexo.autor':
+        return this.data.usuario.find((usuario) => usuario.id === row.autorId) ?? null;      case 'projetoSequencia.projeto':
       case 'projetoOperacaoIdempotente.projeto':
         return this.data.projeto.find((projeto) => projeto.id === row.projetoId) ?? null;
       case 'projetoEvento.empresa':
@@ -1064,7 +1097,15 @@ class InMemoryPrismaService {
       'projetoItemDependencia.bloqueador': 'projetoItem',
       'projetoItemDependencia.bloqueado': 'projetoItem',
       'projetoEvento.usuario': 'usuario',
-      'projetoSequencia.projeto': 'projeto',
+      'projetoAtualizacao.autor': 'usuario',
+      'projetoAtualizacao.historico': 'projetoAtualizacaoHistorico',
+      'projetoAtualizacao.anexos': 'projetoAnexo',
+      'projetoAtualizacaoHistorico.editor': 'usuario',
+      'projetoComentario.autor': 'usuario',
+      'projetoComentario.item': 'projetoItem',
+      'projetoComentario.atualizacao': 'projetoAtualizacao',
+      'projetoComentario.anexos': 'projetoAnexo',
+      'projetoAnexo.autor': 'usuario',      'projetoSequencia.projeto': 'projeto',
       'projetoOperacaoIdempotente.projeto': 'projeto',
       'projetoOperacaoIdempotente.empresa': 'empresa',
       'projetoOperacaoIdempotente.usuario': 'usuario'
@@ -1238,7 +1279,33 @@ class InMemoryPrismaService {
         row.criadoEm = row.criadoEm ?? now;
         row.atualizadoEm = row.atualizadoEm ?? now;
         break;
-      case 'projetoSprintItem':
+      case 'projetoAtualizacao':
+        row.saudePercebida = row.saudePercebida ?? null;
+        row.versao = row.versao ?? 1;
+        row.criadoEm = row.criadoEm ?? now;
+        row.atualizadoEm = row.atualizadoEm ?? now;
+        break;
+      case 'projetoAtualizacaoHistorico':
+        row.saudePercebidaAnterior = row.saudePercebidaAnterior ?? null;
+        row.criadoEm = row.criadoEm ?? now;
+        break;
+      case 'projetoComentario':
+        row.atualizacaoId = row.atualizacaoId ?? null;
+        row.itemId = row.itemId ?? null;
+        row.versao = row.versao ?? 1;
+        row.editadoEm = row.editadoEm ?? null;
+        row.excluidoEm = row.excluidoEm ?? null;
+        row.excluidoPorId = row.excluidoPorId ?? null;
+        row.criadoEm = row.criadoEm ?? now;
+        row.atualizadoEm = row.atualizadoEm ?? now;
+        break;
+      case 'projetoAnexo':
+        row.atualizacaoId = row.atualizacaoId ?? null;
+        row.comentarioId = row.comentarioId ?? null;
+        row.excluidoEm = row.excluidoEm ?? null;
+        row.excluidoPorId = row.excluidoPorId ?? null;
+        row.criadoEm = row.criadoEm ?? now;
+        break;      case 'projetoSprintItem':
         row.retiradoPorId = row.retiradoPorId ?? null;
         row.incluidoEm = row.incluidoEm ?? now;
         row.retiradoEm = row.retiradoEm ?? null;
@@ -1396,6 +1463,8 @@ type TestWorld = {
   projetoMarcoEntregaService: ProjetoMarcoEntregaService;
   projetoCronogramaAuthorizationService: ProjetoCronogramaAuthorizationService;
   projetoCronogramaService: ProjetoCronogramaService;
+  projetoComunicacaoAuthorizationService: ProjetoComunicacaoAuthorizationService;
+  projetoComunicacaoService: ProjetoComunicacaoService;
 };
 
 const asPrisma = (prisma: InMemoryPrismaService): PrismaService => prisma as unknown as PrismaService;
@@ -1484,7 +1553,18 @@ function createWorld(): TestWorld {
     prismaService,
     projetoCronogramaAuthorizationService,
     projetoAuditoriaService
-  );  const projetosService = new ProjetosService(
+  );
+  const projetoComunicacaoAuthorizationService = new ProjetoComunicacaoAuthorizationService(
+    prismaService,
+    projetoAuthorizationService
+  );
+  const projetoComunicacaoService = new ProjetoComunicacaoService(
+    prismaService,
+    projetoComunicacaoAuthorizationService,
+    projetoAuditoriaService,
+    anexoStorage as unknown as ProjetoAnexoStorageService
+  );
+  const projetosService = new ProjetosService(
     projetoAuthorizationService,
     projetoCatalogService,
     projetoEquipeService,
@@ -1496,7 +1576,8 @@ function createWorld(): TestWorld {
     projetoBacklogService,
     projetoSprintService,
     projetoMarcoEntregaService,
-    projetoCronogramaService
+    projetoCronogramaService,
+    projetoComunicacaoService
   );
   const chamadoAuthorizationService = new ChamadoAuthorizationService(prismaService, funcionalidadeAuthorizationService);
   const chamadoRelatorioService = new ChamadoRelatorioService(prismaService, chamadoAuthorizationService);
@@ -1567,6 +1648,8 @@ function createWorld(): TestWorld {
     projetoMarcoEntregaService,
     projetoCronogramaAuthorizationService,
     projetoCronogramaService,
+    projetoComunicacaoAuthorizationService,
+    projetoComunicacaoService,
   };
 }
 
@@ -2804,11 +2887,11 @@ describe('Fluxos integrados do backend', () => {
       ['portfolio-de-projetos', 100]
     ]);
     expect(projetos.funcionalidades.filter((funcionalidade) => funcionalidade.ativo).map((funcionalidade) => funcionalidade.slug))
-      .toEqual(['cadastro-de-projetos', 'backlog-de-demandas', 'sprints', 'marcos-e-entregas', 'cronograma-e-gantt']);
+      .toEqual(['cadastro-de-projetos', 'backlog-de-demandas', 'sprints', 'marcos-e-entregas', 'cronograma-e-gantt', 'comunicacao-do-projeto']);
     const hubProjetos = expectDefined((await world.solucoesService.myHubNavigation(admin))
       .find((solucao) => solucao.slug === 'projetos'));
     expect(hubProjetos.funcionalidades.map((funcionalidade) => funcionalidade.slug))
-      .toEqual(['cadastro-de-projetos', 'backlog-de-demandas', 'sprints', 'marcos-e-entregas', 'cronograma-e-gantt']);
+      .toEqual(['cadastro-de-projetos', 'backlog-de-demandas', 'sprints', 'marcos-e-entregas', 'cronograma-e-gantt', 'comunicacao-do-projeto']);
     expect(cadastroProjetos.registryKey).toBe('projetos.cadastro-de-projetos');
     expect(cadastroProjetos.acoes.map((acao) => acao.chave)).toEqual(expect.arrayContaining([
       'visualizar',
@@ -4923,9 +5006,8 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
         criadoPorId: admin.sub
       }
     });
-    await world.prisma.projetoMembro.create({
-      data: { projetoId: projeto.id, usuarioId: admin.sub, papel: 'RESPONSAVEL' }
-    });
+    const painelInicial = await world.projetoMarcoEntregaService.painel(projeto.id, false, admin);
+    expect(painelInicial.responsaveis.map((responsavel) => responsavel.id)).toEqual([admin.sub]);
     const item = await world.prisma.projetoItem.create({
       data: {
         empresaId: empresaInicialId,
@@ -5252,6 +5334,74 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
     }, admin)).rejects.toThrow('projeto arquivado esta disponivel somente para consulta');
   });
 
+  it('centraliza atualizacoes, historico, comentarios, anexos e feed com isolamento e seguranca', async () => {
+    const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
+    const projeto = await world.prisma.projeto.create({
+      data: { empresaId: empresaInicialId, chave: 'COM', nome: 'Comunicacao integrada', responsavelId: admin.sub, criadoPorId: admin.sub }
+    });
+    await world.prisma.projetoMembro.create({ data: { projetoId: projeto.id, usuarioId: admin.sub, papel: 'RESPONSAVEL' } });
+    const item = await world.prisma.projetoItem.create({
+      data: { empresaId: empresaInicialId, projetoId: projeto.id, numero: 1, chave: 'COM-1', titulo: 'Item comentavel', autorId: admin.sub }
+    });
+
+    const atualizacao = await world.projetoComunicacaoService.createAtualizacao({
+      projetoId: projeto.id, conteudo: 'Primeira leitura do andamento', saudePercebida: 'EM_RISCO' as any
+    }, admin);
+    const editada = await world.projetoComunicacaoService.updateAtualizacao({
+      id: atualizacao.id, projetoId: projeto.id, conteudo: 'Andamento revisado', saudePercebida: 'EM_DIA' as any, versao: atualizacao.versao
+    }, admin);
+    expect(editada.versao).toBe(2);
+    expect(editada.historico).toHaveLength(1);
+    expect(editada.historico[0]?.conteudoAnterior).toBe('Primeira leitura do andamento');
+
+    const comentarioItem = await world.projetoComunicacaoService.createComentario({
+      projetoId: projeto.id, conteudo: 'Decisao vinculada ao item', itemId: item.id
+    }, admin);
+    await world.projetoComunicacaoService.createComentario({
+      projetoId: projeto.id, conteudo: 'Comentario na atualizacao', atualizacaoId: atualizacao.id
+    }, admin);
+    const alterado = await world.projetoComunicacaoService.updateComentario({
+      id: comentarioItem.id, conteudo: 'Decisao do item revisada', versao: comentarioItem.versao
+    }, admin);
+    expect(alterado.editadoEm).toBeInstanceOf(Date);
+
+    const arquivo = { originalname: 'decisao.txt', buffer: Buffer.from('conteudo seguro'), mimetype: 'text/plain', size: 15 };
+    const anexos = await world.projetoComunicacaoService.adicionarAnexos(projeto.id, [arquivo], admin, atualizacao.id, null);
+    expect(anexos).toHaveLength(1);
+    let painel = await world.projetoComunicacaoService.painel(projeto.id, admin);
+    expect(painel.atualizacoes[0]?.anexos).toHaveLength(1);
+    expect(painel.feed.map((entry) => entry.tipo)).toEqual(expect.arrayContaining(['ATUALIZACAO', 'COMENTARIO', 'EVENTO']));
+    expect(painel.itensDisponiveis[0]?.chave).toBe('COM-1');
+
+    await world.prisma.projetoItem.update({ where: { id: item.id }, data: { arquivadoEm: new Date(), arquivadoPorId: admin.sub } });
+    await expect(world.projetoComunicacaoService.createComentario({
+      projetoId: projeto.id, conteudo: 'Nao permitido', itemId: item.id
+    }, admin)).rejects.toThrow('Itens arquivados nao podem receber comentarios');
+
+    const segundoUsuario = await world.usersService.create({
+      nome: 'Autor moderado', login: 'autor.moderado', email: 'autor.moderado@orfeu.test', senha: 'Senha@12345', empresaIds: [empresaInicialId]
+    });
+    const comentarioAlheio = await world.prisma.projetoComentario.create({
+      data: { empresaId: empresaInicialId, projetoId: projeto.id, autorId: segundoUsuario.id, conteudo: 'Conteudo moderavel' }, include: { autor: true, item: true, atualizacao: true, anexos: { include: { autor: true } } }
+    });
+    await world.projetoComunicacaoService.excluirComentario({ id: comentarioAlheio.id, versao: comentarioAlheio.versao }, admin);
+    expect(world.prisma.data.projetoComentario.find((entry) => entry.id === comentarioAlheio.id)?.excluidoEm).toBeInstanceOf(Date);
+
+    const outraEmpresa = await world.prisma.empresa.create({ data: { nome: 'Empresa isolada', acessoProjetos: true } });
+    await expect(world.projetoComunicacaoService.painel(projeto.id, { ...admin, empresaId: outraEmpresa.id })).rejects.toThrow();
+
+    expect(() => validateProjetoAnexoFile({ originalname: '../segredo.txt', buffer: Buffer.from('x'), mimetype: 'text/plain', size: 1 })).toThrow('Nome de arquivo invalido');
+    expect(() => validateProjetoAnexoFile({ originalname: 'script.exe', buffer: Buffer.from('x'), mimetype: 'application/octet-stream', size: 1 })).toThrow('Tipo de arquivo nao permitido');
+    const realStorage = new ProjetoAnexoStorageService();
+    expect(() => realStorage.resolve('../fora-do-diretorio.txt')).toThrow('Caminho de anexo invalido');
+
+    await world.projetosService.arquivar(projeto.id, admin);
+    await expect(world.projetoComunicacaoService.createAtualizacao({
+      projetoId: projeto.id, conteudo: 'Nao publicar em arquivado', saudePercebida: null
+    }, admin)).rejects.toThrow('projeto arquivado esta disponivel somente para consulta');
+    painel = await world.projetoComunicacaoService.painel(projeto.id, admin);
+    expect(painel.feed.length).toBeGreaterThan(0);
+  });
   it('impede excluir usuario com vinculos e informa todas as dependencias sem remover empresas', async () => {
     const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
     const usuario = await world.usersService.create({

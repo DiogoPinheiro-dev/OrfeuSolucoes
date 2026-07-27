@@ -98,7 +98,7 @@ export const PROJETO_FEATURE_DEFINITIONS: ProjetoFeatureDefinition[] = [
     descricao: 'Centralize comunicados, decisoes e alinhamentos do projeto.',
     ordem: 60,
     registryKey: 'projetos.comunicacao-do-projeto',
-    ativo: false,
+    ativo: true,
     acoes: [
       action('comentar', 'Comentar', 50, 'Permite publicar e editar comentarios proprios.'),
       action('moderar', 'Moderar', 60, 'Permite moderar comentarios de outros autores.'),

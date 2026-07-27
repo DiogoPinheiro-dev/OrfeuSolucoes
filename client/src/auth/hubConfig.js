@@ -20,7 +20,8 @@ export const FEATURE_COMPONENT_REGISTRY = {
     "projetos.backlog-de-demandas": "project-backlog",
     "projetos.sprints": "project-sprints",
     "projetos.marcos-e-entregas": "project-milestones-deliveries",
-    "projetos.cronograma-e-gantt": "project-schedule-gantt"
+    "projetos.cronograma-e-gantt": "project-schedule-gantt",
+    "projetos.comunicacao-do-projeto": "project-communication"
 };
 
 export const normalizeSolutions = (solutions = []) =>

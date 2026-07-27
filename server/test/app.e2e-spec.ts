@@ -1,5 +1,6 @@
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { GUARDS_METADATA } from '@nestjs/common/constants';
 import { GraphQLModule } from '@nestjs/graphql';
 import { JwtService } from '@nestjs/jwt';
 import { PassportModule, PassportStrategy } from '@nestjs/passport';
@@ -16,6 +17,7 @@ import { GqlAuthGuard } from '../src/modules/auth/guards/gql-auth.guard';
 import { ChamadosController } from '../src/modules/chamados/chamados.controller';
 import { ChamadosResolver } from '../src/modules/chamados/chamados.resolver';
 import { ChamadosService } from '../src/modules/chamados/chamados.service';
+import { ProjetoComunicacaoResolver } from '../src/modules/projetos/projeto-comunicacao.resolver';
 
 const testUser = {
   sub: '11111111-1111-4111-8111-111111111111',
@@ -258,6 +260,11 @@ describe('Chamados GraphQL e HTTP e2e', () => {
       nomeOriginal: 'evidencia.txt',
       mimeType: 'text/plain'
     });
+  });
+
+  it('mantem o resolver GraphQL de comunicacao do projeto protegido', () => {
+    const guards = Reflect.getMetadata(GUARDS_METADATA, ProjetoComunicacaoResolver) ?? [];
+    expect(guards).toContain(GqlAuthGuard);
   });
 
   it('health query deve responder ok', async () => {

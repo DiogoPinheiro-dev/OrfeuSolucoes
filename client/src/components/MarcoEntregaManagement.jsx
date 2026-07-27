@@ -179,14 +179,34 @@ export default function MarcoEntregaManagement() {
     };
 
     const submit = (form) => {
-        const input = {
-            ...form,
-            projetoId: projectId,
-            ...(editor.item ? { id: editor.item.id, versao: editor.item.versao } : {}),
-            ...(editor.kind === "MARCO"
-                ? { dataRealizadaEm: form.dataRealizadaEm || null }
-                : { concluidaEm: form.concluidaEm || null, marcoId: form.marcoId || null })
-        };
+        const input = editor.kind === "MARCO"
+            ? {
+                projetoId: projectId,
+                nome: form.nome,
+                descricao: form.descricao || null,
+                responsavelId: form.responsavelId,
+                status: form.status,
+                dataPrevistaEm: form.dataPrevistaEm,
+                dataRealizadaEm: form.dataRealizadaEm || null,
+                itemIds: form.itemIds
+            }
+            : {
+                projetoId: projectId,
+                nome: form.nome,
+                resultadoEsperado: form.resultadoEsperado,
+                criteriosAceite: form.criteriosAceite,
+                responsavelId: form.responsavelId,
+                status: form.status,
+                inicioPrevistoEm: form.inicioPrevistoEm,
+                fimPrevistoEm: form.fimPrevistoEm,
+                concluidaEm: form.concluidaEm || null,
+                marcoId: form.marcoId || null,
+                itemIds: form.itemIds
+            };
+        if (editor.item) {
+            input.id = editor.item.id;
+            input.versao = editor.item.versao;
+        }
         const operation = editor.kind === "MARCO"
             ? (editor.item ? updateMarco : createMarco)
             : (editor.item ? updateEntrega : createEntrega);

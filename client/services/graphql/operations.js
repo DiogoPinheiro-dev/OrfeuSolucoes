@@ -1510,3 +1510,80 @@ export const MOVER_PROJETO_ITEM_BACKLOG_MUTATION = gql`
     moverProjetoItemBacklog(input: $input) { itemId backlogVersao }
   }
 `;
+
+const PROJETO_COMUNICACAO_USER_FIELDS = gql`
+  fragment ProjetoComunicacaoUserFields on ProjetoUsuarioType { id nome login email grupoId grupoNome }
+`;
+const PROJETO_ANEXO_FIELDS = gql`
+  ${PROJETO_COMUNICACAO_USER_FIELDS}
+  fragment ProjetoAnexoFields on ProjetoAnexoType {
+    id projetoId nomeOriginal mimeType tamanho downloadUrl criadoEm
+    autor { ...ProjetoComunicacaoUserFields }
+  }
+`;
+const PROJETO_ATUALIZACAO_FIELDS = gql`
+  ${PROJETO_COMUNICACAO_USER_FIELDS}
+  ${PROJETO_ANEXO_FIELDS}
+  fragment ProjetoAtualizacaoFields on ProjetoAtualizacaoType {
+    id projetoId conteudo saudePercebida versao podeEditar criadoEm atualizadoEm
+    autor { ...ProjetoComunicacaoUserFields }
+    anexos { ...ProjetoAnexoFields }
+    historico {
+      id conteudoAnterior saudePercebidaAnterior versaoAnterior criadoEm
+      editor { ...ProjetoComunicacaoUserFields }
+    }
+  }
+`;
+const PROJETO_COMENTARIO_FIELDS = gql`
+  ${PROJETO_COMUNICACAO_USER_FIELDS}
+  ${PROJETO_ANEXO_FIELDS}
+  fragment ProjetoComentarioFields on ProjetoComentarioType {
+    id projetoId conteudo atualizacaoId itemId itemChave contexto versao
+    podeEditar podeExcluir editadoEm criadoEm
+    autor { ...ProjetoComunicacaoUserFields }
+    anexos { ...ProjetoAnexoFields }
+  }
+`;
+export const PROJETO_COMUNICACAO_PROJETOS_QUERY = gql`
+  query ProjetoComunicacaoProjetos { projetoComunicacaoProjetos { id chave nome arquivadoEm } }
+`;
+export const PROJETO_COMUNICACAO_QUERY = gql`
+  ${PROJETO_COMUNICACAO_USER_FIELDS}
+  ${PROJETO_ANEXO_FIELDS}
+  ${PROJETO_ATUALIZACAO_FIELDS}
+  ${PROJETO_COMENTARIO_FIELDS}
+  query ProjetoComunicacao($projetoId: String!) {
+    projetoComunicacao(projetoId: $projetoId) {
+      atualizacoes { ...ProjetoAtualizacaoFields }
+      comentarios { ...ProjetoComentarioFields }
+      itensDisponiveis { id chave titulo }
+      feed {
+        id tipo entidadeId conteudo saudePercebida contexto editado criadoEm
+        autor { ...ProjetoComunicacaoUserFields }
+        anexos { ...ProjetoAnexoFields }
+      }
+      permissoes { podePublicarAtualizacao podeEditarAtualizacao podeComentar podeModerar podeGerenciarAnexos }
+      ultimaAtualizacaoEm
+    }
+  }
+`;
+export const CREATE_PROJETO_ATUALIZACAO_MUTATION = gql`
+  ${PROJETO_ATUALIZACAO_FIELDS}
+  mutation CreateProjetoAtualizacao($input: CreateProjetoAtualizacaoInput!) { createProjetoAtualizacao(input: $input) { ...ProjetoAtualizacaoFields } }
+`;
+export const UPDATE_PROJETO_ATUALIZACAO_MUTATION = gql`
+  ${PROJETO_ATUALIZACAO_FIELDS}
+  mutation UpdateProjetoAtualizacao($input: UpdateProjetoAtualizacaoInput!) { updateProjetoAtualizacao(input: $input) { ...ProjetoAtualizacaoFields } }
+`;
+export const CREATE_PROJETO_COMENTARIO_MUTATION = gql`
+  ${PROJETO_COMENTARIO_FIELDS}
+  mutation CreateProjetoComentario($input: CreateProjetoComentarioInput!) { createProjetoComentario(input: $input) { ...ProjetoComentarioFields } }
+`;
+export const UPDATE_PROJETO_COMENTARIO_MUTATION = gql`
+  ${PROJETO_COMENTARIO_FIELDS}
+  mutation UpdateProjetoComentario($input: UpdateProjetoComentarioInput!) { updateProjetoComentario(input: $input) { ...ProjetoComentarioFields } }
+`;
+export const EXCLUIR_PROJETO_COMENTARIO_MUTATION = gql`
+  ${PROJETO_COMENTARIO_FIELDS}
+  mutation ExcluirProjetoComentario($input: ExcluirProjetoComentarioInput!) { excluirProjetoComentario(input: $input) { ...ProjetoComentarioFields } }
+`;

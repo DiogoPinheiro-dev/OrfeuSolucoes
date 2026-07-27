@@ -66,6 +66,9 @@ import {
   ProjetoItemDependenciaType
 } from './dto/projeto-cronograma.type';
 import { ProjetoCronogramaService } from './projeto-cronograma.service';
+import { CreateProjetoAtualizacaoInput, CreateProjetoComentarioInput, ExcluirProjetoComentarioInput, UpdateProjetoAtualizacaoInput, UpdateProjetoComentarioInput } from './dto/projeto-comunicacao.input';
+import { ProjetoAtualizacaoType, ProjetoComentarioType, ProjetoComunicacaoPainelType, ProjetoComunicacaoProjetoType } from './dto/projeto-comunicacao.type';
+import { ProjetoComunicacaoService } from './projeto-comunicacao.service';
 
 @Injectable()
 export class ProjetosService {
@@ -81,7 +84,8 @@ export class ProjetosService {
     private readonly backlogService: ProjetoBacklogService,
     private readonly sprintService: ProjetoSprintService,
     private readonly marcoEntregaService: ProjetoMarcoEntregaService,
-    private readonly cronogramaService: ProjetoCronogramaService
+    private readonly cronogramaService: ProjetoCronogramaService,
+    private readonly comunicacaoService: ProjetoComunicacaoService
   ) {}
 
   create(input: CreateProjetoInput, user: JwtPayload): Promise<ProjetoType> {
@@ -303,5 +307,31 @@ export class ProjetosService {
     user: JwtPayload
   ): Promise<ProjetoCronogramaElementoType> {
     return this.cronogramaService.updateItemDates(input, user);
+  }
+  comunicacaoProjetos(user: JwtPayload): Promise<ProjetoComunicacaoProjetoType[]> {
+    return this.comunicacaoService.projetos(user);
+  }
+  comunicacao(projetoId: string, user: JwtPayload): Promise<ProjetoComunicacaoPainelType> {
+    return this.comunicacaoService.painel(projetoId, user);
+  }
+
+  createAtualizacao(input: CreateProjetoAtualizacaoInput, user: JwtPayload): Promise<ProjetoAtualizacaoType> {
+    return this.comunicacaoService.createAtualizacao(input, user);
+  }
+
+  updateAtualizacao(input: UpdateProjetoAtualizacaoInput, user: JwtPayload): Promise<ProjetoAtualizacaoType> {
+    return this.comunicacaoService.updateAtualizacao(input, user);
+  }
+
+  createComentario(input: CreateProjetoComentarioInput, user: JwtPayload): Promise<ProjetoComentarioType> {
+    return this.comunicacaoService.createComentario(input, user);
+  }
+
+  updateComentario(input: UpdateProjetoComentarioInput, user: JwtPayload): Promise<ProjetoComentarioType> {
+    return this.comunicacaoService.updateComentario(input, user);
+  }
+
+  excluirComentario(input: ExcluirProjetoComentarioInput, user: JwtPayload): Promise<ProjetoComentarioType> {
+    return this.comunicacaoService.excluirComentario(input, user);
   }
 }

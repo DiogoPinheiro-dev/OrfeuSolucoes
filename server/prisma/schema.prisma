@@ -18,35 +18,41 @@ model Usuario {
   padraoSistema    Boolean @default(false) @map("PadraoSistema")
 
   empresas                         EmpresaUsuario[]
-  grupo                            GrupoUsuario?                @relation(fields: [grupoId], references: [id])
-  chamadosSolicitados              Chamado[]                    @relation("ChamadoSolicitante")
-  chamadosResponsavel              Chamado[]                    @relation("ChamadoResponsavel")
-  chamadosLiderAtendimento         Chamado[]                    @relation("ChamadoLiderAtendimento")
-  chamadosAcompanhando             ChamadoAcompanhante[]        @relation("ChamadoAcompanhanteUsuario")
-  chamadosAcompanhantesAdicionados ChamadoAcompanhante[]        @relation("ChamadoAcompanhanteAdicionadoPor")
+  grupo                            GrupoUsuario?                 @relation(fields: [grupoId], references: [id])
+  chamadosSolicitados              Chamado[]                     @relation("ChamadoSolicitante")
+  chamadosResponsavel              Chamado[]                     @relation("ChamadoResponsavel")
+  chamadosLiderAtendimento         Chamado[]                     @relation("ChamadoLiderAtendimento")
+  chamadosAcompanhando             ChamadoAcompanhante[]         @relation("ChamadoAcompanhanteUsuario")
+  chamadosAcompanhantesAdicionados ChamadoAcompanhante[]         @relation("ChamadoAcompanhanteAdicionadoPor")
   chamadoMensagens                 ChamadoMensagem[]
   chamadoHistoricos                ChamadoHistorico[]
   chamadoResponsaveisConfigurados  ChamadoResponsavel[]
   chamadoAnexos                    ChamadoAnexo[]
   chamadoNotificacoes              ChamadoNotificacao[]
   googleEmailContasCriadas         GoogleEmailConta[]
-  projetosCriados                  Projeto[]                    @relation("ProjetoCriador")
-  projetosResponsavel              Projeto[]                    @relation("ProjetoResponsavel")
-  projetosArquivados               Projeto[]                    @relation("ProjetoArquivadoPor")
+  projetosCriados                  Projeto[]                     @relation("ProjetoCriador")
+  projetosResponsavel              Projeto[]                     @relation("ProjetoResponsavel")
+  projetosArquivados               Projeto[]                     @relation("ProjetoArquivadoPor")
   projetosParticipacoes            ProjetoMembro[]
   projetoEventos                   ProjetoEvento[]
   projetoOperacoesIdempotentes     ProjetoOperacaoIdempotente[]
-  projetoItensResponsavel          ProjetoItem[]                @relation("ProjetoItemResponsavel")
-  projetoItensAutor                ProjetoItem[]                @relation("ProjetoItemAutor")
-  projetoItensArquivados           ProjetoItem[]                @relation("ProjetoItemArquivadoPor")
-  projetoSprintsCriadas            ProjetoSprint[]              @relation("ProjetoSprintCriador")
-  projetoSprintsCanceladas         ProjetoSprint[]              @relation("ProjetoSprintCancelador")
-  projetoSprintItensIncluidos      ProjetoSprintItem[]          @relation("ProjetoSprintItemIncluidoPor")
-  projetoSprintItensRetirados      ProjetoSprintItem[]          @relation("ProjetoSprintItemRetiradoPor")
-  projetoMarcosResponsavel         ProjetoMarco[]               @relation("ProjetoMarcoResponsavel")
-  projetoEntregasResponsavel       ProjetoEntrega[]             @relation("ProjetoEntregaResponsavel")
-  projetoDependenciasCriadas       ProjetoItemDependencia[]     @relation("ProjetoDependenciaCriador")
-  projetoDependenciasArquivadas    ProjetoItemDependencia[]     @relation("ProjetoDependenciaArquivadoPor")
+  projetoItensResponsavel          ProjetoItem[]                 @relation("ProjetoItemResponsavel")
+  projetoItensAutor                ProjetoItem[]                 @relation("ProjetoItemAutor")
+  projetoItensArquivados           ProjetoItem[]                 @relation("ProjetoItemArquivadoPor")
+  projetoSprintsCriadas            ProjetoSprint[]               @relation("ProjetoSprintCriador")
+  projetoSprintsCanceladas         ProjetoSprint[]               @relation("ProjetoSprintCancelador")
+  projetoSprintItensIncluidos      ProjetoSprintItem[]           @relation("ProjetoSprintItemIncluidoPor")
+  projetoSprintItensRetirados      ProjetoSprintItem[]           @relation("ProjetoSprintItemRetiradoPor")
+  projetoMarcosResponsavel         ProjetoMarco[]                @relation("ProjetoMarcoResponsavel")
+  projetoEntregasResponsavel       ProjetoEntrega[]              @relation("ProjetoEntregaResponsavel")
+  projetoDependenciasCriadas       ProjetoItemDependencia[]      @relation("ProjetoDependenciaCriador")
+  projetoDependenciasArquivadas    ProjetoItemDependencia[]      @relation("ProjetoDependenciaArquivadoPor")
+  projetoAtualizacoes              ProjetoAtualizacao[]          @relation("ProjetoAtualizacaoAutor")
+  projetoAtualizacoesEditadas      ProjetoAtualizacaoHistorico[] @relation("ProjetoAtualizacaoHistoricoEditor")
+  projetoComentarios               ProjetoComentario[]           @relation("ProjetoComentarioAutor")
+  projetoComentariosModerados      ProjetoComentario[]           @relation("ProjetoComentarioModerador")
+  projetoAnexos                    ProjetoAnexo[]                @relation("ProjetoAnexoAutor")
+  projetoAnexosExcluidos           ProjetoAnexo[]                @relation("ProjetoAnexoExcluidoPor")
 
   @@map("Usuarios")
 }
@@ -126,6 +132,9 @@ model Empresa {
   projetoMarcoItens               ProjetoMarcoItem[]
   projetoEntregaItens             ProjetoEntregaItem[]
   projetoItemDependencias         ProjetoItemDependencia[]
+  ProjetoAtualizacao              ProjetoAtualizacao[]
+  ProjetoComentario               ProjetoComentario[]
+  ProjetoAnexo                    ProjetoAnexo[]
 
   @@map("Empresas")
 }
@@ -162,13 +171,16 @@ model Projeto {
   operacoesIdempotentes ProjetoOperacaoIdempotente[]
   itens                 ProjetoItem[]
 
-  sprints           ProjetoSprint[]
-  ProjetoSprintItem ProjetoSprintItem[]
-  marcos            ProjetoMarco[]
-  entregas          ProjetoEntrega[]
-  marcoItens        ProjetoMarcoItem[]
-  entregaItens      ProjetoEntregaItem[]
-  dependencias      ProjetoItemDependencia[]
+  sprints            ProjetoSprint[]
+  ProjetoSprintItem  ProjetoSprintItem[]
+  marcos             ProjetoMarco[]
+  entregas           ProjetoEntrega[]
+  marcoItens         ProjetoMarcoItem[]
+  entregaItens       ProjetoEntregaItem[]
+  dependencias       ProjetoItemDependencia[]
+  ProjetoAtualizacao ProjetoAtualizacao[]
+  ProjetoComentario  ProjetoComentario[]
+  ProjetoAnexo       ProjetoAnexo[]
 
   @@unique([empresaId, chave], map: "UX_Projetos_EmpresaId_Chave")
   @@index([empresaId, arquivadoEm], map: "IX_Projetos_EmpresaId_ArquivadoEm")
@@ -287,6 +299,7 @@ model ProjetoItem {
   entregaVinculos            ProjetoEntregaItem[]
   dependenciasComoBloqueador ProjetoItemDependencia[] @relation("ProjetoDependenciaBloqueador")
   dependenciasComoBloqueado  ProjetoItemDependencia[] @relation("ProjetoDependenciaBloqueado")
+  comentarios                ProjetoComentario[]
 
   @@unique([projetoId, numero], map: "UX_ProjetoItens_ProjetoId_Numero")
   @@unique([projetoId, chave], map: "UX_ProjetoItens_ProjetoId_Chave")
@@ -483,6 +496,102 @@ model ProjetoEntregaItem {
   @@unique([entregaId, itemId], map: "UX_ProjetoEntregaItens_Entrega_Item")
   @@index([projetoId, itemId], map: "IX_ProjetoEntregaItens_Projeto_Item")
   @@map("ProjetoEntregaItens")
+}
+
+model ProjetoAtualizacao {
+  id             String   @id @default(uuid()) @map("Id") @db.UniqueIdentifier
+  empresaId      Int      @map("EmpresaId")
+  projetoId      String   @map("ProjetoId") @db.UniqueIdentifier
+  autorId        String   @map("AutorId") @db.UniqueIdentifier
+  conteudo       String   @map("Conteudo") @db.NVarChar(Max)
+  saudePercebida String?  @map("SaudePercebida") @db.NVarChar(20)
+  versao         Int      @default(1) @map("Versao")
+  criadoEm       DateTime @default(now()) @map("CriadoEm")
+  atualizadoEm   DateTime @updatedAt @map("AtualizadoEm")
+
+  empresa     Empresa                       @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  projeto     Projeto                       @relation(fields: [projetoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  autor       Usuario                       @relation("ProjetoAtualizacaoAutor", fields: [autorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  historico   ProjetoAtualizacaoHistorico[]
+  comentarios ProjetoComentario[]
+  anexos      ProjetoAnexo[]
+
+  @@index([empresaId, projetoId, criadoEm], map: "IX_ProjetoAtualizacoes_Empresa_Projeto_Criado")
+  @@map("ProjetoAtualizacoes")
+}
+
+model ProjetoAtualizacaoHistorico {
+  id                     String   @id @default(uuid()) @map("Id") @db.UniqueIdentifier
+  atualizacaoId          String   @map("AtualizacaoId") @db.UniqueIdentifier
+  editorId               String   @map("EditorId") @db.UniqueIdentifier
+  conteudoAnterior       String   @map("ConteudoAnterior") @db.NVarChar(Max)
+  saudePercebidaAnterior String?  @map("SaudePercebidaAnterior") @db.NVarChar(20)
+  versaoAnterior         Int      @map("VersaoAnterior")
+  criadoEm               DateTime @default(now()) @map("CriadoEm")
+
+  atualizacao ProjetoAtualizacao @relation(fields: [atualizacaoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  editor      Usuario            @relation("ProjetoAtualizacaoHistoricoEditor", fields: [editorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([atualizacaoId, criadoEm], map: "IX_ProjetoAtualizacaoHistoricos_Atualizacao_Criado")
+  @@map("ProjetoAtualizacaoHistoricos")
+}
+
+model ProjetoComentario {
+  id            String    @id @default(uuid()) @map("Id") @db.UniqueIdentifier
+  empresaId     Int       @map("EmpresaId")
+  projetoId     String    @map("ProjetoId") @db.UniqueIdentifier
+  autorId       String    @map("AutorId") @db.UniqueIdentifier
+  atualizacaoId String?   @map("AtualizacaoId") @db.UniqueIdentifier
+  itemId        String?   @map("ItemId") @db.UniqueIdentifier
+  conteudo      String    @map("Conteudo") @db.NVarChar(Max)
+  versao        Int       @default(1) @map("Versao")
+  editadoEm     DateTime? @map("EditadoEm")
+  excluidoEm    DateTime? @map("ExcluidoEm")
+  excluidoPorId String?   @map("ExcluidoPorId") @db.UniqueIdentifier
+  criadoEm      DateTime  @default(now()) @map("CriadoEm")
+  atualizadoEm  DateTime  @updatedAt @map("AtualizadoEm")
+
+  empresa     Empresa             @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  projeto     Projeto             @relation(fields: [projetoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  autor       Usuario             @relation("ProjetoComentarioAutor", fields: [autorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  excluidoPor Usuario?            @relation("ProjetoComentarioModerador", fields: [excluidoPorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  atualizacao ProjetoAtualizacao? @relation(fields: [atualizacaoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  item        ProjetoItem?        @relation(fields: [itemId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  anexos      ProjetoAnexo[]
+
+  @@index([empresaId, projetoId, criadoEm], map: "IX_ProjetoComentarios_Empresa_Projeto_Criado")
+  @@index([atualizacaoId, excluidoEm], map: "IX_ProjetoComentarios_Atualizacao_Excluido")
+  @@index([itemId, excluidoEm], map: "IX_ProjetoComentarios_Item_Excluido")
+  @@map("ProjetoComentarios")
+}
+
+model ProjetoAnexo {
+  id            String    @id @default(uuid()) @map("Id") @db.UniqueIdentifier
+  empresaId     Int       @map("EmpresaId")
+  projetoId     String    @map("ProjetoId") @db.UniqueIdentifier
+  autorId       String    @map("AutorId") @db.UniqueIdentifier
+  atualizacaoId String?   @map("AtualizacaoId") @db.UniqueIdentifier
+  comentarioId  String?   @map("ComentarioId") @db.UniqueIdentifier
+  nomeOriginal  String    @map("NomeOriginal") @db.NVarChar(255)
+  nomeArquivo   String    @map("NomeArquivo") @db.NVarChar(255)
+  caminho       String    @map("Caminho") @db.NVarChar(500)
+  mimeType      String    @map("MimeType") @db.NVarChar(150)
+  tamanho       Int       @map("Tamanho")
+  excluidoEm    DateTime? @map("ExcluidoEm")
+  excluidoPorId String?   @map("ExcluidoPorId") @db.UniqueIdentifier
+  criadoEm      DateTime  @default(now()) @map("CriadoEm")
+
+  empresa     Empresa             @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  projeto     Projeto             @relation(fields: [projetoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  autor       Usuario             @relation("ProjetoAnexoAutor", fields: [autorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  excluidoPor Usuario?            @relation("ProjetoAnexoExcluidoPor", fields: [excluidoPorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  atualizacao ProjetoAtualizacao? @relation(fields: [atualizacaoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  comentario  ProjetoComentario?  @relation(fields: [comentarioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([empresaId, projetoId, criadoEm], map: "IX_ProjetoAnexos_Empresa_Projeto_Criado")
+  @@index([atualizacaoId, excluidoEm], map: "IX_ProjetoAnexos_Atualizacao_Excluido")
+  @@index([comentarioId, excluidoEm], map: "IX_ProjetoAnexos_Comentario_Excluido")
+  @@map("ProjetoAnexos")
 }
 
 model Solucao {

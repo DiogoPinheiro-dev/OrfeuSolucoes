@@ -79,11 +79,16 @@ export class ProjetoMarcoEntregaService {
       marcos: marcos.map((item) => this.toMarco(item)),
       entregas: entregas.map((item) => this.toEntrega(item)),
       itensDisponiveis: itens.map((item) => this.toItem(item)),
-      responsaveis: contexto.projeto.membros.map((membro) => ({
-        id: membro.usuario.id,
-        nome: membro.usuario.nome,
-        login: membro.usuario.login,
-        email: membro.usuario.email
+      responsaveis: [
+        contexto.projeto.responsavel,
+        ...contexto.projeto.membros
+          .filter((membro) => membro.usuarioId !== contexto.projeto.responsavelId)
+          .map((membro) => membro.usuario)
+      ].map((usuario) => ({
+        id: usuario.id,
+        nome: usuario.nome,
+        login: usuario.login,
+        email: usuario.email
       })),
       permissoes
     };
@@ -226,7 +231,8 @@ export class ProjetoMarcoEntregaService {
   }
 
   private async assertRelations(tx: Prisma.TransactionClient, contexto: ProjetoMarcoEntregaContexto, responsavelId: string, itemIds: string[], marcoId?: string | null) {
-    const member = contexto.projeto.membros.some((item) => item.usuarioId === responsavelId);
+    const member = contexto.projeto.responsavelId === responsavelId
+      || contexto.projeto.membros.some((item) => item.usuarioId === responsavelId);
     if (!member) throw new BadRequestException('O responsavel deve participar do projeto.');
     const count = itemIds.length ? await tx.projetoItem.count({
       where: { id: { in: itemIds }, projetoId: contexto.projeto.id, empresaId: contexto.empresaId, arquivadoEm: null }

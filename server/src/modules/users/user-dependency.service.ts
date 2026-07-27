@@ -21,6 +21,10 @@ type DependencyClient = Pick<
   | 'projetoMarco'
   | 'projetoEntrega'
   | 'projetoItemDependencia'
+  | 'projetoAtualizacao'
+  | 'projetoAtualizacaoHistorico'
+  | 'projetoComentario'
+  | 'projetoAnexo'
 >;
 
 type UserDependency = {
@@ -61,8 +65,11 @@ const DEPENDENCIES: DependencyDefinition[] = [
   { singular: 'marco sob responsabilidade', plural: 'marcos sob responsabilidade', count: (db, id) => db.projetoMarco.count({ where: { responsavelId: id } }) },
   { singular: 'entrega sob responsabilidade', plural: 'entregas sob responsabilidade', count: (db, id) => db.projetoEntrega.count({ where: { responsavelId: id } }) },
   { singular: 'dependência de projeto criada', plural: 'dependências de projeto criadas', count: (db, id) => db.projetoItemDependencia.count({ where: { criadoPorId: id } }) },
-  { singular: 'dependência de projeto arquivada', plural: 'dependências de projeto arquivadas', count: (db, id) => db.projetoItemDependencia.count({ where: { arquivadoPorId: id } }) }
-];
+  { singular: 'dependência de projeto arquivada', plural: 'dependências de projeto arquivadas', count: (db, id) => db.projetoItemDependencia.count({ where: { arquivadoPorId: id } }) },
+  { singular: 'atualizacao de projeto', plural: 'atualizacoes de projetos', count: (db, id) => db.projetoAtualizacao.count({ where: { autorId: id } }) },
+  { singular: 'edicao de atualizacao', plural: 'edicoes de atualizacoes', count: (db, id) => db.projetoAtualizacaoHistorico.count({ where: { editorId: id } }) },
+  { singular: 'comentario de projeto', plural: 'comentarios de projetos', count: (db, id) => db.projetoComentario.count({ where: { OR: [{ autorId: id }, { excluidoPorId: id }] } }) },
+  { singular: 'anexo de projeto', plural: 'anexos de projetos', count: (db, id) => db.projetoAnexo.count({ where: { OR: [{ autorId: id }, { excluidoPorId: id }] } }) }];
 
 @Injectable()
 export class UserDependencyService {

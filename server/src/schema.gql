@@ -467,6 +467,19 @@ input CreateGrupoUsuarioInput {
   solucaoIds: [Int!]
 }
 
+input CreateProjetoAtualizacaoInput {
+  conteudo: String!
+  projetoId: String!
+  saudePercebida: ProjetoSaude
+}
+
+input CreateProjetoComentarioInput {
+  atualizacaoId: String
+  conteudo: String!
+  itemId: String
+  projetoId: String!
+}
+
 input CreateProjetoEntregaInput {
   concluidaEm: String
   criteriosAceite: String!
@@ -591,6 +604,11 @@ type EmpresaType {
   solucaoIds: [Int!]!
   solucaoNomes: [String!]!
   solucaoSlugs: [String!]!
+}
+
+input ExcluirProjetoComentarioInput {
+  id: String!
+  versao: Int!
 }
 
 input FuncionalidadeAcaoInput {
@@ -741,6 +759,8 @@ type Mutation {
   createGoogleEmailConta(input: CreateGoogleEmailContaInput!): GoogleEmailContaType!
   createGrupoUsuario(input: CreateGrupoUsuarioInput!): GrupoUsuarioType!
   createProjeto(input: CreateProjetoInput!): ProjetoType!
+  createProjetoAtualizacao(input: CreateProjetoAtualizacaoInput!): ProjetoAtualizacaoType!
+  createProjetoComentario(input: CreateProjetoComentarioInput!): ProjetoComentarioType!
   createProjetoEntrega(input: CreateProjetoEntregaInput!): ProjetoEntregaType!
   createProjetoItem(input: CreateProjetoItemInput!): ProjetoItemType!
   createProjetoItemDependencia(input: CreateProjetoItemDependenciaInput!): ProjetoItemDependenciaType!
@@ -763,6 +783,7 @@ type Mutation {
   deleteSolucao(id: Int!): Boolean!
   deleteUser(id: String!): Boolean!
   encerrarChamado(id: String!, observacao: String): ChamadoType!
+  excluirProjetoComentario(input: ExcluirProjetoComentarioInput!): ProjetoComentarioType!
   iniciarProjetoSprint(input: TransicionarProjetoSprintInput!): ProjetoSprintType!
   liberarAtendimentoChamado(id: String!): ChamadoType!
   login(input: LoginInput!): AuthPayloadType!
@@ -792,6 +813,8 @@ type Mutation {
   updateGoogleEmailConta(input: UpdateGoogleEmailContaInput!): GoogleEmailContaType!
   updateGrupoUsuario(input: UpdateGrupoUsuarioInput!): GrupoUsuarioType!
   updateProjeto(input: UpdateProjetoInput!): ProjetoType!
+  updateProjetoAtualizacao(input: UpdateProjetoAtualizacaoInput!): ProjetoAtualizacaoType!
+  updateProjetoComentario(input: UpdateProjetoComentarioInput!): ProjetoComentarioType!
   updateProjetoCronogramaItemDatas(input: UpdateProjetoCronogramaItemDatasInput!): ProjetoCronogramaElementoType!
   updateProjetoEntrega(input: UpdateProjetoEntregaInput!): ProjetoEntregaType!
   updateProjetoEquipe(input: UpdateProjetoEquipeInput!): ProjetoType!
@@ -801,6 +824,40 @@ type Mutation {
   updateServico(input: UpdateServicoInput!): ServicoType!
   updateSolucao(input: UpdateSolucaoInput!): SolucaoType!
   updateUser(input: UpdateUserInput!): UserType!
+}
+
+type ProjetoAnexoType {
+  autor: ProjetoUsuarioType!
+  criadoEm: DateTime!
+  downloadUrl: String!
+  id: String!
+  mimeType: String!
+  nomeOriginal: String!
+  projetoId: String!
+  tamanho: Int!
+}
+
+type ProjetoAtualizacaoHistoricoType {
+  conteudoAnterior: String!
+  criadoEm: DateTime!
+  editor: ProjetoUsuarioType!
+  id: String!
+  saudePercebidaAnterior: ProjetoSaude
+  versaoAnterior: Int!
+}
+
+type ProjetoAtualizacaoType {
+  anexos: [ProjetoAnexoType!]!
+  atualizadoEm: DateTime!
+  autor: ProjetoUsuarioType!
+  conteudo: String!
+  criadoEm: DateTime!
+  historico: [ProjetoAtualizacaoHistoricoType!]!
+  id: String!
+  podeEditar: Boolean!
+  projetoId: String!
+  saudePercebida: ProjetoSaude
+  versao: Int!
 }
 
 enum ProjetoBacklogDirecao {
@@ -822,12 +879,59 @@ type ProjetoBacklogProjetoType {
   nome: String!
 }
 
+type ProjetoComentarioType {
+  anexos: [ProjetoAnexoType!]!
+  atualizacaoId: String
+  autor: ProjetoUsuarioType!
+  conteudo: String!
+  contexto: String
+  criadoEm: DateTime!
+  editadoEm: DateTime
+  id: String!
+  itemChave: String
+  itemId: String
+  podeEditar: Boolean!
+  podeExcluir: Boolean!
+  projetoId: String!
+  versao: Int!
+}
+
 type ProjetoCompromissoItemType {
   chave: String!
   estimativaMinutos: Int
   id: String!
   status: ProjetoItemStatus!
   titulo: String!
+}
+
+type ProjetoComunicacaoItemType {
+  chave: String!
+  id: String!
+  titulo: String!
+}
+
+type ProjetoComunicacaoPainelType {
+  atualizacoes: [ProjetoAtualizacaoType!]!
+  comentarios: [ProjetoComentarioType!]!
+  feed: [ProjetoFeedItemType!]!
+  itensDisponiveis: [ProjetoComunicacaoItemType!]!
+  permissoes: ProjetoComunicacaoPermissoesType!
+  ultimaAtualizacaoEm: DateTime
+}
+
+type ProjetoComunicacaoPermissoesType {
+  podeComentar: Boolean!
+  podeEditarAtualizacao: Boolean!
+  podeGerenciarAnexos: Boolean!
+  podeModerar: Boolean!
+  podePublicarAtualizacao: Boolean!
+}
+
+type ProjetoComunicacaoProjetoType {
+  arquivadoEm: DateTime
+  chave: String!
+  id: String!
+  nome: String!
 }
 
 enum ProjetoCronogramaAgrupamento {
@@ -934,6 +1038,19 @@ type ProjetoEntregaType {
   resultadoEsperado: String!
   status: ProjetoEntregaStatus!
   versao: Int!
+}
+
+type ProjetoFeedItemType {
+  anexos: [ProjetoAnexoType!]!
+  autor: ProjetoUsuarioType
+  conteudo: String!
+  contexto: String
+  criadoEm: DateTime!
+  editado: Boolean!
+  entidadeId: String!
+  id: String!
+  saudePercebida: ProjetoSaude
+  tipo: String!
 }
 
 input ProjetoFiltroInput {
@@ -1291,6 +1408,8 @@ type Query {
   projeto(id: String!): ProjetoType!
   projetoBacklogProjetos(incluirArquivados: Boolean = false): [ProjetoBacklogProjetoType!]!
   projetoBacklogResponsaveis(projetoId: String!): [ProjetoUsuarioType!]!
+  projetoComunicacao(projetoId: String!): ProjetoComunicacaoPainelType!
+  projetoComunicacaoProjetos: [ProjetoComunicacaoProjetoType!]!
   projetoCronograma(filtro: ProjetoCronogramaFiltroInput!): ProjetoCronogramaPainelType!
   projetoItem(id: String!): ProjetoItemType!
   projetoItemHistorico(id: String!): [ProjetoItemHistoricoType!]!
@@ -1439,6 +1558,20 @@ input UpdateGrupoUsuarioInput {
   podeIncluir: Boolean
   podeVisualizar: Boolean
   solucaoIds: [Int!]
+}
+
+input UpdateProjetoAtualizacaoInput {
+  conteudo: String!
+  id: String!
+  projetoId: String!
+  saudePercebida: ProjetoSaude
+  versao: Int!
+}
+
+input UpdateProjetoComentarioInput {
+  conteudo: String!
+  id: String!
+  versao: Int!
 }
 
 input UpdateProjetoCronogramaItemDatasInput {

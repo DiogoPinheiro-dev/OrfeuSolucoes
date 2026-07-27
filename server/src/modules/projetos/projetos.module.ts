@@ -12,6 +12,11 @@ import { ProjetoMarcoEntregaService } from './projeto-marco-entrega.service';
 import { ProjetoCronogramaAuthorizationService } from './projeto-cronograma-authorization.service';
 import { ProjetoCronogramaResolver } from './projeto-cronograma.resolver';
 import { ProjetoCronogramaService } from './projeto-cronograma.service';
+import { ProjetoComunicacaoAuthorizationService } from './projeto-comunicacao-authorization.service';
+import { ProjetoComunicacaoController } from './projeto-comunicacao.controller';
+import { ProjetoComunicacaoResolver } from './projeto-comunicacao.resolver';
+import { ProjetoComunicacaoService } from './projeto-comunicacao.service';
+import { ProjetoAnexoStorageService } from './projeto-anexo-storage.service';
 import { ProjetoAuditoriaService } from './projeto-auditoria.service';
 import { ProjetoIdempotenciaService } from './projeto-idempotencia.service';
 import { ProjetoPeriodoService } from './projeto-periodo.service';
@@ -30,6 +35,7 @@ import { ProjetosService } from './projetos.service';
 
 @Module({
   imports: [PrismaModule, SolucoesModule],
+  controllers: [ProjetoComunicacaoController],
   providers: [
     ProjetoAuthorizationService,
     ProjetoBacklogService,
@@ -39,6 +45,9 @@ import { ProjetosService } from './projetos.service';
     ProjetoMarcoEntregaService,
     ProjetoCronogramaAuthorizationService,
     ProjetoCronogramaService,
+    ProjetoComunicacaoAuthorizationService,
+    ProjetoComunicacaoService,
+    ProjetoAnexoStorageService,
     ProjetoAuditoriaService,
     ProjetoIdempotenciaService,
     ProjetoPeriodoService,
@@ -57,12 +66,15 @@ import { ProjetosService } from './projetos.service';
     ProjetoSprintResolver,
     ProjetoMarcoEntregaResolver,
     ProjetoCronogramaResolver,
+    ProjetoComunicacaoResolver,
   ],
   exports: [
     ProjetoAuthorizationService,
     ProjetoBacklogService,
     ProjetoSprintAuthorizationService,
     ProjetoSprintService,
+    ProjetoComunicacaoAuthorizationService,
+    ProjetoComunicacaoService,
     ProjetoAuditoriaService,
     ProjetoCatalogService,
     ProjetoEquipeService,
