@@ -17,6 +17,8 @@ import ResponsavelChamadoManagement from "../components/ResponsavelChamadoManage
 import PainelAtendimento from "../components/PainelAtendimento";
 import ProjectManagement from "../components/ProjectManagement";
 import BacklogManagement from "../components/BacklogManagement";
+import SprintManagement from "../components/SprintManagement";
+import MarcoEntregaManagement from "../components/MarcoEntregaManagement";
 import SolutionManagement from "../components/SolutionManagement";
 import SlaChamadoManagement from "../components/SlaChamadoManagement";
 import GoogleEmailManagement from "../components/GoogleEmailManagement";
@@ -44,7 +46,9 @@ const FEATURE_COMPONENTS = {
     "sla-chamado-management": SlaChamadoManagement,
     "email-solucao-chamado-management": GoogleEmailManagement,
     "project-management": ProjectManagement,
-    "project-backlog": BacklogManagement
+    "project-backlog": BacklogManagement,
+    "project-sprints": SprintManagement,
+    "project-milestones-deliveries": MarcoEntregaManagement
 };
 
 export default function SolutionFeaturePage() {

@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { FaArchive, FaEdit, FaEye, FaPlus, FaUndoAlt } from "react-icons/fa";
 
 import {
@@ -79,10 +80,15 @@ function applyLocalMove(rows, itemId, direction) {
 }
 
 export default function BacklogManagement() {
+    const [searchParams, setSearchParams] = useSearchParams();
+    const linkedProjectId = searchParams.get("projetoId") || "";
+    const linkedItemId = searchParams.get("itemId") || "";
+    const handledLinkedItem = useRef("");
     const [projects, setProjects] = useState([]);
     const [projectId, setProjectId] = useState("");
     const [includeArchivedProjects, setIncludeArchivedProjects] = useState(false);
     const [rows, setRows] = useState([]);
+    const [selectedId, setSelectedId] = useState("");
     const [responsaveis, setResponsaveis] = useState([]);
     const [search, setSearch] = useState("");
     const debouncedSearch = useDebouncedValue(search);
@@ -107,6 +113,7 @@ export default function BacklogManagement() {
     const [modalError, setModalError] = useState("");
 
     const selectedProject = projects.find((project) => project.id === projectId);
+    const selectedItem = rows.find((item) => item.id === selectedId);
     const projectArchived = !!selectedProject?.arquivadoEm;
     const hasActiveFilters = !!(
         debouncedSearch ||
@@ -131,7 +138,9 @@ export default function BacklogManagement() {
             setProjects(result);
             setProjectId((current) => result.some((item) => item.id === current)
                 ? current
-                : result[0]?.id || "");
+                : result.some((item) => item.id === linkedProjectId)
+                    ? linkedProjectId
+                    : result[0]?.id || "");
         } catch (loadError) {
             setProjects([]);
             setProjectId("");
@@ -139,11 +148,12 @@ export default function BacklogManagement() {
         } finally {
             setLoadingProjects(false);
         }
-    }, [includeArchivedProjects]);
+    }, [includeArchivedProjects, linkedProjectId]);
 
     const loadItems = useCallback(async () => {
         if (!projectId) {
             setRows([]);
+            setSelectedId("");
             return;
         }
         setLoading(true);
@@ -161,6 +171,9 @@ export default function BacklogManagement() {
                 incluirArquivados: filters.incluirArquivados
             });
             setRows(result.items || []);
+            setSelectedId((current) =>
+                result.items?.some((item) => item.id === current) ? current : ""
+            );
             setPage((current) => ({
                 ...current,
                 pagina: result.pagina,
@@ -238,6 +251,27 @@ export default function BacklogManagement() {
         }
     };
 
+    useEffect(() => {
+        if (!linkedItemId || !linkedProjectId || projectId !== linkedProjectId || handledLinkedItem.current === linkedItemId) {
+            return;
+        }
+        handledLinkedItem.current = linkedItemId;
+        setModalError("");
+        setHistory([]);
+        setModal({ mode: "view", item: null, loading: true });
+        Promise.all([getBacklogItem(linkedItemId), getBacklogItemHistorico(linkedItemId)])
+            .then(([item, itemHistory]) => {
+                setSelectedId(item.id);
+                setModal({ mode: "view", item, loading: false });
+                setHistory(itemHistory);
+                setSearchParams({}, { replace: true });
+            })
+            .catch((loadError) => {
+                setModal(null);
+                setError(loadError.message);
+            });
+    }, [linkedItemId, linkedProjectId, projectId, setSearchParams]);
+
     const saveItem = async (form) => {
         setSaving(true);
         setModalError("");
@@ -304,6 +338,7 @@ export default function BacklogManagement() {
         const previousVersion = page.backlogVersao;
         setMovingId(item.id);
         setError("");
+        setNotice("");
         setRows(applyLocalMove(rows, item.id, direction));
         try {
             const result = await moverBacklogItem({
@@ -312,7 +347,6 @@ export default function BacklogManagement() {
                 direcao: direction
             });
             setPage((current) => ({ ...current, backlogVersao: result.backlogVersao }));
-            setNotice(`${item.chave} priorizado com sucesso.`);
             await loadItems();
         } catch (moveError) {
             setRows(previousRows);
@@ -324,6 +358,12 @@ export default function BacklogManagement() {
     };
 
     const onRowKeyDown = (event, item) => {
+        if (!event.altKey && event.key === "Enter") {
+            event.preventDefault();
+            setSelectedId(item.id);
+            openItem(item, "view");
+            return;
+        }
         if (!event.altKey || !reorderSafe) return;
         const direction = event.key === "ArrowUp"
             ? "SUBIR"
@@ -384,6 +424,7 @@ export default function BacklogManagement() {
                         disabled={loadingProjects}
                         onChange={(event) => {
                             setProjectId(event.target.value);
+                            setSelectedId("");
                             setPage((current) => ({ ...current, pagina: 1 }));
                         }}
                     >
@@ -460,6 +501,42 @@ export default function BacklogManagement() {
                 >
                     <FaPlus aria-hidden="true" />
                 </button>
+                <button
+                    type="button"
+                    onClick={() => selectedItem && openItem(selectedItem, "edit")}
+                    disabled={!selectedItem || !!selectedItem.arquivadoEm || selectedItem.permissoes?.podeAlterar !== true}
+                    aria-label="Alterar demanda selecionada"
+                    title="Alterar"
+                >
+                    <FaEdit aria-hidden="true" />
+                </button>
+                <button
+                    type="button"
+                    onClick={() => selectedItem && openItem(selectedItem, "view")}
+                    disabled={!selectedItem}
+                    aria-label="Visualizar demanda selecionada"
+                    title="Visualizar"
+                >
+                    <FaEye aria-hidden="true" />
+                </button>
+                <button
+                    type="button"
+                    onClick={() => selectedItem && toggleArchive(selectedItem)}
+                    disabled={
+                        !selectedItem ||
+                        (
+                            selectedItem.arquivadoEm
+                                ? selectedItem.permissoes?.podeReativar !== true
+                                : selectedItem.permissoes?.podeArquivar !== true
+                        )
+                    }
+                    aria-label={selectedItem?.arquivadoEm ? "Reativar demanda selecionada" : "Arquivar demanda selecionada"}
+                    title={selectedItem?.arquivadoEm ? "Reativar" : "Arquivar"}
+                >
+                    {selectedItem?.arquivadoEm
+                        ? <FaUndoAlt aria-hidden="true" />
+                        : <FaArchive aria-hidden="true" />}
+                </button>
             </div>
 
             {projectArchived && (
@@ -478,29 +555,32 @@ export default function BacklogManagement() {
                     <thead>
                         <tr>
                             <th scope="col">Ordem</th>
-                            <th scope="col">Chave</th>
                             <th scope="col">Título</th>
                             <th scope="col">Tipo</th>
                             <th scope="col">Prioridade</th>
                             <th scope="col">Responsável</th>
                             <th scope="col">Status</th>
                             <th scope="col">Estimativa</th>
-                            <th scope="col">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         {groups.flatMap((group) => [
                             groupBy ? (
                                 <tr className="backlog-group-row" key={`group-${group.key}`}>
-                                    <th colSpan="9" scope="rowgroup">{group.label} · {group.items.length}</th>
+                                    <th colSpan="7" scope="rowgroup">{group.label} · {group.items.length}</th>
                                 </tr>
                             ) : null,
                             ...group.items.map((item) => (
                                 <tr
                                     key={item.id}
-                                    tabIndex={reorderSafe ? 0 : undefined}
+                                    tabIndex={0}
+                                    onClick={() => setSelectedId(item.id)}
+                                    onDoubleClick={() => openItem(item, "view")}
                                     onKeyDown={(event) => onRowKeyDown(event, item)}
-                                    className={item.arquivadoEm ? "archived" : ""}
+                                    className={[
+                                        selectedId === item.id ? "selected" : "",
+                                        item.arquivadoEm ? "archived" : ""
+                                    ].filter(Boolean).join(" ")}
                                     aria-label={`${item.chave}, ${item.titulo}`}
                                 >
                                     <td>
@@ -519,7 +599,6 @@ export default function BacklogManagement() {
                                             ))}
                                         </div>
                                     </td>
-                                    <td><strong>{item.chave}</strong></td>
                                     <td>
                                         <button type="button" className="backlog-title-button" onClick={() => openItem(item, "view")}>
                                             {item.titulo}
@@ -531,24 +610,6 @@ export default function BacklogManagement() {
                                     <td>{userLabel(item.responsavel)}</td>
                                     <td><span className={`backlog-status status-${item.status.toLowerCase()}`}>{STATUS[item.status]}</span></td>
                                     <td>{estimateLabel(item.estimativaMinutos)}</td>
-                                    <td>
-                                        <div className="backlog-row-actions">
-                                            <button type="button" onClick={() => openItem(item, "view")} aria-label={`Visualizar ${item.chave}`} title="Visualizar"><FaEye aria-hidden="true" /></button>
-                                            {item.permissoes?.podeAlterar && (
-                                                <button type="button" onClick={() => openItem(item, "edit")} aria-label={`Alterar ${item.chave}`} title="Alterar"><FaEdit aria-hidden="true" /></button>
-                                            )}
-                                            {(item.permissoes?.podeArquivar || item.permissoes?.podeReativar) && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => toggleArchive(item)}
-                                                    aria-label={`${item.arquivadoEm ? "Reativar" : "Arquivar"} ${item.chave}`}
-                                                    title={item.arquivadoEm ? "Reativar" : "Arquivar"}
-                                                >
-                                                    {item.arquivadoEm ? <FaUndoAlt aria-hidden="true" /> : <FaArchive aria-hidden="true" />}
-                                                </button>
-                                            )}
-                                        </div>
-                                    </td>
                                 </tr>
                             ))
                         ])}

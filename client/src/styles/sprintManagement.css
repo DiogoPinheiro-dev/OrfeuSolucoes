@@ -1,0 +1,999 @@
+.sprint-management {
+    display: grid;
+    gap: 18px;
+    color: var(--primary);
+}
+
+.sprint-header {
+    align-items: flex-start;
+}
+
+.sprint-header p {
+    max-width: 720px;
+    margin: 6px 0 0;
+    color: var(--muted);
+}
+
+.sprint-toolbar {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 18px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--surface-white);
+    box-shadow: 0 8px 24px rgb(15 23 42 / 5%);
+}
+
+.sprint-toolbar label {
+    display: grid;
+    gap: 6px;
+    width: min(520px, 100%);
+}
+
+.sprint-toolbar label span {
+    color: var(--secondary);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.sprint-toolbar select,
+.sprint-add-scope select {
+    min-height: 42px;
+    border: 1px solid var(--line-strong);
+    border-radius: 9px;
+    background: var(--surface-white);
+    color: var(--primary);
+    padding: 0 12px;
+}
+
+.sprint-readonly {
+    border-radius: 999px;
+    background: #fff4d6;
+    color: #9a3412;
+    padding: 7px 12px;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.sprint-tabs {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 4px;
+    border-bottom: 1px solid var(--line);
+}
+
+.sprint-tabs button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    background: transparent;
+    color: var(--muted);
+    padding: 11px 14px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.sprint-tabs button.active {
+    border-bottom-color: var(--button-primary-bg);
+    color: var(--secondary);
+}
+
+.sprint-tabs button span {
+    min-width: 22px;
+    border-radius: 999px;
+    background: var(--line);
+    padding: 2px 6px;
+    color: var(--secondary);
+    font-size: 0.74rem;
+}
+
+.sprint-planning-list,
+.sprint-history {
+    display: grid;
+    gap: 16px;
+}
+
+.sprint-card,
+.sprint-history-card,
+.sprint-active {
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--surface-white);
+    box-shadow: 0 10px 30px rgb(15 23 42 / 6%);
+    overflow: hidden;
+}
+
+.sprint-card > header,
+.sprint-history-card > header,
+.sprint-active-summary {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 20px;
+}
+
+.sprint-card h3,
+.sprint-history-card h3,
+.sprint-active h3 {
+    margin: 8px 0 4px;
+    color: var(--primary);
+    font-size: 1.2rem;
+}
+
+.sprint-card p,
+.sprint-active-summary p {
+    margin: 0;
+    color: var(--muted);
+}
+
+.sprint-status {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    border-radius: 999px;
+    padding: 4px 9px;
+    background: var(--line);
+    color: var(--secondary);
+    font-size: 0.72rem;
+    font-style: normal;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+.sprint-status.status-planejada,
+.sprint-status.status-aberto {
+    background: var(--detail-accent-bg);
+    color: var(--secondary);
+}
+
+.sprint-status.status-ativa,
+.sprint-status.status-em_andamento {
+    background: #fff4d6;
+    color: #765400;
+}
+
+.sprint-status.status-concluida,
+.sprint-status.status-concluido {
+    background: var(--success-soft);
+    color: var(--success-text);
+}
+
+.sprint-status.status-cancelada,
+.sprint-status.status-cancelado {
+    background: var(--danger-bg);
+    color: var(--danger-text);
+}
+
+.sprint-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.sprint-card-actions button,
+.sprint-add-scope button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 38px;
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    background: var(--surface-white);
+    color: var(--primary);
+    padding: 0 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.sprint-card-actions button.primary,
+.sprint-add-scope button {
+    border-color: var(--button-primary-bg);
+    background: var(--button-primary-bg);
+    color: var(--surface-white);
+}
+
+.sprint-card-actions button.danger {
+    border-color: color-mix(in srgb, var(--danger-text) 24%, var(--line));
+    color: var(--danger-text);
+}
+
+.sprint-card-actions button:disabled,
+.sprint-add-scope button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.sprint-period {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    border-block: 1px solid var(--line);
+    background: var(--surface-soft);
+    color: var(--secondary);
+    font-size: 0.88rem;
+}
+
+.sprint-period i {
+    width: 28px;
+    height: 1px;
+    background: var(--muted);
+}
+
+.sprint-period strong {
+    margin-left: auto;
+}
+
+.sprint-scope-list {
+    display: grid;
+}
+
+.sprint-scope-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--line);
+}
+
+.sprint-scope-item > div:first-child {
+    display: grid;
+    gap: 3px;
+}
+
+.sprint-scope-item > div:first-child strong {
+    color: var(--secondary);
+    font-size: 0.78rem;
+}
+
+.sprint-scope-item > div:first-child span {
+    color: var(--primary);
+    font-weight: 650;
+}
+
+.sprint-scope-meta {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 9px;
+}
+
+.sprint-scope-meta small {
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+.sprint-scope-meta em {
+    border-radius: 999px;
+    background: #fff4d6;
+    color: #765400;
+    padding: 4px 8px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.sprint-scope-meta button {
+    display: grid;
+    width: 30px;
+    height: 30px;
+    place-items: center;
+    border: 0;
+    border-radius: 7px;
+    background: var(--danger-bg);
+    color: var(--danger-text);
+    cursor: pointer;
+}
+
+.sprint-add-scope {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 14px 20px;
+    background: var(--surface-soft);
+}
+
+.sprint-empty,
+.sprint-empty-inline {
+    display: grid;
+    justify-items: center;
+    gap: 8px;
+    padding: 48px 24px;
+    border: 1px dashed var(--line-strong);
+    border-radius: 14px;
+    background: var(--surface-soft);
+    color: var(--muted);
+    text-align: center;
+}
+
+.sprint-empty svg {
+    color: var(--muted);
+    font-size: 1.8rem;
+}
+
+.sprint-empty h3,
+.sprint-empty p {
+    margin: 0;
+}
+
+.sprint-empty-inline {
+    border: 0;
+    border-radius: 0;
+    padding: 22px;
+}
+
+.sprint-active-summary {
+    align-items: center;
+}
+
+.sprint-progress {
+    display: grid;
+    gap: 6px;
+    min-width: 240px;
+}
+
+.sprint-progress > div:first-child {
+    display: flex;
+    justify-content: space-between;
+    color: var(--secondary);
+    font-size: 0.82rem;
+}
+
+.sprint-progress-track {
+    height: 8px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--line);
+}
+
+.sprint-progress-track span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--button-primary-bg), var(--accent-green));
+}
+
+.sprint-progress small {
+    color: var(--muted);
+}
+
+.sprint-scope-changes {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-block: 1px solid var(--line);
+    background: var(--surface-soft);
+}
+
+.sprint-scope-changes span {
+    padding: 13px 18px;
+    color: var(--muted);
+    text-align: center;
+}
+
+.sprint-scope-changes span + span {
+    border-left: 1px solid var(--line);
+}
+
+.sprint-scope-changes strong {
+    color: var(--primary);
+}
+
+.sprint-board {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(230px, 1fr));
+    gap: 12px;
+    overflow-x: auto;
+    padding: 18px;
+    background: var(--surface-muted);
+}
+
+.sprint-board > section {
+    min-height: 240px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface-soft);
+}
+
+.sprint-board > section > header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line);
+}
+
+.sprint-board h4 {
+    margin: 0;
+    color: var(--primary);
+    font-size: 0.84rem;
+    text-transform: uppercase;
+}
+
+.sprint-board > section > header span {
+    display: grid;
+    min-width: 24px;
+    height: 24px;
+    place-items: center;
+    border-radius: 999px;
+    background: var(--line);
+    color: var(--secondary);
+    font-size: 0.74rem;
+    font-weight: 800;
+}
+
+.sprint-board > section > div {
+    display: grid;
+    align-content: start;
+    gap: 9px;
+    padding: 10px;
+}
+
+.sprint-board article {
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--surface-white);
+    box-shadow: 0 3px 10px rgb(15 23 42 / 5%);
+}
+
+.sprint-board article strong {
+    color: var(--button-primary-bg);
+    font-size: 0.76rem;
+}
+
+.sprint-board article p {
+    margin: 5px 0 12px;
+    color: var(--primary);
+    font-size: 0.9rem;
+    font-weight: 650;
+}
+
+.sprint-board article footer {
+    display: flex;
+    justify-content: space-between;
+    color: var(--muted);
+    font-size: 0.7rem;
+}
+
+.sprint-board-empty {
+    padding: 18px 4px;
+    color: var(--muted);
+    text-align: center;
+}
+
+.sprint-active-scope {
+    border-top: 1px solid var(--line);
+}
+
+.sprint-active-scope h4 {
+    margin: 0;
+    padding: 18px 20px 8px;
+}
+
+.sprint-history-card > header {
+    align-items: center;
+}
+
+.sprint-history-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(90px, 1fr));
+    gap: 8px;
+}
+
+.sprint-history-metrics span {
+    display: grid;
+    gap: 2px;
+    padding: 9px 12px;
+    border-radius: 9px;
+    background: var(--surface-soft);
+    color: var(--muted);
+    font-size: 0.72rem;
+    text-align: center;
+}
+
+.sprint-history-metrics strong {
+    color: var(--primary);
+    font-size: 1rem;
+}
+
+.sprint-result {
+    margin: 0;
+    padding: 14px 20px;
+    border-block: 1px solid var(--line);
+    background: var(--surface-soft);
+    color: var(--secondary);
+}
+
+.sprint-modal-backdrop {
+    z-index: 2000;
+}
+
+.sprint-modal {
+    width: min(680px, calc(100vw - 32px));
+}
+
+.sprint-modal-body {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    padding: 22px 24px;
+}
+
+.sprint-field-wide {
+    grid-column: 1 / -1;
+}
+
+.sprint-complete-summary {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 13px 15px;
+    border-radius: 10px;
+    background: var(--detail-accent-bg);
+    color: var(--secondary);
+}
+
+@media (max-width: 900px) {
+    .sprint-active-summary,
+    .sprint-card > header,
+    .sprint-history-card > header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .sprint-card-actions {
+        justify-content: flex-start;
+    }
+
+    .sprint-progress {
+        min-width: 0;
+    }
+
+    .sprint-history-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .sprint-toolbar,
+    .sprint-scope-item {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .sprint-scope-meta {
+        flex-wrap: wrap;
+        justify-content: flex-start;
+    }
+
+    .sprint-add-scope,
+    .sprint-modal-body {
+        grid-template-columns: 1fr;
+    }
+
+    .sprint-field-wide {
+        grid-column: auto;
+    }
+
+    .sprint-scope-changes {
+        grid-template-columns: 1fr;
+    }
+
+    .sprint-scope-changes span + span {
+        border-top: 1px solid var(--line);
+        border-left: 0;
+    }
+}
+
+.sprint-management.crud-shell {
+    display: grid;
+    gap: 0;
+    min-width: 0;
+    color: var(--primary);
+}
+
+.sprint-management .sprint-header {
+    align-items: center;
+}
+
+.sprint-management .sprint-header p {
+    max-width: 720px;
+    margin: 6px 0 0;
+    color: var(--muted);
+    line-height: 1.45;
+}
+
+.sprint-management .sprint-create-action {
+    flex: 0 0 auto;
+    align-self: center;
+}
+
+.sprint-management .sprint-toolbar.crud-filters {
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 12px 18px;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.sprint-management .sprint-toolbar label {
+    flex: 1 1 360px;
+    max-width: 560px;
+    color: var(--muted);
+}
+
+.sprint-management .sprint-toolbar select,
+.sprint-management .sprint-add-scope select,
+.sprint-management .crud-field input,
+.sprint-management .crud-field select,
+.sprint-management .crud-field textarea {
+    width: 100%;
+    border: 1px solid var(--line-strong);
+    border-radius: 10px;
+    background: var(--surface-white);
+    color: var(--primary);
+    font: inherit;
+}
+
+.sprint-management .sprint-toolbar select:focus-visible,
+.sprint-management .sprint-add-scope select:focus-visible,
+.sprint-management .crud-field input:focus-visible,
+.sprint-management .crud-field select:focus-visible,
+.sprint-management .crud-field textarea:focus-visible {
+    border-color: var(--button-primary-bg);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--button-primary-bg) 16%, transparent);
+    outline: none;
+}
+
+.sprint-management .sprint-readonly {
+    border: 1px solid color-mix(in srgb, #765400 18%, var(--line));
+    background: #fff4d6;
+    color: #765400;
+}
+
+.sprint-management .crud-feedback {
+    margin: 12px 18px 0;
+    padding: 12px 16px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    font-weight: 600;
+}
+
+.sprint-management .crud-feedback.error {
+    border-color: color-mix(in srgb, var(--danger-text) 28%, var(--line));
+    background: var(--danger-bg);
+    color: var(--danger-text);
+}
+
+.sprint-management .crud-feedback.success {
+    border-color: color-mix(in srgb, var(--success-text) 28%, var(--line));
+    background: var(--success-soft);
+    color: var(--success-text);
+}
+
+.sprint-management .sprint-tabs {
+    gap: 8px;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface-soft);
+}
+
+.sprint-management .sprint-tabs button {
+    min-height: 42px;
+    padding: 10px 14px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    color: var(--primary);
+}
+
+.sprint-management .sprint-tabs button:hover,
+.sprint-management .sprint-tabs button:focus-visible {
+    border-color: var(--line-strong);
+    background: var(--surface-white);
+    outline: none;
+}
+
+.sprint-management .sprint-tabs button.active {
+    border-color: var(--button-primary-border);
+    background: var(--button-primary-bg);
+    color: var(--button-primary-text);
+}
+
+.sprint-management .sprint-tabs button span {
+    background: var(--surface-muted);
+    color: var(--secondary);
+}
+
+.sprint-management .sprint-tabs button.active span {
+    background: color-mix(in srgb, var(--surface-white) 18%, transparent);
+    color: var(--button-primary-text);
+}
+
+.sprint-management .sprint-planning-list,
+.sprint-management .sprint-history {
+    gap: 14px;
+    padding: 18px;
+    background: var(--surface-soft);
+}
+
+.sprint-management .sprint-active {
+    margin: 18px;
+}
+
+.sprint-management .sprint-card,
+.sprint-management .sprint-history-card,
+.sprint-management .sprint-active {
+    border-color: var(--line);
+    border-radius: 16px;
+    background: var(--surface-white);
+    box-shadow: var(--shadow-soft);
+}
+
+.sprint-management .sprint-card-actions button,
+.sprint-management .sprint-add-scope button {
+    border-color: var(--button-secondary-border);
+    border-radius: var(--button-radius);
+    background: var(--button-secondary-bg);
+    color: var(--button-secondary-text);
+}
+
+.sprint-management .sprint-card-actions button:hover,
+.sprint-management .sprint-card-actions button:focus-visible,
+.sprint-management .sprint-add-scope button:hover,
+.sprint-management .sprint-add-scope button:focus-visible {
+    border-color: var(--button-primary-hover-border);
+    background: var(--button-primary-hover-bg);
+    color: var(--button-primary-hover-text);
+    outline: none;
+}
+
+.sprint-management .sprint-card-actions button.primary,
+.sprint-management .sprint-add-scope button {
+    border-color: var(--button-primary-border);
+    background: var(--button-primary-bg);
+    color: var(--button-primary-text);
+}
+
+.sprint-management .sprint-card-actions button.danger {
+    border-color: color-mix(in srgb, var(--danger-text) 30%, var(--line));
+    background: var(--danger-bg);
+    color: var(--danger-text);
+}
+
+.sprint-management .sprint-card-actions button.danger:hover,
+.sprint-management .sprint-card-actions button.danger:focus-visible {
+    border-color: var(--danger-text);
+    background: var(--danger-text);
+    color: var(--button-primary-text);
+}
+
+.sprint-management .sprint-period,
+.sprint-management .sprint-add-scope,
+.sprint-management .sprint-scope-changes,
+.sprint-management .sprint-result {
+    background: var(--surface-soft);
+}
+
+.sprint-management .sprint-scope-item {
+    border-color: var(--line);
+}
+
+.sprint-management .sprint-scope-item:hover {
+    background: color-mix(in srgb, var(--detail-accent-bg) 48%, var(--surface-white));
+}
+
+.sprint-management .sprint-scope-meta button {
+    border: 1px solid color-mix(in srgb, var(--danger-text) 24%, var(--line));
+    background: var(--danger-bg);
+    color: var(--danger-text);
+}
+
+.sprint-management .sprint-scope-meta button:hover,
+.sprint-management .sprint-scope-meta button:focus-visible {
+    border-color: var(--danger-text);
+    background: var(--danger-text);
+    color: var(--button-primary-text);
+    outline: none;
+}
+
+.sprint-management .sprint-empty {
+    margin: 18px;
+    border-color: var(--line-strong);
+    background: var(--surface-soft);
+    color: var(--muted);
+}
+
+.sprint-management .sprint-planning-list .sprint-empty,
+.sprint-management .sprint-history .sprint-empty {
+    margin: 0;
+}
+
+.sprint-management .sprint-progress-track {
+    background: var(--surface-muted);
+}
+
+.sprint-management .sprint-progress-track span {
+    background: linear-gradient(90deg, var(--secondary), var(--accent-green));
+}
+
+.sprint-management .sprint-board {
+    background: var(--surface-muted);
+}
+
+.sprint-management .sprint-board > section {
+    border-color: var(--line);
+    background: var(--surface-soft);
+}
+
+.sprint-management .sprint-board article {
+    border-color: var(--line);
+    background: var(--surface-white);
+    box-shadow: var(--shadow-soft);
+}
+
+.sprint-management .sprint-board article strong,
+.sprint-management .sprint-scope-item > div:first-child strong {
+    color: var(--detail-accent-text);
+}
+
+.sprint-management .sprint-history-metrics span {
+    border: 1px solid var(--line);
+    background: var(--surface-soft);
+}
+
+.sprint-management .sprint-loading {
+    display: grid;
+    min-height: 240px;
+    place-items: center;
+    align-content: center;
+    gap: 10px;
+    padding: 28px;
+    background: var(--surface-soft);
+    color: var(--primary);
+}
+
+.sprint-management .sprint-loading span {
+    width: 42px;
+    height: 42px;
+    border: 4px solid var(--line);
+    border-top-color: var(--button-primary-bg);
+    border-radius: 50%;
+    animation: sprint-loading-spin 0.8s linear infinite;
+}
+
+.sprint-management .sprint-loading p {
+    margin: 0;
+    font-weight: 700;
+}
+
+@keyframes sprint-loading-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.sprint-management .sprint-modal form {
+    display: grid;
+}
+
+.sprint-management .sprint-modal .crud-modal-header h3 {
+    margin: 4px 0 0;
+    color: var(--primary);
+}
+
+.sprint-management .sprint-modal-body {
+    gap: 16px;
+    padding: 20px 22px;
+}
+
+.sprint-management .crud-field {
+    display: grid;
+    align-content: start;
+    gap: 8px;
+    color: var(--primary);
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.sprint-management .crud-field input,
+.sprint-management .crud-field select,
+.sprint-management .crud-field textarea {
+    min-height: 44px;
+    padding: 11px 13px;
+    font-weight: 400;
+}
+
+.sprint-management .crud-field textarea {
+    min-height: 96px;
+    resize: vertical;
+    line-height: 1.5;
+}
+
+.sprint-management .sprint-modal .crud-modal-actions {
+    margin: 0;
+    padding: 16px 22px 20px;
+    border-top: 1px solid var(--line);
+    background: var(--surface-soft);
+}
+
+.sprint-management .sprint-modal .crud-modal-actions button {
+    min-height: 42px;
+    padding: 10px 16px;
+    font-weight: 700;
+}
+
+.sprint-management .sprint-complete-summary {
+    border: 1px solid var(--detail-accent-border);
+    background: var(--detail-accent-bg);
+    color: var(--secondary);
+}
+
+@media (max-width: 760px) {
+    .sprint-management .sprint-header {
+        align-items: stretch;
+    }
+
+    .sprint-management .sprint-create-action {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .sprint-management .sprint-toolbar.crud-filters {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .sprint-management .sprint-toolbar label {
+        width: 100%;
+        max-width: none;
+    }
+
+    .sprint-management .sprint-readonly {
+        align-self: flex-start;
+    }
+}
+
+@media (max-width: 640px) {
+    .sprint-management .sprint-tabs button {
+        flex: 1 0 180px;
+    }
+
+    .sprint-management .sprint-planning-list,
+    .sprint-management .sprint-history {
+        padding: 12px;
+    }
+
+    .sprint-management .sprint-active,
+    .sprint-management .sprint-empty {
+        margin: 12px;
+    }
+
+    .sprint-management .sprint-modal-body {
+        padding: 16px;
+    }
+
+    .sprint-management .sprint-modal .crud-modal-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+        padding: 14px 16px 16px;
+    }
+
+    .sprint-management .sprint-modal .crud-modal-actions button {
+        width: 100%;
+    }
+}

@@ -8,6 +8,7 @@ import { JwtPayload } from '../auth/strategies/jwt-payload.type';
 import { toUserType } from './mappers/user.mapper';
 import { assertCanRemoveUser, hasFullGroupAccess } from './policies/user.policy';
 import { UsuarioWithRole } from './types/user-record.types';
+import { UserDependencyService } from './user-dependency.service';
 import { UserEmpresaService } from './user-empresa.service';
 import { UserPasswordService } from './user-password.service';
 import { normalizeEmpresaIds, normalizeLogin } from './utils/user-normalization.util';
@@ -17,7 +18,8 @@ export class UserCatalogService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly userEmpresaService: UserEmpresaService,
-    private readonly userPasswordService: UserPasswordService
+    private readonly userPasswordService: UserPasswordService,
+    private readonly userDependencyService: UserDependencyService
   ) {}
 
   async create(input: CreateUserInput): Promise<UserType> {
@@ -167,10 +169,21 @@ export class UserCatalogService {
       assertCanRemoveUser(userWithGroup);
     }
 
-    await this.prisma.empresaUsuario.deleteMany({
-      where: { usuarioId: id }
-    });
-    await this.prisma.usuario.delete({ where: { id } });
+    const userLabel = userWithGroup?.nome || userWithGroup?.login || userExists.email;
+
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        await this.userDependencyService.assertCanDelete(tx, id, userLabel);
+        await tx.empresaUsuario.deleteMany({ where: { usuarioId: id } });
+        await tx.usuario.delete({ where: { id } });
+      });
+    } catch (error) {
+      if (this.userDependencyService.isForeignKeyViolation(error)) {
+        const dependencies = await this.userDependencyService.findAll(this.prisma, id);
+        throw this.userDependencyService.conflict(userLabel, dependencies);
+      }
+      throw error;
+    }
 
     return true;
   }

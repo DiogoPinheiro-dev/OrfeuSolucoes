@@ -21,6 +21,17 @@ import { UpdateProjetoInput } from './dto/update-projeto.input';
 import { UpdateProjetoItemInput } from './dto/update-projeto-item.input';
 import { UpdateProjetoEquipeInput } from './dto/update-projeto-equipe.input';
 import { ProjetoBacklogService } from './projeto-backlog.service';
+import {
+  AlterarEscopoProjetoSprintInput,
+  ConcluirProjetoSprintInput,
+  CreateProjetoSprintInput,
+  TransicionarProjetoSprintInput,
+  UpdateProjetoSprintInput
+} from './dto/projeto-sprint.input';
+import {
+  ProjetoSprintPainelType,
+  ProjetoSprintType
+} from './dto/projeto-sprint.type';
 import { ProjetoCatalogService } from './projeto-catalog.service';
 import { ProjetoEquipeService } from './projeto-equipe.service';
 import { ProjetoLifecycleService } from './projeto-lifecycle.service';
@@ -29,6 +40,20 @@ import { ProjetoKeyService } from './projeto-key.service';
 import { ProjetoItemCatalogService } from './projeto-item-catalog.service';
 import { ProjetoItemQueryService } from './projeto-item-query.service';
 import { ProjetoQueryService } from './projeto-query.service';
+import { ProjetoSprintService } from './projeto-sprint.service';
+import {
+  CreateProjetoEntregaInput,
+  CreateProjetoMarcoInput,
+  UpdateProjetoEntregaInput,
+  UpdateProjetoMarcoInput,
+  VersionarProjetoCompromissoInput
+} from './dto/projeto-marco-entrega.input';
+import {
+  ProjetoEntregaType,
+  ProjetoMarcoEntregaPainelType,
+  ProjetoMarcoType
+} from './dto/projeto-marco-entrega.type';
+import { ProjetoMarcoEntregaService } from './projeto-marco-entrega.service';
 
 @Injectable()
 export class ProjetosService {
@@ -41,7 +66,9 @@ export class ProjetosService {
     private readonly queryService: ProjetoQueryService,
     private readonly itemCatalogService: ProjetoItemCatalogService,
     private readonly itemQueryService: ProjetoItemQueryService,
-    private readonly backlogService: ProjetoBacklogService
+    private readonly backlogService: ProjetoBacklogService,
+    private readonly sprintService: ProjetoSprintService,
+    private readonly marcoEntregaService: ProjetoMarcoEntregaService
   ) {}
 
   create(input: CreateProjetoInput, user: JwtPayload): Promise<ProjetoType> {
@@ -155,5 +182,84 @@ export class ProjetosService {
     user: JwtPayload
   ): Promise<ProjetoBacklogMovimentoType> {
     return this.backlogService.mover(input, user);
+  }
+
+  sprints(
+    projetoId: string,
+    user: JwtPayload
+  ): Promise<ProjetoSprintPainelType> {
+    return this.sprintService.painel(projetoId, user);
+  }
+
+  createSprint(
+    input: CreateProjetoSprintInput,
+    user: JwtPayload
+  ): Promise<ProjetoSprintType> {
+    return this.sprintService.create(input, user);
+  }
+
+  updateSprint(
+    input: UpdateProjetoSprintInput,
+    user: JwtPayload
+  ): Promise<ProjetoSprintType> {
+    return this.sprintService.update(input, user);
+  }
+
+  adicionarItemSprint(
+    input: AlterarEscopoProjetoSprintInput,
+    user: JwtPayload
+  ): Promise<ProjetoSprintType> {
+    return this.sprintService.adicionarItem(input, user);
+  }
+
+  removerItemSprint(
+    input: AlterarEscopoProjetoSprintInput,
+    user: JwtPayload
+  ): Promise<ProjetoSprintType> {
+    return this.sprintService.removerItem(input, user);
+  }
+
+  iniciarSprint(
+    input: TransicionarProjetoSprintInput,
+    user: JwtPayload
+  ): Promise<ProjetoSprintType> {
+    return this.sprintService.iniciar(input, user);
+  }
+
+  concluirSprint(
+    input: ConcluirProjetoSprintInput,
+    user: JwtPayload
+  ): Promise<ProjetoSprintType> {
+    return this.sprintService.concluir(input, user);
+  }
+
+  cancelarSprint(
+    input: TransicionarProjetoSprintInput,
+    user: JwtPayload
+  ): Promise<ProjetoSprintType> {
+    return this.sprintService.cancelar(input, user);
+  }
+  marcosEntregas(projetoId: string, incluirArquivados: boolean, user: JwtPayload): Promise<ProjetoMarcoEntregaPainelType> {
+    return this.marcoEntregaService.painel(projetoId, incluirArquivados, user);
+  }
+
+  createMarco(input: CreateProjetoMarcoInput, user: JwtPayload): Promise<ProjetoMarcoType> {
+    return this.marcoEntregaService.createMarco(input, user);
+  }
+
+  updateMarco(input: UpdateProjetoMarcoInput, user: JwtPayload): Promise<ProjetoMarcoType> {
+    return this.marcoEntregaService.updateMarco(input, user);
+  }
+
+  createEntrega(input: CreateProjetoEntregaInput, user: JwtPayload): Promise<ProjetoEntregaType> {
+    return this.marcoEntregaService.createEntrega(input, user);
+  }
+
+  updateEntrega(input: UpdateProjetoEntregaInput, user: JwtPayload): Promise<ProjetoEntregaType> {
+    return this.marcoEntregaService.updateEntrega(input, user);
+  }
+
+  arquivarCompromisso(kind: 'MARCO' | 'ENTREGA', input: VersionarProjetoCompromissoInput, user: JwtPayload, reactivate: boolean) {
+    return this.marcoEntregaService.archive(kind, input, user, reactivate);
   }
 }

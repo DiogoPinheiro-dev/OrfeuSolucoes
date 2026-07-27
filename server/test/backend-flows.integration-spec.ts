@@ -56,6 +56,15 @@ import { ProjetoItemAuthorizationService } from '../src/modules/projetos/projeto
 import { ProjetoItemCatalogService } from '../src/modules/projetos/projeto-item-catalog.service';
 import { ProjetoItemHierarquiaService } from '../src/modules/projetos/projeto-item-hierarquia.service';
 import { ProjetoItemQueryService } from '../src/modules/projetos/projeto-item-query.service';
+import { ProjetoSprintAuthorizationService } from '../src/modules/projetos/projeto-sprint-authorization.service';
+import { ProjetoSprintService } from '../src/modules/projetos/projeto-sprint.service';
+import { ProjetoMarcoEntregaAuthorizationService } from '../src/modules/projetos/projeto-marco-entrega-authorization.service';
+import { ProjetoMarcoEntregaService } from '../src/modules/projetos/projeto-marco-entrega.service';
+import {
+  ProjetoSprintDestinoIncompletos,
+  ProjetoSprintStatus
+} from '../src/modules/projetos/types/projeto-sprint.types';
+
 import {
   ProjetoItemPrioridade,
   ProjetoItemStatus,
@@ -82,6 +91,7 @@ import { SolucaoCatalogService } from '../src/modules/solucoes/solucao-catalog.s
 import { SolucaoQueryService } from '../src/modules/solucoes/solucao-query.service';
 import { SolucoesService } from '../src/modules/solucoes/solucoes.service';
 import { UserCatalogService } from '../src/modules/users/user-catalog.service';
+import { UserDependencyService } from '../src/modules/users/user-dependency.service';
 import { UserEmpresaService } from '../src/modules/users/user-empresa.service';
 import { UserLookupService } from '../src/modules/users/user-lookup.service';
 import { UserPasswordService } from '../src/modules/users/user-password.service';
@@ -125,7 +135,13 @@ type ModelName =
   | 'projetoEvento'
   | 'projetoSequencia'
   | 'projetoOperacaoIdempotente'
-  | 'projetoItem';
+  | 'projetoItem'
+  | 'projetoSprint'
+  | 'projetoSprintItem'
+  | 'projetoMarco'
+  | 'projetoMarcoItem'
+  | 'projetoEntrega'
+  | 'projetoEntregaItem';
 
 const MODELS: ModelName[] = [
   'usuario',
@@ -161,7 +177,13 @@ const MODELS: ModelName[] = [
   'projetoEvento',
   'projetoSequencia',
   'projetoOperacaoIdempotente',
-  'projetoItem'
+  'projetoItem',
+  'projetoSprint',
+  'projetoSprintItem',
+  'projetoMarco',
+  'projetoMarcoItem',
+  'projetoEntrega',
+  'projetoEntregaItem'
 ];
 
 const INTEGER_ID_MODELS = new Set<ModelName>([
@@ -380,6 +402,12 @@ class InMemoryPrismaService {
   public projetoSequencia = new InMemoryDelegate(this, 'projetoSequencia');
   public projetoOperacaoIdempotente = new InMemoryDelegate(this, 'projetoOperacaoIdempotente');
   public projetoItem = new InMemoryDelegate(this, 'projetoItem');
+  public projetoSprint = new InMemoryDelegate(this, 'projetoSprint');
+  public projetoSprintItem = new InMemoryDelegate(this, 'projetoSprintItem');
+  public projetoMarco = new InMemoryDelegate(this, 'projetoMarco');
+  public projetoMarcoItem = new InMemoryDelegate(this, 'projetoMarcoItem');
+  public projetoEntrega = new InMemoryDelegate(this, 'projetoEntrega');
+  public projetoEntregaItem = new InMemoryDelegate(this, 'projetoEntregaItem');
 
   async $transaction<T>(callback: (tx: this) => Promise<T>): Promise<T> {
     const dataSnapshot = Object.fromEntries(
@@ -896,6 +924,26 @@ class InMemoryPrismaService {
       case 'projetoItem.subtarefas':
         return this.data.projetoItem.filter((item) => item.paiId === row.id);
       case 'projetoEvento.projeto':
+      case 'projetoItem.sprints':
+        return this.data.projetoSprintItem.filter((vinculo) => vinculo.itemId === row.id);
+      case 'projeto.sprints':
+        return this.data.projetoSprint.filter((sprint) => sprint.projetoId === row.id);
+      case 'projetoSprint.itens':
+        return this.data.projetoSprintItem.filter((vinculo) => vinculo.sprintId === row.id);
+      case 'projetoSprintItem.item':
+        return this.data.projetoItem.find((item) => item.id === row.itemId) ?? null;
+      case 'projetoMarco.responsavel':
+      case 'projetoEntrega.responsavel':
+        return this.data.usuario.find((usuario) => usuario.id === row.responsavelId) ?? null;
+      case 'projetoMarco.itens':
+        return this.data.projetoMarcoItem.filter((vinculo) => vinculo.marcoId === row.id);
+      case 'projetoEntrega.itens':
+        return this.data.projetoEntregaItem.filter((vinculo) => vinculo.entregaId === row.id);
+      case 'projetoMarcoItem.item':
+      case 'projetoEntregaItem.item':
+        return this.data.projetoItem.find((item) => item.id === row.itemId) ?? null;
+      case 'projetoEntrega.marco':
+        return row.marcoId ? this.data.projetoMarco.find((marco) => marco.id === row.marcoId) ?? null : null;
       case 'projetoSequencia.projeto':
       case 'projetoOperacaoIdempotente.projeto':
         return this.data.projeto.find((projeto) => projeto.id === row.projetoId) ?? null;
@@ -993,6 +1041,17 @@ class InMemoryPrismaService {
       'projetoItem.subtarefas': 'projetoItem',
       'projetoEvento.projeto': 'projeto',
       'projetoEvento.empresa': 'empresa',
+      'projetoItem.sprints': 'projetoSprintItem',
+      'projeto.sprints': 'projetoSprint',
+      'projetoSprint.itens': 'projetoSprintItem',
+      'projetoSprintItem.item': 'projetoItem',
+      'projetoMarco.responsavel': 'usuario',
+      'projetoMarco.itens': 'projetoMarcoItem',
+      'projetoMarcoItem.item': 'projetoItem',
+      'projetoEntrega.responsavel': 'usuario',
+      'projetoEntrega.itens': 'projetoEntregaItem',
+      'projetoEntregaItem.item': 'projetoItem',
+      'projetoEntrega.marco': 'projetoMarco',
       'projetoEvento.usuario': 'usuario',
       'projetoSequencia.projeto': 'projeto',
       'projetoOperacaoIdempotente.projeto': 'projeto',
@@ -1124,6 +1183,53 @@ class InMemoryPrismaService {
         row.arquivadoPorId = row.arquivadoPorId ?? null;
         row.criadoEm = row.criadoEm ?? now;
         row.atualizadoEm = row.atualizadoEm ?? now;
+        break;
+      case 'projetoSprint':
+        row.objetivo = row.objetivo ?? null;
+        row.status = row.status ?? 'PLANEJADA';
+        row.inicioRealEm = row.inicioRealEm ?? null;
+        row.fimRealEm = row.fimRealEm ?? null;
+        row.resultado = row.resultado ?? null;
+        row.versao = row.versao ?? 1;
+        row.escopoInicialItens = row.escopoInicialItens ?? null;
+        row.escopoInicialEstimativa = row.escopoInicialEstimativa ?? null;
+        row.itensConcluidos = row.itensConcluidos ?? null;
+        row.estimativaConcluida = row.estimativaConcluida ?? null;
+        row.itensAdicionadosAposInicio = row.itensAdicionadosAposInicio ?? null;
+        row.itensRetiradosAposInicio = row.itensRetiradosAposInicio ?? null;
+        row.canceladoPorId = row.canceladoPorId ?? null;
+        row.canceladoEm = row.canceladoEm ?? null;
+        row.criadoEm = row.criadoEm ?? now;
+        row.atualizadoEm = row.atualizadoEm ?? now;
+        break;
+      case 'projetoMarco':
+        row.descricao = row.descricao ?? null;
+        row.dataRealizadaEm = row.dataRealizadaEm ?? null;
+        row.versao = row.versao ?? 1;
+        row.arquivadoEm = row.arquivadoEm ?? null;
+        row.arquivadoPorId = row.arquivadoPorId ?? null;
+        row.criadoEm = row.criadoEm ?? now;
+        row.atualizadoEm = row.atualizadoEm ?? now;
+        break;
+      case 'projetoEntrega':
+        row.marcoId = row.marcoId ?? null;
+        row.concluidaEm = row.concluidaEm ?? null;
+        row.versao = row.versao ?? 1;
+        row.arquivadoEm = row.arquivadoEm ?? null;
+        row.arquivadoPorId = row.arquivadoPorId ?? null;
+        row.criadoEm = row.criadoEm ?? now;
+        row.atualizadoEm = row.atualizadoEm ?? now;
+        break;
+      case 'projetoSprintItem':
+        row.retiradoPorId = row.retiradoPorId ?? null;
+        row.incluidoEm = row.incluidoEm ?? now;
+        row.retiradoEm = row.retiradoEm ?? null;
+        row.escopoInicial = row.escopoInicial ?? false;
+        row.statusAoIniciar = row.statusAoIniciar ?? null;
+        row.estimativaAoIniciar = row.estimativaAoIniciar ?? null;
+        row.statusAoEncerrar = row.statusAoEncerrar ?? null;
+        row.estimativaAoEncerrar = row.estimativaAoEncerrar ?? null;
+        row.concluidoNoSprint = row.concluidoNoSprint ?? null;
         break;
       case 'chamado':
         row.status = row.status ?? 'ABERTO';
@@ -1266,6 +1372,10 @@ type TestWorld = {
   projetoItemCatalogService: ProjetoItemCatalogService;
   projetoItemQueryService: ProjetoItemQueryService;
   projetoBacklogService: ProjetoBacklogService;
+  projetoSprintAuthorizationService: ProjetoSprintAuthorizationService;
+  projetoSprintService: ProjetoSprintService;
+  projetoMarcoEntregaAuthorizationService: ProjetoMarcoEntregaAuthorizationService;
+  projetoMarcoEntregaService: ProjetoMarcoEntregaService;
 };
 
 const asPrisma = (prisma: InMemoryPrismaService): PrismaService => prisma as unknown as PrismaService;
@@ -1293,7 +1403,8 @@ function createWorld(): TestWorld {
   const userEmpresaService = new UserEmpresaService(prismaService);
   const userPasswordService = new UserPasswordService(prismaService);
   const userLookupService = new UserLookupService(prismaService);
-  const userCatalogService = new UserCatalogService(prismaService, userEmpresaService, userPasswordService);
+  const userDependencyService = new UserDependencyService();
+  const userCatalogService = new UserCatalogService(prismaService, userEmpresaService, userPasswordService, userDependencyService);
   const usersService = new UsersService(userCatalogService, userLookupService, userPasswordService);
   const servicoCatalogService = new ServicoCatalogService(prismaService);
   const servicosService = new ServicosService(servicoCatalogService);
@@ -1328,6 +1439,23 @@ function createWorld(): TestWorld {
     projetoItemAuthorizationService,
     projetoAuditoriaService
   );
+  const projetoSprintAuthorizationService = new ProjetoSprintAuthorizationService(
+    prismaService,
+    projetoAuthorizationService
+  );
+  const projetoSprintService = new ProjetoSprintService(
+    prismaService, projetoSprintAuthorizationService, projetoAuditoriaService, projetoPeriodoService
+  );
+  const projetoMarcoEntregaAuthorizationService = new ProjetoMarcoEntregaAuthorizationService(
+    prismaService,
+    projetoAuthorizationService
+  );
+  const projetoMarcoEntregaService = new ProjetoMarcoEntregaService(
+    prismaService,
+    projetoMarcoEntregaAuthorizationService,
+    projetoAuditoriaService,
+    projetoPeriodoService
+  );
   const projetosService = new ProjetosService(
     projetoAuthorizationService,
     projetoCatalogService,
@@ -1337,7 +1465,9 @@ function createWorld(): TestWorld {
     projetoQueryService,
     projetoItemCatalogService,
     projetoItemQueryService,
-    projetoBacklogService
+    projetoBacklogService,
+    projetoSprintService,
+    projetoMarcoEntregaService
   );
   const chamadoAuthorizationService = new ChamadoAuthorizationService(prismaService, funcionalidadeAuthorizationService);
   const chamadoRelatorioService = new ChamadoRelatorioService(prismaService, chamadoAuthorizationService);
@@ -1401,7 +1531,11 @@ function createWorld(): TestWorld {
     projetoItemAuthorizationService,
     projetoItemCatalogService,
     projetoItemQueryService,
-    projetoBacklogService
+    projetoBacklogService,
+    projetoSprintAuthorizationService,
+    projetoSprintService,
+    projetoMarcoEntregaAuthorizationService,
+    projetoMarcoEntregaService,
   };
 }
 
@@ -2639,11 +2773,11 @@ describe('Fluxos integrados do backend', () => {
       ['portfolio-de-projetos', 100]
     ]);
     expect(projetos.funcionalidades.filter((funcionalidade) => funcionalidade.ativo).map((funcionalidade) => funcionalidade.slug))
-      .toEqual(['cadastro-de-projetos', 'backlog-de-demandas']);
+      .toEqual(['cadastro-de-projetos', 'backlog-de-demandas', 'sprints', 'marcos-e-entregas']);
     const hubProjetos = expectDefined((await world.solucoesService.myHubNavigation(admin))
       .find((solucao) => solucao.slug === 'projetos'));
     expect(hubProjetos.funcionalidades.map((funcionalidade) => funcionalidade.slug))
-      .toEqual(['cadastro-de-projetos', 'backlog-de-demandas']);
+      .toEqual(['cadastro-de-projetos', 'backlog-de-demandas', 'sprints', 'marcos-e-entregas']);
     expect(cadastroProjetos.registryKey).toBe('projetos.cadastro-de-projetos');
     expect(cadastroProjetos.acoes.map((acao) => acao.chave)).toEqual(expect.arrayContaining([
       'visualizar',
@@ -4548,4 +4682,407 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
     await expect(world.servicosService.remove(criado.id)).resolves.toBe(true);
     expect(await world.servicosService.findAll()).toEqual([]);
   });
+
+  it('valida datas, ciclo de vida e exclusividade da sprint ativa', async () => {
+    const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
+    const projeto = await world.prisma.projeto.create({
+      data: {
+        empresaId: empresaInicialId,
+        chave: 'SPR',
+        nome: 'Projeto de sprints',
+        responsavelId: admin.sub,
+        criadoPorId: admin.sub
+      }
+    });
+
+    await expect(world.projetoSprintService.create({
+      projetoId: projeto.id,
+      nome: 'Periodo invalido',
+      inicioPrevistoEm: '2026-08-15',
+      fimPrevistoEm: '2026-08-01'
+    }, admin)).rejects.toThrow('A data final nao pode ser anterior');
+
+    const primeira = await world.projetoSprintService.create({
+      projetoId: projeto.id,
+      nome: 'Sprint 1',
+      objetivo: 'Entregar o primeiro incremento',
+      inicioPrevistoEm: '2026-08-01',
+      fimPrevistoEm: '2026-08-14'
+    }, admin);
+    const segunda = await world.projetoSprintService.create({
+      projetoId: projeto.id,
+      nome: 'Sprint 2',
+      inicioPrevistoEm: '2026-08-15',
+      fimPrevistoEm: '2026-08-28'
+    }, admin);
+
+    const ativa = await world.projetoSprintService.iniciar({
+      id: primeira.id,
+      versao: primeira.versao
+    }, admin);
+
+    expect(ativa.status).toBe(ProjetoSprintStatus.ATIVA);
+    expect(ativa.inicioRealEm).toBeInstanceOf(Date);
+    await expect(world.projetoSprintService.iniciar({
+      id: segunda.id,
+      versao: segunda.versao
+    }, admin)).rejects.toThrow('ja possui uma sprint ativa');
+    await expect(world.projetoSprintService.update({
+      id: ativa.id,
+      versao: ativa.versao,
+      nome: 'Alteracao invalida',
+      inicioPrevistoEm: '2026-08-01',
+      fimPrevistoEm: '2026-08-14'
+    }, admin)).rejects.toThrow('Somente sprints planejadas');
+  });
+
+  it('audita mudancas de escopo e preserva metricas ao concluir com itens incompletos', async () => {
+    const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
+    const projeto = await world.prisma.projeto.create({
+      data: {
+        empresaId: empresaInicialId,
+        chave: 'MET',
+        nome: 'Metricas de sprint',
+        responsavelId: admin.sub,
+        criadoPorId: admin.sub
+      }
+    });
+    const itemIncompleto = await world.prisma.projetoItem.create({
+      data: {
+        empresaId: empresaInicialId,
+        projetoId: projeto.id,
+        numero: 1,
+        chave: 'MET-1',
+        tipo: ProjetoItemTipo.HISTORIA,
+        titulo: 'Historia incompleta',
+        status: ProjetoItemStatus.EM_ANDAMENTO,
+        prioridade: ProjetoItemPrioridade.ALTA,
+        autorId: admin.sub,
+        estimativaMinutos: 240
+      }
+    });
+    const itemConcluido = await world.prisma.projetoItem.create({
+      data: {
+        empresaId: empresaInicialId,
+        projetoId: projeto.id,
+        numero: 2,
+        chave: 'MET-2',
+        tipo: ProjetoItemTipo.TAREFA,
+        titulo: 'Tarefa concluida',
+        status: ProjetoItemStatus.ABERTO,
+        prioridade: ProjetoItemPrioridade.MEDIA,
+        autorId: admin.sub,
+        estimativaMinutos: 120
+      }
+    });
+    const itemAdicionado = await world.prisma.projetoItem.create({
+      data: {
+        empresaId: empresaInicialId,
+        projetoId: projeto.id,
+        numero: 3,
+        chave: 'MET-3',
+        tipo: ProjetoItemTipo.BUG,
+        titulo: 'Bug encontrado durante a sprint',
+        status: ProjetoItemStatus.ABERTO,
+        prioridade: ProjetoItemPrioridade.CRITICA,
+        autorId: admin.sub,
+        estimativaMinutos: 60
+      }
+    });
+    let origem = await world.projetoSprintService.create({
+      projetoId: projeto.id,
+      nome: 'Sprint de origem',
+      inicioPrevistoEm: '2026-09-01',
+      fimPrevistoEm: '2026-09-14'
+    }, admin);
+    const destino = await world.projetoSprintService.create({
+      projetoId: projeto.id,
+      nome: 'Sprint de destino',
+      inicioPrevistoEm: '2026-09-15',
+      fimPrevistoEm: '2026-09-28'
+    }, admin);
+
+    origem = await world.projetoSprintService.adicionarItem({
+      sprintId: origem.id,
+      itemId: itemIncompleto.id,
+      versao: origem.versao
+    }, admin);
+    origem = await world.projetoSprintService.adicionarItem({
+      sprintId: origem.id,
+      itemId: itemConcluido.id,
+      versao: origem.versao
+    }, admin);
+    origem = await world.projetoSprintService.iniciar({
+      id: origem.id,
+      versao: origem.versao
+    }, admin);
+    expect(origem.escopoInicialItens).toBe(2);
+    expect(origem.escopoInicialEstimativa).toBe(360);
+
+    origem = await world.projetoSprintService.adicionarItem({
+      sprintId: origem.id,
+      itemId: itemAdicionado.id,
+      versao: origem.versao
+    }, admin);
+    expect(origem.itensAdicionadosAposInicio).toBe(1);
+    origem = await world.projetoSprintService.removerItem({
+      sprintId: origem.id,
+      itemId: itemAdicionado.id,
+      versao: origem.versao
+    }, admin);
+    expect(origem.itensRetiradosAposInicio).toBe(1);
+    expect(origem.itens.find((item) => item.itemId === itemAdicionado.id)?.retiradoAposInicio).toBe(true);
+
+    await world.prisma.projetoItem.update({
+      where: { id: itemConcluido.id },
+      data: {
+        status: ProjetoItemStatus.CONCLUIDO,
+        concluidoEm: new Date()
+      }
+    });
+    await expect(world.projetoSprintService.concluir({
+      id: origem.id,
+      versao: origem.versao,
+      destinoIncompletos: ProjetoSprintDestinoIncompletos.SPRINT
+    }, admin)).rejects.toThrow('Informe uma sprint planejada de destino');
+
+    const concluida = await world.projetoSprintService.concluir({
+      id: origem.id,
+      versao: origem.versao,
+      destinoIncompletos: ProjetoSprintDestinoIncompletos.SPRINT,
+      sprintDestinoId: destino.id,
+      resultado: 'Uma historia concluida e uma replanejada.'
+    }, admin);
+
+    expect(concluida.status).toBe(ProjetoSprintStatus.CONCLUIDA);
+    expect(concluida.itensConcluidos).toBe(1);
+    expect(concluida.estimativaConcluida).toBe(120);
+    expect(concluida.resultado).toContain('replanejada');
+    expect(concluida.itens.find((item) => item.itemId === itemConcluido.id)?.concluidoNoSprint).toBe(true);
+    expect(concluida.itens.find((item) => item.itemId === itemIncompleto.id)?.statusAoEncerrar)
+      .toBe(ProjetoItemStatus.EM_ANDAMENTO);
+
+    const vinculoDestino = await world.prisma.projetoSprintItem.findFirst({
+      where: {
+        sprintId: destino.id,
+        itemId: itemIncompleto.id,
+        retiradoEm: null
+      }
+    });
+    expect(vinculoDestino).toBeDefined();
+    const eventos = await world.prisma.projetoEvento.findMany({
+      where: { entidade: 'SPRINT', entidadeId: origem.id }
+    });
+    expect(eventos.map((evento) => evento.evento)).toEqual(expect.arrayContaining([
+      'ITEM_INCLUIDO',
+      'ITEM_RETIRADO',
+      'INICIADA',
+      'CONCLUIDA'
+    ]));
+  });
+
+  it('valida relacionamentos, progresso, atrasos e arquivamento de marcos e entregas', async () => {
+    const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
+    const projeto = await world.prisma.projeto.create({
+      data: {
+        empresaId: empresaInicialId,
+        chave: 'MEC',
+        nome: 'Marcos e entregas',
+        responsavelId: admin.sub,
+        criadoPorId: admin.sub
+      }
+    });
+    await world.prisma.projetoMembro.create({
+      data: { projetoId: projeto.id, usuarioId: admin.sub, papel: 'RESPONSAVEL' }
+    });
+    const item = await world.prisma.projetoItem.create({
+      data: {
+        empresaId: empresaInicialId,
+        projetoId: projeto.id,
+        numero: 1,
+        chave: 'MEC-1',
+        titulo: 'Preparar aceite',
+        autorId: admin.sub,
+        responsavelId: admin.sub,
+        estimativaMinutos: null
+      }
+    });
+
+    await expect(world.projetoMarcoEntregaService.createMarco({
+      projetoId: projeto.id,
+      nome: 'Marco sem data realizada',
+      responsavelId: admin.sub,
+      status: 'ATINGIDO' as any,
+      dataPrevistaEm: '2026-06-01',
+      itemIds: []
+    }, admin)).rejects.toThrow('Informe a data realizada');
+
+    const marco = await world.projetoMarcoEntregaService.createMarco({
+      projetoId: projeto.id,
+      nome: 'Homologacao',
+      descricao: 'Validacao do compromisso',
+      responsavelId: admin.sub,
+      status: 'PLANEJADO' as any,
+      dataPrevistaEm: '2025-01-01',
+      itemIds: []
+    }, admin);
+    const marcoComItem = await world.projetoMarcoEntregaService.updateMarco({
+      id: marco.id,
+      versao: marco.versao,
+      projetoId: projeto.id,
+      nome: marco.nome,
+      descricao: marco.descricao,
+      responsavelId: admin.sub,
+      status: 'PLANEJADO' as any,
+      dataPrevistaEm: '2025-01-01',
+      itemIds: [item.id]
+    }, admin);
+    expect(marcoComItem.atrasado).toBe(true);
+    expect(marcoComItem.progressoPercentual).toBe(0);
+    expect(marcoComItem.itensSemEstimativa).toBe(1);
+
+    const outroProjeto = await world.prisma.projeto.create({
+      data: {
+        empresaId: empresaInicialId,
+        chave: 'OUT',
+        nome: 'Outro projeto',
+        responsavelId: admin.sub,
+        criadoPorId: admin.sub
+      }
+    });
+    const itemExterno = await world.prisma.projetoItem.create({
+      data: {
+        empresaId: empresaInicialId,
+        projetoId: outroProjeto.id,
+        numero: 1,
+        chave: 'OUT-1',
+        titulo: 'Item de outro projeto',
+        autorId: admin.sub
+      }
+    });
+    await expect(world.projetoMarcoEntregaService.updateMarco({
+      id: marcoComItem.id,
+      versao: marcoComItem.versao,
+      projetoId: projeto.id,
+      nome: marcoComItem.nome,
+      descricao: marcoComItem.descricao,
+      responsavelId: admin.sub,
+      status: 'PLANEJADO' as any,
+      dataPrevistaEm: '2025-01-01',
+      itemIds: [itemExterno.id]
+    }, admin)).rejects.toThrow('Todos os itens devem pertencer ao projeto');
+
+    await expect(world.projetoMarcoEntregaService.createEntrega({
+      projetoId: projeto.id,
+      nome: 'Periodo invalido',
+      resultadoEsperado: 'Resultado',
+      criteriosAceite: 'Criterio',
+      responsavelId: admin.sub,
+      status: 'PLANEJADA' as any,
+      inicioPrevistoEm: '2026-09-20',
+      fimPrevistoEm: '2026-09-01',
+      itemIds: []
+    }, admin)).rejects.toThrow('A data final nao pode ser anterior');
+
+    const entrega = await world.projetoMarcoEntregaService.createEntrega({
+      projetoId: projeto.id,
+      nome: 'Entrega homologada',
+      resultadoEsperado: 'Funcionalidade aceita',
+      criteriosAceite: 'Todos os itens concluidos',
+      responsavelId: admin.sub,
+      status: 'PLANEJADA' as any,
+      inicioPrevistoEm: '2026-08-01',
+      fimPrevistoEm: '2026-08-31',
+      marcoId: marco.id,
+      itemIds: []
+    }, admin);
+    const entregaComItem = await world.projetoMarcoEntregaService.updateEntrega({
+      id: entrega.id,
+      versao: entrega.versao,
+      projetoId: projeto.id,
+      nome: entrega.nome,
+      resultadoEsperado: entrega.resultadoEsperado,
+      criteriosAceite: entrega.criteriosAceite,
+      responsavelId: admin.sub,
+      status: 'PLANEJADA' as any,
+      inicioPrevistoEm: '2026-08-01',
+      fimPrevistoEm: '2026-08-31',
+      marcoId: marco.id,
+      itemIds: [item.id]
+    }, admin);
+    expect(entregaComItem.marcoId).toBe(marco.id);
+    expect(entregaComItem.itens).toHaveLength(1);
+
+    const arquivado = await world.projetoMarcoEntregaService.archive(
+      'MARCO',
+      { id: marcoComItem.id, versao: marcoComItem.versao },
+      admin
+    );
+    expect(arquivado.arquivadoEm).toBeInstanceOf(Date);
+    expect((await world.projetoMarcoEntregaService.painel(projeto.id, false, admin)).marcos).toHaveLength(0);
+    expect((await world.projetoMarcoEntregaService.painel(projeto.id, true, admin)).marcos).toHaveLength(1);
+
+    await world.projetosService.arquivar(projeto.id, admin);
+    await expect(world.projetoMarcoEntregaService.createMarco({
+      projetoId: projeto.id,
+      nome: 'Bloqueado em projeto arquivado',
+      responsavelId: admin.sub,
+      status: 'PLANEJADO' as any,
+      dataPrevistaEm: '2026-12-01',
+      itemIds: []
+    }, admin)).rejects.toThrow('projeto arquivado esta disponivel somente para consulta');
+  });
+
+
+  it('impede excluir usuario com vinculos e informa todas as dependencias sem remover empresas', async () => {
+    const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
+    const usuario = await world.usersService.create({
+      nome: 'Usuario com dependencias',
+      login: 'usuario.com.dependencias',
+      email: 'usuario.com.dependencias@orfeu.test',
+      senha: 'Senha@12345',
+      empresaIds: [empresaInicialId]
+    });
+    await world.prisma.chamado.create({
+      data: {
+        numero: 901,
+        empresaId: empresaInicialId,
+        solicitanteId: usuario.id,
+        titulo: 'Chamado vinculado ao usuario',
+        descricao: 'Impede a exclusao',
+        tipoId: 1,
+        prioridadeId: 1
+      }
+    });
+    const projeto = await world.prisma.projeto.create({
+      data: {
+        empresaId: empresaInicialId,
+        chave: 'USR',
+        nome: 'Projeto com usuario vinculado',
+        responsavelId: admin.sub,
+        criadoPorId: admin.sub
+      }
+    });
+    await world.prisma.projetoMembro.create({
+      data: { projetoId: projeto.id, usuarioId: usuario.id, papel: 'MEMBRO' }
+    });
+
+    await expect(world.usersService.remove(usuario.id)).rejects.toThrow(
+      /1 chamado solicitado; 1 participação em projeto/
+    );
+    expect(world.prisma.data.usuario.some((item) => item.id === usuario.id)).toBe(true);
+    expect(world.prisma.data.empresaUsuario.some((item) => item.usuarioId === usuario.id)).toBe(true);
+
+    const semDependencias = await world.usersService.create({
+      nome: 'Usuario sem dependencias',
+      login: 'usuario.sem.dependencias',
+      email: 'usuario.sem.dependencias@orfeu.test',
+      senha: 'Senha@12345',
+      empresaIds: [empresaInicialId]
+    });
+    await expect(world.usersService.remove(semDependencias.id)).resolves.toBe(true);
+    expect(world.prisma.data.usuario.some((item) => item.id === semDependencias.id)).toBe(false);
+    expect(world.prisma.data.empresaUsuario.some((item) => item.usuarioId === semDependencias.id)).toBe(false);
+  });
+
 });

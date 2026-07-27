@@ -59,7 +59,7 @@ export const PROJETO_FEATURE_DEFINITIONS: ProjetoFeatureDefinition[] = [
     descricao: 'Planeje e acompanhe periodos de execucao do projeto.',
     ordem: 30,
     registryKey: 'projetos.sprints',
-    ativo: false,
+    ativo: true,
     acoes: [
       action('planejar', 'Planejar sprints', 50, 'Permite definir o escopo planejado.'),
       action('iniciar', 'Iniciar sprint', 60, 'Permite ativar uma sprint planejada.'),
@@ -74,7 +74,7 @@ export const PROJETO_FEATURE_DEFINITIONS: ProjetoFeatureDefinition[] = [
     descricao: 'Acompanhe marcos, entregas previstas e resultados do projeto.',
     ordem: 40,
     registryKey: 'projetos.marcos-e-entregas',
-    ativo: false,
+    ativo: true,
     acoes: [
       action('aprovar', 'Aprovar entregas', 50, 'Permite aprovar compromissos de negocio.')
     ]

@@ -1,0 +1,62 @@
+.commitment-management { min-width: 0; color: var(--primary); }
+.commitment-header p { margin: 6px 0 0; color: var(--muted); }
+.commitment-filters { align-items: end; }
+.commitment-filters > label:first-child { display: grid; flex: 1 1 420px; gap: 6px; color: var(--muted); font-weight: 700; }
+.commitment-filters select, .commitment-form input, .commitment-form select, .commitment-form textarea { width: 100%; min-height: 42px; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface-white); color: var(--primary); font: inherit; }
+.commitment-form input, .commitment-form select, .commitment-form textarea { font-weight: 400; }
+.commitment-check { display: flex; align-items: center; gap: 8px; min-height: 42px; }
+.commitment-check input { width: 18px; height: 18px; accent-color: var(--button-primary-bg); }
+.commitment-readonly { padding: 8px 12px; border-radius: 999px; background: #fff4d6; color: #765400; font-weight: 700; }
+.commitment-feedback { margin: 12px 18px 0; padding: 12px 16px; border: 1px solid var(--line); border-radius: 14px; }
+.commitment-feedback.error { background: var(--danger-bg); color: var(--danger-text); }
+.commitment-feedback.success { background: var(--success-soft); color: var(--success-text); }
+.commitment-tabs { display: flex; gap: 8px; padding: 12px 18px; overflow-x: auto; border-bottom: 1px solid var(--line); background: var(--surface-soft); }
+.commitment-tabs button { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 10px 14px; border: 1px solid transparent; border-radius: 10px; background: transparent; color: var(--primary); cursor: pointer; font-weight: 700; }
+.commitment-tabs button.active { background: var(--button-primary-bg); color: var(--button-primary-text); }
+.commitment-tabs button span { padding: 2px 7px; border-radius: 999px; background: var(--surface-muted); color: var(--secondary); }
+.commitment-tabs button.active span { background: color-mix(in srgb, var(--surface-white) 20%, transparent); color: inherit; }
+.commitment-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 14px; padding: 18px; background: var(--surface-soft); }
+.commitment-card { overflow: hidden; border: 1px solid var(--line); border-radius: 16px; background: var(--surface-white); box-shadow: var(--shadow-soft); }
+.commitment-card.archived { opacity: .7; }
+.commitment-card > header { display: flex; justify-content: space-between; gap: 12px; padding: 18px; }
+.commitment-card h3 { margin: 8px 0 0; }
+.commitment-card > p { min-height: 56px; margin: 0; padding: 0 18px 16px; color: var(--muted); line-height: 1.5; }
+.commitment-actions { display: flex; gap: 7px; }
+.commitment-actions button { display: grid; width: 36px; height: 36px; place-items: center; border: 1px solid var(--button-secondary-border); background: var(--button-secondary-bg); color: var(--primary); cursor: pointer; }
+.commitment-actions button:hover:not(:disabled) { background: var(--button-primary-hover-bg); color: var(--button-primary-hover-text); }
+.commitment-status { display: inline-flex; padding: 5px 9px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface-muted); color: var(--secondary); font-size: .72rem; font-weight: 800; text-transform: uppercase; }
+.status-atingido, .status-concluida { background: var(--success-soft); color: var(--success-text); }
+.status-cancelado, .status-cancelada { background: var(--danger-bg); color: var(--danger-text); }
+.status-em_andamento { background: #fff4d6; color: #765400; }
+.commitment-card dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; border-block: 1px solid var(--line); background: var(--surface-soft); }
+.commitment-card dl div { padding: 11px 18px; }
+.commitment-card dt { color: var(--muted); font-size: .72rem; text-transform: uppercase; }
+.commitment-card dd { margin: 4px 0 0; font-weight: 700; }
+.commitment-related-items { display: flex; flex-wrap: wrap; gap: 7px; padding: 12px 18px; border-bottom: 1px solid var(--line); }
+.commitment-related-items a { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 6px 9px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface-soft); color: var(--primary); text-decoration: none; }
+.commitment-related-items a:hover { border-color: var(--button-secondary-border); background: var(--button-secondary-bg); }
+.commitment-related-items span { overflow: hidden; color: var(--muted); text-overflow: ellipsis; white-space: nowrap; }
+.commitment-card footer { display: grid; gap: 8px; padding: 16px 18px; }
+.commitment-card footer > div { display: grid; grid-template-columns: 1fr auto; gap: 6px; }
+.commitment-progress { grid-column: 1 / -1; height: 8px; overflow: hidden; border-radius: 999px; background: var(--surface-muted); }
+.commitment-progress span { display: block; height: 100%; background: linear-gradient(90deg, var(--secondary), var(--accent-green)); }
+.commitment-risk { width: fit-content; padding: 5px 9px; border-radius: 999px; background: var(--danger-bg); color: var(--danger-text); }
+.commitment-card footer small { color: var(--muted); }
+.commitment-empty, .commitment-loading { grid-column: 1 / -1; padding: 48px 24px; border: 1px dashed var(--line-strong); border-radius: 14px; color: var(--muted); text-align: center; }
+.commitment-modal { width: min(780px, calc(100vw - 32px)); }
+.commitment-modal form { display: grid; }
+.commitment-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; padding: 20px 22px; }
+.commitment-form label { display: grid; gap: 7px; color: var(--primary); font-weight: 700; }
+.commitment-form textarea { resize: vertical; }
+.commitment-form .wide, .commitment-feedback { grid-column: 1 / -1; }
+.commitment-items { display: grid; gap: 8px; max-height: 260px; padding: 14px; overflow-y: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-soft); }
+.commitment-items legend { padding: 0 6px; color: var(--detail-accent-text); font-weight: 700; }
+.commitment-items label { display: flex; align-items: center; gap: 9px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-white); cursor: pointer; }
+.commitment-items input { width: 18px; min-height: 18px; accent-color: var(--button-primary-bg); }
+.commitment-items label span { display: flex; gap: 8px; font-weight: 400; }
+.commitment-modal .crud-modal-actions { margin: 0; padding: 16px 22px 20px; border-top: 1px solid var(--line); background: var(--surface-soft); }
+@media (max-width: 640px) {
+  .commitment-form, .commitment-card dl { grid-template-columns: 1fr; }
+  .commitment-form .wide { grid-column: auto; }
+  .commitment-card > header { align-items: stretch; flex-direction: column; }
+}

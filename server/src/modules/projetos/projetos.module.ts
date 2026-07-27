@@ -3,6 +3,12 @@ import { PrismaModule } from '../../prisma/prisma.module';
 import { SolucoesModule } from '../solucoes/solucoes.module';
 import { ProjetoAuthorizationService } from './projeto-authorization.service';
 import { ProjetoBacklogService } from './projeto-backlog.service';
+import { ProjetoSprintAuthorizationService } from './projeto-sprint-authorization.service';
+import { ProjetoSprintResolver } from './projeto-sprint.resolver';
+import { ProjetoSprintService } from './projeto-sprint.service';
+import { ProjetoMarcoEntregaAuthorizationService } from './projeto-marco-entrega-authorization.service';
+import { ProjetoMarcoEntregaResolver } from './projeto-marco-entrega.resolver';
+import { ProjetoMarcoEntregaService } from './projeto-marco-entrega.service';
 import { ProjetoAuditoriaService } from './projeto-auditoria.service';
 import { ProjetoIdempotenciaService } from './projeto-idempotencia.service';
 import { ProjetoPeriodoService } from './projeto-periodo.service';
@@ -24,6 +30,10 @@ import { ProjetosService } from './projetos.service';
   providers: [
     ProjetoAuthorizationService,
     ProjetoBacklogService,
+    ProjetoSprintAuthorizationService,
+    ProjetoSprintService,
+    ProjetoMarcoEntregaAuthorizationService,
+    ProjetoMarcoEntregaService,
     ProjetoAuditoriaService,
     ProjetoIdempotenciaService,
     ProjetoPeriodoService,
@@ -38,11 +48,15 @@ import { ProjetosService } from './projetos.service';
     ProjetoItemQueryService,
     ProjetoQueryService,
     ProjetosService,
-    ProjetosResolver
+    ProjetosResolver,
+    ProjetoSprintResolver,
+    ProjetoMarcoEntregaResolver,
   ],
   exports: [
     ProjetoAuthorizationService,
     ProjetoBacklogService,
+    ProjetoSprintAuthorizationService,
+    ProjetoSprintService,
     ProjetoAuditoriaService,
     ProjetoCatalogService,
     ProjetoEquipeService,

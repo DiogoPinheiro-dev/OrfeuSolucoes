@@ -7,6 +7,12 @@ input AlterarCategoriaChamadoInput {
   chamadoId: String!
 }
 
+input AlterarEscopoProjetoSprintInput {
+  itemId: String!
+  sprintId: String!
+  versao: Int!
+}
+
 input AlterarPrioridadeChamadoInput {
   chamadoId: String!
   prioridadeId: Int!
@@ -369,6 +375,14 @@ input ChangePasswordInput {
   novaSenha: String!
 }
 
+input ConcluirProjetoSprintInput {
+  destinoIncompletos: ProjetoSprintDestinoIncompletos!
+  id: String!
+  resultado: String
+  sprintDestinoId: String
+  versao: Int!
+}
+
 input CreateChamadoCategoriaInput {
   ativo: Boolean = true
   descricao: String
@@ -453,6 +467,20 @@ input CreateGrupoUsuarioInput {
   solucaoIds: [Int!]
 }
 
+input CreateProjetoEntregaInput {
+  concluidaEm: String
+  criteriosAceite: String!
+  fimPrevistoEm: String!
+  inicioPrevistoEm: String!
+  itemIds: [String!]! = []
+  marcoId: String
+  nome: String!
+  projetoId: String!
+  responsavelId: String!
+  resultadoEsperado: String!
+  status: ProjetoEntregaStatus!
+}
+
 input CreateProjetoInput {
   chave: String!
   descricao: String
@@ -479,6 +507,25 @@ input CreateProjetoItemInput {
   status: ProjetoItemStatus = ABERTO
   tipo: ProjetoItemTipo!
   titulo: String!
+}
+
+input CreateProjetoMarcoInput {
+  dataPrevistaEm: String!
+  dataRealizadaEm: String
+  descricao: String
+  itemIds: [String!]! = []
+  nome: String!
+  projetoId: String!
+  responsavelId: String!
+  status: ProjetoMarcoStatus!
+}
+
+input CreateProjetoSprintInput {
+  fimPrevistoEm: String!
+  inicioPrevistoEm: String!
+  nome: String!
+  objetivo: String
+  projetoId: String!
 }
 
 input CreateServicoInput {
@@ -660,18 +707,23 @@ input MoverProjetoItemBacklogInput {
 }
 
 type Mutation {
+  adicionarItemProjetoSprint(input: AlterarEscopoProjetoSprintInput!): ProjetoSprintType!
   alterarCategoriaChamado(input: AlterarCategoriaChamadoInput!): ChamadoType!
   alterarPrioridadeChamado(input: AlterarPrioridadeChamadoInput!): ChamadoType!
   alterarStatusChamado(input: AlterarStatusChamadoInput!): ChamadoType!
   alterarStatusProjetoItem(input: AlterarStatusProjetoItemInput!): ProjetoItemType!
   arquivarChamado(id: String!, observacao: String): ChamadoType!
   arquivarProjeto(id: String!): ProjetoType!
+  arquivarProjetoEntrega(input: VersionarProjetoCompromissoInput!): ProjetoEntregaType!
   arquivarProjetoItem(input: VersionarProjetoItemInput!): ProjetoItemType!
+  arquivarProjetoMarco(input: VersionarProjetoCompromissoInput!): ProjetoMarcoType!
   assumirChamado(id: String!): ChamadoType!
   atribuirChamado(input: AtribuirChamadoInput!): ChamadoType!
   atualizarAcompanhantesChamado(input: AtualizarChamadoAcompanhantesInput!): ChamadoType!
   atualizarSituacaoProjeto(input: AtualizarCicloProjetoInput!): ProjetoType!
+  cancelarProjetoSprint(input: TransicionarProjetoSprintInput!): ProjetoSprintType!
   changePassword(input: ChangePasswordInput!): AuthPayloadType!
+  concluirProjetoSprint(input: ConcluirProjetoSprintInput!): ProjetoSprintType!
   createChamadoCategoria(input: CreateChamadoCategoriaInput!): ChamadoCategoriaType!
   createChamadoPrioridade(input: CreateChamadoPrioridadeInput!): ChamadoPrioridadeType!
   createChamadoResponsavel(input: CreateChamadoResponsavelInput!): ChamadoResponsavelType!
@@ -682,7 +734,10 @@ type Mutation {
   createGoogleEmailConta(input: CreateGoogleEmailContaInput!): GoogleEmailContaType!
   createGrupoUsuario(input: CreateGrupoUsuarioInput!): GrupoUsuarioType!
   createProjeto(input: CreateProjetoInput!): ProjetoType!
+  createProjetoEntrega(input: CreateProjetoEntregaInput!): ProjetoEntregaType!
   createProjetoItem(input: CreateProjetoItemInput!): ProjetoItemType!
+  createProjetoMarco(input: CreateProjetoMarcoInput!): ProjetoMarcoType!
+  createProjetoSprint(input: CreateProjetoSprintInput!): ProjetoSprintType!
   createServico(input: CreateServicoInput!): ServicoType!
   createSolucao(input: CreateSolucaoInput!): SolucaoType!
   createUser(input: CreateUserInput!): UserType!
@@ -700,6 +755,7 @@ type Mutation {
   deleteSolucao(id: Int!): Boolean!
   deleteUser(id: String!): Boolean!
   encerrarChamado(id: String!, observacao: String): ChamadoType!
+  iniciarProjetoSprint(input: TransicionarProjetoSprintInput!): ProjetoSprintType!
   liberarAtendimentoChamado(id: String!): ChamadoType!
   login(input: LoginInput!): AuthPayloadType!
   loginCompanies(input: LoginCompaniesInput!): [EmpresaType!]!
@@ -709,7 +765,10 @@ type Mutation {
   moverProjetoItemBacklog(input: MoverProjetoItemBacklogInput!): ProjetoBacklogMovimentoType!
   reabrirChamado(id: String!, observacao: String): ChamadoType!
   reativarProjeto(id: String!): ProjetoType!
+  reativarProjetoEntrega(input: VersionarProjetoCompromissoInput!): ProjetoEntregaType!
   reativarProjetoItem(input: VersionarProjetoItemInput!): ProjetoItemType!
+  reativarProjetoMarco(input: VersionarProjetoCompromissoInput!): ProjetoMarcoType!
+  removerItemProjetoSprint(input: AlterarEscopoProjetoSprintInput!): ProjetoSprintType!
   resolverChamado(id: String!, observacao: String): ChamadoType!
   responderChamado(input: ResponderChamadoInput!): ChamadoType!
   switchCompany(input: SwitchCompanyInput!): AuthPayloadType!
@@ -724,8 +783,11 @@ type Mutation {
   updateGoogleEmailConta(input: UpdateGoogleEmailContaInput!): GoogleEmailContaType!
   updateGrupoUsuario(input: UpdateGrupoUsuarioInput!): GrupoUsuarioType!
   updateProjeto(input: UpdateProjetoInput!): ProjetoType!
+  updateProjetoEntrega(input: UpdateProjetoEntregaInput!): ProjetoEntregaType!
   updateProjetoEquipe(input: UpdateProjetoEquipeInput!): ProjetoType!
   updateProjetoItem(input: UpdateProjetoItemInput!): ProjetoItemType!
+  updateProjetoMarco(input: UpdateProjetoMarcoInput!): ProjetoMarcoType!
+  updateProjetoSprint(input: UpdateProjetoSprintInput!): ProjetoSprintType!
   updateServico(input: UpdateServicoInput!): ServicoType!
   updateSolucao(input: UpdateSolucaoInput!): SolucaoType!
   updateUser(input: UpdateUserInput!): UserType!
@@ -748,6 +810,44 @@ type ProjetoBacklogProjetoType {
   chave: String!
   id: String!
   nome: String!
+}
+
+type ProjetoCompromissoItemType {
+  chave: String!
+  estimativaMinutos: Int
+  id: String!
+  status: ProjetoItemStatus!
+  titulo: String!
+}
+
+enum ProjetoEntregaStatus {
+  CANCELADA
+  CONCLUIDA
+  EM_ANDAMENTO
+  PLANEJADA
+}
+
+type ProjetoEntregaType {
+  arquivadoEm: DateTime
+  atrasada: Boolean!
+  atualizadoEm: DateTime!
+  concluidaEm: DateTime
+  criadoEm: DateTime!
+  criteriosAceite: String!
+  fimPrevistoEm: DateTime!
+  id: String!
+  inicioPrevistoEm: DateTime!
+  itens: [ProjetoCompromissoItemType!]!
+  itensSemEstimativa: Int!
+  marcoId: String
+  marcoNome: String
+  nome: String!
+  progressoPercentual: Int!
+  projetoId: String!
+  responsavel: ProjetoUsuarioType!
+  resultadoEsperado: String!
+  status: ProjetoEntregaStatus!
+  versao: Int!
 }
 
 input ProjetoFiltroInput {
@@ -850,6 +950,47 @@ type ProjetoItemType {
   versao: Int!
 }
 
+type ProjetoMarcoEntregaPainelType {
+  entregas: [ProjetoEntregaType!]!
+  itensDisponiveis: [ProjetoCompromissoItemType!]!
+  marcos: [ProjetoMarcoType!]!
+  permissoes: ProjetoMarcoEntregaPermissoesType!
+  responsaveis: [ProjetoUsuarioType!]!
+}
+
+type ProjetoMarcoEntregaPermissoesType {
+  podeArquivar: Boolean!
+  podeCriar: Boolean!
+  podeEditar: Boolean!
+  podeReativar: Boolean!
+  podeVisualizar: Boolean!
+}
+
+enum ProjetoMarcoStatus {
+  ATINGIDO
+  CANCELADO
+  PLANEJADO
+}
+
+type ProjetoMarcoType {
+  arquivadoEm: DateTime
+  atrasado: Boolean!
+  atualizadoEm: DateTime!
+  criadoEm: DateTime!
+  dataPrevistaEm: DateTime!
+  dataRealizadaEm: DateTime
+  descricao: String
+  id: String!
+  itens: [ProjetoCompromissoItemType!]!
+  itensSemEstimativa: Int!
+  nome: String!
+  progressoPercentual: Int!
+  projetoId: String!
+  responsavel: ProjetoUsuarioType!
+  status: ProjetoMarcoStatus!
+  versao: Int!
+}
+
 input ProjetoMembroInput {
   papel: ProjetoPapel!
   usuarioId: String!
@@ -906,6 +1047,93 @@ enum ProjetoSituacao {
   PAUSADO
   PLANEJADO
   RASCUNHO
+}
+
+type ProjetoSprintCandidatoType {
+  chave: String!
+  estimativaMinutos: Int
+  id: String!
+  prioridade: ProjetoItemPrioridade!
+  status: ProjetoItemStatus!
+  tipo: ProjetoItemTipo!
+  titulo: String!
+}
+
+enum ProjetoSprintDestinoIncompletos {
+  BACKLOG
+  SPRINT
+}
+
+type ProjetoSprintItemType {
+  adicionadoAposInicio: Boolean!
+  chave: String!
+  concluidoNoSprint: Boolean
+  escopoInicial: Boolean!
+  estimativaAoEncerrar: Int
+  estimativaAoIniciar: Int
+  estimativaMinutos: Int
+  incluidoEm: DateTime!
+  itemId: String!
+  prioridade: ProjetoItemPrioridade!
+  retiradoAposInicio: Boolean!
+  retiradoEm: DateTime
+  status: ProjetoItemStatus!
+  statusAoEncerrar: ProjetoItemStatus
+  statusAoIniciar: ProjetoItemStatus
+  tipo: ProjetoItemTipo!
+  titulo: String!
+  vinculoId: String!
+}
+
+type ProjetoSprintPainelType {
+  ativa: ProjetoSprintType
+  candidatos: [ProjetoSprintCandidatoType!]!
+  historico: [ProjetoSprintType!]!
+  permissoes: ProjetoSprintPermissoesType!
+  planejadas: [ProjetoSprintType!]!
+}
+
+type ProjetoSprintPermissoesType {
+  podeCancelar: Boolean!
+  podeConcluir: Boolean!
+  podeCriar: Boolean!
+  podeEditar: Boolean!
+  podeIniciar: Boolean!
+  podePlanejar: Boolean!
+  podeVisualizar: Boolean!
+}
+
+enum ProjetoSprintStatus {
+  ATIVA
+  CANCELADA
+  CONCLUIDA
+  PLANEJADA
+}
+
+type ProjetoSprintType {
+  atualizadoEm: DateTime!
+  criadoEm: DateTime!
+  escopoInicialEstimativa: Int
+  escopoInicialItens: Int
+  estimativaConcluida: Int
+  fimPrevistoEm: DateTime!
+  fimRealEm: DateTime
+  id: String!
+  inicioPrevistoEm: DateTime!
+  inicioRealEm: DateTime
+  itens: [ProjetoSprintItemType!]!
+  itensAdicionadosAposInicio: Int!
+  itensConcluidos: Int
+  itensRetiradosAposInicio: Int!
+  nome: String!
+  objetivo: String
+  progressoPercentual: Int!
+  projetoId: String!
+  resultado: String
+  status: ProjetoSprintStatus!
+  totalConcluidos: Int!
+  totalItens: Int!
+  versao: Int!
 }
 
 type ProjetoType {
@@ -969,7 +1197,9 @@ type Query {
   projetoItem(id: String!): ProjetoItemType!
   projetoItemHistorico(id: String!): [ProjetoItemHistoricoType!]!
   projetoItens(filtro: ProjetoItemFiltroInput!): ProjetoItemPageType!
+  projetoMarcosEntregas(incluirArquivados: Boolean = false, projetoId: String!): ProjetoMarcoEntregaPainelType!
   projetoParticipantesDisponiveis: [ProjetoUsuarioType!]!
+  projetoSprints(projetoId: String!): ProjetoSprintPainelType!
   projetos(filtro: ProjetoFiltroInput): ProjetoPageType!
   regrasSlaChamado(ativas: Boolean = true): [ChamadoSlaRegraType!]!
   relatorioChamados(filtro: ChamadoRelatorioFiltroInput): ChamadoRelatorioPageType!
@@ -1013,6 +1243,11 @@ type SolucaoType {
 
 input SwitchCompanyInput {
   empresaId: Int!
+}
+
+input TransicionarProjetoSprintInput {
+  id: String!
+  versao: Int!
 }
 
 input UpdateChamadoCategoriaInput {
@@ -1108,6 +1343,22 @@ input UpdateGrupoUsuarioInput {
   solucaoIds: [Int!]
 }
 
+input UpdateProjetoEntregaInput {
+  concluidaEm: String
+  criteriosAceite: String!
+  fimPrevistoEm: String!
+  id: String!
+  inicioPrevistoEm: String!
+  itemIds: [String!]! = []
+  marcoId: String
+  nome: String!
+  projetoId: String!
+  responsavelId: String!
+  resultadoEsperado: String!
+  status: ProjetoEntregaStatus!
+  versao: Int!
+}
+
 input UpdateProjetoEquipeInput {
   participantes: [ProjetoMembroInput!] = []
   projetoId: String!
@@ -1135,6 +1386,28 @@ input UpdateProjetoItemInput {
   responsavelId: String
   tipo: ProjetoItemTipo
   titulo: String
+  versao: Int!
+}
+
+input UpdateProjetoMarcoInput {
+  dataPrevistaEm: String!
+  dataRealizadaEm: String
+  descricao: String
+  id: String!
+  itemIds: [String!]! = []
+  nome: String!
+  projetoId: String!
+  responsavelId: String!
+  status: ProjetoMarcoStatus!
+  versao: Int!
+}
+
+input UpdateProjetoSprintInput {
+  fimPrevistoEm: String!
+  id: String!
+  inicioPrevistoEm: String!
+  nome: String!
+  objetivo: String
   versao: Int!
 }
 
@@ -1184,6 +1457,11 @@ type UserType {
   podeExcluir: Boolean!
   podeIncluir: Boolean!
   podeVisualizar: Boolean!
+}
+
+input VersionarProjetoCompromissoInput {
+  id: String!
+  versao: Int!
 }
 
 input VersionarProjetoItemInput {

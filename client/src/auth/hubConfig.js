@@ -17,7 +17,9 @@ export const FEATURE_COMPONENT_REGISTRY = {
     "controle-de-chamados.sla": "sla-chamado-management",
     "controle-de-chamados.emails-solucoes": "email-solucao-chamado-management",
     "projetos.cadastro-de-projetos": "project-management",
-    "projetos.backlog-de-demandas": "project-backlog"
+    "projetos.backlog-de-demandas": "project-backlog",
+    "projetos.sprints": "project-sprints",
+    "projetos.marcos-e-entregas": "project-milestones-deliveries"
 };
 
 export const normalizeSolutions = (solutions = []) =>

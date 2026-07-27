@@ -17,6 +17,7 @@ export default function CrudGrid({
     onSearchChange,
     filters,
     pagination,
+    toolbarActions,
     emptyMessage = "Nenhum registro encontrado.",
     selectedIds = [],
     onToggleSelect,
@@ -62,12 +63,13 @@ export default function CrudGrid({
 
             {filters && <div className="crud-filters">{filters}</div>}
 
-            {(showCreate || showEdit || showView || showDelete) && (
+            {(showCreate || showEdit || showView || showDelete || toolbarActions) && (
                 <div className="crud-toolbar" aria-label="Ações do cadastro">
                     {showCreate && <button type="button" onClick={onCreate} disabled={!canCreate} aria-label="Incluir" title="Incluir"><FaPlus aria-hidden="true" /></button>}
                     {showEdit && <button type="button" onClick={() => selectedRow && onEdit(selectedRow)} disabled={!selectedRow || !canEdit} aria-label="Alterar" title="Alterar"><FaEdit aria-hidden="true" /></button>}
                     {showView && <button type="button" onClick={() => selectedRow && onView(selectedRow)} disabled={!selectedRow || !canView} aria-label="Visualizar" title="Visualizar"><FaEye aria-hidden="true" /></button>}
                     {showDelete && <button type="button" onClick={() => onDelete(selectedIds)} disabled={selectedIds.length === 0 || !canDelete} aria-label="Deletar selecionados" title="Deletar selecionados"><FaTrashAlt aria-hidden="true" /></button>}
+                    {toolbarActions}
                 </div>
             )}
 
