@@ -86,7 +86,7 @@ export const PROJETO_FEATURE_DEFINITIONS: ProjetoFeatureDefinition[] = [
     descricao: 'Consulte datas, dependencias e riscos do cronograma.',
     ordem: 50,
     registryKey: 'projetos.cronograma-e-gantt',
-    ativo: false,
+    ativo: true,
     acoes: [
       action('editar_datas', 'Editar datas', 50, 'Permite confirmar alteracoes de datas no cronograma.')
     ]

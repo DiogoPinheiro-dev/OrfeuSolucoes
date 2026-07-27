@@ -495,6 +495,12 @@ input CreateProjetoInput {
   situacao: ProjetoSituacao = RASCUNHO
 }
 
+input CreateProjetoItemDependenciaInput {
+  bloqueadoId: String!
+  bloqueadorId: String!
+  projetoId: String!
+}
+
 input CreateProjetoItemInput {
   descricao: String
   estimativaMinutos: Int
@@ -716,6 +722,7 @@ type Mutation {
   arquivarProjeto(id: String!): ProjetoType!
   arquivarProjetoEntrega(input: VersionarProjetoCompromissoInput!): ProjetoEntregaType!
   arquivarProjetoItem(input: VersionarProjetoItemInput!): ProjetoItemType!
+  arquivarProjetoItemDependencia(input: VersionarProjetoItemDependenciaInput!): ProjetoItemDependenciaType!
   arquivarProjetoMarco(input: VersionarProjetoCompromissoInput!): ProjetoMarcoType!
   assumirChamado(id: String!): ChamadoType!
   atribuirChamado(input: AtribuirChamadoInput!): ChamadoType!
@@ -736,6 +743,7 @@ type Mutation {
   createProjeto(input: CreateProjetoInput!): ProjetoType!
   createProjetoEntrega(input: CreateProjetoEntregaInput!): ProjetoEntregaType!
   createProjetoItem(input: CreateProjetoItemInput!): ProjetoItemType!
+  createProjetoItemDependencia(input: CreateProjetoItemDependenciaInput!): ProjetoItemDependenciaType!
   createProjetoMarco(input: CreateProjetoMarcoInput!): ProjetoMarcoType!
   createProjetoSprint(input: CreateProjetoSprintInput!): ProjetoSprintType!
   createServico(input: CreateServicoInput!): ServicoType!
@@ -767,6 +775,7 @@ type Mutation {
   reativarProjeto(id: String!): ProjetoType!
   reativarProjetoEntrega(input: VersionarProjetoCompromissoInput!): ProjetoEntregaType!
   reativarProjetoItem(input: VersionarProjetoItemInput!): ProjetoItemType!
+  reativarProjetoItemDependencia(input: VersionarProjetoItemDependenciaInput!): ProjetoItemDependenciaType!
   reativarProjetoMarco(input: VersionarProjetoCompromissoInput!): ProjetoMarcoType!
   removerItemProjetoSprint(input: AlterarEscopoProjetoSprintInput!): ProjetoSprintType!
   resolverChamado(id: String!, observacao: String): ChamadoType!
@@ -783,6 +792,7 @@ type Mutation {
   updateGoogleEmailConta(input: UpdateGoogleEmailContaInput!): GoogleEmailContaType!
   updateGrupoUsuario(input: UpdateGrupoUsuarioInput!): GrupoUsuarioType!
   updateProjeto(input: UpdateProjetoInput!): ProjetoType!
+  updateProjetoCronogramaItemDatas(input: UpdateProjetoCronogramaItemDatasInput!): ProjetoCronogramaElementoType!
   updateProjetoEntrega(input: UpdateProjetoEntregaInput!): ProjetoEntregaType!
   updateProjetoEquipe(input: UpdateProjetoEquipeInput!): ProjetoType!
   updateProjetoItem(input: UpdateProjetoItemInput!): ProjetoItemType!
@@ -818,6 +828,82 @@ type ProjetoCompromissoItemType {
   id: String!
   status: ProjetoItemStatus!
   titulo: String!
+}
+
+enum ProjetoCronogramaAgrupamento {
+  NENHUM
+  RESPONSAVEL
+  STATUS
+  TIPO
+}
+
+enum ProjetoCronogramaElementoTipo {
+  ENTREGA
+  ITEM
+  MARCO
+}
+
+type ProjetoCronogramaElementoType {
+  arquivado: Boolean!
+  bloqueado: Boolean!
+  chave: String
+  fimEm: DateTime
+  grupo: String!
+  id: String!
+  inicioEm: DateTime
+  itemIds: [String!]!
+  progressoPercentual: Int!
+  riscoAtraso: Boolean!
+  semPeriodo: Boolean!
+  status: String!
+  tipo: ProjetoCronogramaElementoTipo!
+  titulo: String!
+  versao: Int
+}
+
+input ProjetoCronogramaFiltroInput {
+  agrupamento: ProjetoCronogramaAgrupamento = NENHUM
+  fimEm: String
+  incluirDependenciasArquivadas: Boolean = false
+  inicioEm: String
+  projetoId: String!
+}
+
+type ProjetoCronogramaInconsistenciaType {
+  codigo: String!
+  elementoIds: [String!]!
+  mensagem: String!
+  severidade: ProjetoCronogramaSeveridade!
+}
+
+type ProjetoCronogramaItemReferenciaType {
+  arquivadoEm: DateTime
+  chave: String!
+  fimPrevistoEm: DateTime
+  id: String!
+  inicioPrevistoEm: DateTime
+  status: String!
+  titulo: String!
+}
+
+type ProjetoCronogramaPainelType {
+  dependencias: [ProjetoItemDependenciaType!]!
+  elementos: [ProjetoCronogramaElementoType!]!
+  fimEm: DateTime
+  inconsistencias: [ProjetoCronogramaInconsistenciaType!]!
+  inicioEm: DateTime
+  permissoes: ProjetoCronogramaPermissoesType!
+}
+
+type ProjetoCronogramaPermissoesType {
+  podeEditarDatas: Boolean!
+  podeGerenciarDependencias: Boolean!
+  podeVisualizar: Boolean!
+}
+
+enum ProjetoCronogramaSeveridade {
+  AVISO
+  CRITICO
 }
 
 enum ProjetoEntregaStatus {
@@ -858,6 +944,17 @@ input ProjetoFiltroInput {
   saude: ProjetoSaude
   situacao: ProjetoSituacao
   termo: String
+}
+
+type ProjetoItemDependenciaType {
+  arquivadoEm: DateTime
+  atualizadoEm: DateTime!
+  bloqueado: ProjetoCronogramaItemReferenciaType!
+  bloqueador: ProjetoCronogramaItemReferenciaType!
+  criadoEm: DateTime!
+  id: String!
+  projetoId: String!
+  versao: Int!
 }
 
 input ProjetoItemFiltroInput {
@@ -1194,6 +1291,7 @@ type Query {
   projeto(id: String!): ProjetoType!
   projetoBacklogProjetos(incluirArquivados: Boolean = false): [ProjetoBacklogProjetoType!]!
   projetoBacklogResponsaveis(projetoId: String!): [ProjetoUsuarioType!]!
+  projetoCronograma(filtro: ProjetoCronogramaFiltroInput!): ProjetoCronogramaPainelType!
   projetoItem(id: String!): ProjetoItemType!
   projetoItemHistorico(id: String!): [ProjetoItemHistoricoType!]!
   projetoItens(filtro: ProjetoItemFiltroInput!): ProjetoItemPageType!
@@ -1343,6 +1441,13 @@ input UpdateGrupoUsuarioInput {
   solucaoIds: [Int!]
 }
 
+input UpdateProjetoCronogramaItemDatasInput {
+  fimPrevistoEm: String
+  id: String!
+  inicioPrevistoEm: String
+  versao: Int!
+}
+
 input UpdateProjetoEntregaInput {
   concluidaEm: String
   criteriosAceite: String!
@@ -1460,6 +1565,11 @@ type UserType {
 }
 
 input VersionarProjetoCompromissoInput {
+  id: String!
+  versao: Int!
+}
+
+input VersionarProjetoItemDependenciaInput {
   id: String!
   versao: Int!
 }

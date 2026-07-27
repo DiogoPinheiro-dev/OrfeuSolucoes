@@ -60,6 +60,8 @@ import { ProjetoSprintAuthorizationService } from '../src/modules/projetos/proje
 import { ProjetoSprintService } from '../src/modules/projetos/projeto-sprint.service';
 import { ProjetoMarcoEntregaAuthorizationService } from '../src/modules/projetos/projeto-marco-entrega-authorization.service';
 import { ProjetoMarcoEntregaService } from '../src/modules/projetos/projeto-marco-entrega.service';
+import { ProjetoCronogramaAuthorizationService } from '../src/modules/projetos/projeto-cronograma-authorization.service';
+import { ProjetoCronogramaService } from '../src/modules/projetos/projeto-cronograma.service';
 import {
   ProjetoSprintDestinoIncompletos,
   ProjetoSprintStatus
@@ -141,7 +143,8 @@ type ModelName =
   | 'projetoMarco'
   | 'projetoMarcoItem'
   | 'projetoEntrega'
-  | 'projetoEntregaItem';
+  | 'projetoEntregaItem'
+  | 'projetoItemDependencia';
 
 const MODELS: ModelName[] = [
   'usuario',
@@ -183,7 +186,8 @@ const MODELS: ModelName[] = [
   'projetoMarco',
   'projetoMarcoItem',
   'projetoEntrega',
-  'projetoEntregaItem'
+  'projetoEntregaItem',
+  'projetoItemDependencia'
 ];
 
 const INTEGER_ID_MODELS = new Set<ModelName>([
@@ -408,6 +412,7 @@ class InMemoryPrismaService {
   public projetoMarcoItem = new InMemoryDelegate(this, 'projetoMarcoItem');
   public projetoEntrega = new InMemoryDelegate(this, 'projetoEntrega');
   public projetoEntregaItem = new InMemoryDelegate(this, 'projetoEntregaItem');
+  public projetoItemDependencia = new InMemoryDelegate(this, 'projetoItemDependencia');
 
   async $transaction<T>(callback: (tx: this) => Promise<T>): Promise<T> {
     const dataSnapshot = Object.fromEntries(
@@ -944,6 +949,10 @@ class InMemoryPrismaService {
         return this.data.projetoItem.find((item) => item.id === row.itemId) ?? null;
       case 'projetoEntrega.marco':
         return row.marcoId ? this.data.projetoMarco.find((marco) => marco.id === row.marcoId) ?? null : null;
+      case 'projetoItemDependencia.bloqueador':
+        return this.data.projetoItem.find((item) => item.id === row.bloqueadorId) ?? null;
+      case 'projetoItemDependencia.bloqueado':
+        return this.data.projetoItem.find((item) => item.id === row.bloqueadoId) ?? null;
       case 'projetoSequencia.projeto':
       case 'projetoOperacaoIdempotente.projeto':
         return this.data.projeto.find((projeto) => projeto.id === row.projetoId) ?? null;
@@ -1052,6 +1061,8 @@ class InMemoryPrismaService {
       'projetoEntrega.itens': 'projetoEntregaItem',
       'projetoEntregaItem.item': 'projetoItem',
       'projetoEntrega.marco': 'projetoMarco',
+      'projetoItemDependencia.bloqueador': 'projetoItem',
+      'projetoItemDependencia.bloqueado': 'projetoItem',
       'projetoEvento.usuario': 'usuario',
       'projetoSequencia.projeto': 'projeto',
       'projetoOperacaoIdempotente.projeto': 'projeto',
@@ -1220,6 +1231,13 @@ class InMemoryPrismaService {
         row.criadoEm = row.criadoEm ?? now;
         row.atualizadoEm = row.atualizadoEm ?? now;
         break;
+      case 'projetoItemDependencia':
+        row.versao = row.versao ?? 1;
+        row.arquivadoEm = row.arquivadoEm ?? null;
+        row.arquivadoPorId = row.arquivadoPorId ?? null;
+        row.criadoEm = row.criadoEm ?? now;
+        row.atualizadoEm = row.atualizadoEm ?? now;
+        break;
       case 'projetoSprintItem':
         row.retiradoPorId = row.retiradoPorId ?? null;
         row.incluidoEm = row.incluidoEm ?? now;
@@ -1376,6 +1394,8 @@ type TestWorld = {
   projetoSprintService: ProjetoSprintService;
   projetoMarcoEntregaAuthorizationService: ProjetoMarcoEntregaAuthorizationService;
   projetoMarcoEntregaService: ProjetoMarcoEntregaService;
+  projetoCronogramaAuthorizationService: ProjetoCronogramaAuthorizationService;
+  projetoCronogramaService: ProjetoCronogramaService;
 };
 
 const asPrisma = (prisma: InMemoryPrismaService): PrismaService => prisma as unknown as PrismaService;
@@ -1456,7 +1476,15 @@ function createWorld(): TestWorld {
     projetoAuditoriaService,
     projetoPeriodoService
   );
-  const projetosService = new ProjetosService(
+  const projetoCronogramaAuthorizationService = new ProjetoCronogramaAuthorizationService(
+    prismaService,
+    projetoAuthorizationService
+  );
+  const projetoCronogramaService = new ProjetoCronogramaService(
+    prismaService,
+    projetoCronogramaAuthorizationService,
+    projetoAuditoriaService
+  );  const projetosService = new ProjetosService(
     projetoAuthorizationService,
     projetoCatalogService,
     projetoEquipeService,
@@ -1467,7 +1495,8 @@ function createWorld(): TestWorld {
     projetoItemQueryService,
     projetoBacklogService,
     projetoSprintService,
-    projetoMarcoEntregaService
+    projetoMarcoEntregaService,
+    projetoCronogramaService
   );
   const chamadoAuthorizationService = new ChamadoAuthorizationService(prismaService, funcionalidadeAuthorizationService);
   const chamadoRelatorioService = new ChamadoRelatorioService(prismaService, chamadoAuthorizationService);
@@ -1536,6 +1565,8 @@ function createWorld(): TestWorld {
     projetoSprintService,
     projetoMarcoEntregaAuthorizationService,
     projetoMarcoEntregaService,
+    projetoCronogramaAuthorizationService,
+    projetoCronogramaService,
   };
 }
 
@@ -2773,11 +2804,11 @@ describe('Fluxos integrados do backend', () => {
       ['portfolio-de-projetos', 100]
     ]);
     expect(projetos.funcionalidades.filter((funcionalidade) => funcionalidade.ativo).map((funcionalidade) => funcionalidade.slug))
-      .toEqual(['cadastro-de-projetos', 'backlog-de-demandas', 'sprints', 'marcos-e-entregas']);
+      .toEqual(['cadastro-de-projetos', 'backlog-de-demandas', 'sprints', 'marcos-e-entregas', 'cronograma-e-gantt']);
     const hubProjetos = expectDefined((await world.solucoesService.myHubNavigation(admin))
       .find((solucao) => solucao.slug === 'projetos'));
     expect(hubProjetos.funcionalidades.map((funcionalidade) => funcionalidade.slug))
-      .toEqual(['cadastro-de-projetos', 'backlog-de-demandas', 'sprints', 'marcos-e-entregas']);
+      .toEqual(['cadastro-de-projetos', 'backlog-de-demandas', 'sprints', 'marcos-e-entregas', 'cronograma-e-gantt']);
     expect(cadastroProjetos.registryKey).toBe('projetos.cadastro-de-projetos');
     expect(cadastroProjetos.acoes.map((acao) => acao.chave)).toEqual(expect.arrayContaining([
       'visualizar',
@@ -5034,6 +5065,193 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
   });
 
 
+  it('valida dependencias, conflitos, arquivamento e projecao consolidada do cronograma', async () => {
+    const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
+    const projeto = await world.prisma.projeto.create({
+      data: {
+        empresaId: empresaInicialId,
+        chave: 'GNT',
+        nome: 'Cronograma integrado',
+        responsavelId: admin.sub,
+        criadoPorId: admin.sub
+      }
+    });
+    await world.prisma.projetoMembro.create({
+      data: { projetoId: projeto.id, usuarioId: admin.sub, papel: 'RESPONSAVEL' }
+    });
+    const createItem = (numero: number, chave: string, inicio?: string, fim?: string) =>
+      world.prisma.projetoItem.create({
+        data: {
+          empresaId: empresaInicialId,
+          projetoId: projeto.id,
+          numero,
+          chave,
+          titulo: `Item ${chave}`,
+          autorId: admin.sub,
+          responsavelId: admin.sub,
+          inicioPrevistoEm: inicio ? new Date(`${inicio}T00:00:00.000Z`) : null,
+          fimPrevistoEm: fim ? new Date(`${fim}T00:00:00.000Z`) : null
+        }
+      });
+    const bloqueador = await createItem(1, 'GNT-1', '2026-09-01', '2026-09-10');
+    const bloqueado = await createItem(2, 'GNT-2', '2026-09-05', '2026-09-15');
+    const semPeriodo = await createItem(3, 'GNT-3');
+    const posterior = await createItem(4, 'GNT-4', '2026-09-16', '2026-09-20');
+
+    await expect(world.projetoCronogramaService.createDependencia({
+      projetoId: projeto.id,
+      bloqueadorId: bloqueador.id,
+      bloqueadoId: bloqueador.id
+    }, admin)).rejects.toThrow('nao pode bloquear a si proprio');
+
+    const primeira = await world.projetoCronogramaService.createDependencia({
+      projetoId: projeto.id,
+      bloqueadorId: bloqueador.id,
+      bloqueadoId: bloqueado.id
+    }, admin);
+    await expect(world.projetoCronogramaService.createDependencia({
+      projetoId: projeto.id,
+      bloqueadorId: bloqueador.id,
+      bloqueadoId: bloqueado.id
+    }, admin)).rejects.toThrow('dependencia ja existe');
+
+    await world.projetoCronogramaService.createDependencia({
+      projetoId: projeto.id,
+      bloqueadorId: bloqueado.id,
+      bloqueadoId: semPeriodo.id
+    }, admin);
+    await expect(world.projetoCronogramaService.createDependencia({
+      projetoId: projeto.id,
+      bloqueadorId: semPeriodo.id,
+      bloqueadoId: bloqueador.id
+    }, admin)).rejects.toThrow('criaria um ciclo');
+
+    const outroProjeto = await world.prisma.projeto.create({
+      data: {
+        empresaId: empresaInicialId,
+        chave: 'GEX',
+        nome: 'Outro cronograma',
+        responsavelId: admin.sub,
+        criadoPorId: admin.sub
+      }
+    });
+    const externo = await world.prisma.projetoItem.create({
+      data: {
+        empresaId: empresaInicialId,
+        projetoId: outroProjeto.id,
+        numero: 1,
+        chave: 'GEX-1',
+        titulo: 'Item externo',
+        autorId: admin.sub
+      }
+    });
+    await expect(world.projetoCronogramaService.createDependencia({
+      projetoId: projeto.id,
+      bloqueadorId: posterior.id,
+      bloqueadoId: externo.id
+    }, admin)).rejects.toThrow('mesmo projeto');
+
+    const marco = await world.prisma.projetoMarco.create({
+      data: {
+        empresaId: empresaInicialId,
+        projetoId: projeto.id,
+        nome: 'Marco dependente',
+        responsavelId: admin.sub,
+        status: 'PLANEJADO',
+        dataPrevistaEm: new Date('2026-09-20T00:00:00.000Z'),
+        criadoPorId: admin.sub
+      }
+    });
+    await world.prisma.projetoMarcoItem.create({
+      data: { empresaId: empresaInicialId, projetoId: projeto.id, marcoId: marco.id, itemId: semPeriodo.id }
+    });
+    const entrega = await world.prisma.projetoEntrega.create({
+      data: {
+        empresaId: empresaInicialId,
+        projetoId: projeto.id,
+        nome: 'Entrega dependente',
+        resultadoEsperado: 'Cronograma entregue',
+        criteriosAceite: 'Item desbloqueado',
+        responsavelId: admin.sub,
+        status: 'PLANEJADA',
+        inicioPrevistoEm: new Date('2026-09-11T00:00:00.000Z'),
+        fimPrevistoEm: new Date('2026-09-20T00:00:00.000Z'),
+        criadoPorId: admin.sub
+      }
+    });
+    await world.prisma.projetoEntregaItem.create({
+      data: { empresaId: empresaInicialId, projetoId: projeto.id, entregaId: entrega.id, itemId: bloqueado.id }
+    });
+
+    let painel = await world.projetoCronogramaService.painel({
+      projetoId: projeto.id,
+      agrupamento: 'TIPO' as any
+    }, admin);
+    expect(painel.inconsistencias.map((item) => item.codigo)).toEqual(
+      expect.arrayContaining(['CONFLITO_DE_DATAS', 'ITEM_SEM_PERIODO'])
+    );
+    expect(painel.elementos.find((item) => item.id === bloqueado.id)?.bloqueado).toBe(true);
+    expect(painel.elementos.find((item) => item.id === entrega.id)?.bloqueado).toBe(true);
+    expect(painel.elementos.find((item) => item.id === marco.id)?.bloqueado).toBe(true);
+
+    await expect(world.projetoCronogramaService.updateItemDates({
+      id: bloqueado.id,
+      versao: bloqueado.versao,
+      inicioPrevistoEm: '2026-09-20',
+      fimPrevistoEm: '2026-09-10'
+    }, admin)).rejects.toThrow('nao pode ser posterior');
+    const updated = await world.projetoCronogramaService.updateItemDates({
+      id: bloqueado.id,
+      versao: bloqueado.versao,
+      inicioPrevistoEm: '2026-09-11',
+      fimPrevistoEm: '2026-09-15'
+    }, admin);
+    expect(updated.inicioEm?.toISOString()).toContain('2026-09-11');
+    painel = await world.projetoCronogramaService.painel({ projetoId: projeto.id }, admin);
+    expect(painel.inconsistencias.some((item) => item.codigo === 'CONFLITO_DE_DATAS')).toBe(false);
+
+    const arquivada = await world.projetoCronogramaService.archiveDependencia(
+      { id: primeira.id, versao: primeira.versao },
+      admin,
+      false
+    );
+    expect(arquivada.arquivadoEm).toBeInstanceOf(Date);
+    expect((await world.projetoCronogramaService.painel({ projetoId: projeto.id }, admin)).dependencias).toHaveLength(1);
+    const comArquivadas = await world.projetoCronogramaService.painel({
+      projetoId: projeto.id,
+      incluirDependenciasArquivadas: true
+    }, admin);
+    expect(comArquivadas.dependencias).toHaveLength(2);
+    expect(comArquivadas.inconsistencias.some((item) => item.codigo === 'DEPENDENCIA_ARQUIVADA')).toBe(true);
+    const reativada = await world.projetoCronogramaService.archiveDependencia(
+      { id: arquivada.id, versao: arquivada.versao },
+      admin,
+      true
+    );
+    expect(reativada.arquivadoEm).toBeNull();
+
+    for (let index = 5; index <= 34; index += 1) {
+      const day = String(((index - 5) % 20) + 1).padStart(2, '0');
+      await createItem(index, `GNT-${index}`, `2026-10-${day}`, `2026-10-${day}`);
+    }
+    const volume = await world.projetoCronogramaService.painel({
+      projetoId: projeto.id,
+      inicioEm: '2026-10-01',
+      fimEm: '2026-10-31',
+      agrupamento: 'STATUS' as any
+    }, admin);
+    expect(volume.elementos.filter((item) => item.tipo === 'ITEM').length).toBeGreaterThanOrEqual(30);
+    expect(volume.elementos.every((item) => !!item.grupo)).toBe(true);
+
+    await world.projetosService.arquivar(projeto.id, admin);
+    await expect(world.projetoCronogramaService.updateItemDates({
+      id: bloqueado.id,
+      versao: updated.versao!,
+      inicioPrevistoEm: '2026-09-12',
+      fimPrevistoEm: '2026-09-16'
+    }, admin)).rejects.toThrow('projeto arquivado esta disponivel somente para consulta');
+  });
+
   it('impede excluir usuario com vinculos e informa todas as dependencias sem remover empresas', async () => {
     const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
     const usuario = await world.usersService.create({
@@ -5067,8 +5285,37 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
       data: { projetoId: projeto.id, usuarioId: usuario.id, papel: 'MEMBRO' }
     });
 
+    const origemDependencia = await world.prisma.projetoItem.create({
+      data: {
+        empresaId: empresaInicialId,
+        projetoId: projeto.id,
+        numero: 1,
+        chave: 'USR-1',
+        titulo: 'Origem da dependencia',
+        autorId: admin.sub
+      }
+    });
+    const destinoDependencia = await world.prisma.projetoItem.create({
+      data: {
+        empresaId: empresaInicialId,
+        projetoId: projeto.id,
+        numero: 2,
+        chave: 'USR-2',
+        titulo: 'Destino da dependencia',
+        autorId: admin.sub
+      }
+    });
+    await world.prisma.projetoItemDependencia.create({
+      data: {
+        empresaId: empresaInicialId,
+        projetoId: projeto.id,
+        bloqueadorId: origemDependencia.id,
+        bloqueadoId: destinoDependencia.id,
+        criadoPorId: usuario.id
+      }
+    });
     await expect(world.usersService.remove(usuario.id)).rejects.toThrow(
-      /1 chamado solicitado; 1 participação em projeto/
+      /1 chamado solicitado; 1 participa.+?em projeto.*1 depend.+?ncia de projeto criada/
     );
     expect(world.prisma.data.usuario.some((item) => item.id === usuario.id)).toBe(true);
     expect(world.prisma.data.empresaUsuario.some((item) => item.usuarioId === usuario.id)).toBe(true);

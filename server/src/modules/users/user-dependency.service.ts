@@ -20,6 +20,7 @@ type DependencyClient = Pick<
   | 'projetoSprintItem'
   | 'projetoMarco'
   | 'projetoEntrega'
+  | 'projetoItemDependencia'
 >;
 
 type UserDependency = {
@@ -58,7 +59,9 @@ const DEPENDENCIES: DependencyDefinition[] = [
   { singular: 'inclusão de item em sprint', plural: 'inclusões de itens em sprints', count: (db, id) => db.projetoSprintItem.count({ where: { incluidoPorId: id } }) },
   { singular: 'retirada de item de sprint', plural: 'retiradas de itens de sprints', count: (db, id) => db.projetoSprintItem.count({ where: { retiradoPorId: id } }) },
   { singular: 'marco sob responsabilidade', plural: 'marcos sob responsabilidade', count: (db, id) => db.projetoMarco.count({ where: { responsavelId: id } }) },
-  { singular: 'entrega sob responsabilidade', plural: 'entregas sob responsabilidade', count: (db, id) => db.projetoEntrega.count({ where: { responsavelId: id } }) }
+  { singular: 'entrega sob responsabilidade', plural: 'entregas sob responsabilidade', count: (db, id) => db.projetoEntrega.count({ where: { responsavelId: id } }) },
+  { singular: 'dependência de projeto criada', plural: 'dependências de projeto criadas', count: (db, id) => db.projetoItemDependencia.count({ where: { criadoPorId: id } }) },
+  { singular: 'dependência de projeto arquivada', plural: 'dependências de projeto arquivadas', count: (db, id) => db.projetoItemDependencia.count({ where: { arquivadoPorId: id } }) }
 ];
 
 @Injectable()

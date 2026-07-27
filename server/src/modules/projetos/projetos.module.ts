@@ -9,6 +9,9 @@ import { ProjetoSprintService } from './projeto-sprint.service';
 import { ProjetoMarcoEntregaAuthorizationService } from './projeto-marco-entrega-authorization.service';
 import { ProjetoMarcoEntregaResolver } from './projeto-marco-entrega.resolver';
 import { ProjetoMarcoEntregaService } from './projeto-marco-entrega.service';
+import { ProjetoCronogramaAuthorizationService } from './projeto-cronograma-authorization.service';
+import { ProjetoCronogramaResolver } from './projeto-cronograma.resolver';
+import { ProjetoCronogramaService } from './projeto-cronograma.service';
 import { ProjetoAuditoriaService } from './projeto-auditoria.service';
 import { ProjetoIdempotenciaService } from './projeto-idempotencia.service';
 import { ProjetoPeriodoService } from './projeto-periodo.service';
@@ -34,6 +37,8 @@ import { ProjetosService } from './projetos.service';
     ProjetoSprintService,
     ProjetoMarcoEntregaAuthorizationService,
     ProjetoMarcoEntregaService,
+    ProjetoCronogramaAuthorizationService,
+    ProjetoCronogramaService,
     ProjetoAuditoriaService,
     ProjetoIdempotenciaService,
     ProjetoPeriodoService,
@@ -51,6 +56,7 @@ import { ProjetosService } from './projetos.service';
     ProjetosResolver,
     ProjetoSprintResolver,
     ProjetoMarcoEntregaResolver,
+    ProjetoCronogramaResolver,
   ],
   exports: [
     ProjetoAuthorizationService,

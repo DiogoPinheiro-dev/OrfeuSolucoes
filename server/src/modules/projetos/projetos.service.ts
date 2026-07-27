@@ -54,6 +54,18 @@ import {
   ProjetoMarcoType
 } from './dto/projeto-marco-entrega.type';
 import { ProjetoMarcoEntregaService } from './projeto-marco-entrega.service';
+import {
+  CreateProjetoItemDependenciaInput,
+  ProjetoCronogramaFiltroInput,
+  UpdateProjetoCronogramaItemDatasInput,
+  VersionarProjetoItemDependenciaInput
+} from './dto/projeto-cronograma.input';
+import {
+  ProjetoCronogramaElementoType,
+  ProjetoCronogramaPainelType,
+  ProjetoItemDependenciaType
+} from './dto/projeto-cronograma.type';
+import { ProjetoCronogramaService } from './projeto-cronograma.service';
 
 @Injectable()
 export class ProjetosService {
@@ -68,7 +80,8 @@ export class ProjetosService {
     private readonly itemQueryService: ProjetoItemQueryService,
     private readonly backlogService: ProjetoBacklogService,
     private readonly sprintService: ProjetoSprintService,
-    private readonly marcoEntregaService: ProjetoMarcoEntregaService
+    private readonly marcoEntregaService: ProjetoMarcoEntregaService,
+    private readonly cronogramaService: ProjetoCronogramaService
   ) {}
 
   create(input: CreateProjetoInput, user: JwtPayload): Promise<ProjetoType> {
@@ -261,5 +274,34 @@ export class ProjetosService {
 
   arquivarCompromisso(kind: 'MARCO' | 'ENTREGA', input: VersionarProjetoCompromissoInput, user: JwtPayload, reactivate: boolean) {
     return this.marcoEntregaService.archive(kind, input, user, reactivate);
+  }
+
+  cronograma(
+    filtro: ProjetoCronogramaFiltroInput,
+    user: JwtPayload
+  ): Promise<ProjetoCronogramaPainelType> {
+    return this.cronogramaService.painel(filtro, user);
+  }
+
+  createDependencia(
+    input: CreateProjetoItemDependenciaInput,
+    user: JwtPayload
+  ): Promise<ProjetoItemDependenciaType> {
+    return this.cronogramaService.createDependencia(input, user);
+  }
+
+  archiveDependencia(
+    input: VersionarProjetoItemDependenciaInput,
+    user: JwtPayload,
+    reactivate: boolean
+  ): Promise<ProjetoItemDependenciaType> {
+    return this.cronogramaService.archiveDependencia(input, user, reactivate);
+  }
+
+  updateCronogramaItemDatas(
+    input: UpdateProjetoCronogramaItemDatasInput,
+    user: JwtPayload
+  ): Promise<ProjetoCronogramaElementoType> {
+    return this.cronogramaService.updateItemDates(input, user);
   }
 }

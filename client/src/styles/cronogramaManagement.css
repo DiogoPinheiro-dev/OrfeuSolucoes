@@ -1,0 +1,114 @@
+.gantt-management { min-width: 0; color: var(--primary); }
+.gantt-header { align-items: center; }
+.gantt-header p { margin: 6px 0 0; color: var(--muted); }
+.gantt-summary { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.gantt-summary span { display: inline-flex; align-items: baseline; gap: 5px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface-soft); color: var(--muted); font-size: .78rem; }
+.gantt-summary strong { color: var(--primary); font-size: 1rem; }
+.gantt-summary .has-risk { border-color: color-mix(in srgb, var(--danger-text) 28%, var(--line)); background: var(--danger-bg); color: var(--danger-text); }
+.gantt-filters { align-items: end; }
+.gantt-filters label { display: grid; gap: 6px; color: var(--muted); font-size: .82rem; font-weight: 700; }
+.gantt-filters label.project { flex: 1 1 340px; }
+.gantt-filters select,
+.gantt-filters input,
+.gantt-modal-form select,
+.gantt-modal-form input { min-height: 42px; padding: 9px 11px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface-white); color: var(--primary); font: inherit; font-weight: 400; }
+.gantt-check { display: flex !important; align-items: center; gap: 8px !important; min-height: 42px; }
+.gantt-check input { width: 18px; min-height: 18px; accent-color: var(--button-primary-bg); }
+.gantt-readonly { padding: 8px 12px; border-radius: 999px; background: #fff4d6; color: #765400; font-weight: 700; }
+.gantt-feedback { margin: 12px 18px 0; padding: 12px 15px; border: 1px solid var(--line); border-radius: 12px; }
+.gantt-feedback.error { background: var(--danger-bg); color: var(--danger-text); }
+.gantt-feedback.success { background: var(--success-soft); color: var(--success-text); }
+.gantt-toolbar { align-items: center; }
+.gantt-toolbar-divider { width: 1px; height: 28px; background: var(--line-strong); }
+.gantt-toolbar .gantt-text-button { width: auto; padding: 0 14px; font-weight: 700; }
+.gantt-inconsistencies { padding: 14px 18px; border-bottom: 1px solid var(--line); background: var(--surface-white); }
+.gantt-inconsistencies h3 { margin: 0 0 10px; font-size: .92rem; }
+.gantt-inconsistencies ul { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
+.gantt-inconsistencies li { display: flex; gap: 9px; padding: 9px 11px; border-radius: 10px; background: #fff4d6; color: #765400; }
+.gantt-inconsistencies li.critico { background: var(--danger-bg); color: var(--danger-text); }
+.gantt-inconsistencies li strong { min-width: 52px; font-size: .75rem; text-transform: uppercase; }
+.gantt-board { position: relative; display: grid; grid-template-columns: 260px minmax(0, 1fr); min-height: 230px; overflow: hidden; border-bottom: 1px solid var(--line); background: var(--surface-white); }
+.gantt-labels { z-index: 4; border-right: 1px solid var(--line-strong); box-shadow: 8px 0 14px color-mix(in srgb, var(--primary) 6%, transparent); }
+.gantt-axis-corner,
+.gantt-axis { height: 42px; border-bottom: 1px solid var(--line-strong); background: #eceff2; }
+.gantt-axis-corner { display: flex; align-items: center; padding: 0 14px; font-size: .78rem; font-weight: 800; text-transform: uppercase; }
+.gantt-labels > button { display: grid; grid-template-columns: auto 1fr; grid-template-rows: 1fr 1fr; gap: 0 8px; width: 100%; height: 52px; padding: 6px 12px; overflow: hidden; border: 0; border-bottom: 1px solid var(--line); background: var(--surface-white); color: var(--primary); text-align: left; cursor: pointer; }
+.gantt-labels > button:nth-child(odd) { background: var(--surface-soft); }
+.gantt-labels > button:hover { background: var(--button-secondary-bg); }
+.gantt-labels strong,
+.gantt-labels small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gantt-labels small { color: var(--muted); }
+.gantt-type { grid-row: 1 / 3; align-self: center; padding: 4px 6px; border-radius: 7px; background: var(--surface-muted); color: var(--secondary); font-size: .65rem; font-weight: 800; text-transform: uppercase; }
+.gantt-type.type-marco { background: #fff4d6; color: #765400; }
+.gantt-type.type-entrega { background: var(--success-soft); color: var(--success-text); }
+.gantt-scroll { min-width: 0; overflow: auto; }
+.gantt-timeline { position: relative; min-height: 100%; }
+.gantt-axis { position: sticky; top: 0; z-index: 3; }
+.gantt-axis span { position: absolute; bottom: 8px; padding-left: 6px; color: var(--muted); font-size: .7rem; white-space: nowrap; }
+.gantt-grid { position: relative; min-width: 100%; }
+.gantt-grid > i { position: absolute; inset-block: 0; width: 1px; background: var(--line); }
+.gantt-row { position: absolute; inset-inline: 0; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--surface-white) 92%, transparent); }
+.gantt-row:nth-of-type(even) { background: color-mix(in srgb, var(--surface-soft) 88%, transparent); }
+.gantt-bar { position: absolute; z-index: 2; top: 13px; height: 26px; min-width: 12px; overflow: visible; border: 1px solid color-mix(in srgb, var(--button-primary-bg) 78%, black); border-radius: 7px; background: color-mix(in srgb, var(--button-primary-bg) 78%, white); color: var(--button-primary-text); cursor: pointer; box-shadow: 0 2px 5px color-mix(in srgb, var(--primary) 16%, transparent); }
+.gantt-bar > span { position: absolute; inset: 0 auto 0 0; border-radius: 6px; background: color-mix(in srgb, var(--accent-green) 70%, transparent); }
+.gantt-bar em { position: relative; z-index: 1; display: block; padding: 4px 7px; font-size: .72rem; font-style: normal; font-weight: 800; white-space: nowrap; }
+.gantt-bar.type-entrega { border-color: color-mix(in srgb, var(--success-text) 70%, black); background: var(--success-text); }
+.gantt-bar.milestone { width: 22px !important; min-width: 22px; border-radius: 3px; background: #b7791f; transform: rotate(45deg); }
+.gantt-bar.milestone em { display: none; }
+.gantt-bar.blocked { outline: 2px dashed #765400; outline-offset: 2px; }
+.gantt-bar.risk { border-color: var(--danger-text); background: #c62828; }
+.gantt-bar.archived { opacity: .5; }
+.gantt-undated { position: absolute; z-index: 2; top: 12px; left: 12px; min-height: 28px; padding: 4px 9px; border: 1px dashed var(--line-strong); border-radius: 8px; background: var(--surface-white); color: var(--muted); cursor: pointer; }
+.gantt-connectors { position: absolute; inset: 0; z-index: 1; overflow: visible; pointer-events: none; }
+.gantt-connectors path { fill: none; stroke: color-mix(in srgb, var(--primary) 60%, transparent); stroke-width: 1.5; }
+.gantt-connectors marker path { fill: var(--primary); stroke: none; }
+.gantt-accessible-table { border-bottom: 1px solid var(--line); }
+.gantt-accessible-table summary { padding: 13px 18px; background: var(--surface-soft); color: var(--primary); cursor: pointer; font-weight: 800; }
+.gantt-accessible-table .crud-table th:first-child,
+.gantt-accessible-table .crud-table td:first-child { width: auto; text-align: left; }
+.gantt-table-actions { display: flex; gap: 6px; }
+.gantt-table-actions button { display: inline-flex; align-items: center; gap: 5px; min-height: 32px; padding: 5px 9px; border: 1px solid var(--button-secondary-border); border-radius: 8px; background: var(--button-secondary-bg); color: var(--primary); cursor: pointer; }
+.gantt-dependencies { background: var(--surface-soft); }
+.gantt-dependencies > header { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; border-bottom: 1px solid var(--line); }
+.gantt-dependencies h3,
+.gantt-dependencies p { margin: 0; }
+.gantt-dependencies header p { margin-top: 3px; color: var(--muted); font-size: .82rem; }
+.gantt-dependencies header > span { padding: 5px 9px; border-radius: 999px; background: var(--surface-muted); font-weight: 800; }
+.gantt-dependencies > div { display: grid; gap: 8px; padding: 14px 18px 18px; }
+.gantt-dependencies article { display: grid; grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr) auto; align-items: center; gap: 11px; padding: 11px 13px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-white); }
+.gantt-dependencies article.archived { opacity: .6; }
+.gantt-dependencies article > div { display: grid; min-width: 0; }
+.gantt-dependencies article span { overflow: hidden; color: var(--muted); text-overflow: ellipsis; white-space: nowrap; }
+.gantt-dependencies article b { color: var(--detail-accent-text); font-size: .72rem; text-transform: uppercase; }
+.gantt-dependencies article > button { display: grid; width: 36px; height: 36px; place-items: center; border: 1px solid var(--button-secondary-border); border-radius: 9px; background: var(--button-secondary-bg); color: var(--primary); cursor: pointer; }
+.gantt-empty { padding: 28px; border: 1px dashed var(--line-strong); border-radius: 12px; color: var(--muted); text-align: center; }
+.gantt-modal { display: grid; grid-template-rows: auto minmax(0, 1fr); width: min(680px, calc(100vw - 30px)); overflow: hidden; }
+.gantt-modal-header > div { min-width: 0; }
+.gantt-modal-header h3 { margin: 4px 0 0; overflow-wrap: anywhere; color: var(--primary); font-size: 1.35rem; line-height: 1.25; }
+.gantt-modal-header .crud-modal-close { display: grid; flex: 0 0 36px; place-items: center; padding: 0; }
+.gantt-modal-header .crud-modal-close svg { width: 15px; height: 15px; }
+.gantt-modal form { display: grid; min-height: 0; overflow: auto; }
+.gantt-modal-form { display: grid; gap: 15px; padding: 20px 22px; }
+.gantt-modal-form.two-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.gantt-modal-form label { display: grid; gap: 7px; font-weight: 700; }
+.gantt-modal-form p { margin: 0; color: var(--muted); line-height: 1.5; }
+.gantt-modal-form .wide { grid-column: 1 / -1; }
+.gantt-modal .crud-modal-actions { margin: 0; padding: 15px 22px 20px; border-top: 1px solid var(--line); background: var(--surface-soft); }
+.gantt-modal .crud-modal-actions button { min-height: 42px; padding: 10px 16px; font-weight: 700; }
+@media (max-width: 780px) {
+    .gantt-board { grid-template-columns: 190px minmax(0, 1fr); }
+    .gantt-summary { justify-content: flex-start; }
+    .gantt-dependencies article { grid-template-columns: auto 1fr auto; }
+    .gantt-dependencies article b { grid-column: 2; }
+    .gantt-dependencies article > div:last-of-type { grid-column: 2; }
+    .gantt-dependencies article > button { grid-column: 3; grid-row: 1 / 3; }
+}
+@media (max-width: 560px) {
+    .gantt-modal-form.two-columns { grid-template-columns: 1fr; }
+    .gantt-modal-form .wide { grid-column: auto; }
+    .gantt-toolbar-divider { display: none; }
+    .gantt-modal-header { padding: 16px; }
+    .gantt-modal-form { padding: 16px; }
+    .gantt-modal .crud-modal-actions { display: grid; grid-template-columns: 1fr; padding: 14px 16px 16px; }
+    .gantt-modal .crud-modal-actions button { width: 100%; }
+}

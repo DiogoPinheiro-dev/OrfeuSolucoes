@@ -19,7 +19,8 @@ export const FEATURE_COMPONENT_REGISTRY = {
     "projetos.cadastro-de-projetos": "project-management",
     "projetos.backlog-de-demandas": "project-backlog",
     "projetos.sprints": "project-sprints",
-    "projetos.marcos-e-entregas": "project-milestones-deliveries"
+    "projetos.marcos-e-entregas": "project-milestones-deliveries",
+    "projetos.cronograma-e-gantt": "project-schedule-gantt"
 };
 
 export const normalizeSolutions = (solutions = []) =>

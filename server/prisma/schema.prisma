@@ -45,6 +45,8 @@ model Usuario {
   projetoSprintItensRetirados      ProjetoSprintItem[]          @relation("ProjetoSprintItemRetiradoPor")
   projetoMarcosResponsavel         ProjetoMarco[]               @relation("ProjetoMarcoResponsavel")
   projetoEntregasResponsavel       ProjetoEntrega[]             @relation("ProjetoEntregaResponsavel")
+  projetoDependenciasCriadas       ProjetoItemDependencia[]     @relation("ProjetoDependenciaCriador")
+  projetoDependenciasArquivadas    ProjetoItemDependencia[]     @relation("ProjetoDependenciaArquivadoPor")
 
   @@map("Usuarios")
 }
@@ -123,6 +125,7 @@ model Empresa {
   projetoEntregas                 ProjetoEntrega[]
   projetoMarcoItens               ProjetoMarcoItem[]
   projetoEntregaItens             ProjetoEntregaItem[]
+  projetoItemDependencias         ProjetoItemDependencia[]
 
   @@map("Empresas")
 }
@@ -165,6 +168,7 @@ model Projeto {
   entregas          ProjetoEntrega[]
   marcoItens        ProjetoMarcoItem[]
   entregaItens      ProjetoEntregaItem[]
+  dependencias      ProjetoItemDependencia[]
 
   @@unique([empresaId, chave], map: "UX_Projetos_EmpresaId_Chave")
   @@index([empresaId, arquivadoEm], map: "IX_Projetos_EmpresaId_ArquivadoEm")
@@ -278,9 +282,11 @@ model ProjetoItem {
   pai          ProjetoItem?  @relation("ProjetoItemHierarquia", fields: [paiId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   subtarefas   ProjetoItem[] @relation("ProjetoItemHierarquia")
 
-  sprints         ProjetoSprintItem[]
-  marcoVinculos   ProjetoMarcoItem[]
-  entregaVinculos ProjetoEntregaItem[]
+  sprints                    ProjetoSprintItem[]
+  marcoVinculos              ProjetoMarcoItem[]
+  entregaVinculos            ProjetoEntregaItem[]
+  dependenciasComoBloqueador ProjetoItemDependencia[] @relation("ProjetoDependenciaBloqueador")
+  dependenciasComoBloqueado  ProjetoItemDependencia[] @relation("ProjetoDependenciaBloqueado")
 
   @@unique([projetoId, numero], map: "UX_ProjetoItens_ProjetoId_Numero")
   @@unique([projetoId, chave], map: "UX_ProjetoItens_ProjetoId_Chave")
@@ -290,6 +296,33 @@ model ProjetoItem {
   @@index([projetoId, responsavelId], map: "IX_ProjetoItens_ProjetoId_ResponsavelId")
   @@index([paiId], map: "IX_ProjetoItens_PaiId")
   @@map("ProjetoItens")
+}
+
+model ProjetoItemDependencia {
+  id             String    @id @default(uuid()) @map("Id") @db.UniqueIdentifier
+  empresaId      Int       @map("EmpresaId")
+  projetoId      String    @map("ProjetoId") @db.UniqueIdentifier
+  bloqueadorId   String    @map("BloqueadorId") @db.UniqueIdentifier
+  bloqueadoId    String    @map("BloqueadoId") @db.UniqueIdentifier
+  versao         Int       @default(1) @map("Versao")
+  criadoPorId    String    @map("CriadoPorId") @db.UniqueIdentifier
+  arquivadoEm    DateTime? @map("ArquivadoEm")
+  arquivadoPorId String?   @map("ArquivadoPorId") @db.UniqueIdentifier
+  criadoEm       DateTime  @default(now()) @map("CriadoEm")
+  atualizadoEm   DateTime  @updatedAt @map("AtualizadoEm")
+
+  empresa      Empresa     @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  projeto      Projeto     @relation(fields: [projetoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  bloqueador   ProjetoItem @relation("ProjetoDependenciaBloqueador", fields: [bloqueadorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  bloqueado    ProjetoItem @relation("ProjetoDependenciaBloqueado", fields: [bloqueadoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  criadoPor    Usuario     @relation("ProjetoDependenciaCriador", fields: [criadoPorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  arquivadoPor Usuario?    @relation("ProjetoDependenciaArquivadoPor", fields: [arquivadoPorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([projetoId, bloqueadorId, bloqueadoId], map: "UX_ProjetoItemDependencias_Projeto_Relacao")
+  @@index([empresaId, projetoId, arquivadoEm], map: "IX_ProjetoItemDependencias_Empresa_Projeto_Arquivado")
+  @@index([bloqueadorId, arquivadoEm], map: "IX_ProjetoItemDependencias_Bloqueador_Arquivado")
+  @@index([bloqueadoId, arquivadoEm], map: "IX_ProjetoItemDependencias_Bloqueado_Arquivado")
+  @@map("ProjetoItemDependencias")
 }
 
 model ProjetoSprint {

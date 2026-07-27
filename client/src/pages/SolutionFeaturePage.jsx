@@ -19,6 +19,7 @@ import ProjectManagement from "../components/ProjectManagement";
 import BacklogManagement from "../components/BacklogManagement";
 import SprintManagement from "../components/SprintManagement";
 import MarcoEntregaManagement from "../components/MarcoEntregaManagement";
+import CronogramaManagement from "../components/CronogramaManagement";
 import SolutionManagement from "../components/SolutionManagement";
 import SlaChamadoManagement from "../components/SlaChamadoManagement";
 import GoogleEmailManagement from "../components/GoogleEmailManagement";
@@ -48,7 +49,8 @@ const FEATURE_COMPONENTS = {
     "project-management": ProjectManagement,
     "project-backlog": BacklogManagement,
     "project-sprints": SprintManagement,
-    "project-milestones-deliveries": MarcoEntregaManagement
+    "project-milestones-deliveries": MarcoEntregaManagement,
+    "project-schedule-gantt": CronogramaManagement
 };
 
 export default function SolutionFeaturePage() {
