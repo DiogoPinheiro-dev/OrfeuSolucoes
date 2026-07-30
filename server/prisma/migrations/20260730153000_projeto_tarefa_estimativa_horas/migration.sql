@@ -1,0 +1,20 @@
+BEGIN TRY
+
+BEGIN TRAN;
+
+ALTER TABLE [dbo].[ProjetoTarefas]
+ADD [EstimativaMinutos] INT NOT NULL
+    CONSTRAINT [ProjetoTarefas_EstimativaMinutos_df] DEFAULT 0;
+
+COMMIT TRAN;
+
+END TRY
+BEGIN CATCH
+
+IF @@TRANCOUNT > 0
+BEGIN
+    ROLLBACK TRAN;
+END;
+THROW
+
+END CATCH

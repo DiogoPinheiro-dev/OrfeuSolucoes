@@ -69,6 +69,15 @@ import { ProjetoCronogramaService } from './projeto-cronograma.service';
 import { CreateProjetoAtualizacaoInput, CreateProjetoComentarioInput, ExcluirProjetoComentarioInput, UpdateProjetoAtualizacaoInput, UpdateProjetoComentarioInput } from './dto/projeto-comunicacao.input';
 import { ProjetoAtualizacaoType, ProjetoComentarioType, ProjetoComunicacaoPainelType, ProjetoComunicacaoProjetoType } from './dto/projeto-comunicacao.type';
 import { ProjetoComunicacaoService } from './projeto-comunicacao.service';
+import { AprovarProjetoOrcamentoInput, ExcluirProjetoOrcamentoItemInput, SalvarProjetoCustoInput, SalvarProjetoOrcamentoCategoriaInput, SalvarProjetoOrcamentoInput } from './dto/projeto-orcamento.input';
+import { ExcluirProjetoRecursoInput, SalvarProjetoRecursoInput } from './dto/projeto-recurso.input';
+import { ExcluirProjetoTarefaInput, SalvarProjetoTarefaInput } from './dto/projeto-tarefa.input';
+import { ExcluirGradeItemInput, SalvarGradeAlocacaoInput, SalvarGradeCapacidadeInput, SalvarGradeVinculoInput } from './dto/projeto-grade-capacitacao.input';
+import { ProjetoOrcamentoService } from './projeto-orcamento.service';
+import { ProjetoRecursoService } from './projeto-recurso.service';
+import { ProjetoTarefaService } from './projeto-tarefa.service';
+import { ProjetoGradeCapacitacaoService } from './projeto-grade-capacitacao.service';
+import { ProjetoPlanejamentoRecursoService } from './projeto-planejamento-recurso.service';
 
 @Injectable()
 export class ProjetosService {
@@ -85,7 +94,12 @@ export class ProjetosService {
     private readonly sprintService: ProjetoSprintService,
     private readonly marcoEntregaService: ProjetoMarcoEntregaService,
     private readonly cronogramaService: ProjetoCronogramaService,
-    private readonly comunicacaoService: ProjetoComunicacaoService
+    private readonly comunicacaoService: ProjetoComunicacaoService,
+    private readonly recursoService: ProjetoRecursoService,
+    private readonly tarefaService: ProjetoTarefaService,
+    private readonly gradeCapacitacaoService: ProjetoGradeCapacitacaoService,
+    private readonly planejamentoRecursoService: ProjetoPlanejamentoRecursoService,
+    private readonly orcamentoService: ProjetoOrcamentoService
   ) {}
 
   create(input: CreateProjetoInput, user: JwtPayload): Promise<ProjetoType> {
@@ -334,4 +348,27 @@ export class ProjetosService {
   excluirComentario(input: ExcluirProjetoComentarioInput, user: JwtPayload): Promise<ProjetoComentarioType> {
     return this.comunicacaoService.excluirComentario(input, user);
   }
+  recursosProjetos(user: JwtPayload) { return this.recursoService.projetos(user); }
+  recursos(user: JwtPayload) { return this.recursoService.painel(user); }
+  salvarRecurso(input: SalvarProjetoRecursoInput, user: JwtPayload) { return this.recursoService.salvarRecurso(input, user); }
+  excluirRecurso(input: ExcluirProjetoRecursoInput, user: JwtPayload) { return this.recursoService.excluirRecurso(input, user); }
+  tarefas(user: JwtPayload) { return this.tarefaService.painel(user); }
+  salvarTarefa(input: SalvarProjetoTarefaInput, user: JwtPayload) { return this.tarefaService.salvar(input, user); }
+  excluirTarefa(input: ExcluirProjetoTarefaInput, user: JwtPayload) { return this.tarefaService.excluir(input, user); }
+  gradeCapacitacao(user: JwtPayload) { return this.gradeCapacitacaoService.painel(user); }
+  planejamentoRecursos(user: JwtPayload) { return this.planejamentoRecursoService.painel(user); }
+  salvarGradeVinculo(input: SalvarGradeVinculoInput, user: JwtPayload) { return this.gradeCapacitacaoService.salvarVinculo(input, user); }
+  salvarGradeCapacidade(input: SalvarGradeCapacidadeInput, user: JwtPayload) { return this.gradeCapacitacaoService.salvarCapacidade(input, user); }
+  salvarGradeAlocacao(input: SalvarGradeAlocacaoInput, user: JwtPayload) { return this.gradeCapacitacaoService.salvarAlocacao(input, user); }
+  excluirGradeCapacidade(input: ExcluirGradeItemInput, user: JwtPayload) { return this.gradeCapacitacaoService.excluirCapacidade(input, user); }
+  excluirGradeAlocacao(input: ExcluirGradeItemInput, user: JwtPayload) { return this.gradeCapacitacaoService.excluirAlocacao(input, user); }
+  orcamentoProjetos(user: JwtPayload) { return this.orcamentoService.projetos(user); }
+  orcamento(projetoId: string, user: JwtPayload) { return this.orcamentoService.painel(projetoId, user); }
+  salvarOrcamento(input: SalvarProjetoOrcamentoInput, user: JwtPayload) { return this.orcamentoService.salvarOrcamento(input, user); }
+  salvarOrcamentoCategoria(input: SalvarProjetoOrcamentoCategoriaInput, user: JwtPayload) { return this.orcamentoService.salvarCategoria(input, user); }
+  salvarCusto(input: SalvarProjetoCustoInput, user: JwtPayload) { return this.orcamentoService.salvarCusto(input, user); }
+  excluirOrcamentoCategoria(input: ExcluirProjetoOrcamentoItemInput, user: JwtPayload) { return this.orcamentoService.excluirCategoria(input, user); }
+  excluirCusto(input: ExcluirProjetoOrcamentoItemInput, user: JwtPayload) { return this.orcamentoService.excluirCusto(input, user); }
+  aprovarOrcamento(input: AprovarProjetoOrcamentoInput, user: JwtPayload) { return this.orcamentoService.aprovar(input, user); }
+  reabrirOrcamento(input: AprovarProjetoOrcamentoInput, user: JwtPayload) { return this.orcamentoService.reabrir(input, user); }
 }

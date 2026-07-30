@@ -13,6 +13,7 @@ import {
     updateProjetoComentario,
     uploadProjetoAnexos
 } from "../../services/Projetos/ComunicacaoService";
+import { CrudModal } from "./CrudModal";
 import "../styles/crudGrid.css";
 import "../styles/projectCommunication.css";
 
@@ -21,6 +22,7 @@ const FEED_PAGE_SIZE = 5;
 const healthLabels = { EM_DIA: "Em dia", EM_RISCO: "Em risco", ATRASADO: "Atrasado" };
 const userLabel = (user) => user?.nome || user?.login || user?.email || "Sistema";
 const dateTime = (value) => value ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(value)) : "—";
+const detailLabel = (value) => { const labels = { ATUALIZACAO: "Atualização", COMENTARIO: "Comentário", ORCAMENTO: "Orçamento", ORCAMENTO_CATEGORIA: "Categoria orçamentária", ALOCACAO: "Alocação", DEPENDENCIA: "Dependência" }; if (labels[value]) return labels[value]; const text = String(value || "").replace(/_/g, " ").toLowerCase(); return text ? text.charAt(0).toUpperCase() + text.slice(1) : "Não informado"; };
 const sizeLabel = (bytes) => bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 
 export default function ProjectCommunicationManagement() {
@@ -33,6 +35,7 @@ export default function ProjectCommunicationManagement() {
     const [success, setSuccess] = useState("");
     const [kind, setKind] = useState("ATUALIZACAO");
     const [editing, setEditing] = useState(null);
+    const [selectedFeedItem, setSelectedFeedItem] = useState(null);
     const [feedPage, setFeedPage] = useState(1);
     const [form, setForm] = useState({ conteudo: "", saudePercebida: "", targetType: "PROJETO", targetId: "", files: [] });
 
@@ -130,6 +133,14 @@ export default function ProjectCommunicationManagement() {
         } catch (openError) { setError(openError.message); }
     };
 
+    const openFeedDetails = (event, item) => {
+        if (event.type === "click" && event.target?.closest?.("button, a, details, summary, input, select, textarea")) return;
+        if (event.type === "keydown") {
+            if (event.key !== "Enter" && event.key !== " ") return;
+            event.preventDefault();
+        }
+        setSelectedFeedItem(item);
+    };
     const permissions = panel.permissoes || {};
     const canCompose = kind === "ATUALIZACAO" ? permissions.podePublicarAtualizacao : permissions.podeComentar;
     const targetOptions = form.targetType === "ATUALIZACAO" ? panel.atualizacoes : form.targetType === "ITEM" ? panel.itensDisponiveis : [];
@@ -163,7 +174,7 @@ export default function ProjectCommunicationManagement() {
                 {loading && <div className="project-communication-empty">Carregando comunicação...</div>}
                 {!loading && paginatedFeed.map((item) => {
                     const record = item.tipo === "ATUALIZACAO" ? panel.atualizacoes.find((entry) => entry.id === item.entidadeId) : panel.comentarios.find((entry) => entry.id === item.entidadeId);
-                    return <article key={item.id} className={`project-feed-card type-${item.tipo.toLowerCase()}`}>
+                    return <article key={item.id} className={`project-feed-card type-${item.tipo.toLowerCase()}`} role="button" tabIndex={0} aria-label={`Ver detalhes: ${item.conteudo}`} onClick={(event) => openFeedDetails(event, item)} onKeyDown={(event) => openFeedDetails(event, item)}>
                         <div className="project-feed-marker">{item.tipo === "ATUALIZACAO" ? <FaBullhorn /> : item.tipo === "COMENTARIO" ? <FaComment /> : <FaHistory />}</div>
                         <div className="project-feed-content"><header><div><strong>{userLabel(item.autor)}</strong><span>{item.tipo === "ATUALIZACAO" ? "Atualização" : item.tipo === "COMENTARIO" ? "Comentário" : "Evento"}{item.contexto ? ` · ${item.contexto}` : ""}</span></div><time>{dateTime(item.criadoEm)}{item.editado ? " · editado" : ""}</time></header>
                             {item.saudePercebida && <span className={`project-health health-${item.saudePercebida.toLowerCase()}`}>{healthLabels[item.saudePercebida]}</span>}
@@ -177,6 +188,21 @@ export default function ProjectCommunicationManagement() {
                 {!loading && !!projectId && !panel.feed.length && <div className="project-communication-empty">Nenhuma comunicação registrada neste projeto.</div>}
                 {!loading && !projectId && <div className="project-communication-empty">Selecione um projeto para consultar o feed.</div>}
             </div>
+            {selectedFeedItem && <CrudModal mode="view" title="Detalhes da modificação" ariaLabel="Detalhes do evento do projeto" onClose={() => setSelectedFeedItem(null)} onSubmit={(event) => event.preventDefault()} formClassName="project-feed-detail-modal" actions={<button type="button" onClick={() => setSelectedFeedItem(null)}>Fechar</button>}>
+                <section className="project-feed-detail-summary"><span>{selectedFeedItem.funcionalidade}</span><h4>{selectedFeedItem.conteudo}</h4><p>{dateTime(selectedFeedItem.criadoEm)}</p></section>
+                <dl className="project-feed-detail-meta">
+                    <div><dt>Quem realizou</dt><dd>{userLabel(selectedFeedItem.autorAcao || selectedFeedItem.autor)}</dd></div>
+                    <div><dt>Funcionalidade</dt><dd>{selectedFeedItem.funcionalidade}</dd></div>
+                    <div><dt>Ação</dt><dd>{detailLabel(selectedFeedItem.evento)}</dd></div>
+                    <div><dt>Entidade</dt><dd>{detailLabel(selectedFeedItem.entidade)}</dd></div>
+                    <div><dt>Registro</dt><dd>{selectedFeedItem.entidadeId}</dd></div>
+                    <div><dt>Data e hora</dt><dd>{dateTime(selectedFeedItem.criadoEm)}</dd></div>
+                    {selectedFeedItem.contexto && <div><dt>Contexto</dt><dd>{selectedFeedItem.contexto}</dd></div>}
+                    {selectedFeedItem.editado && <div><dt>Situação</dt><dd>Editado</dd></div>}
+                    {selectedFeedItem.autor && selectedFeedItem.autorAcao?.id !== selectedFeedItem.autor.id && <div><dt>Autor original</dt><dd>{userLabel(selectedFeedItem.autor)}</dd></div>}
+                </dl>
+                {selectedFeedItem.alteracoes?.length ? <section className="project-feed-detail-changes"><h4>Campos envolvidos</h4><div>{selectedFeedItem.alteracoes.map((change, index) => <article key={`${change.campo}-${index}`}><strong>{change.campo}</strong><div><span>Antes</span><p>{change.valorAnterior || "Não informado"}</p></div><div><span>Depois</span><p>{change.valorNovo || "Não informado"}</p></div></article>)}</div></section> : <div className="project-feed-detail-empty">Este evento não possui valores de campos disponíveis para exibição.</div>}
+            </CrudModal>}
             {!loading && panel.feed.length > FEED_PAGE_SIZE && (
                 <footer className="project-communication-pagination" aria-label="Paginação do feed">
                     <span>

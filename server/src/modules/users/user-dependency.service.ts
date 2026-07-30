@@ -25,6 +25,13 @@ type DependencyClient = Pick<
   | 'projetoAtualizacaoHistorico'
   | 'projetoComentario'
   | 'projetoAnexo'
+  | 'recurso'
+  | 'projetoRecurso'
+  | 'projetoCapacidadeLegado'
+  | 'projetoOrcamento'
+  | 'projetoCusto'
+  | 'projetoCustoTaxaHistorico'
+  | 'projetoTarefaTaxaHistorico'
 >;
 
 type UserDependency = {
@@ -69,7 +76,14 @@ const DEPENDENCIES: DependencyDefinition[] = [
   { singular: 'atualizacao de projeto', plural: 'atualizacoes de projetos', count: (db, id) => db.projetoAtualizacao.count({ where: { autorId: id } }) },
   { singular: 'edicao de atualizacao', plural: 'edicoes de atualizacoes', count: (db, id) => db.projetoAtualizacaoHistorico.count({ where: { editorId: id } }) },
   { singular: 'comentario de projeto', plural: 'comentarios de projetos', count: (db, id) => db.projetoComentario.count({ where: { OR: [{ autorId: id }, { excluidoPorId: id }] } }) },
-  { singular: 'anexo de projeto', plural: 'anexos de projetos', count: (db, id) => db.projetoAnexo.count({ where: { OR: [{ autorId: id }, { excluidoPorId: id }] } }) }];
+  { singular: 'anexo de projeto', plural: 'anexos de projetos', count: (db, id) => db.projetoAnexo.count({ where: { OR: [{ autorId: id }, { excluidoPorId: id }] } }) },
+  { singular: 'cadastro como recurso', plural: 'cadastros como recursos', count: (db, id) => db.recurso.count({ where: { usuarioId: id } }) },
+  { singular: 'capacidade legada de projeto', plural: 'capacidades legadas de projetos', count: (db, id) => db.projetoCapacidadeLegado.count({ where: { usuarioId: id } }) },
+  { singular: 'aprovacao de orcamento', plural: 'aprovacoes de orcamentos', count: (db, id) => db.projetoOrcamento.count({ where: { aprovadoPorId: id } }) },
+  { singular: 'custo de projeto', plural: 'custos de projetos', count: (db, id) => db.projetoCusto.count({ where: { criadoPorId: id } }) },
+  { singular: 'historico de taxa de custo', plural: 'historicos de taxas de custos', count: (db, id) => db.projetoCustoTaxaHistorico.count({ where: { criadoPorId: id } }) },
+  { singular: 'historico de taxa de tarefa', plural: 'historicos de taxas de tarefas', count: (db, id) => db.projetoTarefaTaxaHistorico.count({ where: { criadoPorId: id } }) }
+];
 
 @Injectable()
 export class UserDependencyService {

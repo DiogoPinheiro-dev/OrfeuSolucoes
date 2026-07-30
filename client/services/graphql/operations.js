@@ -1558,8 +1558,10 @@ export const PROJETO_COMUNICACAO_QUERY = gql`
       comentarios { ...ProjetoComentarioFields }
       itensDisponiveis { id chave titulo }
       feed {
-        id tipo entidadeId conteudo saudePercebida contexto editado criadoEm
+        id tipo entidadeId evento entidade funcionalidade conteudo saudePercebida contexto editado criadoEm
         autor { ...ProjetoComunicacaoUserFields }
+        autorAcao { ...ProjetoComunicacaoUserFields }
+        alteracoes { campo valorAnterior valorNovo }
         anexos { ...ProjetoAnexoFields }
       }
       permissoes { podePublicarAtualizacao podeEditarAtualizacao podeComentar podeModerar podeGerenciarAnexos }
@@ -1587,3 +1589,127 @@ export const EXCLUIR_PROJETO_COMENTARIO_MUTATION = gql`
   ${PROJETO_COMENTARIO_FIELDS}
   mutation ExcluirProjetoComentario($input: ExcluirProjetoComentarioInput!) { excluirProjetoComentario(input: $input) { ...ProjetoComentarioFields } }
 `;
+const PROJETO_RECURSO_USER_FIELDS = gql`
+  fragment ProjetoRecursoUserFields on ProjetoUsuarioType { id nome login email }
+`;
+export const PROJETO_RECURSOS_PROJETOS_QUERY = gql`
+  query ProjetoRecursosProjetos { projetoRecursosProjetos { id chave nome arquivadoEm } }
+`;
+export const PROJETO_RECURSOS_QUERY = gql`
+  ${PROJETO_RECURSO_USER_FIELDS}
+  query ProjetoRecursos {
+    projetoRecursos {
+      candidatos { ...ProjetoRecursoUserFields }
+      recursos {
+        id usuarioId ativo versao
+        usuario { ...ProjetoRecursoUserFields }
+        projetos {
+          id projetoId ativo versao
+          projeto { id chave nome arquivadoEm }
+        }
+      }
+      permissoes { podeIncluir podeAlterar podeExcluir }
+    }
+  }
+`;
+export const SALVAR_PROJETO_RECURSO_MUTATION = gql`mutation SalvarProjetoRecurso($input: SalvarProjetoRecursoInput!) { salvarProjetoRecurso(input: $input) { id } }`;
+export const EXCLUIR_PROJETO_RECURSO_MUTATION = gql`mutation ExcluirProjetoRecurso($input: ExcluirProjetoRecursoInput!) { excluirProjetoRecurso(input: $input) }`;
+export const PROJETO_TAREFAS_QUERY = gql`
+  ${PROJETO_RECURSO_USER_FIELDS}
+  query ProjetoTarefas {
+    projetoTarefas {
+      tarefas {
+        id recursoId projetoRecursoId funcionalidade estimativaMinutos valorHora moeda observacao ativo versao
+        pendenteVinculo planejadoMinutos saldoMinutos sobreplanejada
+        recurso { id ativo usuario { ...ProjetoRecursoUserFields } }
+        projeto { id chave nome arquivadoEm }
+        taxas { id valorHora moeda criadoEm criadoPor { ...ProjetoRecursoUserFields } }
+      }
+      recursos { id ativo usuario { ...ProjetoRecursoUserFields } }
+      permissoes { podeIncluir podeAlterar podeExcluir }
+    }
+  }
+`;
+export const SALVAR_PROJETO_TAREFA_MUTATION = gql`mutation SalvarProjetoTarefa($input: SalvarProjetoTarefaInput!) { salvarProjetoTarefa(input: $input) { id } }`;
+export const EXCLUIR_PROJETO_TAREFA_MUTATION = gql`mutation ExcluirProjetoTarefa($input: ExcluirProjetoTarefaInput!) { excluirProjetoTarefa(input: $input) }`;
+export const GRADE_CAPACITACAO_QUERY = gql`
+  ${PROJETO_RECURSO_USER_FIELDS}
+  query GradeCapacitacao {
+    gradeCapacitacao {
+      recursos { id usuarioId ativo versao usuario { ...ProjetoRecursoUserFields } }
+      projetos { id chave nome arquivadoEm }
+      linhas {
+        id cadastroRecursoId projetoId versao recursoAtivo vinculoAtivo
+        usuario { ...ProjetoRecursoUserFields }
+        projeto { id chave nome arquivadoEm }
+        capacidadeTotalMinutos alocacaoTotalMinutos saldoMinutos percentualAlocado sobrealocado
+        capacidades { id projetoRecursoId inicioEm fimEm capacidadeMinutos alocadoMinutos percentualAlocado sobrealocado versao }
+        alocacoes { id projetoRecursoId atividade inicioEm fimEm alocacaoMinutos capacidadeMinutos alocadoTotalMinutos percentualAlocado sobrealocado versao }
+      }
+      permissoes { podeIncluir podeAlterar podeExcluir }
+    }
+  }
+`;
+export const SALVAR_GRADE_VINCULO_MUTATION = gql`mutation SalvarGradeVinculo($input: SalvarGradeVinculoInput!) { salvarGradeVinculo(input: $input) { id } }`;
+export const SALVAR_GRADE_CAPACIDADE_MUTATION = gql`mutation SalvarGradeCapacidade($input: SalvarGradeCapacidadeInput!) { salvarGradeCapacidade(input: $input) { id } }`;
+export const SALVAR_GRADE_ALOCACAO_MUTATION = gql`mutation SalvarGradeAlocacao($input: SalvarGradeAlocacaoInput!) { salvarGradeAlocacao(input: $input) { id } }`;
+export const EXCLUIR_GRADE_CAPACIDADE_MUTATION = gql`mutation ExcluirGradeCapacidade($input: ExcluirGradeItemInput!) { excluirGradeCapacidade(input: $input) }`;
+export const EXCLUIR_GRADE_ALOCACAO_MUTATION = gql`mutation ExcluirGradeAlocacao($input: ExcluirGradeItemInput!) { excluirGradeAlocacao(input: $input) }`;
+export const PLANEJAMENTO_RECURSOS_QUERY = gql`
+  ${PROJETO_RECURSO_USER_FIELDS}
+  query PlanejamentoRecursos {
+    planejamentoRecursos {
+      recursos { id usuarioId ativo versao usuario { ...ProjetoRecursoUserFields } }
+      projetos { id chave nome arquivadoEm }
+      linhas {
+        id cadastroRecursoId projetoId versao recursoAtivo vinculoAtivo
+        usuario { ...ProjetoRecursoUserFields }
+        projeto { id chave nome arquivadoEm }
+        capacidadeTotalMinutos alocacaoTotalMinutos saldoMinutos percentualAlocado sobrealocado
+        estimativaTotalMinutos planejamentoTarefasMinutos saldoTarefasMinutos alocacoesPendentes possuiRisco
+        custosEstimados { moeda valor }
+        tarefas {
+          id recursoId projetoRecursoId funcionalidade estimativaMinutos valorHora moeda observacao ativo versao
+          pendenteVinculo planejadoMinutos saldoMinutos sobreplanejada
+          recurso { id ativo usuario { ...ProjetoRecursoUserFields } }
+          projeto { id chave nome arquivadoEm }
+          taxas { id valorHora moeda criadoEm criadoPor { ...ProjetoRecursoUserFields } }
+        }
+        capacidades { id projetoRecursoId inicioEm fimEm capacidadeMinutos alocadoMinutos percentualAlocado sobrealocado versao }
+        alocacoes { id projetoRecursoId tarefaId atividade inicioEm fimEm alocacaoMinutos capacidadeMinutos alocadoTotalMinutos percentualAlocado sobrealocado versao }
+      }
+      tarefasPendentes {
+        id recursoId projetoRecursoId funcionalidade estimativaMinutos valorHora moeda observacao ativo versao
+        pendenteVinculo planejadoMinutos saldoMinutos sobreplanejada
+        recurso { id ativo usuario { ...ProjetoRecursoUserFields } }
+        projeto { id chave nome arquivadoEm }
+        taxas { id valorHora moeda criadoEm criadoPor { ...ProjetoRecursoUserFields } }
+      }
+      permissoes { podeIncluir podeAlterar podeExcluir }
+    }
+  }
+`;
+export const PROJETO_ORCAMENTO_PROJETOS_QUERY = gql`
+  query ProjetoOrcamentoProjetos { projetoOrcamentoProjetos { id chave nome arquivadoEm } }
+`;
+export const PROJETO_ORCAMENTO_QUERY = gql`
+  ${PROJETO_RECURSO_USER_FIELDS}
+  query ProjetoOrcamento($projetoId: String!) {
+    projetoOrcamento(projetoId: $projetoId) {
+      recursos { id usuarioId ativo versao usuario { ...ProjetoRecursoUserFields } }
+      financeiro {
+        id moeda status versao totalPlanejado totalComprometido totalRealizado variacao aprovadoEm
+        categorias { id nome valorPlanejado valorComprometido valorRealizado variacao versao }
+        custos { id categoriaId tipo descricao recursoId quantidadeMinutos taxaHora valorPlanejado valorComprometido valorRealizado versao recurso { id usuarioId ativo versao usuario { ...ProjetoRecursoUserFields } } taxas { id taxaHora criadoEm criadoPor { ...ProjetoRecursoUserFields } } }
+      }
+      permissoes { podeVisualizarFinanceiro podeGerenciarFinanceiro podeAprovarOrcamento }
+    }
+  }
+`;
+export const SALVAR_PROJETO_ORCAMENTO_MUTATION = gql`mutation SalvarProjetoOrcamento($input: SalvarProjetoOrcamentoInput!) { salvarProjetoOrcamento(input: $input) { id } }`;
+export const SALVAR_PROJETO_ORCAMENTO_CATEGORIA_MUTATION = gql`mutation SalvarProjetoOrcamentoCategoria($input: SalvarProjetoOrcamentoCategoriaInput!) { salvarProjetoOrcamentoCategoria(input: $input) { id } }`;
+export const SALVAR_PROJETO_CUSTO_MUTATION = gql`mutation SalvarProjetoCusto($input: SalvarProjetoCustoInput!) { salvarProjetoCusto(input: $input) { id } }`;
+export const EXCLUIR_PROJETO_ORCAMENTO_CATEGORIA_MUTATION = gql`mutation ExcluirProjetoOrcamentoCategoria($input: ExcluirProjetoOrcamentoItemInput!) { excluirProjetoOrcamentoCategoria(input: $input) }`;
+export const EXCLUIR_PROJETO_CUSTO_MUTATION = gql`mutation ExcluirProjetoCusto($input: ExcluirProjetoOrcamentoItemInput!) { excluirProjetoCusto(input: $input) }`;
+export const APROVAR_PROJETO_ORCAMENTO_MUTATION = gql`mutation AprovarProjetoOrcamento($input: AprovarProjetoOrcamentoInput!) { aprovarProjetoOrcamento(input: $input) { id status versao } }`;
+export const REABRIR_PROJETO_ORCAMENTO_MUTATION = gql`mutation ReabrirProjetoOrcamento($input: AprovarProjetoOrcamentoInput!) { reabrirProjetoOrcamento(input: $input) { id status versao } }`;

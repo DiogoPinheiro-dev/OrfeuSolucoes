@@ -16,6 +16,19 @@ import { ProjetoComunicacaoAuthorizationService } from './projeto-comunicacao-au
 import { ProjetoComunicacaoController } from './projeto-comunicacao.controller';
 import { ProjetoComunicacaoResolver } from './projeto-comunicacao.resolver';
 import { ProjetoComunicacaoService } from './projeto-comunicacao.service';
+import { ProjetoOrcamentoAuthorizationService } from './projeto-orcamento-authorization.service';
+import { ProjetoOrcamentoResolver } from './projeto-orcamento.resolver';
+import { ProjetoOrcamentoService } from './projeto-orcamento.service';
+import { ProjetoRecursoAuthorizationService } from './projeto-recurso-authorization.service';
+import { ProjetoRecursoResolver } from './projeto-recurso.resolver';
+import { ProjetoRecursoService } from './projeto-recurso.service';
+import { ProjetoTarefaAuthorizationService } from './projeto-tarefa-authorization.service';
+import { ProjetoTarefaResolver } from './projeto-tarefa.resolver';
+import { ProjetoTarefaService } from './projeto-tarefa.service';
+import { ProjetoGradeCapacitacaoAuthorizationService } from './projeto-grade-capacitacao-authorization.service';
+import { ProjetoGradeCapacitacaoResolver } from './projeto-grade-capacitacao.resolver';
+import { ProjetoGradeCapacitacaoService } from './projeto-grade-capacitacao.service';
+import { ProjetoPlanejamentoRecursoService } from './projeto-planejamento-recurso.service';
 import { ProjetoAnexoStorageService } from './projeto-anexo-storage.service';
 import { ProjetoAuditoriaService } from './projeto-auditoria.service';
 import { ProjetoIdempotenciaService } from './projeto-idempotencia.service';
@@ -47,6 +60,15 @@ import { ProjetosService } from './projetos.service';
     ProjetoCronogramaService,
     ProjetoComunicacaoAuthorizationService,
     ProjetoComunicacaoService,
+    ProjetoRecursoAuthorizationService,
+    ProjetoRecursoService,
+    ProjetoTarefaAuthorizationService,
+    ProjetoTarefaService,
+    ProjetoGradeCapacitacaoAuthorizationService,
+    ProjetoGradeCapacitacaoService,
+    ProjetoPlanejamentoRecursoService,
+    ProjetoOrcamentoAuthorizationService,
+    ProjetoOrcamentoService,
     ProjetoAnexoStorageService,
     ProjetoAuditoriaService,
     ProjetoIdempotenciaService,
@@ -67,6 +89,10 @@ import { ProjetosService } from './projetos.service';
     ProjetoMarcoEntregaResolver,
     ProjetoCronogramaResolver,
     ProjetoComunicacaoResolver,
+    ProjetoRecursoResolver,
+    ProjetoTarefaResolver,
+    ProjetoGradeCapacitacaoResolver,
+    ProjetoOrcamentoResolver,
   ],
   exports: [
     ProjetoAuthorizationService,
@@ -75,6 +101,15 @@ import { ProjetosService } from './projetos.service';
     ProjetoSprintService,
     ProjetoComunicacaoAuthorizationService,
     ProjetoComunicacaoService,
+    ProjetoRecursoAuthorizationService,
+    ProjetoRecursoService,
+    ProjetoTarefaAuthorizationService,
+    ProjetoTarefaService,
+    ProjetoGradeCapacitacaoAuthorizationService,
+    ProjetoGradeCapacitacaoService,
+    ProjetoPlanejamentoRecursoService,
+    ProjetoOrcamentoAuthorizationService,
+    ProjetoOrcamentoService,
     ProjetoAuditoriaService,
     ProjetoCatalogService,
     ProjetoEquipeService,

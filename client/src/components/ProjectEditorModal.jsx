@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useFormFieldErrors } from "../hooks/useFormFieldErrors";
 
@@ -6,11 +6,10 @@ import { CrudModal, CrudModalTabPanel, CrudModalTabs } from "./CrudModal";
 import FormFieldError from "./FormFieldError";
 
 const PROJECT_FORM_ID = "project-registration-form";
-const PROJECT_FIELD_ORDER = ["nome", "chave", "metodologia", "objetivo", "descricao", "situacao", "saude", "inicioPrevistoEm", "fimPrevistoEm", "responsavelId", "participantes"];
+const PROJECT_FIELD_ORDER = ["nome", "chave", "metodologia", "objetivo", "descricao", "situacao", "saude", "inicioPrevistoEm", "fimPrevistoEm"];
 const PROJECT_FIELD_TABS = {
     nome: "geral", chave: "geral", metodologia: "geral", objetivo: "geral", descricao: "geral",
-    situacao: "planejamento", saude: "planejamento", inicioPrevistoEm: "planejamento", fimPrevistoEm: "planejamento",
-    responsavelId: "equipe", participantes: "equipe"
+    situacao: "planejamento", saude: "planejamento", inicioPrevistoEm: "planejamento", fimPrevistoEm: "planejamento"
 };
 const PROJECT_FIELD_MATCHERS = { chave: [/chave.*uso/i, /chave.*cadastrada/i] };
 
@@ -23,9 +22,7 @@ const emptyForm = {
     situacao: "RASCUNHO",
     saude: "EM_DIA",
     inicioPrevistoEm: "",
-    fimPrevistoEm: "",
-    responsavelId: "",
-    participantes: []
+    fimPrevistoEm: ""
 };
 
 const dateValue = (value) => value?.slice?.(0, 10) || "";
@@ -39,23 +36,14 @@ const initialForm = (project) => project ? {
     situacao: project.situacao,
     saude: project.saude,
     inicioPrevistoEm: dateValue(project.inicioPrevistoEm),
-    fimPrevistoEm: dateValue(project.fimPrevistoEm),
-    responsavelId: project.responsavelId,
-    participantes: (project.membros || []).map((member) => ({
-        usuarioId: member.usuarioId,
-        papel: member.papel
-    }))
+    fimPrevistoEm: dateValue(project.fimPrevistoEm)
 } : emptyForm;
-
-const userLabel = (user) => user?.nome || user?.login || user?.email;
 
 export default function ProjectEditorModal({
     mode,
     project,
-    users,
     saving,
     error,
-    canManageTeam,
     canEditDetails,
     onClose,
     onSuggestKey,
@@ -91,11 +79,6 @@ export default function ProjectEditorModal({
         if (error) applyFormError(error, "Nao foi possivel salvar o projeto.");
     }, [error, applyFormError]);
 
-    const participantIds = useMemo(
-        () => new Set(form.participantes.map((item) => item.usuarioId)),
-        [form.participantes]
-    );
-
     const setField = (field, value) => {
         clearFieldError(field);
         setForm((current) => ({ ...current, [field]: value }));
@@ -114,23 +97,6 @@ export default function ProjectEditorModal({
         }
     };
 
-    const toggleParticipant = (usuarioId) => {
-        clearFieldError("participantes");
-        setForm((current) => ({
-            ...current,
-            participantes: current.participantes.some((item) => item.usuarioId === usuarioId)
-                ? current.participantes.filter((item) => item.usuarioId !== usuarioId)
-                : [...current.participantes, { usuarioId, papel: "MEMBRO" }]
-        }));
-    };
-
-    const changeParticipantRole = (usuarioId, papel) => {
-        setForm((current) => ({
-            ...current,
-            participantes: current.participantes.map((item) => item.usuarioId === usuarioId ? { ...item, papel } : item)
-        }));
-    };
-
     const submit = (event) => {
         event.preventDefault();
         clearFormErrors();
@@ -138,7 +104,6 @@ export default function ProjectEditorModal({
         if (!form.nome.trim()) localErrors.nome = "Preencha o nome do projeto.";
         if (!form.chave.trim()) localErrors.chave = "Preencha a chave do projeto.";
         else if (!/^[A-Z][A-Z0-9]{1,9}$/.test(form.chave.trim())) localErrors.chave = "Use de 2 a 10 letras maiusculas ou numeros, iniciando por uma letra.";
-        if (!form.responsavelId) localErrors.responsavelId = "Selecione o responsável pelo projeto.";
         if (form.inicioPrevistoEm && form.fimPrevistoEm && form.inicioPrevistoEm > form.fimPrevistoEm) {
             localErrors.fimPrevistoEm = "O início previsto não pode ser posterior ao término previsto.";
         }
@@ -153,8 +118,7 @@ export default function ProjectEditorModal({
             objetivo: form.objetivo.trim() || null,
             descricao: form.descricao.trim() || null,
             inicioPrevistoEm: form.inicioPrevistoEm || null,
-            fimPrevistoEm: form.fimPrevistoEm || null,
-            participantes: form.participantes.filter((item) => item.usuarioId !== form.responsavelId)
+            fimPrevistoEm: form.fimPrevistoEm || null
         });
     };
 
@@ -178,8 +142,7 @@ export default function ProjectEditorModal({
             <CrudModalTabs
                 tabs={[
                     { id: "geral", label: "Geral" },
-                    { id: "planejamento", label: "Planejamento" },
-                    { id: "equipe", label: "Equipe" }
+                    { id: "planejamento", label: "Planejamento" }
                 ]}
                 activeTab={activeTab}
                 onChange={setActiveTab}
@@ -226,33 +189,6 @@ export default function ProjectEditorModal({
                 </fieldset>
             </CrudModalTabPanel>
 
-            <CrudModalTabPanel active={activeTab === "equipe"}>
-                <fieldset disabled={!canManageTeam || saving}>
-                    <legend>Responsável <FormFieldError formId={PROJECT_FORM_ID} field="responsavelId" errors={fieldErrors} /></legend>
-                    <select name="responsavelId" value={form.responsavelId} onChange={(event) => setField("responsavelId", event.target.value)} {...fieldErrorProps("responsavelId")}>
-                        <option value="">Selecione</option>
-                        {users.map((user) => <option key={user.id} value={user.id}>{userLabel(user)} — {user.email}</option>)}
-                    </select>
-                </fieldset>
-                <fieldset className="project-member-picker" disabled={!canManageTeam || saving}>
-                    <legend>Participantes</legend>
-                    {users.filter((user) => user.id !== form.responsavelId).map((user) => (
-                        <div key={user.id}>
-                            <label>
-                                <input type="checkbox" checked={participantIds.has(user.id)} onChange={() => toggleParticipant(user.id)} />
-                                <span>{userLabel(user)}<small>{user.email}</small></span>
-                            </label>
-                            {participantIds.has(user.id) && (
-                                <select value={form.participantes.find((item) => item.usuarioId === user.id)?.papel || "MEMBRO"} onChange={(event) => changeParticipantRole(user.id, event.target.value)}>
-                                    <option value="MEMBRO">Membro</option><option value="OBSERVADOR">Observador</option>
-                                </select>
-                            )}
-                        </div>
-                    ))}
-                    {!users.length && <p>Nenhum participante disponível.</p>}
-                </fieldset>
-                {!canManageTeam && <p className="project-form-note">Você pode alterar os dados do projeto, mas não possui permissão para gerenciar a equipe.</p>}
-            </CrudModalTabPanel>
         </CrudModal>
     );
 }

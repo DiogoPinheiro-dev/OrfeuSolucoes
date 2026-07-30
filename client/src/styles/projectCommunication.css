@@ -20,7 +20,7 @@
 .project-communication-toolbar { display: flex; align-items: center; gap: 10px; padding: 13px 18px; border-block: 1px solid var(--line); background: var(--surface-soft); }
 .project-communication-toolbar span { margin-right: auto; color: var(--muted); }
 .project-communication-feed { display: grid; gap: 0; padding: 18px; background: var(--surface-soft); }
-.project-feed-card { display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: 12px; position: relative; padding-bottom: 16px; }
+.project-feed-card { display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: 12px; position: relative; padding-bottom: 16px; cursor: pointer; outline: none; }
 .project-feed-card:not(:last-child)::before { content: ""; position: absolute; top: 38px; bottom: 0; left: 20px; width: 2px; background: var(--line-strong); }
 .project-feed-marker { display: grid; z-index: 1; width: 42px; height: 42px; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: var(--surface-white); color: var(--secondary); }
 .type-atualizacao .project-feed-marker { background: var(--button-primary-bg); color: var(--button-primary-text); }
@@ -54,10 +54,26 @@
 .project-communication-pagination button { min-height: 38px; padding: 8px 12px; border: 1px solid var(--button-secondary-border); border-radius: 9px; background: var(--button-secondary-bg); color: var(--primary); cursor: pointer; font: inherit; font-weight: 400; }
 .project-communication-pagination button:hover, .project-communication-pagination button:focus-visible { border-color: var(--button-primary-border); background: var(--button-primary-bg); color: var(--button-primary-text); outline: none; }
 .project-communication-pagination button:disabled { cursor: not-allowed; opacity: .45; }
+.project-feed-card:hover .project-feed-content, .project-feed-card:focus-visible .project-feed-content { border-color: var(--button-primary-border); box-shadow: 0 0 0 3px color-mix(in srgb, var(--button-primary-border) 14%, transparent), var(--shadow-soft); }
+.project-feed-card:focus-visible .project-feed-marker { border-color: var(--button-primary-border); }
+.project-feed-detail-modal { display: grid; gap: 16px; padding: 20px 22px 22px; }
+.project-feed-detail-summary { display: grid; gap: 6px; padding: 15px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
+.project-feed-detail-summary span { color: var(--detail-accent-text); font-size: .78rem; letter-spacing: .06em; text-transform: uppercase; }
+.project-feed-detail-summary h4, .project-feed-detail-summary p { margin: 0; }.project-feed-detail-summary h4 { font-weight: 400; line-height: 1.45; }.project-feed-detail-summary p { color: var(--muted); font-size: .84rem; }
+.project-feed-detail-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; }
+.project-feed-detail-meta > div { display: grid; gap: 4px; min-width: 0; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; }
+.project-feed-detail-meta dt { color: var(--muted); font-size: .76rem; }.project-feed-detail-meta dd { overflow-wrap: anywhere; margin: 0; }
+.project-feed-detail-changes { display: grid; gap: 10px; }.project-feed-detail-changes > h4 { margin: 0; font-weight: 400; }
+.project-feed-detail-changes > div { display: grid; gap: 10px; }.project-feed-detail-changes article { display: grid; grid-template-columns: minmax(120px, .7fr) repeat(2, minmax(0, 1fr)); gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-white); }
+.project-feed-detail-changes article > div { display: grid; gap: 4px; min-width: 0; }.project-feed-detail-changes article span { color: var(--muted); font-size: .76rem; }.project-feed-detail-changes article p { overflow-wrap: anywhere; margin: 0; white-space: pre-wrap; }
+.project-feed-detail-empty { padding: 14px; border: 1px dashed var(--line-strong); border-radius: 10px; color: var(--muted); text-align: center; }
+.project-feed-detail-modal .crud-modal-actions { padding-top: 14px; border-top: 1px solid var(--line); }
 @media (max-width: 680px) {
   .project-communication-composer { grid-template-columns: 1fr; margin-inline: 12px; padding: 14px; }
   .project-communication-composer .wide, .project-communication-tabs, .project-communication-composer-actions { grid-column: auto; }
   .project-feed-content > header { align-items: flex-start; flex-direction: column; }
+  .project-feed-detail-modal { padding: 16px; }
+  .project-feed-detail-meta, .project-feed-detail-changes article { grid-template-columns: 1fr; }
   .project-communication-feed { padding: 12px; }
   .project-communication-pagination { align-items: stretch; flex-direction: column; }
   .project-communication-pagination div, .project-communication-pagination button { width: 100%; }

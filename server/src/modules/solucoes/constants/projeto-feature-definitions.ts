@@ -106,13 +106,40 @@ export const PROJETO_FEATURE_DEFINITIONS: ProjetoFeatureDefinition[] = [
     ]
   },
   {
-    slug: 'orcamento-e-recursos',
-    titulo: 'Orcamento e recursos',
-    label: 'Orcamento e recursos',
-    descricao: 'Planeje capacidade, alocacoes, orcamento e custos.',
+    slug: 'recursos-do-projeto',
+    titulo: 'Cadastro de recursos',
+    label: 'Recursos',
+    descricao: 'Cadastre a identidade dos recursos da empresa e mantenha sua situação operacional.',
     ordem: 70,
-    registryKey: 'projetos.orcamento-e-recursos',
-    ativo: false,
+    registryKey: 'projetos.recursos-do-projeto',
+    ativo: true
+  },
+  {
+    slug: 'cadastro-de-tarefas',
+    titulo: 'Cadastro de tarefas',
+    label: 'Tarefas',
+    descricao: 'Vincule funcionalidades aos recursos e defina o valor cobrado por hora.',
+    ordem: 80,
+    registryKey: 'projetos.cadastro-de-tarefas',
+    ativo: false
+  },
+  {
+    slug: 'grade-de-capacitacao',
+    titulo: 'Planejamento de recursos',
+    label: 'Planejamento de recursos',
+    descricao: 'Gerencie vínculos, capacidade, tarefas, custos e execuções planejadas por recurso e projeto.',
+    ordem: 90,
+    registryKey: 'projetos.grade-de-capacitacao',
+    ativo: true
+  },
+  {
+    slug: 'orcamento-do-projeto',
+    titulo: 'Orcamento do projeto',
+    label: 'Orcamento',
+    descricao: 'Planeje o orcamento, categorias e custos do projeto.',
+    ordem: 100,
+    registryKey: 'projetos.orcamento-do-projeto',
+    ativo: true,
     acoes: [
       action('visualizar_financeiro', 'Visualizar financeiro', 50, 'Permite consultar dados financeiros.'),
       action('gerenciar_financeiro', 'Gerenciar financeiro', 60, 'Permite alterar orcamentos e custos.'),
@@ -124,7 +151,7 @@ export const PROJETO_FEATURE_DEFINITIONS: ProjetoFeatureDefinition[] = [
     titulo: 'Horas do projeto',
     label: 'Horas',
     descricao: 'Consulte apontamentos pertencentes ao Controle de Horas.',
-    ordem: 80,
+    ordem: 110,
     registryKey: 'projetos.horas-do-projeto',
     ativo: false,
     acoes: [
@@ -138,7 +165,7 @@ export const PROJETO_FEATURE_DEFINITIONS: ProjetoFeatureDefinition[] = [
     titulo: 'Templates de projeto',
     label: 'Templates',
     descricao: 'Gerencie estruturas versionadas para novos projetos.',
-    ordem: 90,
+    ordem: 120,
     registryKey: 'projetos.templates-de-projeto',
     ativo: false,
     acoes: [
@@ -151,7 +178,7 @@ export const PROJETO_FEATURE_DEFINITIONS: ProjetoFeatureDefinition[] = [
     titulo: 'Portfolio de projetos',
     label: 'Portfolio',
     descricao: 'Acompanhe indicadores agregados dos projetos acessiveis.',
-    ordem: 100,
+    ordem: 130,
     registryKey: 'projetos.portfolio-de-projetos',
     ativo: false,
     acoes: [

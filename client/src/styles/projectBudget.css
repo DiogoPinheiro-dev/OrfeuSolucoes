@@ -1,0 +1,65 @@
+.project-budget { min-width: 0; color: var(--primary); }
+.budget-header { align-items: end; }
+.budget-header p { margin: 6px 0 0; color: var(--muted); }
+.budget-header > label { display: grid; flex: 0 1 430px; gap: 6px; color: var(--muted); font-weight: 400; }
+.project-budget select, .project-budget input { width: 100%; min-height: 42px; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface-white); color: var(--primary); font: inherit; font-weight: 400; }
+.budget-feedback, .budget-readonly { margin: 12px 18px 0; padding: 12px 16px; border: 1px solid var(--line); border-radius: 12px; }
+.budget-feedback.error { background: var(--danger-bg); color: var(--danger-text); }
+.budget-feedback.success { background: var(--success-soft); color: var(--success-text); }
+.budget-readonly { background: #fff4d6; color: #765400; }
+.budget-tabs { display: flex; gap: 8px; padding: 12px 18px; border-block: 1px solid var(--line); background: var(--surface-soft); }
+.budget-tabs button, .budget-form-grid button, .budget-empty button, .budget-finance-heading button { display: inline-flex; align-items: center; gap: 7px; min-height: 40px; padding: 9px 13px; border: 1px solid var(--button-secondary-border); border-radius: 9px; background: var(--button-secondary-bg); color: var(--primary); cursor: pointer; font-weight: 400; }
+.budget-tabs button.active, .budget-form-grid button, .budget-empty button, .budget-finance-heading button { border-color: var(--button-primary-border); background: var(--button-primary-bg); color: var(--button-primary-text); }
+.budget-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; padding: 18px; background: var(--surface-soft); }
+.budget-form-grid form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; gap: 12px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-white); }
+.budget-form-grid h3, .budget-form-grid button { grid-column: 1 / -1; }
+.budget-form-grid h3 { display: flex; align-items: center; gap: 8px; margin: 0; font-weight: 400; }
+.budget-form-grid label { display: grid; gap: 6px; font-size: .86rem; font-weight: 400; }
+.budget-section { padding: 18px; border-top: 1px solid var(--line); }
+.budget-section > h3 { margin: 0 0 12px; font-weight: 400; }
+.budget-cards, .budget-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.budget-cards article, .budget-summary article { display: grid; gap: 7px; padding: 15px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-white); }
+.budget-cards article.risk, .budget-summary article.risk { border-color: color-mix(in srgb, var(--danger-text) 35%, var(--line)); background: var(--danger-bg); }
+.budget-cards article span, .budget-summary article span { color: var(--muted); font-size: .84rem; }
+.budget-cards article b { font-weight: 400; }
+.budget-cards article em, .budget-risk { display: inline-flex; align-items: center; gap: 6px; color: var(--danger-text); font-style: normal; }
+.budget-summary { padding: 18px; background: var(--surface-soft); }
+.budget-summary strong { font-size: 1.2rem; font-weight: 400; }
+.budget-finance-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border-top: 1px solid var(--line); }
+.budget-finance-heading h3 { margin: 0; font-weight: 400; }
+.budget-finance-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.budget-table-wrap { overflow: auto; border: 1px solid var(--line); border-radius: 12px; }
+.budget-table-wrap table { width: 100%; min-width: 760px; border-collapse: collapse; background: var(--surface-white); }
+.budget-table-wrap th, .budget-table-wrap td { padding: 11px 12px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+.budget-empty { display: grid; place-items: center; gap: 12px; min-height: 150px; margin: 18px; padding: 28px; border: 1px dashed var(--line-strong); border-radius: 14px; color: var(--muted); text-align: center; }
+.budget-overrun { display: flex; align-items: center; gap: 8px; margin: 0 18px 18px; padding: 12px 15px; border: 1px solid color-mix(in srgb, var(--danger-text) 35%, var(--line)); border-radius: 12px; background: var(--danger-bg); color: var(--danger-text); }
+.budget-row-risk td { background: color-mix(in srgb, var(--danger-bg) 65%, var(--surface-white)); }
+.budget-row-actions, .budget-form-actions { display: flex; align-items: center; gap: 8px; }
+.budget-form-actions { grid-column: 1 / -1; justify-content: flex-end; }
+.budget-form-grid .budget-form-actions button { grid-column: auto; }
+.budget-form-grid .budget-form-actions button.secondary { border-color: var(--button-secondary-border); background: var(--button-secondary-bg); color: var(--primary); }
+.budget-row-actions button, .budget-history-button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 36px; min-height: 34px; padding: 7px 9px; border: 1px solid var(--button-secondary-border); border-radius: 8px; background: var(--button-secondary-bg); color: var(--primary); cursor: pointer; }
+.budget-row-actions button.danger { color: var(--danger-text); }
+.budget-empty.compact { min-height: 80px; margin: 12px 0 0; }
+.budget-history-modal { display: grid; gap: 16px; padding: 20px 22px 22px; }
+.budget-history-modal > p { margin: 0; color: var(--muted); line-height: 1.5; }
+.budget-history-modal .crud-modal-actions { padding-top: 4px; border-top: 1px solid var(--line); }
+.budget-history-list { display: grid; gap: 10px; }
+.budget-history-list article { display: grid; grid-template-columns: minmax(110px, auto) 1fr; align-items: center; gap: 5px 16px; padding: 13px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); }
+.budget-history-list article small { grid-column: 1 / -1; color: var(--muted); }
+.budget-edit-modal { display: grid; gap: 16px; padding: 20px 22px 22px; }
+.budget-edit-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.budget-edit-grid label { display: grid; align-content: start; gap: 7px; color: var(--primary); font-size: .9rem; font-weight: 400; }
+.budget-edit-modal .crud-modal-actions { padding-top: 14px; border-top: 1px solid var(--line); }
+.budget-edit-modal .crud-modal-actions button.secondary { border-color: var(--button-secondary-border); background: var(--button-secondary-bg); color: var(--primary); }
+.budget-edit-modal .crud-modal-actions button[type="submit"] { border-color: var(--button-primary-border); background: var(--button-primary-bg); color: var(--button-primary-text); }
+.budget-edit-error { grid-column: 1 / -1; padding: 11px 13px; border: 1px solid color-mix(in srgb, var(--danger-text) 30%, var(--line)); border-radius: 10px; background: var(--danger-bg); color: var(--danger-text); }
+.budget-edit-modal input, .budget-edit-modal select { min-width: 0; }
+.budget-delete-modal { display: grid; gap: 14px; padding: 20px 22px 22px; }
+.budget-delete-modal > p { margin: 0; color: var(--muted); line-height: 1.5; }
+.budget-delete-modal > strong { padding: 13px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); font-weight: 400; }
+.budget-delete-modal .crud-modal-actions { padding-top: 14px; border-top: 1px solid var(--line); }
+.budget-delete-modal .crud-modal-actions button.danger { border-color: var(--danger-text); background: var(--danger-text); color: var(--button-primary-text); }
+.budget-delete-modal .crud-modal-actions button.secondary { border-color: var(--button-secondary-border); background: var(--button-secondary-bg); color: var(--primary); }
+.budget-delete-error { padding: 11px 13px; border: 1px solid color-mix(in srgb, var(--danger-text) 30%, var(--line)); border-radius: 10px; background: var(--danger-bg); color: var(--danger-text); }
+@media (max-width: 760px) { .budget-header { align-items: stretch; flex-direction: column; } .budget-header > label { flex: none; } .budget-form-grid { grid-template-columns: 1fr; padding: 12px; } .budget-form-grid form { grid-template-columns: 1fr; } .budget-form-grid h3, .budget-form-grid button { grid-column: auto; } .budget-tabs { overflow-x: auto; } .budget-finance-heading { align-items: stretch; flex-direction: column; } }@media (max-width: 520px) { .budget-history-modal, .budget-delete-modal, .budget-edit-modal { padding: 16px; }.budget-edit-grid { grid-template-columns: 1fr; }.budget-history-list article { grid-template-columns: 1fr; }.budget-history-list article small { grid-column: auto; } }

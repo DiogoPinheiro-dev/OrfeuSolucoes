@@ -175,6 +175,44 @@
   color: var(--muted);
 }
 
+
+.crud-description {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.crud-shell--compact {
+  border-radius: 14px;
+  box-shadow: none;
+}
+
+.crud-shell--compact .crud-header {
+  padding: 13px 14px 10px;
+}
+
+.crud-shell--compact .crud-header h2 {
+  font-size: 1.05rem;
+}
+
+.crud-shell--compact .crud-kicker {
+  margin-bottom: 3px;
+  font-size: 0.7rem;
+}
+
+.crud-shell--compact .crud-toolbar,
+.crud-shell--compact .crud-filters {
+  padding: 10px 14px;
+}
+
+.crud-shell--compact .crud-toolbar button {
+  width: 38px;
+  height: 38px;
+}
+
+.crud-shell--compact .crud-table {
+  min-width: 720px;
+}
 @media (max-width: 760px) {
   .crud-header {
     flex-direction: column;

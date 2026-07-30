@@ -75,9 +75,10 @@ export class CreateProjetoInput {
   @IsDateString()
   fimPrevistoEm?: string | null;
 
-  @Field()
+  @Field(() => String, { nullable: true })
+  @IsOptional()
   @IsUUID()
-  responsavelId!: string;
+  responsavelId?: string | null;
 
   @Field(() => [ProjetoMembroInput], { nullable: true, defaultValue: [] })
   @IsOptional()

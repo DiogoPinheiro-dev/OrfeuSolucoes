@@ -5,6 +5,9 @@ import "../styles/crudGrid.css";
 export default function CrudGrid({
     title,
     kicker = "Configurador",
+    description = "",
+    className = "",
+    compact = false,
     columns,
     rows,
     selectedId,
@@ -33,7 +36,8 @@ export default function CrudGrid({
     showDelete = true,
     selectable = true,
     isRowSelectable = () => true,
-    getRowId = (row) => row.id
+    getRowId = (row) => row.id,
+    getRowLabel = (row) => row.nome || row.email || "registro"
 }) {
     const selectedRow = rows.find((row) => getRowId(row) === selectedId);
     const selectedIdSet = new Set(selectedIds);
@@ -41,11 +45,12 @@ export default function CrudGrid({
     const allVisibleSelected = selectableRows.length > 0 && selectableRows.every((row) => selectedIdSet.has(getRowId(row)));
 
     return (
-        <section className="crud-shell">
+        <section className={`crud-shell${compact ? " crud-shell--compact" : ""}${className ? ` ${className}` : ""}`}>
             <header className="crud-header">
                 <div>
                     <span className="crud-kicker">{kicker}</span>
                     <h2>{title}</h2>
+                    {description && <p className="crud-description">{description}</p>}
                 </div>
 
                 {onSearchChange && (
@@ -98,10 +103,10 @@ export default function CrudGrid({
                             const rowSelectable = isRowSelectable(row);
 
                             return (
-                                <tr key={rowId} className={selected ? "selected" : ""} onClick={() => onSelect(rowId)} onDoubleClick={() => canView && onView?.(row)} tabIndex={0}>
+                                <tr key={rowId} className={selected ? "selected" : ""} onClick={() => onSelect?.(rowId)} onDoubleClick={() => canView && onView?.(row)} tabIndex={0}>
                                     {selectable && (
                                         <td>
-                                            <input type="checkbox" checked={selectedIdSet.has(rowId)} aria-label={`Selecionar ${row.nome || row.email || "registro"}`} disabled={!rowSelectable} onClick={(event) => event.stopPropagation()} onChange={() => rowSelectable && onToggleSelect?.(rowId)} />
+                                            <input type="checkbox" checked={selectedIdSet.has(rowId)} aria-label={`Selecionar ${getRowLabel(row)}`} disabled={!rowSelectable} onClick={(event) => event.stopPropagation()} onChange={() => rowSelectable && onToggleSelect?.(rowId)} />
                                         </td>
                                     )}
                                     {columns.map((column) => <td key={column.key}>{column.render ? column.render(row) : row[column.key]}</td>)}

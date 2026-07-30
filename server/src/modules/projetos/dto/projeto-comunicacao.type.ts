@@ -58,10 +58,22 @@ export class ProjetoComentarioType {
 }
 
 @ObjectType()
+export class ProjetoFeedAlteracaoType {
+  @Field() campo!: string;
+  @Field(() => String, { nullable: true }) valorAnterior?: string | null;
+  @Field(() => String, { nullable: true }) valorNovo?: string | null;
+}
+
+@ObjectType()
 export class ProjetoFeedItemType {
   @Field() id!: string;
   @Field() tipo!: string;
   @Field() entidadeId!: string;
+  @Field() evento!: string;
+  @Field() entidade!: string;
+  @Field() funcionalidade!: string;
+  @Field(() => ProjetoUsuarioType, { nullable: true }) autorAcao?: ProjetoUsuarioType | null;
+  @Field(() => [ProjetoFeedAlteracaoType]) alteracoes!: ProjetoFeedAlteracaoType[];
   @Field() conteudo!: string;
   @Field(() => ProjetoUsuarioType, { nullable: true }) autor?: ProjetoUsuarioType | null;
   @Field(() => ProjetoSaude, { nullable: true }) saudePercebida?: ProjetoSaude | null;

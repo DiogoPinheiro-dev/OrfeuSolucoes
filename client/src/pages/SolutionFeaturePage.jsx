@@ -21,6 +21,9 @@ import SprintManagement from "../components/SprintManagement";
 import MarcoEntregaManagement from "../components/MarcoEntregaManagement";
 import CronogramaManagement from "../components/CronogramaManagement";
 import ProjectCommunicationManagement from "../components/ProjectCommunicationManagement";
+import ProjectBudgetManagement from "../components/ProjectBudgetManagement";
+import ProjectResourceManagement from "../components/ProjectResourceManagement";
+import ProjectResourcePlanningManagement from "../components/ProjectResourcePlanningManagement";
 import SolutionManagement from "../components/SolutionManagement";
 import SlaChamadoManagement from "../components/SlaChamadoManagement";
 import GoogleEmailManagement from "../components/GoogleEmailManagement";
@@ -52,7 +55,10 @@ const FEATURE_COMPONENTS = {
     "project-sprints": SprintManagement,
     "project-milestones-deliveries": MarcoEntregaManagement,
     "project-schedule-gantt": CronogramaManagement,
-    "project-communication": ProjectCommunicationManagement
+    "project-communication": ProjectCommunicationManagement,
+    "project-resources": ProjectResourceManagement,
+    "project-resource-planning": ProjectResourcePlanningManagement,
+    "project-budget": ProjectBudgetManagement
 };
 
 export default function SolutionFeaturePage() {
@@ -86,6 +92,10 @@ export default function SolutionFeaturePage() {
     }
 
     const area = getFeatureBySlug(solution, areaSlug);
+
+    if (!area && solution.slug === "projetos" && areaSlug === "cadastro-de-tarefas") {
+        return <Navigate to="/hub/projetos/grade-de-capacitacao" replace />;
+    }
 
     if (!area) {
         return <Navigate to={`/hub/${solution.slug}`} replace />;

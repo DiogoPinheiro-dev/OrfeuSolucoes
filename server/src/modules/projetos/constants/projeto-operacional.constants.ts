@@ -7,7 +7,10 @@ export const ProjetoFuncionalidade = {
   MARCOS_ENTREGAS: 'marcos-e-entregas',
   CRONOGRAMA: 'cronograma-e-gantt',
   COMUNICACAO: 'comunicacao-do-projeto',
-  ORCAMENTO_RECURSOS: 'orcamento-e-recursos',
+  RECURSOS: 'recursos-do-projeto',
+  TAREFAS: 'cadastro-de-tarefas',
+  GRADE_CAPACITACAO: 'grade-de-capacitacao',
+  ORCAMENTO: 'orcamento-do-projeto',
   HORAS: 'horas-do-projeto',
   TEMPLATES: 'templates-de-projeto',
   PORTFOLIO: 'portfolio-de-projetos'
@@ -43,4 +46,3 @@ export const ProjetoAcao = {
   PUBLICAR: 'publicar',
   INSTANCIAR: 'instanciar'
 } as const;
-

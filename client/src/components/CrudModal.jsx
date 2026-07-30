@@ -16,12 +16,13 @@ export function CrudModal({
     formId,
     noValidate = false,
     formClassName = "user-form",
+    modalClassName = "",
     children,
     actions
 }) {
     return (
         <div className="crud-modal-backdrop" role="presentation">
-            <div className="crud-modal" role="dialog" aria-modal="true" aria-label={ariaLabel || title}>
+            <div className={`crud-modal${modalClassName ? ` ${modalClassName}` : ""}`} role="dialog" aria-modal="true" aria-label={ariaLabel || title}>
                 <header className="crud-modal-header">
                     <div>
                         <span>{modeLabel[mode] || mode}</span>

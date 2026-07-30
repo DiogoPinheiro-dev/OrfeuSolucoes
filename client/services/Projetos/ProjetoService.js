@@ -5,11 +5,9 @@ import {
     ATUALIZAR_CICLO_PROJETO_MUTATION,
     CREATE_PROJETO_MUTATION,
     PROJETOS_QUERY,
-    PROJETO_PARTICIPANTES_DISPONIVEIS_QUERY,
     PROJETO_QUERY,
     REATIVAR_PROJETO_MUTATION,
     SUGERIR_CHAVE_PROJETO_QUERY,
-    UPDATE_PROJETO_EQUIPE_MUTATION,
     UPDATE_PROJETO_MUTATION
 } from "../graphql/operations";
 
@@ -32,10 +30,8 @@ export const getProjetos = (filtro = {}) => execute({
 });
 export const getProjeto = (id) => execute({ document: PROJETO_QUERY, variables: { id }, select: (data) => data?.projeto || null });
 export const sugerirChaveProjeto = (nome) => execute({ document: SUGERIR_CHAVE_PROJETO_QUERY, variables: { nome }, select: (data) => data?.sugerirChaveProjeto || "" });
-export const getProjetoParticipantesDisponiveis = () => execute({ document: PROJETO_PARTICIPANTES_DISPONIVEIS_QUERY, select: (data) => data?.projetoParticipantesDisponiveis || [] });
 export const createProjeto = (input) => execute({ document: CREATE_PROJETO_MUTATION, variables: { input }, select: (data) => data.createProjeto, mutation: true });
 export const updateProjeto = (input) => execute({ document: UPDATE_PROJETO_MUTATION, variables: { input }, select: (data) => data.updateProjeto, mutation: true });
-export const updateProjetoEquipe = (input) => execute({ document: UPDATE_PROJETO_EQUIPE_MUTATION, variables: { input }, select: (data) => data.updateProjetoEquipe, mutation: true });
 export const atualizarCicloProjeto = (input) => execute({ document: ATUALIZAR_CICLO_PROJETO_MUTATION, variables: { input }, select: (data) => data.atualizarSituacaoProjeto, mutation: true });
 export const arquivarProjeto = (id) => execute({ document: ARQUIVAR_PROJETO_MUTATION, variables: { id }, select: (data) => data.arquivarProjeto, mutation: true });
 export const reativarProjeto = (id) => execute({ document: REATIVAR_PROJETO_MUTATION, variables: { id }, select: (data) => data.reativarProjeto, mutation: true });

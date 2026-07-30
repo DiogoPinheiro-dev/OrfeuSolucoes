@@ -43,7 +43,8 @@ export class ProjetoCatalogService {
     const inicioPrevistoEm = normalizeCalendarDate(input.inicioPrevistoEm);
     const fimPrevistoEm = normalizeCalendarDate(input.fimPrevistoEm);
     validatePlannedDates(inicioPrevistoEm, fimPrevistoEm);
-    const participantes = this.normalizeParticipants(input.participantes ?? [], input.responsavelId, user.sub);
+    const responsavelId = input.responsavelId ?? user.sub;
+    const participantes = this.normalizeParticipants(input.participantes ?? [], responsavelId, user.sub);
 
     if (await this.prisma.projeto.findUnique({
       where: { empresaId_chave: { empresaId, chave } },
@@ -54,7 +55,7 @@ export class ProjetoCatalogService {
 
     const projetoId = await this.prisma.$transaction(async (tx) => {
       await this.assertEligibleUsers(tx, empresaId, [
-        input.responsavelId,
+        responsavelId,
         ...participantes.map((item) => item.usuarioId)
       ]);
       const projeto = await tx.projeto.create({
@@ -69,7 +70,7 @@ export class ProjetoCatalogService {
           saude,
           inicioPrevistoEm,
           fimPrevistoEm,
-          responsavelId: input.responsavelId,
+          responsavelId,
           criadoPorId: user.sub
         },
         select: { id: true }

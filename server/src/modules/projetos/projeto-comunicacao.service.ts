@@ -56,16 +56,29 @@ export class ProjetoComunicacaoService {
       ...mappedUpdates.map((item) => `ATUALIZACAO:${item.id}`),
       ...mappedComments.map((item) => `COMENTARIO:${item.id}`)
     ]);
+    const latestEventByEntity = new Map<string, AnyRecord>();
+    for (const event of eventos as AnyRecord[]) {
+      const key = `${event.entidade}:${event.entidadeId}`;
+      const current = latestEventByEntity.get(key);
+      const eventTime = new Date(event.criadoEm).getTime();
+      const currentTime = current ? new Date(current.criadoEm).getTime() : -1;
+      if (!current || eventTime > currentTime || (eventTime === currentTime && this.eventPriority(event.evento) > this.eventPriority(current.evento))) {
+        latestEventByEntity.set(key, event);
+      }
+    }
     const feed: ProjetoFeedItemType[] = [
       ...mappedUpdates.map((item) => ({ id: `ATUALIZACAO:${item.id}`, tipo: 'ATUALIZACAO', entidadeId: item.id,
         conteudo: item.conteudo, autor: item.autor, saudePercebida: item.saudePercebida, contexto: null,
+        ...this.communicationDetails(item as AnyRecord, latestEventByEntity.get(`ATUALIZACAO:${item.id}`), 'ATUALIZACAO'),
         editado: item.versao > 1, anexos: item.anexos, criadoEm: item.criadoEm })),
       ...mappedComments.map((item) => ({ id: `COMENTARIO:${item.id}`, tipo: 'COMENTARIO', entidadeId: item.id,
         conteudo: item.conteudo, autor: item.autor, saudePercebida: null, contexto: item.contexto,
+        ...this.communicationDetails(item as AnyRecord, latestEventByEntity.get(`COMENTARIO:${item.id}`), 'COMENTARIO'),
         editado: !!item.editadoEm, anexos: item.anexos, criadoEm: item.criadoEm })),
       ...eventos.filter((item) => !communicationEventIds.has(`${item.entidade}:${item.entidadeId}`)).map((item) => ({
         id: `EVENTO:${item.id}`, tipo: 'EVENTO', entidadeId: item.entidadeId,
         conteudo: this.eventDescription(item.entidade, item.evento), autor: item.usuario as any,
+        ...this.auditDetails(item.entidade, item.evento, item.dados, item.usuario as AnyRecord),
         saudePercebida: null, contexto: item.entidade, editado: false, anexos: [], criadoEm: item.criadoEm
       }))
     ].sort((a, b) => b.criadoEm.getTime() - a.criadoEm.getTime()).slice(0, 200);
@@ -99,7 +112,10 @@ export class ProjetoComunicacaoService {
       const changed = await tx.projetoAtualizacao.updateMany({ where: { id: current.id, empresaId: contexto.empresaId, versao: input.versao },
         data: { conteudo: input.conteudo.trim(), saudePercebida: input.saudePercebida ?? null, versao: { increment: 1 } } });
       if (!changed.count) throw new ConflictException('A atualizacao foi alterada por outro usuario. Recarregue o feed.');
-      await this.audit(tx, contexto, user, 'ATUALIZACAO', current.id, 'EDITADA');
+      await this.audit(tx, contexto, user, 'ATUALIZACAO', current.id, 'EDITADA', {
+        conteudo: { anterior: current.conteudo, novo: input.conteudo.trim() },
+        saudePercebida: { anterior: current.saudePercebida, novo: input.saudePercebida ?? null }
+      });
       return tx.projetoAtualizacao.findUniqueOrThrow({ where: { id: current.id }, include: ATUALIZACAO_INCLUDE });
     });
     return this.toAtualizacao(updated as AnyRecord, user, await this.authorization.effectivePermissions(contexto, user));
@@ -129,7 +145,9 @@ export class ProjetoComunicacaoService {
       data: { conteudo: input.conteudo.trim(), editadoEm: new Date(), versao: { increment: 1 } } });
     if (!changed.count) throw new ConflictException('O comentario foi alterado por outro usuario. Recarregue o feed.');
     const updated = await this.prisma.projetoComentario.findUniqueOrThrow({ where: { id: current.id }, include: COMENTARIO_INCLUDE });
-    await this.prisma.$transaction((tx) => this.audit(tx, contexto, user, 'COMENTARIO', current.id, 'EDITADO'));
+    await this.prisma.$transaction((tx) => this.audit(tx, contexto, user, 'COMENTARIO', current.id, 'EDITADO', {
+      conteudo: { anterior: current.conteudo, novo: input.conteudo.trim() }
+    }));
     return this.toComentario(updated as AnyRecord, user, await this.authorization.effectivePermissions(contexto, user));
   }
 
@@ -242,6 +260,80 @@ export class ProjetoComunicacaoService {
       tamanho: item.tamanho, downloadUrl: `/projetos/${item.projetoId}/anexos/${item.id}/download`, autor: item.autor, criadoEm: item.criadoEm };
   }
 
+  private communicationDetails(item: AnyRecord, audit: AnyRecord | undefined, entidade: string) {
+    const editado = entidade === 'ATUALIZACAO' ? Number(item.versao) > 1 : !!item.editadoEm;
+    const evento = audit?.evento ?? (editado ? (entidade === 'ATUALIZACAO' ? 'EDITADA' : 'EDITADO') : (entidade === 'ATUALIZACAO' ? 'PUBLICADA' : 'PUBLICADO'));
+    let alteracoes = this.changesFromData(this.parseAuditData(audit?.dados));
+    if (!alteracoes.length && editado && entidade === 'ATUALIZACAO' && item.historico?.length) {
+      const anterior = item.historico[0];
+      if (anterior.conteudoAnterior !== item.conteudo) alteracoes.push({ campo: 'Conteúdo', valorAnterior: anterior.conteudoAnterior, valorNovo: item.conteudo });
+      if (anterior.saudePercebidaAnterior !== item.saudePercebida) alteracoes.push({ campo: 'Saúde percebida', valorAnterior: this.formatAuditValue(anterior.saudePercebidaAnterior), valorNovo: this.formatAuditValue(item.saudePercebida) });
+    }
+    if (!alteracoes.length && !editado) alteracoes = [{ campo: 'Conteúdo', valorAnterior: null, valorNovo: item.conteudo }];
+    return { evento, entidade, funcionalidade: 'Comunicação do projeto', autorAcao: audit?.usuario ?? item.autor ?? null, alteracoes };
+  }
+
+  private auditDetails(entidade: string, evento: string, dados: string | null, usuario: AnyRecord | null) {
+    const financeiros = new Set(['ORCAMENTO', 'ORCAMENTO_CATEGORIA', 'CUSTO']);
+    return {
+      evento,
+      entidade,
+      funcionalidade: this.featureLabel(entidade),
+      autorAcao: (usuario ?? null) as any,
+      alteracoes: financeiros.has(entidade) ? [] : this.changesFromData(this.parseAuditData(dados))
+    };
+  }
+
+  private parseAuditData(value: string | null | undefined): AnyRecord | null {
+    if (!value) return null;
+    try { const parsed = JSON.parse(value); return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null; }
+    catch { return null; }
+  }
+
+  private changesFromData(data: AnyRecord | null): Array<{ campo: string; valorAnterior: string | null; valorNovo: string | null }> {
+    if (!data) return [];
+    const before = data.antes ?? data.anterior;
+    const after = data.depois ?? data.novo;
+    if (before && after && typeof before === 'object' && typeof after === 'object' && !Array.isArray(before) && !Array.isArray(after)) {
+      return Array.from(new Set([...Object.keys(before), ...Object.keys(after)]))
+        .filter((key) => JSON.stringify(before[key]) !== JSON.stringify(after[key]))
+        .map((key) => ({ campo: this.fieldLabel(key), valorAnterior: this.formatAuditValue(before[key]), valorNovo: this.formatAuditValue(after[key]) }));
+    }
+    return Object.entries(data).flatMap(([key, value]) => {
+      if (value && typeof value === 'object' && !Array.isArray(value) && ('anterior' in value || 'novo' in value)) {
+        if (JSON.stringify(value.anterior) === JSON.stringify(value.novo)) return [];
+        return [{ campo: this.fieldLabel(key), valorAnterior: this.formatAuditValue(value.anterior), valorNovo: this.formatAuditValue(value.novo) }];
+      }
+      return [{ campo: this.fieldLabel(key), valorAnterior: null, valorNovo: this.formatAuditValue(value) }];
+    });
+  }
+
+  private fieldLabel(value: string): string {
+    const labels: Record<string, string> = { conteudo: 'Conteúdo', saudePercebida: 'Saúde percebida', inicioEm: 'Início', fimEm: 'Fim',
+      inicioPrevistoEm: 'Início previsto', fimPrevistoEm: 'Fim previsto', status: 'Status', situacao: 'Situação', responsavelId: 'Responsável',
+      capacidadeMinutos: 'Capacidade', alocacaoMinutos: 'Alocação', quantidade: 'Quantidade', motivo: 'Motivo' };
+    if (labels[value]) return labels[value];
+    const humanized = value.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ').trim();
+    return humanized ? humanized.charAt(0).toUpperCase() + humanized.slice(1).toLowerCase() : value;
+  }
+
+  private formatAuditValue(value: unknown): string | null {
+    if (value === null || value === undefined || value === '') return null;
+    const labels: Record<string, string> = { EM_DIA: 'Em dia', EM_RISCO: 'Em risco', ATRASADO: 'Atrasado', true: 'Sim', false: 'Não' };
+    const text = typeof value === 'string' ? value : typeof value === 'object' ? JSON.stringify(value) : String(value);
+    return labels[text] ?? text;
+  }
+
+  private featureLabel(entidade: string): string {
+    const labels: Record<string, string> = {
+      ATUALIZACAO: 'Comunicação do projeto', COMENTARIO: 'Comunicação do projeto', ANEXO: 'Comunicação do projeto',
+      PROJETO: 'Cadastro de projetos', ITEM: 'Backlog de demandas', DEPENDENCIA: 'Cronograma e dependências', CRONOGRAMA: 'Cronograma e dependências',
+      SPRINT: 'Sprints', MARCO: 'Marcos e entregas', ENTREGA: 'Marcos e entregas',
+      CAPACIDADE: 'Grade de capacitação', ALOCACAO: 'Grade de capacitação', RECURSO: 'Cadastro de recursos',
+      ORCAMENTO: 'Orçamento do projeto', ORCAMENTO_CATEGORIA: 'Orçamento do projeto', CUSTO: 'Orçamento do projeto'
+    };
+    return labels[entidade] ?? 'Gestão operacional de projetos';
+  }
   private eventDescription(entity: string, event: string): string {
     const labels: Record<string, string> = { CRIADO: 'Registro criado', CRIADA: 'Registro criado', ALTERADO: 'Registro alterado', ALTERADA: 'Registro alterado',
       ARQUIVADO: 'Registro arquivado', ARQUIVADA: 'Registro arquivado', REATIVADO: 'Registro reativado', REATIVADA: 'Registro reativado',
@@ -249,6 +341,11 @@ export class ProjetoComunicacaoService {
     return `${labels[event] || event.replace(/_/g, ' ').toLowerCase()} · ${entity.replace(/_/g, ' ').toLowerCase()}`;
   }
 
+  private eventPriority(event: string): number {
+    if (/^(EDITAD|ALTERAD|EXCLUID|ARQUIVAD|REATIVAD|DESALOCAD|DESATIVAD)/.test(event)) return 30;
+    if (/^(PUBLICAD|CRIAD|ALOCAD|ATIVAD|VINCULAD)/.test(event)) return 10;
+    return 20;
+  }
   private audit(tx: Prisma.TransactionClient, contexto: ProjetoComunicacaoContexto, user: JwtPayload,
     entidade: string, entidadeId: string, evento: string, dados?: unknown): Promise<unknown> {
     return this.auditoria.registrar(tx, { empresaId: contexto.empresaId, projetoId: contexto.projeto.id,

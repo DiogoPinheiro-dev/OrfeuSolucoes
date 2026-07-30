@@ -1,0 +1,313 @@
+.project-task {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  color: var(--primary);
+}
+
+.task-header {
+  padding: 18px;
+}
+
+.task-header h2,
+.task-header p {
+  margin: 0;
+}
+
+.task-header p {
+  margin-top: 6px;
+  color: var(--muted);
+}
+
+.project-task select,
+.project-task input,
+.project-task textarea {
+  width: 100%;
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 11px 13px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--surface-white);
+  color: var(--primary);
+  font: inherit;
+}
+
+.project-task textarea {
+  resize: vertical;
+}
+
+.project-task select:focus-visible,
+.project-task input:focus-visible,
+.project-task textarea:focus-visible {
+  border-color: var(--button-primary-border);
+  outline: 0;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--button-primary-border) 14%, transparent);
+}
+
+.project-task .crud-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 360px);
+  gap: 14px;
+}
+
+.project-task .crud-filters label {
+  display: grid;
+  gap: 7px;
+  color: var(--primary);
+  font-size: .9rem;
+  font-weight: 700;
+}
+
+.project-task > .crud-shell .crud-table {
+  min-width: 1120px;
+}
+
+.project-task > .crud-shell .crud-table th:first-child,
+.project-task > .crud-shell .crud-table td:first-child,
+.task-history-table th:first-child,
+.task-history-table td:first-child {
+  width: auto;
+  text-align: left;
+}
+
+.task-feedback {
+  margin: 0 18px;
+  padding: 11px 14px;
+  border-radius: 10px;
+}
+
+.task-feedback.error {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.task-feedback.success {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.task-registration-modal {
+  width: min(100%, 920px);
+}
+
+.task-form,
+.task-view-form {
+  display: grid;
+  gap: 18px;
+  padding: 20px 22px 22px;
+}
+
+.task-form-grid,
+.task-planning-fields {
+  display: grid;
+  gap: 16px;
+}
+
+.task-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.task-planning-fields {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+}
+
+.task-form label,
+.task-planning-fields label {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+  color: var(--primary);
+  font-size: .9rem;
+  font-weight: 700;
+}
+
+.task-planning-fields input {
+  height: 44px;
+}
+
+.task-form label small,
+.task-planning-fields label small {
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.task-form .wide,
+.task-planning-fields .wide,
+.task-view-grid .wide {
+  grid-column: 1 / -1;
+}
+
+.task-form select:disabled {
+  cursor: not-allowed;
+  background: var(--surface-soft);
+  color: var(--muted);
+}
+
+.task-active {
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 11px !important;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  cursor: pointer;
+}
+
+.task-active input {
+  width: 18px;
+  min-height: 18px;
+  margin: 2px 0 0;
+  padding: 0;
+  accent-color: var(--button-primary-bg);
+}
+
+.task-active > span {
+  display: grid;
+  gap: 3px;
+}
+
+.task-estimate-preview {
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--button-primary-border) 24%, var(--line));
+  border-radius: 12px;
+  background: var(--detail-accent-bg);
+}
+
+.task-estimate-preview span,
+.task-estimate-preview small {
+  color: var(--muted);
+  font-size: .78rem;
+}
+
+.task-estimate-preview strong {
+  color: var(--primary);
+  font-size: 1.2rem;
+}
+
+.task-form .crud-modal-actions,
+.task-view-form .crud-modal-actions {
+  margin-top: 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.task-form .crud-modal-actions button,
+.task-view-form .crud-modal-actions button {
+  min-width: 112px;
+  min-height: 44px;
+  font-weight: 700;
+}
+
+.task-view-grid,
+.task-planning-summary {
+  display: grid;
+  gap: 12px;
+}
+
+.task-view-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.task-planning-summary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.task-view-grid article,
+.task-planning-summary article,
+.task-observation {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+
+.task-view-grid article span,
+.task-planning-summary article span,
+.task-observation span {
+  color: var(--muted);
+  font-size: .78rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.task-view-grid article strong,
+.task-observation strong {
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+}
+
+.task-observation strong {
+  font-weight: 500;
+}
+
+.task-history {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-white);
+}
+
+.task-history h4 {
+  margin: 0;
+  padding: 13px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-soft);
+}
+
+.task-history-table {
+  min-width: 680px;
+}
+
+.task-history-table tbody tr {
+  cursor: default;
+}
+
+.task-history-empty {
+  padding: 18px;
+  color: var(--muted);
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  .project-task .crud-filters,
+  .task-form-grid,
+  .task-planning-fields,
+  .task-view-grid,
+  .task-planning-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .task-form .wide,
+  .task-planning-fields .wide,
+  .task-view-grid .wide {
+    grid-column: auto;
+  }
+
+  .task-form,
+  .task-view-form {
+    padding: 16px;
+  }
+
+  .task-form .crud-modal-actions,
+  .task-view-form .crud-modal-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .task-form .crud-modal-actions button,
+  .task-view-form .crud-modal-actions button {
+    width: 100%;
+  }
+}
