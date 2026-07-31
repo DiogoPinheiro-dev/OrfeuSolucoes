@@ -26,7 +26,7 @@ Cobertura relevante:
 - cadastro de projetos e matriz de autorização;
 - fundação operacional, itens e backlog;
 - sprints, marcos, entregas, dependências e cronograma;
-- comunicação;
+- comunicação, incluindo paginação do feed além do antigo limite de 200 registros;
 - cadastro de recursos com múltiplos projetos selecionados no próprio formulário e exclusão segura de vínculos sem dados operacionais;
 - cadastro de tarefas por recurso, funcionalidade textual editável, estimativa positiva, versão e histórico da taxa;
 - Grade de capacitação, descrição de execução, capacidade e sobrealocação;
@@ -40,7 +40,7 @@ interface. Mudanças de construtor devem atualizar a montagem manual.
 Comando: `npm.cmd run test:e2e`.
 
 - `app.e2e-spec.ts` cobre a aplicação e jornadas de Chamados.
-- `projetos.e2e-spec.ts` cobre a borda GraphQL do cadastro de Projetos.
+- `projetos.e2e-spec.ts` cobre a borda GraphQL do cadastro de Projetos e a paginação do feed de comunicação.
 
 O Planejamento 16 e o Cadastro de tarefas possuem verificação de proteção dos resolvers separados e
 integração de serviço. Os testes confirmam que a criação do projeto deixa equipe
@@ -84,29 +84,29 @@ manual.
 
 ## Último snapshot documentado
 
-Em 30/07/2026, após a inclusão das horas estimadas e a revisão do Cadastro de tarefas:
+Em 31/07/2026, após a paginação no servidor do feed de Comunicação do projeto:
 
 | Validação | Resultado |
 |---|---|
 | Prisma validate | aprovado |
-| Prisma migrate status | 56 migrations; banco configurado atualizado |
+| Prisma migrate status | 59 migrations; banco configurado atualizado |
 | Backend build | aprovado |
 | Unitários | 6 de 6 |
-| Integração | 32 de 32 |
-| E2E | 13 de 13 |
+| Integração | 33 de 33 |
+| E2E | 14 de 14 |
 | Frontend lint | aprovado |
 | Frontend build | aprovado |
-| Validação visual | modal desktop e 520 px; fluxo Recurso → Funcionalidade; sem gravação de teste |
+| Validação visual | não executada nesta alteração; lint, build e contrato GraphQL aprovados |
 | Links Markdown | nenhum destino relativo ausente |
 | Diff check | aprovado, com avisos de normalização LF/CRLF |
 
-O build frontend gerou aviso para bundle principal de aproximadamente 851 kB.
+O build frontend gerou aviso para bundle principal de aproximadamente 866 kB.
 
 ## Lacunas
 
 - ausência de testes frontend;
-- cobertura GraphQL de Projetos concentrada no cadastro;
+- cobertura GraphQL de Projetos ainda parcial, concentrada no cadastro e na paginação da comunicação;
 - ausência de jornada GraphQL completa de recursos, tarefas, grade e orçamento;
 - integração em memória não substitui validação em SQL Server;
-- testes de volume de backlog, Gantt, feed e agregações ainda pendentes;
+- testes de volume de backlog, Gantt e agregações ainda pendentes;
 - validação integrada final depende dos Planejamentos 17 a 19.

@@ -1552,8 +1552,8 @@ export const PROJETO_COMUNICACAO_QUERY = gql`
   ${PROJETO_ANEXO_FIELDS}
   ${PROJETO_ATUALIZACAO_FIELDS}
   ${PROJETO_COMENTARIO_FIELDS}
-  query ProjetoComunicacao($projetoId: String!) {
-    projetoComunicacao(projetoId: $projetoId) {
+  query ProjetoComunicacao($projetoId: String!, $feed: ProjetoComunicacaoFeedFiltroInput) {
+    projetoComunicacao(projetoId: $projetoId, feed: $feed) {
       atualizacoes { ...ProjetoAtualizacaoFields }
       comentarios { ...ProjetoComentarioFields }
       itensDisponiveis { id chave titulo }
@@ -1564,6 +1564,7 @@ export const PROJETO_COMUNICACAO_QUERY = gql`
         alteracoes { campo valorAnterior valorNovo }
         anexos { ...ProjetoAnexoFields }
       }
+      feedTotal feedPagina feedLimite feedTotalPaginas
       permissoes { podePublicarAtualizacao podeEditarAtualizacao podeComentar podeModerar podeGerenciarAnexos }
       ultimaAtualizacaoEm
     }

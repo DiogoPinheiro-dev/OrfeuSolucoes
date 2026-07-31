@@ -3,12 +3,13 @@ import { Prisma } from '@prisma/client';
 import { existsSync } from 'node:fs';
 import { PrismaService } from '../../prisma/prisma.service';
 import { JwtPayload } from '../auth/strategies/jwt-payload.type';
-import { CreateProjetoAtualizacaoInput, CreateProjetoComentarioInput, ExcluirProjetoComentarioInput, UpdateProjetoAtualizacaoInput, UpdateProjetoComentarioInput } from './dto/projeto-comunicacao.input';
+import { CreateProjetoAtualizacaoInput, CreateProjetoComentarioInput, ExcluirProjetoComentarioInput, ProjetoComunicacaoFeedFiltroInput, UpdateProjetoAtualizacaoInput, UpdateProjetoComentarioInput } from './dto/projeto-comunicacao.input';
 import { ProjetoAnexoType, ProjetoAtualizacaoType, ProjetoComentarioType, ProjetoComunicacaoPainelType, ProjetoComunicacaoProjetoType, ProjetoFeedItemType } from './dto/projeto-comunicacao.type';
 import { ProjetoAuditoriaService } from './projeto-auditoria.service';
 import { ProjetoAnexoStorageService } from './projeto-anexo-storage.service';
 import { ProjetoComunicacaoAuthorizationService, ProjetoComunicacaoContexto } from './projeto-comunicacao-authorization.service';
 import { ProjetoFeedRegistroService } from './projeto-feed-registro.service';
+import { ProjetoPeriodoService } from './projeto-periodo.service';
 import { MAX_PROJETO_ANEXO_FILES, validateProjetoAnexoFile } from './policies/projeto-anexo.policy';
 import { ProjetoUploadFile } from './types/projeto-comunicacao.types';
 import { ProjetoSaude } from './types/projeto.types';
@@ -33,7 +34,8 @@ export class ProjetoComunicacaoService {
     private readonly authorization: ProjetoComunicacaoAuthorizationService,
     private readonly auditoria: ProjetoAuditoriaService,
     private readonly storage: ProjetoAnexoStorageService,
-    private readonly feedRegistros: ProjetoFeedRegistroService
+    private readonly feedRegistros: ProjetoFeedRegistroService,
+    private readonly periodo: ProjetoPeriodoService
   ) {}
 
   async projetos(user: JwtPayload): Promise<ProjetoComunicacaoProjetoType[]> {
@@ -43,28 +45,58 @@ export class ProjetoComunicacaoService {
       : { empresaId, OR: [{ responsavelId: user.sub }, { membros: { some: { usuarioId: user.sub } } }] };
     return this.prisma.projeto.findMany({ where, select: { id: true, chave: true, nome: true, arquivadoEm: true }, orderBy: [{ arquivadoEm: 'asc' }, { nome: 'asc' }] });
   }
-  async painel(projetoId: string, user: JwtPayload): Promise<ProjetoComunicacaoPainelType> {
+  async painel(
+    projetoId: string,
+    user: JwtPayload,
+    filtro: ProjetoComunicacaoFeedFiltroInput = {}
+  ): Promise<ProjetoComunicacaoPainelType> {
     const contexto = await this.authorization.assertReadContext(projetoId, user);
+    const { pagina: paginaSolicitada, limite } = this.periodo.normalizePaginacao(filtro.pagina, filtro.limite);
+    const feedEventWhere: Prisma.ProjetoEventoWhereInput = {
+      projetoId,
+      empresaId: contexto.empresaId,
+      OR: [
+        { NOT: { entidade: { in: ['ATUALIZACAO', 'COMENTARIO'] } } },
+        { entidade: 'COMENTARIO', evento: 'EXCLUIDO' }
+      ]
+    };
+    const [totalAtualizacoes, totalComentarios, totalEventos] = await Promise.all([
+      this.prisma.projetoAtualizacao.count({ where: { projetoId, empresaId: contexto.empresaId } }),
+      this.prisma.projetoComentario.count({ where: { projetoId, empresaId: contexto.empresaId, excluidoEm: null } }),
+      this.prisma.projetoEvento.count({ where: feedEventWhere })
+    ]);
+    const feedTotal = totalAtualizacoes + totalComentarios + totalEventos;
+    const feedTotalPaginas = Math.ceil(feedTotal / limite);
+    const feedPagina = Math.min(paginaSolicitada, Math.max(feedTotalPaginas, 1));
+    const scanLimit = feedPagina * limite;
     const [atualizacoes, comentarios, eventos, itensDisponiveis, permissoes] = await Promise.all([
-      this.prisma.projetoAtualizacao.findMany({ where: { projetoId, empresaId: contexto.empresaId }, include: ATUALIZACAO_INCLUDE, orderBy: { criadoEm: 'desc' }, take: 100 }),
-      this.prisma.projetoComentario.findMany({ where: { projetoId, empresaId: contexto.empresaId, excluidoEm: null }, include: COMENTARIO_INCLUDE, orderBy: { criadoEm: 'desc' }, take: 200 }),
-      this.prisma.projetoEvento.findMany({ where: { projetoId, empresaId: contexto.empresaId }, include: { usuario: true }, orderBy: { criadoEm: 'desc' }, take: 100 }),
+      this.prisma.projetoAtualizacao.findMany({ where: { projetoId, empresaId: contexto.empresaId }, include: ATUALIZACAO_INCLUDE, orderBy: [{ criadoEm: 'desc' }, { id: 'desc' }], take: Math.max(100, scanLimit) }),
+      this.prisma.projetoComentario.findMany({ where: { projetoId, empresaId: contexto.empresaId, excluidoEm: null }, include: COMENTARIO_INCLUDE, orderBy: [{ criadoEm: 'desc' }, { id: 'desc' }], take: Math.max(200, scanLimit) }),
+      this.prisma.projetoEvento.findMany({ where: feedEventWhere, include: { usuario: true }, orderBy: [{ criadoEm: 'desc' }, { id: 'desc' }], take: scanLimit }),
       this.prisma.projetoItem.findMany({ where: { projetoId, empresaId: contexto.empresaId, arquivadoEm: null }, select: { id: true, chave: true, titulo: true }, orderBy: [{ ordemBacklog: 'asc' }, { numero: 'asc' }] }),
       this.authorization.effectivePermissions(contexto, user)
     ]);
     const mappedUpdates = atualizacoes.map((item) => this.toAtualizacao(item as AnyRecord, user, permissoes));
     const mappedComments = comentarios.map((item) => this.toComentario(item as AnyRecord, user, permissoes));
-    const referencias = await this.feedRegistros.resolver(contexto.projeto, contexto.empresaId, eventos.map((item) => ({
+    const eventosComunicacao = await this.prisma.projetoEvento.findMany({
+      where: {
+        projetoId,
+        empresaId: contexto.empresaId,
+        OR: [
+          { entidade: 'ATUALIZACAO', entidadeId: { in: mappedUpdates.map((item) => item.id) } },
+          { entidade: 'COMENTARIO', entidadeId: { in: mappedComments.map((item) => item.id) } }
+        ]
+      },
+      include: { usuario: true },
+      orderBy: [{ criadoEm: 'desc' }, { id: 'desc' }]
+    });
+    const referencias = await this.feedRegistros.resolver(contexto.projeto, contexto.empresaId, [...eventos, ...eventosComunicacao].map((item) => ({
       entidade: item.entidade,
       entidadeId: item.entidadeId,
       dados: item.dados
     })));
-    const communicationEventIds = new Set([
-      ...mappedUpdates.map((item) => `ATUALIZACAO:${item.id}`),
-      ...mappedComments.map((item) => `COMENTARIO:${item.id}`)
-    ]);
     const latestEventByEntity = new Map<string, AnyRecord>();
-    for (const event of eventos as AnyRecord[]) {
+    for (const event of eventosComunicacao as AnyRecord[]) {
       const key = `${event.entidade}:${event.entidadeId}`;
       const current = latestEventByEntity.get(key);
       const eventTime = new Date(event.criadoEm).getTime();
@@ -86,16 +118,33 @@ export class ProjetoComunicacaoService {
         contexto: referencias.contextos.get(this.feedRegistros.chave('COMENTARIO', item.id)) ?? item.contexto,
         ...this.communicationDetails(item as AnyRecord, latestEventByEntity.get(`COMENTARIO:${item.id}`), 'COMENTARIO'),
         editado: !!item.editadoEm, anexos: item.anexos, criadoEm: item.criadoEm })),
-      ...eventos.filter((item) => !communicationEventIds.has(`${item.entidade}:${item.entidadeId}`)).map((item) => ({
+      ...eventos.map((item) => ({
         id: `EVENTO:${item.id}`, tipo: 'EVENTO', entidadeId: item.entidadeId,
         registro: referencias.registros.get(this.feedRegistros.chave(item.entidade, item.entidadeId)) ?? item.entidadeId,
         conteudo: this.eventDescription(item.entidade, item.evento), autor: item.usuario as any,
         ...this.auditDetails(item.entidade, item.evento, item.dados, item.usuario as AnyRecord),
         saudePercebida: null, contexto: referencias.contextos.get(this.feedRegistros.chave(item.entidade, item.entidadeId)) ?? `${contexto.projeto.chave} — ${contexto.projeto.nome}`, editado: false, anexos: [], criadoEm: item.criadoEm
       }))
-    ].sort((a, b) => b.criadoEm.getTime() - a.criadoEm.getTime()).slice(0, 200);
-    return { atualizacoes: mappedUpdates, comentarios: mappedComments, feed, itensDisponiveis, permissoes,
-      ultimaAtualizacaoEm: mappedUpdates[0]?.criadoEm ?? null };
+    ].sort((a, b) => {
+      const dateDelta = b.criadoEm.getTime() - a.criadoEm.getTime();
+      return dateDelta || b.id.localeCompare(a.id);
+    }).slice((feedPagina - 1) * limite, feedPagina * limite);
+    const feedUpdateIds = new Set(feed.filter((item) => item.tipo === 'ATUALIZACAO').map((item) => item.entidadeId));
+    const feedCommentIds = new Set(feed.filter((item) => item.tipo === 'COMENTARIO').map((item) => item.entidadeId));
+    const panelUpdates = mappedUpdates.filter((item, index) => index < 100 || feedUpdateIds.has(item.id));
+    const panelComments = mappedComments.filter((item, index) => index < 200 || feedCommentIds.has(item.id));
+    return {
+      atualizacoes: panelUpdates,
+      comentarios: panelComments,
+      feed,
+      feedTotal,
+      feedPagina,
+      feedLimite: limite,
+      feedTotalPaginas,
+      itensDisponiveis,
+      permissoes,
+      ultimaAtualizacaoEm: mappedUpdates[0]?.criadoEm ?? null
+    };
   }
 
   async createAtualizacao(input: CreateProjetoAtualizacaoInput, user: JwtPayload): Promise<ProjetoAtualizacaoType> {

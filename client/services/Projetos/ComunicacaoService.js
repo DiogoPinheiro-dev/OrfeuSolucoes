@@ -32,7 +32,7 @@ const execute = async ({ document, variables, select, mutation = false }) => {
 };
 
 export const getComunicacaoProjetos = () => execute({ document: PROJETO_COMUNICACAO_PROJETOS_QUERY, select: (data) => data.projetoComunicacaoProjetos || [] });
-export const getProjetoComunicacao = (projetoId) => execute({ document: PROJETO_COMUNICACAO_QUERY, variables: { projetoId }, select: (data) => data.projetoComunicacao });
+export const getProjetoComunicacao = (projetoId, feed = {}) => execute({ document: PROJETO_COMUNICACAO_QUERY, variables: { projetoId, feed }, select: (data) => data.projetoComunicacao });
 export const createProjetoAtualizacao = (input) => execute({ document: CREATE_PROJETO_ATUALIZACAO_MUTATION, variables: { input }, select: (data) => data.createProjetoAtualizacao, mutation: true });
 export const updateProjetoAtualizacao = (input) => execute({ document: UPDATE_PROJETO_ATUALIZACAO_MUTATION, variables: { input }, select: (data) => data.updateProjetoAtualizacao, mutation: true });
 export const createProjetoComentario = (input) => execute({ document: CREATE_PROJETO_COMENTARIO_MUTATION, variables: { input }, select: (data) => data.createProjetoComentario, mutation: true });

@@ -112,6 +112,10 @@ export class ProjetoComunicacaoPainelType {
   @Field(() => [ProjetoAtualizacaoType]) atualizacoes!: ProjetoAtualizacaoType[];
   @Field(() => [ProjetoComentarioType]) comentarios!: ProjetoComentarioType[];
   @Field(() => [ProjetoFeedItemType]) feed!: ProjetoFeedItemType[];
+  @Field(() => Int) feedTotal!: number;
+  @Field(() => Int) feedPagina!: number;
+  @Field(() => Int) feedLimite!: number;
+  @Field(() => Int) feedTotalPaginas!: number;
   @Field(() => [ProjetoComunicacaoItemType]) itensDisponiveis!: ProjetoComunicacaoItemType[];
   @Field(() => ProjetoComunicacaoPermissoesType) permissoes!: ProjetoComunicacaoPermissoesType;
   @Field(() => Date, { nullable: true }) ultimaAtualizacaoEm?: Date | null;

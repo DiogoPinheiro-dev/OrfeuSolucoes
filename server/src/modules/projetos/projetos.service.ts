@@ -66,7 +66,7 @@ import {
   ProjetoItemDependenciaType
 } from './dto/projeto-cronograma.type';
 import { ProjetoCronogramaService } from './projeto-cronograma.service';
-import { CreateProjetoAtualizacaoInput, CreateProjetoComentarioInput, ExcluirProjetoComentarioInput, UpdateProjetoAtualizacaoInput, UpdateProjetoComentarioInput } from './dto/projeto-comunicacao.input';
+import { CreateProjetoAtualizacaoInput, CreateProjetoComentarioInput, ExcluirProjetoComentarioInput, ProjetoComunicacaoFeedFiltroInput, UpdateProjetoAtualizacaoInput, UpdateProjetoComentarioInput } from './dto/projeto-comunicacao.input';
 import { ProjetoAtualizacaoType, ProjetoComentarioType, ProjetoComunicacaoPainelType, ProjetoComunicacaoProjetoType } from './dto/projeto-comunicacao.type';
 import { ProjetoComunicacaoService } from './projeto-comunicacao.service';
 import { AprovarProjetoOrcamentoInput, ExcluirProjetoOrcamentoItemInput, SalvarProjetoCustoInput, SalvarProjetoOrcamentoCategoriaInput, SalvarProjetoOrcamentoInput } from './dto/projeto-orcamento.input';
@@ -325,8 +325,12 @@ export class ProjetosService {
   comunicacaoProjetos(user: JwtPayload): Promise<ProjetoComunicacaoProjetoType[]> {
     return this.comunicacaoService.projetos(user);
   }
-  comunicacao(projetoId: string, user: JwtPayload): Promise<ProjetoComunicacaoPainelType> {
-    return this.comunicacaoService.painel(projetoId, user);
+  comunicacao(
+    projetoId: string,
+    user: JwtPayload,
+    feed?: ProjetoComunicacaoFeedFiltroInput
+  ): Promise<ProjetoComunicacaoPainelType> {
+    return this.comunicacaoService.painel(projetoId, user, feed);
   }
 
   createAtualizacao(input: CreateProjetoAtualizacaoInput, user: JwtPayload): Promise<ProjetoAtualizacaoType> {

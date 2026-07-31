@@ -1044,6 +1044,11 @@ type ProjetoCompromissoItemType {
   titulo: String!
 }
 
+input ProjetoComunicacaoFeedFiltroInput {
+  limite: Int = 20
+  pagina: Int = 1
+}
+
 type ProjetoComunicacaoItemType {
   chave: String!
   id: String!
@@ -1054,6 +1059,10 @@ type ProjetoComunicacaoPainelType {
   atualizacoes: [ProjetoAtualizacaoType!]!
   comentarios: [ProjetoComentarioType!]!
   feed: [ProjetoFeedItemType!]!
+  feedLimite: Int!
+  feedPagina: Int!
+  feedTotal: Int!
+  feedTotalPaginas: Int!
   itensDisponiveis: [ProjetoComunicacaoItemType!]!
   permissoes: ProjetoComunicacaoPermissoesType!
   ultimaAtualizacaoEm: DateTime
@@ -1728,7 +1737,7 @@ type Query {
   projeto(id: String!): ProjetoType!
   projetoBacklogProjetos(incluirArquivados: Boolean = false): [ProjetoBacklogProjetoType!]!
   projetoBacklogResponsaveis(projetoId: String!): [ProjetoUsuarioType!]!
-  projetoComunicacao(projetoId: String!): ProjetoComunicacaoPainelType!
+  projetoComunicacao(feed: ProjetoComunicacaoFeedFiltroInput, projetoId: String!): ProjetoComunicacaoPainelType!
   projetoComunicacaoProjetos: [ProjetoComunicacaoProjetoType!]!
   projetoCronograma(filtro: ProjetoCronogramaFiltroInput!): ProjetoCronogramaPainelType!
   projetoItem(id: String!): ProjetoItemType!

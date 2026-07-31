@@ -1,6 +1,22 @@
 import { Field, InputType, Int } from '@nestjs/graphql';
-import { IsEnum, IsInt, IsOptional, IsString, IsUUID, MaxLength, Min, MinLength } from 'class-validator';
+import { IsEnum, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min, MinLength } from 'class-validator';
 import { ProjetoSaude } from '../types/projeto.types';
+
+@InputType()
+export class ProjetoComunicacaoFeedFiltroInput {
+  @Field(() => Int, { nullable: true, defaultValue: 1 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  pagina?: number;
+
+  @Field(() => Int, { nullable: true, defaultValue: 20 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limite?: number;
+}
 
 @InputType()
 export class CreateProjetoAtualizacaoInput {

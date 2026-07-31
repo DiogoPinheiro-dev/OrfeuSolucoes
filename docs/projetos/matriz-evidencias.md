@@ -65,7 +65,7 @@ Casos de Projetos cobrem:
 - sprints;
 - marcos e entregas;
 - dependências e cronograma;
-- comunicação;
+- comunicação, incluindo paginação do feed além do antigo limite de 200 registros;
 - projeto criado com zero recursos e zero participantes;
 - cadastro empresarial de recursos com múltiplos projetos selecionados no formulário;
 - cadastro de tarefas por recurso com funcionalidade textual e taxa versionada;
@@ -74,7 +74,7 @@ Casos de Projetos cobrem:
 - Grade de capacitação com capacidade, execução descrita e períodos por vínculo;
 - orçamento, categorias, custos e aprovação.
 
-E2E do cadastro:
+E2E do cadastro e da paginação da comunicação:
 [`projetos.e2e-spec.ts`](../../server/test/projetos.e2e-spec.ts).
 
 ## Validações de fechamento
@@ -95,7 +95,7 @@ E2E do cadastro:
 
 - testes automatizados de interface;
 - unificação e lazy loading do registro frontend;
-- teste de volume do Gantt e feed;
+- teste de volume do Gantt;
 - jornada GraphQL completa das funcionalidades separadas de recursos, tarefas, grade e orçamento;
 - Planejamentos 17, 18 e 19;
 - validação integrada final do Planejamento 20.

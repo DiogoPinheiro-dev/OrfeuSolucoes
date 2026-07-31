@@ -17,7 +17,7 @@ import { CrudModal } from "./CrudModal";
 import "../styles/crudGrid.css";
 import "../styles/projectCommunication.css";
 
-const emptyPanel = { atualizacoes: [], comentarios: [], feed: [], itensDisponiveis: [], permissoes: {}, ultimaAtualizacaoEm: null };
+const emptyPanel = { atualizacoes: [], comentarios: [], feed: [], feedTotal: 0, feedPagina: 1, feedLimite: 5, feedTotalPaginas: 0, itensDisponiveis: [], permissoes: {}, ultimaAtualizacaoEm: null };
 const FEED_PAGE_SIZE = 5;
 const healthLabels = { EM_DIA: "Em dia", EM_RISCO: "Em risco", ATRASADO: "Atrasado" };
 const userLabel = (user) => user?.nome || user?.login || user?.email || "Sistema";
@@ -40,18 +40,18 @@ export default function ProjectCommunicationManagement() {
     const [form, setForm] = useState({ conteudo: "", saudePercebida: "", targetType: "PROJETO", targetId: "", files: [] });
 
     const selectedProject = useMemo(() => projects.find((item) => item.id === projectId), [projects, projectId]);
-    const feedTotalPages = Math.max(1, Math.ceil(panel.feed.length / FEED_PAGE_SIZE));
-    const paginatedFeed = useMemo(
-        () => panel.feed.slice((feedPage - 1) * FEED_PAGE_SIZE, feedPage * FEED_PAGE_SIZE),
-        [feedPage, panel.feed]
-    );
-    const reload = useCallback(async (id = projectId) => {
+    const feedTotalPages = Math.max(1, panel.feedTotalPaginas || 0);
+    const reload = useCallback(async (id = projectId, page = feedPage) => {
         if (!id) { setPanel(emptyPanel); setLoading(false); return; }
         setLoading(true); setError("");
-        try { setPanel(await getProjetoComunicacao(id)); }
+        try {
+            const result = await getProjetoComunicacao(id, { pagina: page, limite: FEED_PAGE_SIZE });
+            setPanel(result);
+            setFeedPage(result.feedPagina || page);
+        }
         catch (loadError) { setError(loadError.message || "Não foi possível carregar a comunicação do projeto."); }
         finally { setLoading(false); }
-    }, [projectId]);
+    }, [feedPage, projectId]);
 
     useEffect(() => {
         let active = true;
@@ -63,8 +63,7 @@ export default function ProjectCommunicationManagement() {
         return () => { active = false; };
     }, []);
     useEffect(() => { setFeedPage(1); }, [projectId]);
-    useEffect(() => { setFeedPage((current) => Math.min(current, feedTotalPages)); }, [feedTotalPages]);
-    useEffect(() => { if (projectId) void reload(projectId); }, [projectId, reload]);
+    useEffect(() => { if (projectId) void reload(projectId, feedPage); }, [projectId, feedPage, reload]);
 
     const resetComposer = (nextKind = kind) => {
         setEditing(null); setKind(nextKind);
@@ -105,7 +104,7 @@ export default function ProjectCommunicationManagement() {
             }
             setSuccess(editing ? "Registro atualizado com sucesso." : "Publicação adicionada ao feed.");
             setFeedPage(1);
-            resetComposer(kind); await reload(projectId);
+            resetComposer(kind); await reload(projectId, 1);
         } catch (saveError) { setError(saveError.message || "Não foi possível salvar a publicação."); }
         finally { setSaving(false); }
     };
@@ -149,7 +148,7 @@ export default function ProjectCommunicationManagement() {
         <section className="crud-grid project-communication">
             <header className="crud-grid-header project-communication-header">
                 <div><span className="workspace-label">Projetos</span><h2>Comunicação do projeto</h2><p>Centralize atualizações, decisões, comentários, anexos e eventos do projeto.</p></div>
-                <label><span>Projeto</span><select value={projectId} onChange={(event) => setProjectId(event.target.value)}><option value="">Selecione</option>{projects.map((project) => <option key={project.id} value={project.id}>{project.chave} — {project.nome}{project.arquivadoEm ? " (arquivado)" : ""}</option>)}</select></label>
+                <label><span>Projeto</span><select value={projectId} onChange={(event) => { setFeedPage(1); setProjectId(event.target.value); }}><option value="">Selecione</option>{projects.map((project) => <option key={project.id} value={project.id}>{project.chave} — {project.nome}{project.arquivadoEm ? " (arquivado)" : ""}</option>)}</select></label>
             </header>
             {error && <div className="project-communication-feedback error">{error}</div>}
             {success && <div className="project-communication-feedback success">{success}</div>}
@@ -169,10 +168,10 @@ export default function ProjectCommunicationManagement() {
                 </form>
             )}
 
-            <div className="project-communication-toolbar"><strong>Feed cronológico</strong><span>{panel.feed.length} registro(s)</span><button type="button" onClick={() => reload(projectId)} disabled={loading || !projectId}><FaSyncAlt /> Atualizar</button></div>
+            <div className="project-communication-toolbar"><strong>Feed cronológico</strong><span>{panel.feedTotal} registro(s)</span><button type="button" onClick={() => reload(projectId, feedPage)} disabled={loading || !projectId}><FaSyncAlt /> Atualizar</button></div>
             <div className="project-communication-feed" aria-live="polite">
                 {loading && <div className="project-communication-empty">Carregando comunicação...</div>}
-                {!loading && paginatedFeed.map((item) => {
+                {!loading && panel.feed.map((item) => {
                     const record = item.tipo === "ATUALIZACAO" ? panel.atualizacoes.find((entry) => entry.id === item.entidadeId) : panel.comentarios.find((entry) => entry.id === item.entidadeId);
                     return <article key={item.id} className={`project-feed-card type-${item.tipo.toLowerCase()}`} role="button" tabIndex={0} aria-label={`Ver detalhes: ${item.conteudo}`} onClick={(event) => openFeedDetails(event, item)} onKeyDown={(event) => openFeedDetails(event, item)}>
                         <div className="project-feed-marker">{item.tipo === "ATUALIZACAO" ? <FaBullhorn /> : item.tipo === "COMENTARIO" ? <FaComment /> : <FaHistory />}</div>
@@ -185,7 +184,7 @@ export default function ProjectCommunicationManagement() {
                         </div>
                     </article>;
                 })}
-                {!loading && !!projectId && !panel.feed.length && <div className="project-communication-empty">Nenhuma comunicação registrada neste projeto.</div>}
+                {!loading && !!projectId && panel.feedTotal === 0 && <div className="project-communication-empty">Nenhuma comunicação registrada neste projeto.</div>}
                 {!loading && !projectId && <div className="project-communication-empty">Selecione um projeto para consultar o feed.</div>}
             </div>
             {selectedFeedItem && <CrudModal mode="view" title="Detalhes da modificação" ariaLabel="Detalhes do evento do projeto" onClose={() => setSelectedFeedItem(null)} onSubmit={(event) => event.preventDefault()} formClassName="project-feed-detail-modal" actions={<button type="button" onClick={() => setSelectedFeedItem(null)}>Fechar</button>}>
@@ -203,11 +202,11 @@ export default function ProjectCommunicationManagement() {
                 </dl>
                 {selectedFeedItem.alteracoes?.length ? <section className="project-feed-detail-changes"><h4>Campos envolvidos</h4><div>{selectedFeedItem.alteracoes.map((change, index) => <article key={`${change.campo}-${index}`}><strong>{change.campo}</strong><div><span>Antes</span><p>{change.valorAnterior || "Não informado"}</p></div><div><span>Depois</span><p>{change.valorNovo || "Não informado"}</p></div></article>)}</div></section> : <div className="project-feed-detail-empty">Este evento não possui valores de campos disponíveis para exibição.</div>}
             </CrudModal>}
-            {!loading && panel.feed.length > FEED_PAGE_SIZE && (
+            {!loading && feedTotalPages > 1 && (
                 <footer className="project-communication-pagination" aria-label="Paginação do feed">
                     <span>
-                        {((feedPage - 1) * FEED_PAGE_SIZE) + 1}–{Math.min(feedPage * FEED_PAGE_SIZE, panel.feed.length)}
-                        {" "}de {panel.feed.length} registros · Página {feedPage} de {feedTotalPages}
+                        {((feedPage - 1) * FEED_PAGE_SIZE) + 1}–{Math.min(feedPage * FEED_PAGE_SIZE, panel.feedTotal)}
+                        {" "}de {panel.feedTotal} registros · Página {feedPage} de {feedTotalPages}
                     </span>
                     <div>
                         <button type="button" onClick={() => setFeedPage((page) => Math.max(1, page - 1))} disabled={feedPage === 1}>Anterior</button>

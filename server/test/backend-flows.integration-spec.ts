@@ -1689,7 +1689,8 @@ function createWorld(): TestWorld {
     projetoComunicacaoAuthorizationService,
     projetoAuditoriaService,
     anexoStorage as unknown as ProjetoAnexoStorageService,
-    projetoFeedRegistroService
+    projetoFeedRegistroService,
+    projetoPeriodoService
   );
   const projetoRecursoAuthorizationService = new ProjetoRecursoAuthorizationService(prismaService, projetoAuthorizationService);
   const projetoRecursoService = new ProjetoRecursoService(prismaService, projetoRecursoAuthorizationService, projetoAuditoriaService);
@@ -5582,6 +5583,42 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
     expect(painel.feed.length).toBeGreaterThan(0);
     expect(painel.feed.find((entry) => entry.entidadeId === comentarioAlheio.id)?.registro).toBe('Conteudo moderavel');
   });
+  it('pagina o feed de comunicacao no servidor sem truncar registros antigos', async () => {
+    const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
+    const projeto = await world.prisma.projeto.create({
+      data: { empresaId: empresaInicialId, chave: 'PAGE', nome: 'Comunicacao paginada', responsavelId: admin.sub, criadoPorId: admin.sub }
+    });
+    await world.prisma.projetoMembro.create({ data: { projetoId: projeto.id, usuarioId: admin.sub, papel: 'RESPONSAVEL' } });
+    const inicio = Date.UTC(2026, 0, 1);
+    await world.prisma.projetoEvento.createMany({
+      data: Array.from({ length: 205 }, (_, index) => ({
+        empresaId: empresaInicialId,
+        projetoId: projeto.id,
+        usuarioId: admin.sub,
+        entidade: 'PROJETO',
+        entidadeId: projeto.id,
+        evento: 'ATUALIZADO',
+        dados: JSON.stringify({ registro: `Evento ${index + 1}` }),
+        criadoEm: new Date(inicio + index * 1000)
+      }))
+    });
+
+    const primeiraPagina = await world.projetoComunicacaoService.painel(projeto.id, admin, { pagina: 1, limite: 5 });
+    const ultimaPagina = await world.projetoComunicacaoService.painel(projeto.id, admin, { pagina: 41, limite: 5 });
+    const paginaAjustada = await world.projetoComunicacaoService.painel(projeto.id, admin, { pagina: 99, limite: 5 });
+
+    expect(primeiraPagina.feed).toHaveLength(5);
+    expect(primeiraPagina.feedTotal).toBe(205);
+    expect(primeiraPagina.feedPagina).toBe(1);
+    expect(primeiraPagina.feedLimite).toBe(5);
+    expect(primeiraPagina.feedTotalPaginas).toBe(41);
+    expect(ultimaPagina.feed).toHaveLength(5);
+    expect(ultimaPagina.feedPagina).toBe(41);
+    expect(ultimaPagina.feed.map((entry) => entry.id)).not.toEqual(expect.arrayContaining(primeiraPagina.feed.map((entry) => entry.id)));
+    expect(paginaAjustada.feedPagina).toBe(41);
+    expect(paginaAjustada.feed).toEqual(ultimaPagina.feed);
+  });
+
   it('cadastra tarefas por recurso com funcionalidade textual e valor por hora versionado', async () => {
     const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
     const recurso = await world.prisma.recurso.create({ data: { empresaId: empresaInicialId, usuarioId: admin.sub, ativo: true } });

@@ -3,7 +3,7 @@ import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
 import { JwtPayload } from '../auth/strategies/jwt-payload.type';
-import { CreateProjetoAtualizacaoInput, CreateProjetoComentarioInput, ExcluirProjetoComentarioInput, UpdateProjetoAtualizacaoInput, UpdateProjetoComentarioInput } from './dto/projeto-comunicacao.input';
+import { CreateProjetoAtualizacaoInput, CreateProjetoComentarioInput, ExcluirProjetoComentarioInput, ProjetoComunicacaoFeedFiltroInput, UpdateProjetoAtualizacaoInput, UpdateProjetoComentarioInput } from './dto/projeto-comunicacao.input';
 import { ProjetoAtualizacaoType, ProjetoComentarioType, ProjetoComunicacaoPainelType, ProjetoComunicacaoProjetoType } from './dto/projeto-comunicacao.type';
 import { ProjetosService } from './projetos.service';
 
@@ -17,8 +17,12 @@ export class ProjetoComunicacaoResolver {
     return this.projetosService.comunicacaoProjetos(user);
   }
   @Query(() => ProjetoComunicacaoPainelType)
-  projetoComunicacao(@Args('projetoId') projetoId: string, @CurrentUser() user: JwtPayload) {
-    return this.projetosService.comunicacao(projetoId, user);
+  projetoComunicacao(
+    @Args('projetoId') projetoId: string,
+    @CurrentUser() user: JwtPayload,
+    @Args('feed', { type: () => ProjetoComunicacaoFeedFiltroInput, nullable: true }) feed?: ProjetoComunicacaoFeedFiltroInput
+  ) {
+    return this.projetosService.comunicacao(projetoId, user, feed);
   }
 
   @Mutation(() => ProjetoAtualizacaoType)

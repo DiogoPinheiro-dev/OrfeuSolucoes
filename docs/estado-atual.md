@@ -22,7 +22,7 @@ Snapshot: **30/07/2026**.
 | 12 — Sprints | Implementado | Planejamento, execução e encerramento. |
 | 13 — Marcos e entregas | Implementado | Compromissos, progresso e atraso. |
 | 14 — Dependências e Gantt | Implementado | Falta validação com volume representativo. |
-| 15 — Comunicação | Implementado | Atualizações, comentários, anexos, histórico e feed. |
+| 15 — Comunicação | Implementado | Atualizações, comentários, anexos, histórico e feed paginado no servidor, com cobertura de volume além de 200 registros. |
 | 16 — Recursos e orçamento | Implementado localmente | Recurso é cadastro empresarial vinculado a um ou mais projetos pelo próprio modal; tarefas relacionam recurso, descrição funcional livre, estimativa de conclusão e taxa; capacidade e execução ficam na Grade de capacitação; alterações ainda não fazem parte de commit. |
 | 17 — Apontamento de horas | Não iniciado | Funcionalidade reservada e inativa no Hub. |
 | 18 — Templates | Não iniciado | Funcionalidade reservada e inativa no Hub. |

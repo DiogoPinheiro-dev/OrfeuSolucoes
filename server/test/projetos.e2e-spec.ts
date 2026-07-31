@@ -8,6 +8,7 @@ import type { Request, Response } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import * as request from 'supertest';
 import { GqlAuthGuard } from '../src/modules/auth/guards/gql-auth.guard';
+import { ProjetoComunicacaoResolver } from '../src/modules/projetos/projeto-comunicacao.resolver';
 import { ProjetosResolver } from '../src/modules/projetos/projetos.resolver';
 import { ProjetosService } from '../src/modules/projetos/projetos.service';
 
@@ -104,7 +105,9 @@ describe('Projetos GraphQL e2e', () => {
     updateEquipe: jest.fn(),
     atualizarCiclo: jest.fn(),
     arquivar: jest.fn(),
-    reativar: jest.fn()
+    reativar: jest.fn(),
+    comunicacaoProjetos: jest.fn(),
+    comunicacao: jest.fn()
   };
 
   beforeAll(async () => {
@@ -119,6 +122,7 @@ describe('Projetos GraphQL e2e', () => {
       ],
       providers: [
         ProjetosResolver,
+        ProjetoComunicacaoResolver,
         GqlAuthGuard,
         ProjectTestJwtStrategy,
         { provide: ProjetosService, useValue: service }
@@ -141,6 +145,25 @@ describe('Projetos GraphQL e2e', () => {
     project = buildProject() as ProjectFixture;
     service.sugerirChave.mockResolvedValue('ORFEU');
     service.participantesDisponiveis.mockResolvedValue([userType(), userType(member)]);
+    service.comunicacaoProjetos.mockResolvedValue([{ id: project.id, chave: project.chave, nome: project.nome, arquivadoEm: null }]);
+    service.comunicacao.mockResolvedValue({
+      atualizacoes: [],
+      comentarios: [],
+      feed: [],
+      feedTotal: 205,
+      feedPagina: 41,
+      feedLimite: 5,
+      feedTotalPaginas: 41,
+      itensDisponiveis: [],
+      permissoes: {
+        podePublicarAtualizacao: true,
+        podeEditarAtualizacao: true,
+        podeComentar: true,
+        podeModerar: true,
+        podeGerenciarAnexos: true
+      },
+      ultimaAtualizacaoEm: null
+    });
     service.projetos.mockImplementation(async () => ({ items: [project], total: 1, pagina: 1, limite: 20, totalPaginas: 1 }));
     service.projeto.mockImplementation(async () => project);
     service.create.mockImplementation(async (input: Record<string, unknown>) => {
@@ -212,6 +235,36 @@ describe('Projetos GraphQL e2e', () => {
     expect(archived.body.data.arquivarProjeto.arquivadoEm).toBeTruthy();
     expect(archived.body.data.reativarProjeto.arquivadoEm).toBeNull();
   });
+
+  it('encaminha a paginacao do feed de comunicacao pela borda GraphQL', async () => {
+    const response = await gql(adminToken, `
+      query Comunicacao($projetoId: String!, $feed: ProjetoComunicacaoFeedFiltroInput) {
+        projetoComunicacao(projetoId: $projetoId, feed: $feed) {
+          feedTotal feedPagina feedLimite feedTotalPaginas
+        }
+      }
+    `, { projetoId: project.id, feed: { pagina: 41, limite: 5 } }).expect(200);
+
+    expect(response.body.errors).toBeUndefined();
+    expect(response.body.data.projetoComunicacao).toEqual({
+      feedTotal: 205, feedPagina: 41, feedLimite: 5, feedTotalPaginas: 41
+    });
+    expect(service.comunicacao).toHaveBeenCalledWith(
+      project.id,
+      expect.objectContaining({ sub: admin.sub, empresaId: 10 }),
+      { pagina: 41, limite: 5 }
+    );
+    service.comunicacao.mockClear();
+    const invalid = await gql(
+      adminToken,
+      'query($projetoId: String!, $feed: ProjetoComunicacaoFeedFiltroInput) { projetoComunicacao(projetoId: $projetoId, feed: $feed) { feedTotal } }',
+      { projetoId: project.id, feed: { pagina: 0, limite: 101 } }
+    ).expect(200);
+    expect(invalid.body.errors?.[0]?.extensions?.code).toBe('BAD_REQUEST');
+    expect(service.comunicacao).not.toHaveBeenCalled();
+
+  });
+
 
   it('rejeita acesso sem autenticação e preserva o contexto do usuário autenticado', async () => {
     const unauthenticated = await request(app.getHttpServer()).post('/graphql').send({ query: '{ projetos { total } }' }).expect(200);
