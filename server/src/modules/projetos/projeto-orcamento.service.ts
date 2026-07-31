@@ -72,12 +72,12 @@ export class ProjetoOrcamentoService {
     const contexto = await this.authorization.contexto(input.projetoId, user); await this.authorization.gerenciarFinanceiro(contexto, user);
     const orcamento = await this.orcamentoRascunho(input.projetoId); const custos = await this.prisma.projetoCusto.count({ where: { orcamentoId: orcamento.id, categoriaId: input.id } });
     if (custos > 0) throw new BadRequestException(`A categoria possui ${custos} custo(s) vinculado(s). Remova ou reclassifique esses custos antes de exclui-la.`);
-    return this.prisma.$transaction(async (tx) => { await this.deleteVersioned(tx.projetoOrcamentoCategoria, input.id, input.versao, 'A categoria', { orcamentoId: orcamento.id }); await this.audit(tx, contexto, user, 'ORCAMENTO_CATEGORIA', input.id, 'EXCLUIDA', {}); return true; });
+    return this.prisma.$transaction(async (tx) => { const atual = await tx.projetoOrcamentoCategoria.findFirst({ where: { id: input.id, orcamentoId: orcamento.id } }); await this.deleteVersioned(tx.projetoOrcamentoCategoria, input.id, input.versao, 'A categoria', { orcamentoId: orcamento.id }); await this.audit(tx, contexto, user, 'ORCAMENTO_CATEGORIA', input.id, 'EXCLUIDA', { nome: atual?.nome ?? null }); return true; });
   }
 
   async excluirCusto(input: ExcluirProjetoOrcamentoItemInput, user: JwtPayload) {
     const contexto = await this.authorization.contexto(input.projetoId, user); await this.authorization.gerenciarFinanceiro(contexto, user); const orcamento = await this.orcamentoRascunho(input.projetoId);
-    return this.prisma.$transaction(async (tx) => { await this.deleteVersioned(tx.projetoCusto, input.id, input.versao, 'O custo', { orcamentoId: orcamento.id }); await this.audit(tx, contexto, user, 'CUSTO', input.id, 'EXCLUIDO', {}); return true; });
+    return this.prisma.$transaction(async (tx) => { const atual = await tx.projetoCusto.findFirst({ where: { id: input.id, orcamentoId: orcamento.id } }); await this.deleteVersioned(tx.projetoCusto, input.id, input.versao, 'O custo', { orcamentoId: orcamento.id }); await this.audit(tx, contexto, user, 'CUSTO', input.id, 'EXCLUIDO', { descricao: atual?.descricao ?? null, categoriaId: atual?.categoriaId ?? null }); return true; });
   }
 
   async aprovar(input: AprovarProjetoOrcamentoInput, user: JwtPayload) {

@@ -16,6 +16,7 @@ import { ProjetoComunicacaoAuthorizationService } from './projeto-comunicacao-au
 import { ProjetoComunicacaoController } from './projeto-comunicacao.controller';
 import { ProjetoComunicacaoResolver } from './projeto-comunicacao.resolver';
 import { ProjetoComunicacaoService } from './projeto-comunicacao.service';
+import { ProjetoFeedRegistroService } from './projeto-feed-registro.service';
 import { ProjetoOrcamentoAuthorizationService } from './projeto-orcamento-authorization.service';
 import { ProjetoOrcamentoResolver } from './projeto-orcamento.resolver';
 import { ProjetoOrcamentoService } from './projeto-orcamento.service';
@@ -59,6 +60,7 @@ import { ProjetosService } from './projetos.service';
     ProjetoCronogramaAuthorizationService,
     ProjetoCronogramaService,
     ProjetoComunicacaoAuthorizationService,
+    ProjetoFeedRegistroService,
     ProjetoComunicacaoService,
     ProjetoRecursoAuthorizationService,
     ProjetoRecursoService,

@@ -69,6 +69,7 @@ export class ProjetoFeedItemType {
   @Field() id!: string;
   @Field() tipo!: string;
   @Field() entidadeId!: string;
+  @Field() registro!: string;
   @Field() evento!: string;
   @Field() entidade!: string;
   @Field() funcionalidade!: string;

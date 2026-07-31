@@ -64,6 +64,7 @@ import { ProjetoCronogramaAuthorizationService } from '../src/modules/projetos/p
 import { ProjetoCronogramaService } from '../src/modules/projetos/projeto-cronograma.service';
 import { ProjetoComunicacaoAuthorizationService } from '../src/modules/projetos/projeto-comunicacao-authorization.service';
 import { ProjetoComunicacaoService } from '../src/modules/projetos/projeto-comunicacao.service';
+import { ProjetoFeedRegistroService } from '../src/modules/projetos/projeto-feed-registro.service';
 import { ProjetoOrcamentoAuthorizationService } from '../src/modules/projetos/projeto-orcamento-authorization.service';
 import { ProjetoOrcamentoService } from '../src/modules/projetos/projeto-orcamento.service';
 import { ProjetoRecursoAuthorizationService } from '../src/modules/projetos/projeto-recurso-authorization.service';
@@ -1682,11 +1683,13 @@ function createWorld(): TestWorld {
     prismaService,
     projetoAuthorizationService
   );
+  const projetoFeedRegistroService = new ProjetoFeedRegistroService(prismaService);
   const projetoComunicacaoService = new ProjetoComunicacaoService(
     prismaService,
     projetoComunicacaoAuthorizationService,
     projetoAuditoriaService,
-    anexoStorage as unknown as ProjetoAnexoStorageService
+    anexoStorage as unknown as ProjetoAnexoStorageService,
+    projetoFeedRegistroService
   );
   const projetoRecursoAuthorizationService = new ProjetoRecursoAuthorizationService(prismaService, projetoAuthorizationService);
   const projetoRecursoService = new ProjetoRecursoService(prismaService, projetoRecursoAuthorizationService, projetoAuditoriaService);
@@ -5496,6 +5499,9 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
     const item = await world.prisma.projetoItem.create({
       data: { empresaId: empresaInicialId, projetoId: projeto.id, numero: 1, chave: 'COM-1', titulo: 'Item comentavel', autorId: admin.sub }
     });
+    await world.prisma.projetoEvento.create({
+      data: { empresaId: empresaInicialId, projetoId: projeto.id, usuarioId: admin.sub, entidade: 'ITEM', entidadeId: item.id, evento: 'PRIORIZADO', dados: JSON.stringify({ de: 2, para: 1 }) }
+    });
 
     const atualizacao = await world.projetoComunicacaoService.createAtualizacao({
       projetoId: projeto.id, conteudo: 'Primeira leitura do andamento', saudePercebida: 'EM_RISCO' as any
@@ -5529,16 +5535,22 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
     expect(atualizacaoNoFeed.evento).toBe('EDITADA');
     expect(atualizacaoNoFeed.funcionalidade).toBe('Comunicação do projeto');
     expect(atualizacaoNoFeed.autorAcao?.id).toBe(admin.sub);
+    expect(atualizacaoNoFeed.registro).toBe('Andamento revisado');
+    expect(atualizacaoNoFeed.contexto).toBe('COM — Comunicacao integrada');
     expect(atualizacaoNoFeed.alteracoes).toEqual(expect.arrayContaining([
       expect.objectContaining({ campo: 'Conteúdo', valorAnterior: 'Primeira leitura do andamento', valorNovo: 'Andamento revisado' }),
       expect.objectContaining({ campo: 'Saúde percebida', valorAnterior: 'Em risco', valorNovo: 'Em dia' })
     ]));
     const comentarioNoFeed = expectDefined(painel.feed.find((entry) => entry.entidadeId === comentarioItem.id));
     expect(comentarioNoFeed.evento).toBe('EDITADO');
+    expect(comentarioNoFeed.contexto).toBe('COM — Comunicacao integrada › COM-1 — Item comentavel');
     expect(comentarioNoFeed.alteracoes).toEqual(expect.arrayContaining([
       expect.objectContaining({ campo: 'Conteúdo', valorAnterior: 'Decisao vinculada ao item', valorNovo: 'Decisao do item revisada' })
     ]));
     expect(painel.feed.find((entry) => entry.tipo === 'EVENTO')?.funcionalidade).toBeTruthy();
+    expect(painel.feed.find((entry) => entry.entidade === 'ITEM')?.registro).toBe('COM-1 — Item comentavel');
+    expect(painel.feed.find((entry) => entry.entidade === 'ITEM')?.contexto).toBe('COM — Comunicacao integrada');
+    expect(painel.feed.find((entry) => entry.entidade === 'ANEXO')?.contexto).toBe('COM — Comunicacao integrada › Atualização: Andamento revisado');
 
     await world.prisma.projetoItem.update({ where: { id: item.id }, data: { arquivadoEm: new Date(), arquivadoPorId: admin.sub } });
     await expect(world.projetoComunicacaoService.createComentario({
@@ -5568,6 +5580,7 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
     }, admin)).rejects.toThrow('projeto arquivado esta disponivel somente para consulta');
     painel = await world.projetoComunicacaoService.painel(projeto.id, admin);
     expect(painel.feed.length).toBeGreaterThan(0);
+    expect(painel.feed.find((entry) => entry.entidadeId === comentarioAlheio.id)?.registro).toBe('Conteudo moderavel');
   });
   it('cadastra tarefas por recurso com funcionalidade textual e valor por hora versionado', async () => {
     const { world, admin, empresaInicialId } = await bootstrapBaseWorld();

@@ -108,8 +108,13 @@ export class ProjetoGradeCapacitacaoService {
     const contexto = await this.authorization.contexto(input.projetoId, user, ProjetoAcao.EXCLUIR);
     if (contexto.projeto.arquivadoEm) throw new BadRequestException('O projeto arquivado esta disponivel somente para consulta.');
     return this.prisma.$transaction(async (tx) => {
-      await this.deleteVersioned(tx[model], input.id, input.versao, label, { projetoId: input.projetoId });
-      await this.audit(tx, contexto.empresaId, input.projetoId, user, entidade, input.id, 'EXCLUIDA', {});
+      const modelClient = tx[model] as any;
+      const atual = await modelClient.findFirst({ where: { id: input.id, projetoId: input.projetoId } });
+      await this.deleteVersioned(modelClient, input.id, input.versao, label, { projetoId: input.projetoId });
+      const dados = entidade === 'CAPACIDADE'
+        ? { projetoRecursoId: atual?.recursoId, inicioEm: atual?.inicioEm, fimEm: atual?.fimEm }
+        : { projetoRecursoId: atual?.recursoId, tarefaId: atual?.tarefaId, atividade: atual?.atividade, inicioEm: atual?.inicioEm, fimEm: atual?.fimEm };
+      await this.audit(tx, contexto.empresaId, input.projetoId, user, entidade, input.id, 'EXCLUIDA', dados);
       return true;
     });
   }

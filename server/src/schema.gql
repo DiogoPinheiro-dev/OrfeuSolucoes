@@ -1228,6 +1228,7 @@ type ProjetoFeedItemType {
   evento: String!
   funcionalidade: String!
   id: String!
+  registro: String!
   saudePercebida: ProjetoSaude
   tipo: String!
 }

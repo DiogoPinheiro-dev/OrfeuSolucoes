@@ -8,6 +8,7 @@ import { ProjetoAnexoType, ProjetoAtualizacaoType, ProjetoComentarioType, Projet
 import { ProjetoAuditoriaService } from './projeto-auditoria.service';
 import { ProjetoAnexoStorageService } from './projeto-anexo-storage.service';
 import { ProjetoComunicacaoAuthorizationService, ProjetoComunicacaoContexto } from './projeto-comunicacao-authorization.service';
+import { ProjetoFeedRegistroService } from './projeto-feed-registro.service';
 import { MAX_PROJETO_ANEXO_FILES, validateProjetoAnexoFile } from './policies/projeto-anexo.policy';
 import { ProjetoUploadFile } from './types/projeto-comunicacao.types';
 import { ProjetoSaude } from './types/projeto.types';
@@ -31,7 +32,8 @@ export class ProjetoComunicacaoService {
     private readonly prisma: PrismaService,
     private readonly authorization: ProjetoComunicacaoAuthorizationService,
     private readonly auditoria: ProjetoAuditoriaService,
-    private readonly storage: ProjetoAnexoStorageService
+    private readonly storage: ProjetoAnexoStorageService,
+    private readonly feedRegistros: ProjetoFeedRegistroService
   ) {}
 
   async projetos(user: JwtPayload): Promise<ProjetoComunicacaoProjetoType[]> {
@@ -52,6 +54,11 @@ export class ProjetoComunicacaoService {
     ]);
     const mappedUpdates = atualizacoes.map((item) => this.toAtualizacao(item as AnyRecord, user, permissoes));
     const mappedComments = comentarios.map((item) => this.toComentario(item as AnyRecord, user, permissoes));
+    const referencias = await this.feedRegistros.resolver(contexto.projeto, contexto.empresaId, eventos.map((item) => ({
+      entidade: item.entidade,
+      entidadeId: item.entidadeId,
+      dados: item.dados
+    })));
     const communicationEventIds = new Set([
       ...mappedUpdates.map((item) => `ATUALIZACAO:${item.id}`),
       ...mappedComments.map((item) => `COMENTARIO:${item.id}`)
@@ -68,18 +75,23 @@ export class ProjetoComunicacaoService {
     }
     const feed: ProjetoFeedItemType[] = [
       ...mappedUpdates.map((item) => ({ id: `ATUALIZACAO:${item.id}`, tipo: 'ATUALIZACAO', entidadeId: item.id,
-        conteudo: item.conteudo, autor: item.autor, saudePercebida: item.saudePercebida, contexto: null,
+        registro: this.feedRegistros.resumo(item.conteudo) || item.id,
+        conteudo: item.conteudo, autor: item.autor, saudePercebida: item.saudePercebida,
+        contexto: referencias.contextos.get(this.feedRegistros.chave('ATUALIZACAO', item.id)) ?? `${contexto.projeto.chave} — ${contexto.projeto.nome}`,
         ...this.communicationDetails(item as AnyRecord, latestEventByEntity.get(`ATUALIZACAO:${item.id}`), 'ATUALIZACAO'),
         editado: item.versao > 1, anexos: item.anexos, criadoEm: item.criadoEm })),
       ...mappedComments.map((item) => ({ id: `COMENTARIO:${item.id}`, tipo: 'COMENTARIO', entidadeId: item.id,
-        conteudo: item.conteudo, autor: item.autor, saudePercebida: null, contexto: item.contexto,
+        registro: this.feedRegistros.resumo(item.conteudo) || item.id,
+        conteudo: item.conteudo, autor: item.autor, saudePercebida: null,
+        contexto: referencias.contextos.get(this.feedRegistros.chave('COMENTARIO', item.id)) ?? item.contexto,
         ...this.communicationDetails(item as AnyRecord, latestEventByEntity.get(`COMENTARIO:${item.id}`), 'COMENTARIO'),
         editado: !!item.editadoEm, anexos: item.anexos, criadoEm: item.criadoEm })),
       ...eventos.filter((item) => !communicationEventIds.has(`${item.entidade}:${item.entidadeId}`)).map((item) => ({
         id: `EVENTO:${item.id}`, tipo: 'EVENTO', entidadeId: item.entidadeId,
+        registro: referencias.registros.get(this.feedRegistros.chave(item.entidade, item.entidadeId)) ?? item.entidadeId,
         conteudo: this.eventDescription(item.entidade, item.evento), autor: item.usuario as any,
         ...this.auditDetails(item.entidade, item.evento, item.dados, item.usuario as AnyRecord),
-        saudePercebida: null, contexto: item.entidade, editado: false, anexos: [], criadoEm: item.criadoEm
+        saudePercebida: null, contexto: referencias.contextos.get(this.feedRegistros.chave(item.entidade, item.entidadeId)) ?? `${contexto.projeto.chave} — ${contexto.projeto.nome}`, editado: false, anexos: [], criadoEm: item.criadoEm
       }))
     ].sort((a, b) => b.criadoEm.getTime() - a.criadoEm.getTime()).slice(0, 200);
     return { atualizacoes: mappedUpdates, comentarios: mappedComments, feed, itensDisponiveis, permissoes,

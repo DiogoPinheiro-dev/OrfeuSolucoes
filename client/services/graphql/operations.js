@@ -1558,7 +1558,7 @@ export const PROJETO_COMUNICACAO_QUERY = gql`
       comentarios { ...ProjetoComentarioFields }
       itensDisponiveis { id chave titulo }
       feed {
-        id tipo entidadeId evento entidade funcionalidade conteudo saudePercebida contexto editado criadoEm
+        id tipo entidadeId registro evento entidade funcionalidade conteudo saudePercebida contexto editado criadoEm
         autor { ...ProjetoComunicacaoUserFields }
         autorAcao { ...ProjetoComunicacaoUserFields }
         alteracoes { campo valorAnterior valorNovo }

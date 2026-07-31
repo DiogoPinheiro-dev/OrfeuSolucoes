@@ -195,7 +195,7 @@ export default function ProjectCommunicationManagement() {
                     <div><dt>Funcionalidade</dt><dd>{selectedFeedItem.funcionalidade}</dd></div>
                     <div><dt>Ação</dt><dd>{detailLabel(selectedFeedItem.evento)}</dd></div>
                     <div><dt>Entidade</dt><dd>{detailLabel(selectedFeedItem.entidade)}</dd></div>
-                    <div><dt>Registro</dt><dd>{selectedFeedItem.entidadeId}</dd></div>
+                    <div><dt>Registro</dt><dd>{selectedFeedItem.registro || selectedFeedItem.entidadeId}</dd></div>
                     <div><dt>Data e hora</dt><dd>{dateTime(selectedFeedItem.criadoEm)}</dd></div>
                     {selectedFeedItem.contexto && <div><dt>Contexto</dt><dd>{selectedFeedItem.contexto}</dd></div>}
                     {selectedFeedItem.editado && <div><dt>Situação</dt><dd>Editado</dd></div>}
