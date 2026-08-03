@@ -1159,6 +1159,16 @@ enum ProjetoCronogramaSeveridade {
   CRITICO
 }
 
+type ProjetoCustoTarefaResumoType {
+  ativo: Boolean!
+  estimativaMinutos: Int!
+  funcionalidade: String!
+  id: String!
+  moeda: String!
+  projetoRecursoId: String
+  valorHora: String!
+}
+
 type ProjetoCustoTaxaHistoricoType {
   criadoEm: DateTime!
   criadoPor: ProjetoUsuarioType!
@@ -1178,6 +1188,8 @@ type ProjetoCustoType {
   quantidadeMinutos: Int
   recurso: ProjetoRecursoResumoType
   recursoId: String
+  tarefa: ProjetoCustoTarefaResumoType
+  tarefaId: String
   taxaHora: String
   taxas: [ProjetoCustoTaxaHistoricoType!]!
   tipo: ProjetoCustoTipo!
@@ -1442,6 +1454,7 @@ type ProjetoOrcamentoPainelType {
   financeiro: ProjetoFinanceiroType
   permissoes: ProjetoOrcamentoPermissoesType!
   recursos: [ProjetoRecursoResumoType!]!
+  tarefas: [ProjetoCustoTarefaResumoType!]!
 }
 
 type ProjetoOrcamentoPermissoesType {
@@ -1807,6 +1820,7 @@ input SalvarProjetoCustoInput {
   projetoId: String!
   quantidadeMinutos: Int
   recursoId: String
+  tarefaId: String
   taxaHora: String
   tipo: ProjetoCustoTipo!
   valorComprometido: String!

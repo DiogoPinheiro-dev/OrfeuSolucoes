@@ -33,7 +33,6 @@ export default function ProjectResourcePlanningManagement() {
   const [panel, setPanel] = useState(emptyPanel);
   const [activeView, setActiveView] = useState("vinculos");
   const [selectedId, setSelectedId] = useState(null);
-  const [taskViewId, setTaskViewId] = useState(null);
   const [projectFilter, setProjectFilter] = useState("");
   const [resourceFilter, setResourceFilter] = useState("");
   const [taskStatusFilter, setTaskStatusFilter] = useState("");
@@ -43,7 +42,6 @@ export default function ProjectResourcePlanningManagement() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [linkEditor, setLinkEditor] = useState(null);
-  const [viewState, setViewState] = useState(null);
   const [taskEditor, setTaskEditor] = useState(null);
   const [periodEditor, setPeriodEditor] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -84,10 +82,8 @@ export default function ProjectResourcePlanningManagement() {
   const taskSelection = useCrudSelection(taskRows);
   const selectedLine = useMemo(() => panel.linhas.find((item) => item.id === selectedId) || null, [panel.linhas, selectedId]);
   const selectedTask = useMemo(() => allTaskRows.find((item) => item.id === taskSelection.selectedId) || null, [allTaskRows, taskSelection.selectedId]);
-  const viewedTask = useMemo(() => allTaskRows.find((item) => item.id === taskViewId) || null, [allTaskRows, taskViewId]);
   const writableTaskLines = useMemo(() => panel.linhas.filter((line) => writable(line, true)), [panel.linhas]);
   const editorLine = useMemo(() => panel.linhas.find((item) => item.id === linkEditor?.id) || null, [panel.linhas, linkEditor?.id]);
-  const viewLine = useMemo(() => panel.linhas.find((item) => item.id === viewState?.id) || null, [panel.linhas, viewState?.id]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -149,13 +145,27 @@ export default function ProjectResourcePlanningManagement() {
     projetoId: line.projetoId,
     ativo: line.vinculoAtivo
   });
+
+  const openLinkView = (line) => {
+    setSelectedId(line.id);
+    setLinkEditor({
+      mode: "view",
+      activeTab: "cadastro",
+      id: line.id,
+      versao: line.versao,
+      cadastroRecursoId: line.cadastroRecursoId,
+      projetoId: line.projetoId,
+      ativo: line.vinculoAtivo
+    });
+  };
   const availableLinkProjects = useMemo(() => projects.filter((project) =>
-    linkEditor?.mode === "edit"
+    linkEditor?.mode !== "create"
       ? project.id === linkEditor.projetoId
       : !project.arquivadoEm && !panel.linhas.some((line) => line.cadastroRecursoId === linkEditor?.cadastroRecursoId && line.projetoId === project.id)
   ), [linkEditor, panel.linhas, projects]);
   const submitLink = (event) => {
     event.preventDefault();
+    if (linkEditor.mode === "view") return;
     const input = {
       cadastroRecursoId: linkEditor.cadastroRecursoId,
       projetoId: linkEditor.projetoId,
@@ -213,8 +223,28 @@ export default function ProjectResourcePlanningManagement() {
     else openTask(task.line, task);
   };
 
+  const openTaskView = (task) => {
+    taskSelection.selectRow(task.id);
+    setTaskEditor({
+      mode: "view",
+      id: task.id,
+      versao: task.versao,
+      recursoId: task.recursoId,
+      projetoRecursoId: task.projetoRecursoId || task.line?.id || "",
+      funcionalidade: task.funcionalidade,
+      estimativaHoras: String(Number(task.estimativaMinutos) / 60),
+      valorHora: String(Number(task.valorHora)),
+      moeda: task.moeda,
+      observacao: task.observacao || "",
+      ativo: task.ativo,
+      pendente: !!task.pendenteVinculo,
+      lockLink: true
+    });
+  };
+
   const submitTask = (event) => {
     event.preventDefault();
+    if (taskEditor.mode === "view") return;
     const input = {
       recursoId: taskEditor.recursoId,
       projetoRecursoId: taskEditor.projetoRecursoId,
@@ -372,7 +402,7 @@ export default function ProjectResourcePlanningManagement() {
         onSelect={setSelectedId}
         onCreate={openLinkCreate}
         onEdit={openLinkEdit}
-        onView={(line) => { setSelectedId(line.id); setViewState({ id: line.id, activeTab: "cadastro" }); }}
+        onView={openLinkView}
         filters={<>
           <label>Projeto<select value={projectFilter} onChange={(event) => setProjectFilter(event.target.value)}><option value="">Todos os projetos</option>{projects.map((project) => <option key={project.id} value={project.id}>{project.chave} — {project.nome}</option>)}</select></label>
           <label>Recurso<select value={resourceFilter} onChange={(event) => setResourceFilter(event.target.value)}><option value="">Todos os recursos</option>{resources.map((resource) => <option key={resource.id} value={resource.id}>{userLabel(resource.usuario)}</option>)}</select></label>
@@ -405,7 +435,7 @@ export default function ProjectResourcePlanningManagement() {
         onToggleSelectAll={taskSelection.toggleVisible}
         onCreate={openTaskCreate}
         onEdit={openTaskFromRow}
-        onView={(task) => { taskSelection.selectRow(task.id); setTaskViewId(task.id); }}
+        onView={openTaskView}
         onDelete={(ids) => setDeleteTarget({ kind: "TAREFA", items: allTaskRows.filter((item) => ids.includes(item.id)), line: null })}
         search={taskSearch}
         onSearchChange={setTaskSearch}
@@ -425,13 +455,16 @@ export default function ProjectResourcePlanningManagement() {
       />
     </>}
     {linkEditor && <CrudModal
-      mode={linkEditor.mode === "create" ? "create" : "edit"}
-      title={linkEditor.mode === "create" ? "Vincular recurso ao projeto" : "Planejar recurso"}
+      mode={linkEditor.mode}
+      title={linkEditor.mode === "create" ? "Vincular recurso ao projeto" : linkEditor.mode === "view" ? "Visualizar planejamento do recurso" : "Planejar recurso"}
+      ariaLabel={linkEditor.mode === "view" ? "Visualizar planejamento do recurso" : undefined}
       onClose={() => setLinkEditor(null)}
       onSubmit={submitLink}
       formClassName="resource-planning-form"
       modalClassName="resource-planning-modal"
-      actions={<><button type="button" className="secondary" onClick={() => setLinkEditor(null)}>Cancelar</button><button type="submit" disabled={saving || !linkEditor.cadastroRecursoId || !linkEditor.projetoId}>{saving ? "Salvando..." : "Salvar vínculo"}</button></>}
+      actions={linkEditor.mode === "view"
+        ? <button type="button" onClick={() => setLinkEditor(null)}>Fechar</button>
+        : <><button type="button" className="secondary" onClick={() => setLinkEditor(null)}>Cancelar</button><button type="submit" disabled={saving || !linkEditor.cadastroRecursoId || !linkEditor.projetoId}>{saving ? "Salvando..." : "Salvar vínculo"}</button></>}
     >
       <CrudModalTabs tabs={tabs} activeTab={linkEditor.activeTab} onChange={(activeTab) => setLinkEditor({ ...linkEditor, activeTab })} />
       <CrudModalTabPanel active={linkEditor.activeTab === "cadastro"}>
@@ -439,55 +472,28 @@ export default function ProjectResourcePlanningManagement() {
       </CrudModalTabPanel>
       <CrudModalTabPanel active={linkEditor.activeTab === "capacidade"}>
         <PlanningTabPlaceholder line={editorLine} label="capacidade">
-          {editorLine && <CapacityPanel line={editorLine} permissions={panel.permissoes} editable onCreate={() => openPeriod("CAPACIDADE", editorLine)} onEdit={(item) => openPeriod("CAPACIDADE", editorLine, item)} onView={(item) => openPeriod("CAPACIDADE", editorLine, item, true)} onDelete={(items) => setDeleteTarget({ kind: "CAPACIDADE", items, line: editorLine })} />}
+          {editorLine && <CapacityPanel line={editorLine} permissions={panel.permissoes} editable={linkEditor.mode !== "view"} onCreate={() => openPeriod("CAPACIDADE", editorLine)} onEdit={(item) => openPeriod("CAPACIDADE", editorLine, item)} onView={(item) => openPeriod("CAPACIDADE", editorLine, item, true)} onDelete={(items) => setDeleteTarget({ kind: "CAPACIDADE", items, line: editorLine })} />}
         </PlanningTabPlaceholder>
       </CrudModalTabPanel>
       <CrudModalTabPanel active={linkEditor.activeTab === "tarefas"}>
         <PlanningTabPlaceholder line={editorLine} label="tarefas">
-          {editorLine && <TaskPanel line={editorLine} permissions={panel.permissoes} editable onCreate={() => openTask(editorLine)} onEdit={(item) => openTask(editorLine, item)} onView={(item) => setTaskViewId(item.id)} onDelete={(items) => setDeleteTarget({ kind: "TAREFA", items, line: editorLine })} />}
+          {editorLine && <TaskPanel line={editorLine} permissions={panel.permissoes} editable={linkEditor.mode !== "view"} onCreate={() => openTask(editorLine)} onEdit={(item) => openTask(editorLine, item)} onView={openTaskView} onDelete={(items) => setDeleteTarget({ kind: "TAREFA", items, line: editorLine })} />}
         </PlanningTabPlaceholder>
       </CrudModalTabPanel>
       <CrudModalTabPanel active={linkEditor.activeTab === "planejamento"}>
         <PlanningTabPlaceholder line={editorLine} label="execuções">
-          {editorLine && <ExecutionPanel line={editorLine} permissions={panel.permissoes} editable onCreate={() => openPeriod("EXECUCAO", editorLine)} onEdit={(item) => openPeriod("EXECUCAO", editorLine, item)} onView={(item) => openPeriod("EXECUCAO", editorLine, item, true)} onDelete={(items) => setDeleteTarget({ kind: "EXECUCAO", items, line: editorLine })} />}
+          {editorLine && <ExecutionPanel line={editorLine} permissions={panel.permissoes} editable={linkEditor.mode !== "view"} onCreate={() => openPeriod("EXECUCAO", editorLine)} onEdit={(item) => openPeriod("EXECUCAO", editorLine, item)} onView={(item) => openPeriod("EXECUCAO", editorLine, item, true)} onDelete={(items) => setDeleteTarget({ kind: "EXECUCAO", items, line: editorLine })} />}
         </PlanningTabPlaceholder>
       </CrudModalTabPanel>
     </CrudModal>}
 
-    {viewLine && <CrudModal
-      mode="view"
-      title={userLabel(viewLine.usuario)}
-      ariaLabel="Visualizar planejamento do recurso"
-      onClose={() => setViewState(null)}
-      onSubmit={(event) => event.preventDefault()}
-      formClassName="resource-planning-view-form"
-      modalClassName="resource-planning-modal"
-      actions={<button type="button" onClick={() => setViewState(null)}>Fechar</button>}
-    >
-      <CrudModalTabs tabs={tabs} activeTab={viewState.activeTab} onChange={(activeTab) => setViewState({ ...viewState, activeTab })} />
-      <CrudModalTabPanel active={viewState.activeTab === "cadastro"}><ViewRegistration line={viewLine} /></CrudModalTabPanel>
-      <CrudModalTabPanel active={viewState.activeTab === "capacidade"}><CapacityPanel line={viewLine} onView={(item) => openPeriod("CAPACIDADE", viewLine, item, true)} /></CrudModalTabPanel>
-      <CrudModalTabPanel active={viewState.activeTab === "tarefas"}><TaskPanel line={viewLine} onView={(item) => setTaskViewId(item.id)} /></CrudModalTabPanel>
-      <CrudModalTabPanel active={viewState.activeTab === "planejamento"}><ExecutionPanel line={viewLine} onView={(item) => openPeriod("EXECUCAO", viewLine, item, true)} /></CrudModalTabPanel>
-    </CrudModal>}
 
-    {viewedTask && <CrudModal
-      mode="view"
-      title={viewedTask.funcionalidade}
-      ariaLabel="Visualizar tarefa"
-      onClose={() => setTaskViewId(null)}
-      onSubmit={(event) => event.preventDefault()}
-      formClassName="resource-planning-view-form"
-      modalClassName="resource-planning-modal"
-      actions={<button type="button" onClick={() => setTaskViewId(null)}>Fechar</button>}
-    >
-      <TaskDetails task={viewedTask} />
-    </CrudModal>}
 
     {taskEditor && <TaskEditor
       editor={taskEditor}
       setEditor={setTaskEditor}
       lines={panel.linhas}
+      resources={resources}
       saving={saving}
       onClose={() => setTaskEditor(null)}
       onSubmit={submitTask}
@@ -516,59 +522,16 @@ export default function ProjectResourcePlanningManagement() {
 
 function RegistrationPanel({ editor, resources, projects, panel, setEditor }) {
   return <div className="resource-planning-form-grid">
-    <label><span>Recurso</span><select required disabled={editor.mode === "edit"} value={editor.cadastroRecursoId} onChange={(event) => {
+    <label><span>Recurso</span><select required disabled={editor.mode !== "create"} value={editor.cadastroRecursoId} onChange={(event) => {
       const cadastroRecursoId = event.target.value;
       const projetoId = panel.projetos.find((project) => !project.arquivadoEm && !panel.linhas.some((line) => line.cadastroRecursoId === cadastroRecursoId && line.projetoId === project.id))?.id || "";
       setEditor({ ...editor, cadastroRecursoId, projetoId });
     }}><option value="">Selecione</option>{resources.filter((item) => item.ativo || item.id === editor.cadastroRecursoId).map((item) => <option key={item.id} value={item.id}>{userLabel(item.usuario)}</option>)}</select><small>Recurso previamente cadastrado na empresa.</small></label>
-    <label><span>Projeto</span><select required disabled={editor.mode === "edit"} value={editor.projetoId} onChange={(event) => setEditor({ ...editor, projetoId: event.target.value })}><option value="">Selecione</option>{projects.map((project) => <option key={project.id} value={project.id}>{project.chave} — {project.nome}</option>)}</select><small>Projeto em que capacidade, tarefas e execuções serão planejadas.</small></label>
-    <label className="resource-planning-check"><input type="checkbox" checked={editor.ativo} disabled={editor.mode === "create"} onChange={(event) => setEditor({ ...editor, ativo: event.target.checked })} /><span><strong>Vínculo ativo</strong><small>Ao desativar, capacidade, tarefas, execuções, custos e histórico serão preservados.</small></span></label>
+    <label><span>Projeto</span><select required disabled={editor.mode !== "create"} value={editor.projetoId} onChange={(event) => setEditor({ ...editor, projetoId: event.target.value })}><option value="">Selecione</option>{projects.map((project) => <option key={project.id} value={project.id}>{project.chave} — {project.nome}</option>)}</select><small>Projeto em que capacidade, tarefas e execuções serão planejadas.</small></label>
+    <label className="resource-planning-check"><input type="checkbox" checked={editor.ativo} disabled={editor.mode !== "edit"} onChange={(event) => setEditor({ ...editor, ativo: event.target.checked })} /><span><strong>Vínculo ativo</strong><small>Ao desativar, capacidade, tarefas, execuções, custos e histórico serão preservados.</small></span></label>
   </div>;
 }
 
-function ViewRegistration({ line }) {
-  return <div className="resource-planning-view-grid">
-    <article><span>Recurso</span><strong>{userLabel(line.usuario)}</strong></article>
-    <article><span>Projeto</span><strong>{line.projeto.chave} — {line.projeto.nome}</strong></article>
-    <article><span>Situação do recurso</span><strong>{line.recursoAtivo ? "Ativo" : "Inativo"}</strong></article>
-    <article><span>Situação do vínculo</span><strong>{line.vinculoAtivo ? "Ativo" : "Inativo"}</strong></article>
-    <article><span>Capacidade</span><strong>{hours(line.capacidadeTotalMinutos)}</strong></article>
-    <article><span>Custo estimado</span><strong>{costLabel(line.custosEstimados)}</strong></article>
-  </div>;
-}
-
-function TaskDetails({ task }) {
-  const executions = task.line?.alocacoes.filter((item) => item.tarefaId === task.id) || [];
-  const estimatedCost = (Number(task.estimativaMinutos) / 60) * Number(task.valorHora);
-  const rateColumns = [
-    { key: "valorHora", label: "Valor/hora", render: (rate) => currency(rate.valorHora, rate.moeda) },
-    { key: "moeda", label: "Moeda" },
-    { key: "criadoEm", label: "Alterado em", render: (rate) => dateTime(rate.criadoEm) },
-    { key: "criadoPor", label: "Alterado por", render: (rate) => userLabel(rate.criadoPor) }
-  ];
-  const executionColumns = [
-    { key: "inicioEm", label: "Início", render: (item) => dateLabel(item.inicioEm) },
-    { key: "fimEm", label: "Fim", render: (item) => dateLabel(item.fimEm) },
-    { key: "horas", label: "Horas", render: (item) => hours(item.alocacaoMinutos) },
-    { key: "uso", label: "Uso no período", render: (item) => `${item.percentualAlocado}%` },
-    { key: "risco", label: "Risco", render: (item) => item.sobrealocado ? "Sobrealocada" : "Regular" }
-  ];
-  return <>
-    <div className="resource-planning-view-grid">
-      <article><span>Recurso</span><strong>{userLabel(task.usuario)}</strong></article>
-      <article><span>Projeto</span><strong>{task.projeto ? `${task.projeto.chave} — ${task.projeto.nome}` : "Pendente de vínculo"}</strong></article>
-      <article><span>Horas estimadas</span><strong>{hours(task.estimativaMinutos)}</strong></article>
-      <article><span>Horas planejadas</span><strong>{hours(task.planejadoMinutos)}</strong></article>
-      <article><span>Saldo</span><strong className={task.sobreplanejada ? "risk" : ""}>{hours(task.saldoMinutos)}</strong></article>
-      <article><span>Valor por hora</span><strong>{currency(task.valorHora, task.moeda)}</strong></article>
-      <article><span>Custo estimado</span><strong>{currency(estimatedCost, task.moeda)}</strong></article>
-      <article><span>Situação</span><strong>{task.pendenteVinculo ? "Pendente de vínculo" : task.ativo ? "Ativa" : "Inativa"}</strong></article>
-    </div>
-    {task.observacao && <div className="resource-planning-task-observation"><span>Observação</span><p>{task.observacao}</p></div>}
-    <CrudGrid compact title="Histórico de valores" kicker="Tarefa" description={`${task.taxas?.length || 0} alteração(ões) registrada(s)`} columns={rateColumns} rows={task.taxas || []} showCreate={false} showEdit={false} showView={false} showDelete={false} selectable={false} emptyMessage="Nenhuma alteração de valor registrada." />
-    <CrudGrid compact title="Execuções planejadas" kicker="Tarefa" description={`${executions.length} período(s)`} columns={executionColumns} rows={executions} showCreate={false} showEdit={false} showView={false} showDelete={false} selectable={false} emptyMessage="Nenhuma execução planejada para esta tarefa." />
-  </>;
-}
 function PlanningTabPlaceholder({ line, label, children }) {
   return line ? children : <div className="resource-planning-placeholder"><strong>{label[0].toUpperCase() + label.slice(1)} disponíveis após salvar</strong><p>Conclua o vínculo entre recurso e projeto para continuar.</p></div>;
 }
@@ -607,7 +570,7 @@ function TaskPanel({ line, permissions = {}, editable = false, onCreate, onEdit,
   ];
   return <>
     {editable && !canWrite && <ReadonlyNotice />}
-    <CrudGrid compact title="Tarefas" kicker="Planejamento" description={`${line.tarefas.length} cadastrada(s) · última taxa ${dateTime(line.tarefas[0]?.taxas?.[0]?.criadoEm)}`} columns={columns} rows={line.tarefas} selectedId={selection.selectedId} selectedIds={selection.selectedIds} onSelect={selection.selectRow} onToggleSelect={selection.toggleSelected} onToggleSelectAll={selection.toggleVisible} onCreate={onCreate} onEdit={onEdit} onView={onView} onDelete={(ids) => onDelete?.(line.tarefas.filter((item) => ids.includes(item.id)))} emptyMessage="Nenhuma tarefa cadastrada para este recurso e projeto." canCreate={canWrite && permissions.podeIncluir} canEdit={!!selected && canWrite && permissions.podeAlterar} canView={!!selected && !!onView} canDelete={canWrite && permissions.podeExcluir} showCreate={editable} showEdit={editable} showView={!!onView} showDelete={editable} selectable={editable} isRowSelectable={(item) => Number(item.planejadoMinutos) === 0} getRowLabel={(item) => item.funcionalidade} />
+    <CrudGrid compact title="Tarefas" kicker="Planejamento" description={`${line.tarefas.length} cadastrada(s) · última taxa ${dateTime(line.tarefas[0]?.taxas?.[0]?.criadoEm)} · tarefas com planejamento ou custos devem ser desativadas, não excluídas`} columns={columns} rows={line.tarefas} selectedId={selection.selectedId} selectedIds={selection.selectedIds} onSelect={selection.selectRow} onToggleSelect={selection.toggleSelected} onToggleSelectAll={selection.toggleVisible} onCreate={onCreate} onEdit={onEdit} onView={onView} onDelete={(ids) => onDelete?.(line.tarefas.filter((item) => ids.includes(item.id)))} emptyMessage="Nenhuma tarefa cadastrada para este recurso e projeto." canCreate={canWrite && permissions.podeIncluir} canEdit={!!selected && canWrite && permissions.podeAlterar} canView={!!selected && !!onView} canDelete={canWrite && permissions.podeExcluir} showCreate={editable} showEdit={editable} showView={!!onView} showDelete={editable} selectable={editable} isRowSelectable={(item) => Number(item.planejadoMinutos) === 0} getRowLabel={(item) => item.funcionalidade} />
   </>;
 }
 function ExecutionPanel({ line, permissions = {}, editable = false, onCreate, onEdit, onView, onDelete }) {
@@ -629,31 +592,34 @@ function ExecutionPanel({ line, permissions = {}, editable = false, onCreate, on
     <CrudGrid compact title="Execuções planejadas" kicker="Planejamento" description={`${hours(line.alocacaoTotalMinutos)} planejadas`} columns={columns} rows={line.alocacoes} selectedId={selection.selectedId} selectedIds={selection.selectedIds} onSelect={selection.selectRow} onToggleSelect={selection.toggleSelected} onToggleSelectAll={selection.toggleVisible} onCreate={onCreate} onEdit={onEdit} onView={onView} onDelete={(ids) => onDelete?.(line.alocacoes.filter((item) => ids.includes(item.id)))} emptyMessage="Nenhuma execução planejada." canCreate={canWrite && hasTask && permissions.podeIncluir} canEdit={!!selected && canWrite && permissions.podeAlterar} canView={!!selected && !!onView} canDelete={canWrite && permissions.podeExcluir} showCreate={editable} showEdit={editable} showView={!!onView} showDelete={editable} selectable={editable} getRowLabel={(item) => `execução de ${dateLabel(item.inicioEm)} a ${dateLabel(item.fimEm)}`} />
   </>;
 }
-function TaskEditor({ editor, setEditor, lines, saving, onClose, onSubmit }) {
+function TaskEditor({ editor, setEditor, lines, resources = [], saving, onClose, onSubmit }) {
   const selectableLines = lines.filter((line) => (line.recursoAtivo && line.vinculoAtivo && !line.projeto.arquivadoEm) || line.id === editor.projetoRecursoId);
   const eligibleLines = selectableLines.filter((line) => line.cadastroRecursoId === editor.recursoId);
-  const eligibleResources = Array.from(new Map(selectableLines.map((line) => [line.cadastroRecursoId, { id: line.cadastroRecursoId, usuario: line.usuario }])).values());
+  const eligibleResources = Array.from(new Map([...selectableLines.map((line) => [line.cadastroRecursoId, { id: line.cadastroRecursoId, usuario: line.usuario }]), ...resources.filter((resource) => resource.id === editor.recursoId).map((resource) => [resource.id, resource])]).values());
   const estimatedCost = Number(editor.estimativaHoras || 0) * Number(editor.valorHora || 0);
+  const readonly = editor.mode === "view";
   return <CrudModal
-    mode={editor.id ? "edit" : "create"}
-    title={editor.pendente ? "Vincular tarefa ao projeto" : editor.id ? "Alterar tarefa" : "Cadastrar tarefa"}
+    mode={readonly ? "view" : editor.id ? "edit" : "create"}
+    title={readonly ? "Visualizar tarefa" : editor.pendente ? "Vincular tarefa ao projeto" : editor.id ? "Alterar tarefa" : "Cadastrar tarefa"}
     onClose={onClose}
-    onSubmit={onSubmit}
+    onSubmit={readonly ? (event) => event.preventDefault() : onSubmit}
     formClassName="resource-planning-task-form"
     modalClassName="resource-planning-task-modal"
-    actions={<><button type="button" className="secondary" onClick={onClose}>Cancelar</button><button type="submit" disabled={saving || !editor.projetoRecursoId || !editor.funcionalidade.trim() || Number(editor.estimativaHoras) <= 0 || Number(editor.valorHora) <= 0 || !/^[A-Z]{3}$/.test(editor.moeda)}>{saving ? "Salvando..." : "Salvar"}</button></>}
+    actions={readonly
+      ? <button type="button" onClick={onClose}>Fechar</button>
+      : <><button type="button" className="secondary" onClick={onClose}>Cancelar</button><button type="submit" disabled={saving || !editor.projetoRecursoId || !editor.funcionalidade.trim() || Number(editor.estimativaHoras) <= 0 || Number(editor.valorHora) <= 0 || !/^[A-Z]{3}$/.test(editor.moeda)}>{saving ? "Salvando..." : "Salvar"}</button></>}
   >
     <div className="resource-planning-task-grid">
-      <label><span>Recurso</span><select required disabled={!!editor.id || editor.lockLink} value={editor.recursoId} onChange={(event) => { const recursoId = event.target.value; const projetoRecursoId = selectableLines.find((line) => line.cadastroRecursoId === recursoId)?.id || ""; setEditor({ ...editor, recursoId, projetoRecursoId }); }}><option value="">Selecione</option>{eligibleResources.map((resource) => <option key={resource.id} value={resource.id}>{userLabel(resource.usuario)}</option>)}</select><small>Recurso previamente vinculado a pelo menos um projeto ativo.</small></label>
-      <label><span>Projeto</span><select required disabled={editor.lockLink || (!!editor.id && !editor.pendente)} value={editor.projetoRecursoId} onChange={(event) => setEditor({ ...editor, projetoRecursoId: event.target.value })}><option value="">Selecione</option>{eligibleLines.map((line) => <option key={line.id} value={line.id}>{line.projeto.chave} — {line.projeto.nome}</option>)}</select><small>A tarefa pertence especificamente a este recurso dentro do projeto.</small></label>
-      <label className="wide"><span>Funcionalidade</span><textarea required maxLength={500} rows={4} value={editor.funcionalidade} onChange={(event) => setEditor({ ...editor, funcionalidade: event.target.value })} placeholder="Descreva o que esta tarefa faz" /><small>Descrição única reutilizada pelos períodos de execução.</small></label>
-      <label><span>Horas estimadas</span><input required type="number" min="0.01" step="0.01" value={editor.estimativaHoras} onChange={(event) => setEditor({ ...editor, estimativaHoras: event.target.value })} /></label>
-      <label><span>Valor por hora</span><input required type="number" min="0.01" step="0.01" value={editor.valorHora} onChange={(event) => setEditor({ ...editor, valorHora: event.target.value })} /></label>
-      <label><span>Moeda</span><input required maxLength={3} value={editor.moeda} onChange={(event) => setEditor({ ...editor, moeda: event.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3) })} /></label>
-      <label className="wide"><span>Observação</span><textarea maxLength={500} rows={3} value={editor.observacao} onChange={(event) => setEditor({ ...editor, observacao: event.target.value })} /></label>
-      <label className="resource-planning-check wide"><input type="checkbox" checked={editor.ativo} onChange={(event) => setEditor({ ...editor, ativo: event.target.checked })} /><span><strong>Tarefa ativa</strong><small>Tarefas inativas permanecem no histórico, mas não recebem novas execuções.</small></span></label>
+      <label><span>Recurso</span><select required disabled={readonly || !!editor.id || editor.lockLink} value={editor.recursoId} onChange={(event) => { const recursoId = event.target.value; const projetoRecursoId = selectableLines.find((line) => line.cadastroRecursoId === recursoId)?.id || ""; setEditor({ ...editor, recursoId, projetoRecursoId }); }}><option value="">Selecione</option>{eligibleResources.map((resource) => <option key={resource.id} value={resource.id}>{userLabel(resource.usuario)}</option>)}</select><small>Recurso previamente vinculado a pelo menos um projeto ativo.</small></label>
+      <label><span>Projeto</span><select required disabled={readonly || editor.lockLink || (!!editor.id && !editor.pendente)} value={editor.projetoRecursoId} onChange={(event) => setEditor({ ...editor, projetoRecursoId: event.target.value })}><option value="">{readonly && !editor.projetoRecursoId ? "Pendente de vínculo" : "Selecione"}</option>{eligibleLines.map((line) => <option key={line.id} value={line.id}>{line.projeto.chave} — {line.projeto.nome}</option>)}</select><small>A tarefa pertence especificamente a este recurso dentro do projeto.</small></label>
+      <label className="wide"><span>Funcionalidade</span><textarea required disabled={readonly} maxLength={500} rows={4} value={editor.funcionalidade} onChange={(event) => setEditor({ ...editor, funcionalidade: event.target.value })} placeholder="Descreva o que esta tarefa faz" /><small>Descrição única reutilizada pelos períodos de execução.</small></label>
+      <label><span>Horas estimadas</span><input required disabled={readonly} type="number" min="0.01" step="0.01" value={editor.estimativaHoras} onChange={(event) => setEditor({ ...editor, estimativaHoras: event.target.value })} /></label>
+      <label><span>Valor por hora</span><input required disabled={readonly} type="number" min="0.01" step="0.01" value={editor.valorHora} onChange={(event) => setEditor({ ...editor, valorHora: event.target.value })} /></label>
+      <label><span>Moeda</span><input required disabled={readonly} maxLength={3} value={editor.moeda} onChange={(event) => setEditor({ ...editor, moeda: event.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3) })} /></label>
+      <label className="wide"><span>Observação</span><textarea disabled={readonly} maxLength={500} rows={3} value={editor.observacao} onChange={(event) => setEditor({ ...editor, observacao: event.target.value })} /></label>
+      <label className="resource-planning-check wide"><input type="checkbox" checked={editor.ativo} disabled={readonly} onChange={(event) => setEditor({ ...editor, ativo: event.target.checked })} /><span><strong>Tarefa ativa</strong><small>Tarefas inativas permanecem no histórico, mas não recebem novas execuções.</small></span></label>
       <div className="resource-planning-cost-preview wide"><span>Custo estimado</span><strong>{currency(estimatedCost, editor.moeda)}</strong><small>Horas estimadas multiplicadas pelo valor cobrado por hora.</small></div>
-      {editor.id && !editor.pendente && <TaskHistoryNote />}
+      {!readonly && editor.id && !editor.pendente && <TaskHistoryNote />}
     </div>
   </CrudModal>;
 }
@@ -672,7 +638,9 @@ function PeriodEditor({ editor, setEditor, line, saving, onClose, onSubmit }) {
     onSubmit={readonly ? (event) => event.preventDefault() : onSubmit}
     formClassName="resource-planning-period-form"
     modalClassName="resource-planning-period-modal"
-    actions={<><button type="button" className="secondary" onClick={onClose}>{readonly ? "Fechar" : "Cancelar"}</button>{!readonly && <button type="submit" disabled={saving || (!capacity && !editor.tarefaId) || Number(editor.horas) <= 0}>Salvar</button>}</>}
+    actions={readonly
+      ? <button type="button" onClick={onClose}>Fechar</button>
+      : <><button type="button" className="secondary" onClick={onClose}>Cancelar</button><button type="submit" disabled={saving || (!capacity && !editor.tarefaId) || Number(editor.horas) <= 0}>Salvar</button></>}
   >
     {!capacity && <label className="wide"><span>Tarefa</span><select required disabled={readonly} value={editor.tarefaId} onChange={(event) => setEditor({ ...editor, tarefaId: event.target.value })}><option value="">Selecione</option>{line?.tarefas.filter((item) => item.ativo || item.id === editor.tarefaId).map((task) => <option key={task.id} value={task.id}>{task.funcionalidade}</option>)}</select><small>A descrição da execução será obtida da tarefa selecionada.</small></label>}
     <div className="resource-planning-period-grid">

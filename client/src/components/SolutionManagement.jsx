@@ -6,7 +6,6 @@ import { useFormFieldErrors } from "../hooks/useFormFieldErrors";
 import ConfirmDialog from "./ConfirmDialog";
 import FormFieldError from "./FormFieldError";
 import CrudGrid from "./CrudGrid";
-import { FieldHelpDialog, HelpButton } from "./FieldHelp";
 import { CrudModal } from "./CrudModal";
 
 import "../styles/userManagement.css";
@@ -24,41 +23,6 @@ const initialForm = {
 };
 
 const booleanLabel = (value) => (value ? "Sim" : "Nao");
-
-const fieldHelp = {
-    nome: {
-        title: "Nome",
-        text: "Nome da solucao como ela aparece para os usuarios no Hub e nos cadastros."
-    },
-    slug: {
-        title: "Identificador",
-        text: "Codigo curto usado pelo sistema para montar links e reconhecer a solucao. Use letras minusculas, numeros e hifens, sem espacos."
-    },
-    eyebrow: {
-        title: "Categoria",
-        text: "Texto curto que ajuda a classificar a solucao no Hub, como Administracao, Operacao ou Financeiro."
-    },
-    descricao: {
-        title: "Descricao",
-        text: "Resumo que explica o objetivo da solucao para quem acessa o Hub."
-    },
-    ordem: {
-        title: "Ordem",
-        text: "Numero usado para definir a posicao da solucao nas listagens. Numeros menores aparecem primeiro."
-    },
-    ativo: {
-        title: "Ativo",
-        text: "Indica se a solucao pode ser usada. Quando desativada, ela deixa de ficar disponivel para acesso."
-    },
-    exibirNoHub: {
-        title: "Exibir no hub",
-        text: "Controla se a solucao aparece no menu e na navegacao do Hub para usuarios com permissao."
-    },
-    somenteAdminSistema: {
-        title: "Somente admin",
-        text: "Restringe a solucao ao administrador inicial do sistema. Use para areas sensiveis de configuracao."
-    }
-};
 
 const normalizeForm = (solucao) => ({
     ...initialForm,
@@ -105,7 +69,6 @@ export default function SolutionManagement({ permissions }) {
     const [modalMode, setModalMode] = useState(null);
     const [form, setForm] = useState(initialForm);
     const [pendingDelete, setPendingDelete] = useState(null);
-    const [activeHelp, setActiveHelp] = useState(null);
     const {
         applyError: applyFormError,
         clearErrors: clearFormErrors,
@@ -162,7 +125,6 @@ export default function SolutionManagement({ permissions }) {
         setModalMode(null);
         setForm(initialForm);
         setSaving(false);
-        setActiveHelp(null);
     };
 
     const handleChange = (event) => {
@@ -328,42 +290,37 @@ export default function SolutionManagement({ permissions }) {
 
                 >
                     {formError && <div className="crud-error" role="alert">{formError}</div>}
-                    <div className="field-help-field">
-                        <span className="field-help-label">
+                    <div className="user-form-field">
+                        <span className="user-form-field-label">
                             <label htmlFor="solucao-nome">Nome <FormFieldError formId={SOLUTION_FORM_ID} field="nome" errors={fieldErrors} /></label>
-                            <HelpButton help={fieldHelp.nome} onHelp={setActiveHelp} />
                         </span>
                         <input id="solucao-nome" name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || saving} {...fieldErrorProps("nome")} />
                     </div>
 
-                    <div className="field-help-field">
-                        <span className="field-help-label">
+                    <div className="user-form-field">
+                        <span className="user-form-field-label">
                             <label htmlFor="solucao-slug">Identificador <FormFieldError formId={SOLUTION_FORM_ID} field="slug" errors={fieldErrors} /></label>
-                            <HelpButton help={fieldHelp.slug} onHelp={setActiveHelp} />
                         </span>
                         <input id="solucao-slug" name="slug" value={form.slug || ""} onChange={handleChange} disabled={readonly || saving} {...fieldErrorProps("slug")} />
                     </div>
 
-                    <div className="field-help-field">
-                        <span className="field-help-label">
+                    <div className="user-form-field">
+                        <span className="user-form-field-label">
                             <label htmlFor="solucao-eyebrow">Categoria</label>
-                            <HelpButton help={fieldHelp.eyebrow} onHelp={setActiveHelp} />
                         </span>
                         <input id="solucao-eyebrow" name="eyebrow" value={form.eyebrow || ""} onChange={handleChange} disabled={readonly || saving} />
                     </div>
 
-                    <div className="field-help-field">
-                        <span className="field-help-label">
+                    <div className="user-form-field">
+                        <span className="user-form-field-label">
                             <label htmlFor="solucao-descricao">Descricao</label>
-                            <HelpButton help={fieldHelp.descricao} onHelp={setActiveHelp} />
                         </span>
                         <input id="solucao-descricao" name="descricao" value={form.descricao || ""} onChange={handleChange} disabled={readonly || saving} />
                     </div>
 
-                    <div className="field-help-field">
-                        <span className="field-help-label">
+                    <div className="user-form-field">
+                        <span className="user-form-field-label">
                             <label htmlFor="solucao-ordem">Ordem</label>
-                            <HelpButton help={fieldHelp.ordem} onHelp={setActiveHelp} />
                         </span>
                         <input id="solucao-ordem" name="ordem" type="number" value={form.ordem ?? 0} onChange={handleChange} disabled={readonly || saving} />
                     </div>
@@ -373,24 +330,19 @@ export default function SolutionManagement({ permissions }) {
                             <div className="user-permission-option">
                                 <input id="solucao-ativo" type="checkbox" name="ativo" checked={!!form.ativo} onChange={handleChange} disabled={readonly || saving} />
                                 <label htmlFor="solucao-ativo">Ativo</label>
-                                <HelpButton help={fieldHelp.ativo} onHelp={setActiveHelp} />
                             </div>
                             <div className="user-permission-option">
                                 <input id="solucao-exibir-hub" type="checkbox" name="exibirNoHub" checked={!!form.exibirNoHub} onChange={handleChange} disabled={readonly || saving} />
                                 <label htmlFor="solucao-exibir-hub">Exibir no hub</label>
-                                <HelpButton help={fieldHelp.exibirNoHub} onHelp={setActiveHelp} />
                             </div>
                             <div className="user-permission-option">
                                 <input id="solucao-somente-admin" type="checkbox" name="somenteAdminSistema" checked={!!form.somenteAdminSistema} onChange={handleChange} disabled={readonly || saving} />
                                 <label htmlFor="solucao-somente-admin">Somente admin</label>
-                                <HelpButton help={fieldHelp.somenteAdminSistema} onHelp={setActiveHelp} />
                             </div>
                         </div>
                     </section>
                 </CrudModal>
             )}
-
-            <FieldHelpDialog help={activeHelp} onClose={() => setActiveHelp(null)} />
 
             <ConfirmDialog
                 open={!!pendingDelete}

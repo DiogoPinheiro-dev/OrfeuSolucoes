@@ -9,7 +9,6 @@ import {
 import { getSolucoes } from "../../services/Solucoes/SolucaoService";
 import ConfirmDialog from "./ConfirmDialog";
 import CrudGrid from "./CrudGrid";
-import { FieldHelpDialog, HelpButton } from "./FieldHelp";
 import FormFieldError from "./FormFieldError";
 import { CrudModal, CrudModalTabPanel, CrudModalTabs } from "./CrudModal";
 import { useAuth } from "../hooks/useAuth";
@@ -57,33 +56,6 @@ const fallbackActions = [
     { chave: "alterar", nome: "Alterar" },
     { chave: "excluir", nome: "Excluir" }
 ];
-
-const fieldHelp = {
-    nome: {
-        title: "Nome",
-        text: "Nome do grupo usado para identificar perfis de acesso, como Administradores, Comercial ou Operação."
-    },
-    descricao: {
-        title: "Descrição",
-        text: "Resumo opcional para explicar quem deve fazer parte deste grupo."
-    },
-    solucoes: {
-        title: "Soluções",
-        text: "Soluções do Hub que os usuários deste grupo poderão acessar."
-    },
-    funcionalidades: {
-        title: "Permissões por rotina",
-        text: "Define quais funcionalidades e ações cada usuário do grupo poderá usar dentro das soluções liberadas."
-    },
-    rotina: {
-        title: "Rotina",
-        text: "Marque a rotina para liberar seu acesso ao grupo. As ações abaixo detalham o que poderá ser feito dentro dela."
-    },
-    acao: {
-        title: "Ação",
-        text: "Permissão específica dentro da rotina, como visualizar, incluir, alterar ou excluir."
-    }
-};
 
 const getFeatureActions = (funcionalidade) =>
     (funcionalidade?.acoes?.length ? funcionalidade.acoes : fallbackActions)
@@ -151,7 +123,6 @@ export default function GroupManagement({ permissions }) {
     const [form, setForm] = useState(initialForm);
     const [activeTab, setActiveTab] = useState("main");
     const [pendingDelete, setPendingDelete] = useState(null);
-    const [activeHelp, setActiveHelp] = useState(null);
     const {
         applyError: applyFormError,
         clearErrors: clearFormErrors,
@@ -216,7 +187,6 @@ export default function GroupManagement({ permissions }) {
         setForm(initialForm);
         setSaving(false);
         setActiveTab("main");
-        setActiveHelp(null);
     };
 
     const handleChange = (event) => {
@@ -510,18 +480,16 @@ export default function GroupManagement({ permissions }) {
                             {formError && <div className="crud-error" role="alert">{formError}</div>}
 
                             <CrudModalTabPanel active={activeTab === "main"}>
-                            <div className="field-help-field">
-                                <span className="field-help-label">
+                            <div className="user-form-field">
+                                <span className="user-form-field-label">
                                     <label htmlFor="grupo-nome">Nome <FormFieldError formId={GROUP_FORM_ID} field="nome" errors={fieldErrors} /></label>
-                                    <HelpButton help={fieldHelp.nome} onHelp={setActiveHelp} />
                                 </span>
                                 <input id="grupo-nome" name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || saving} {...fieldErrorProps("nome")} />
                             </div>
 
-                            <div className="field-help-field">
-                                <span className="field-help-label">
+                            <div className="user-form-field">
+                                <span className="user-form-field-label">
                                     <label htmlFor="grupo-descricao">Descrição <FormFieldError formId={GROUP_FORM_ID} field="descricao" errors={fieldErrors} /></label>
-                                    <HelpButton help={fieldHelp.descricao} onHelp={setActiveHelp} />
                                 </span>
                                 <input id="grupo-descricao" name="descricao" value={form.descricao || ""} onChange={handleChange} disabled={readonly || saving} {...fieldErrorProps("descricao")} />
                             </div>
@@ -531,7 +499,6 @@ export default function GroupManagement({ permissions }) {
                                 <div className="user-company-header">
                                     <div>
                                         <span>Acessos do grupo</span>
-                                        <HelpButton help={fieldHelp.solucoes} onHelp={setActiveHelp} />
                                         <strong>Soluções liberadas no hub</strong>
                                     </div>
                                 </div>
@@ -557,7 +524,6 @@ export default function GroupManagement({ permissions }) {
                                 <div className="user-company-header">
                                     <div>
                                         <span>Funcionalidades</span>
-                                        <HelpButton help={fieldHelp.funcionalidades} onHelp={setActiveHelp} />
                                         <strong>Ações liberadas por rotina</strong>
                                     </div>
                                 </div>
@@ -584,7 +550,6 @@ export default function GroupManagement({ permissions }) {
                                                             <strong>{funcionalidade.titulo}</strong>
                                                             <small>{solucao.nome}</small>
                                                         </span>
-                                                        <HelpButton help={fieldHelp.rotina} onHelp={setActiveHelp} />
                                                     </label>
 
                                                     <div className="user-feature-crud-options">
@@ -602,7 +567,6 @@ export default function GroupManagement({ permissions }) {
                                                                     disabled={disabled || !selected}
                                                                 />
                                                                 {acao.nome}
-                                                                <HelpButton help={fieldHelp.acao} onHelp={setActiveHelp} />
                                                             </label>
                                                             );
                                                         })}
@@ -615,8 +579,6 @@ export default function GroupManagement({ permissions }) {
                             </CrudModalTabPanel>
                 </CrudModal>
             )}
-
-            <FieldHelpDialog help={activeHelp} onClose={() => setActiveHelp(null)} />
 
             <ConfirmDialog
                 open={!!pendingDelete}

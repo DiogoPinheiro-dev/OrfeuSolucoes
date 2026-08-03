@@ -9,9 +9,10 @@ import { ProjetoCustoTipo, ProjetoOrcamentoStatus } from './types/projeto-orcame
 
 const USER_SELECT = { id: true, nome: true, login: true, email: true };
 const RESOURCE_INCLUDE = { cadastro: { include: { usuario: { select: USER_SELECT } } } };
+const TASK_SELECT = { id: true, projetoRecursoId: true, funcionalidade: true, estimativaMinutos: true, valorHora: true, moeda: true, ativo: true };
 const FINANCE_INCLUDE = {
   categorias: { orderBy: { nome: 'asc' as const } },
-  custos: { include: { recurso: { include: RESOURCE_INCLUDE }, taxas: { include: { criadoPor: { select: USER_SELECT } }, orderBy: { criadoEm: 'desc' as const } } }, orderBy: { descricao: 'asc' as const } }
+  custos: { include: { recurso: { include: RESOURCE_INCLUDE }, tarefa: { select: TASK_SELECT }, taxas: { include: { criadoPor: { select: USER_SELECT } }, orderBy: { criadoEm: 'desc' as const } } }, orderBy: { descricao: 'asc' as const } }
 };
 
 @Injectable()
@@ -26,19 +27,26 @@ export class ProjetoOrcamentoService {
   async painel(projetoId: string, user: JwtPayload) {
     const contexto = await this.authorization.contexto(projetoId, user);
     const permissoes = await this.authorization.permissoes(contexto, user);
-    const [recursos, financeiro] = await Promise.all([
+    const [recursos, tarefas, financeiro] = await Promise.all([
       this.prisma.projetoRecurso.findMany({ where: { projetoId }, include: RESOURCE_INCLUDE, orderBy: { criadoEm: 'asc' } }),
+      permissoes.podeVisualizarFinanceiro ? this.prisma.projetoTarefa.findMany({ where: { empresaId: contexto.empresaId, projetoRecurso: { is: { projetoId } } }, select: TASK_SELECT, orderBy: [{ ativo: 'desc' }, { funcionalidade: 'asc' }] }) : Promise.resolve([]),
       permissoes.podeVisualizarFinanceiro ? this.prisma.projetoOrcamento.findUnique({ where: { projetoId }, include: FINANCE_INCLUDE }) : Promise.resolve(null)
     ]);
-    return { recursos: recursos.map((item) => this.recurso(item)), financeiro: financeiro ? this.financeiro(financeiro) : null, permissoes };
+    return { recursos: recursos.map((item) => this.recurso(item)), tarefas: tarefas.map((item) => this.tarefa(item)), financeiro: financeiro ? this.financeiro(financeiro) : null, permissoes };
   }
 
   async salvarOrcamento(input: SalvarProjetoOrcamentoInput, user: JwtPayload) {
     const contexto = await this.authorization.contexto(input.projetoId, user); await this.authorization.gerenciarFinanceiro(contexto, user);
+    const moeda = input.moeda.trim().toUpperCase();
+    if (!/^[A-Z]{3}$/.test(moeda)) throw new BadRequestException('Informe a moeda no formato ISO de tres letras.');
     const atual = await this.prisma.projetoOrcamento.findUnique({ where: { projetoId: input.projetoId } }); this.assertDraft(atual);
+    if (atual && atual.moeda !== moeda) {
+      const [categorias, custos] = await Promise.all([this.prisma.projetoOrcamentoCategoria.count({ where: { orcamentoId: atual.id } }), this.prisma.projetoCusto.count({ where: { orcamentoId: atual.id } })]);
+      if (categorias + custos > 0) throw new BadRequestException('A moeda do orcamento nao pode ser alterada depois que categorias ou custos forem cadastrados.');
+    }
     return this.prisma.$transaction(async (tx) => {
-      const record = atual ? await this.updateVersioned(tx.projetoOrcamento, atual.id, input.versao, { moeda: input.moeda }, 'O orcamento', { projetoId: input.projetoId }) : await tx.projetoOrcamento.create({ data: { empresaId: contexto.empresaId, projetoId: input.projetoId, moeda: input.moeda } });
-      await this.audit(tx, contexto, user, 'ORCAMENTO', record.id, atual ? 'ALTERADO' : 'CRIADO', { moeda: input.moeda }); return this.findFinanceiro(tx, input.projetoId);
+      const record = atual ? await this.updateVersioned(tx.projetoOrcamento, atual.id, input.versao, { moeda }, 'O orcamento', { projetoId: input.projetoId }) : await tx.projetoOrcamento.create({ data: { empresaId: contexto.empresaId, projetoId: input.projetoId, moeda } });
+      await this.audit(tx, contexto, user, 'ORCAMENTO', record.id, atual ? 'ALTERADO' : 'CRIADO', { moeda }); return this.findFinanceiro(tx, input.projetoId);
     }).then((item) => this.financeiro(item));
   }
 
@@ -55,11 +63,16 @@ export class ProjetoOrcamentoService {
   async salvarCusto(input: SalvarProjetoCustoInput, user: JwtPayload) {
     const contexto = await this.authorization.contexto(input.projetoId, user); await this.authorization.gerenciarFinanceiro(contexto, user);
     const orcamento = await this.orcamentoRascunho(input.projetoId); if (input.categoriaId) await this.assertCategoria(orcamento.id, input.categoriaId);
-    if (input.tipo === ProjetoCustoTipo.RECURSO) { if (!input.recursoId || !input.quantidadeMinutos || !input.taxaHora) throw new BadRequestException('Custos de recurso exigem recurso, quantidade e taxa por hora.'); await this.assertRecurso(input.projetoId, input.recursoId, input.id); }
+    if (input.tipo === ProjetoCustoTipo.FIXO && input.tarefaId) throw new BadRequestException('Custos fixos nao podem ser associados a tarefas.');
+    if (input.tipo === ProjetoCustoTipo.RECURSO) {
+      if (!input.recursoId || !input.quantidadeMinutos || !input.taxaHora) throw new BadRequestException('Custos de recurso exigem recurso, quantidade e taxa por hora.');
+      await this.assertRecurso(input.projetoId, input.recursoId, input.id);
+      if (input.tarefaId) await this.assertTarefa(contexto, orcamento.moeda, input.recursoId, input.tarefaId, input.id);
+    }
     const taxa = input.tipo === ProjetoCustoTipo.RECURSO ? this.money(input.taxaHora!, 4) : null;
     const planejado = input.tipo === ProjetoCustoTipo.RECURSO ? new Prisma.Decimal(input.quantidadeMinutos!).div(60).mul(taxa!).toDecimalPlaces(2).toFixed(2) : this.money(input.valorPlanejado);
     return this.prisma.$transaction(async (tx) => {
-      const data = { categoriaId: input.categoriaId || null, tipo: input.tipo, descricao: input.descricao.trim(), recursoId: input.tipo === ProjetoCustoTipo.RECURSO ? input.recursoId : null, quantidadeMinutos: input.tipo === ProjetoCustoTipo.RECURSO ? input.quantidadeMinutos : null, taxaHora: taxa, valorPlanejado: planejado, valorComprometido: this.money(input.valorComprometido), valorRealizado: this.money(input.valorRealizado) };
+      const data = { categoriaId: input.categoriaId || null, tipo: input.tipo, descricao: input.descricao.trim(), recursoId: input.tipo === ProjetoCustoTipo.RECURSO ? input.recursoId : null, tarefaId: input.tipo === ProjetoCustoTipo.RECURSO ? input.tarefaId || null : null, quantidadeMinutos: input.tipo === ProjetoCustoTipo.RECURSO ? input.quantidadeMinutos : null, taxaHora: taxa, valorPlanejado: planejado, valorComprometido: this.money(input.valorComprometido), valorRealizado: this.money(input.valorRealizado) };
       const anterior = input.id ? await tx.projetoCusto.findUnique({ where: { id: input.id } }) : null;
       const record = input.id ? await this.updateVersioned(tx.projetoCusto, input.id, input.versao, data, 'O custo', { orcamentoId: orcamento.id }) : await tx.projetoCusto.create({ data: { ...data, empresaId: contexto.empresaId, projetoId: input.projetoId, orcamentoId: orcamento.id, criadoPorId: user.sub } });
       if (taxa && (!anterior?.taxaHora || !new Prisma.Decimal(anterior.taxaHora).equals(taxa))) await tx.projetoCustoTaxaHistorico.create({ data: { custoId: record.id, taxaHora: taxa, criadoPorId: user.sub } });
@@ -99,6 +112,15 @@ export class ProjetoOrcamentoService {
       if (!custoAtual) throw new BadRequestException('Selecione um recurso ativo cadastrado no projeto.');
     }
   }
+  private async assertTarefa(contexto: ProjetoOrcamentoContexto, moeda: string, recursoId: string, id: string, custoId?: string | null) {
+    const tarefa = await this.prisma.projetoTarefa.findFirst({ where: { id, empresaId: contexto.empresaId, projetoRecursoId: recursoId, projetoRecurso: { is: { projetoId: contexto.projeto.id } } }, select: TASK_SELECT });
+    if (!tarefa) throw new BadRequestException('Selecione uma tarefa vinculada ao recurso e ao projeto.');
+    if (tarefa.moeda !== moeda) throw new BadRequestException('A moeda da tarefa deve ser a mesma moeda do orcamento.');
+    if (!tarefa.ativo) {
+      const custoAtual = custoId ? await this.prisma.projetoCusto.findFirst({ where: { id: custoId, projetoId: contexto.projeto.id, recursoId, tarefaId: id } }) : null;
+      if (!custoAtual) throw new BadRequestException('Selecione uma tarefa ativa vinculada ao recurso.');
+    }
+  }
   private async orcamentoRascunho(projetoId: string) { const item = await this.prisma.projetoOrcamento.findUnique({ where: { projetoId } }); if (!item) throw new BadRequestException('Cadastre o orcamento-base antes desta operacao.'); this.assertDraft(item); return item; }
   private assertDraft(item: any) { if (item?.status === ProjetoOrcamentoStatus.APROVADO) throw new BadRequestException('O orcamento aprovado nao pode ser alterado.'); }
   private async assertCategoria(orcamentoId: string, id: string) { if (!await this.prisma.projetoOrcamentoCategoria.findFirst({ where: { id, orcamentoId } })) throw new BadRequestException('Categoria financeira invalida.'); }
@@ -110,6 +132,7 @@ export class ProjetoOrcamentoService {
   private audit(tx: Prisma.TransactionClient, contexto: ProjetoOrcamentoContexto, user: JwtPayload, entidade: string, entidadeId: string, evento: string, dados: any) { return this.auditoria.registrar(tx, { empresaId: contexto.empresaId, projetoId: contexto.projeto.id, usuarioId: user.sub, entidade, entidadeId, evento, dados }); }
   private findFinanceiro(tx: Prisma.TransactionClient | PrismaService, projetoId: string) { return tx.projetoOrcamento.findUnique({ where: { projetoId }, include: FINANCE_INCLUDE }).then((item) => { if (!item) throw new NotFoundException('Orcamento nao encontrado.'); return item; }); }
   private categoria(item: any) { const planned = new Prisma.Decimal(item.valorPlanejado); return { ...item, valorPlanejado: planned.toFixed(2), valorComprometido: new Prisma.Decimal(item.valorComprometido).toFixed(2), valorRealizado: new Prisma.Decimal(item.valorRealizado).toFixed(2), variacao: planned.minus(item.valorRealizado).toFixed(2) }; }
-  private custo(item: any) { if (!item) throw new NotFoundException('Custo nao encontrado.'); return { ...item, taxaHora: item.taxaHora ? new Prisma.Decimal(item.taxaHora).toFixed(4) : null, valorPlanejado: new Prisma.Decimal(item.valorPlanejado).toFixed(2), valorComprometido: new Prisma.Decimal(item.valorComprometido).toFixed(2), valorRealizado: new Prisma.Decimal(item.valorRealizado).toFixed(2), recurso: item.recurso ? this.recurso(item.recurso) : null, taxas: (item.taxas ?? []).map((taxa: any) => ({ ...taxa, taxaHora: new Prisma.Decimal(taxa.taxaHora).toFixed(4), criadoPor: this.user(taxa.criadoPor) })) }; }
+  private tarefa(item: any) { return { ...item, valorHora: new Prisma.Decimal(item.valorHora).toFixed(4) }; }
+  private custo(item: any) { if (!item) throw new NotFoundException('Custo nao encontrado.'); return { ...item, taxaHora: item.taxaHora ? new Prisma.Decimal(item.taxaHora).toFixed(4) : null, valorPlanejado: new Prisma.Decimal(item.valorPlanejado).toFixed(2), valorComprometido: new Prisma.Decimal(item.valorComprometido).toFixed(2), valorRealizado: new Prisma.Decimal(item.valorRealizado).toFixed(2), recurso: item.recurso ? this.recurso(item.recurso) : null, tarefa: item.tarefa ? this.tarefa(item.tarefa) : null, taxas: (item.taxas ?? []).map((taxa: any) => ({ ...taxa, taxaHora: new Prisma.Decimal(taxa.taxaHora).toFixed(4), criadoPor: this.user(taxa.criadoPor) })) }; }
   private financeiro(item: any) { const categorias = (item.categorias ?? []).map((entry: any) => this.categoria(entry)); const sum = (field: string) => categorias.reduce((total: Prisma.Decimal, entry: any) => total.add(entry[field]), new Prisma.Decimal(0)); const planned = sum('valorPlanejado'); const actual = sum('valorRealizado'); return { ...item, totalPlanejado: planned.toFixed(2), totalComprometido: sum('valorComprometido').toFixed(2), totalRealizado: actual.toFixed(2), variacao: planned.minus(actual).toFixed(2), categorias, custos: (item.custos ?? []).map((entry: any) => this.custo(entry)) }; }
 }

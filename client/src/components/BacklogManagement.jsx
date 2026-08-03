@@ -7,7 +7,6 @@ import {
     arquivarBacklogItem,
     createBacklogItem,
     getBacklogItem,
-    getBacklogItemHistorico,
     getBacklogItens,
     getBacklogProjetos,
     getBacklogResponsaveis,
@@ -109,7 +108,6 @@ export default function BacklogManagement() {
     const [error, setError] = useState("");
     const [notice, setNotice] = useState("");
     const [modal, setModal] = useState(null);
-    const [history, setHistory] = useState([]);
     const [modalError, setModalError] = useState("");
 
     const selectedProject = projects.find((project) => project.id === projectId);
@@ -230,21 +228,15 @@ export default function BacklogManagement() {
 
     const openCreate = () => {
         setModalError("");
-        setHistory([]);
         setModal({ mode: "create", item: null });
     };
 
     const openItem = async (row, mode) => {
         setModalError("");
-        setHistory([]);
         setModal({ mode, item: row, loading: true });
         try {
-            const [item, itemHistory] = await Promise.all([
-                getBacklogItem(row.id),
-                mode === "view" ? getBacklogItemHistorico(row.id) : Promise.resolve([])
-            ]);
+            const item = await getBacklogItem(row.id);
             setModal({ mode, item, loading: false });
-            setHistory(itemHistory);
         } catch (loadError) {
             setModalError(loadError.message);
             setModal((current) => current ? { ...current, loading: false } : null);
@@ -257,13 +249,11 @@ export default function BacklogManagement() {
         }
         handledLinkedItem.current = linkedItemId;
         setModalError("");
-        setHistory([]);
         setModal({ mode: "view", item: null, loading: true });
-        Promise.all([getBacklogItem(linkedItemId), getBacklogItemHistorico(linkedItemId)])
-            .then(([item, itemHistory]) => {
+        getBacklogItem(linkedItemId)
+            .then((item) => {
                 setSelectedId(item.id);
                 setModal({ mode: "view", item, loading: false });
-                setHistory(itemHistory);
                 setSearchParams({}, { replace: true });
             })
             .catch((loadError) => {
@@ -649,7 +639,6 @@ export default function BacklogManagement() {
                 <BacklogItemModal
                     mode={modal.mode}
                     item={modal.item}
-                    history={history}
                     responsaveis={responsaveis}
                     parentOptions={parentOptions}
                     saving={saving}

@@ -8,7 +8,6 @@ import { useAuth } from "../hooks/useAuth";
 import { useFormFieldErrors } from "../hooks/useFormFieldErrors";
 import ConfirmDialog from "./ConfirmDialog";
 import CrudGrid from "./CrudGrid";
-import { FieldHelpDialog, HelpButton } from "./FieldHelp";
 import FormFieldError from "./FormFieldError";
 import { CrudModal, CrudModalTabPanel, CrudModalTabs } from "./CrudModal";
 import CustomDropdown from "./CustomDropdown";
@@ -47,33 +46,6 @@ const USER_FIELD_MATCHERS = {
 
 const isProtectedAdminUser = (user) => !!user?.padraoSistema;
 
-const fieldHelp = {
-    nome: {
-        title: "Nome",
-        text: "Nome da pessoa exibido nos cadastros e nas telas administrativas."
-    },
-    login: {
-        title: "Login",
-        text: "Identificacao usada pelo usuario para entrar no sistema. Deve ser facil de reconhecer e unica."
-    },
-    email: {
-        title: "E-mail",
-        text: "Endereco de contato e identificacao do usuario. Tambem pode ser usado para acesso ao sistema."
-    },
-    senha: {
-        title: "Senha",
-        text: "Senha inicial do usuario. Em alteracoes, preencha somente quando precisar trocar a senha atual."
-    },
-    grupo: {
-        title: "Grupo",
-        text: "Define o conjunto de permissoes do usuario, incluindo solucoes, funcionalidades e acoes liberadas."
-    },
-    empresas: {
-        title: "Empresas vinculadas",
-        text: "Empresas que o usuario pode acessar. O usuario so trabalha com dados das empresas vinculadas a ele."
-    }
-};
-
 export default function UserManagement({ permissions }) {
     const { user: currentUser } = useAuth();
     const [users, setUsers] = useState([]);
@@ -91,7 +63,6 @@ export default function UserManagement({ permissions }) {
     const [activeTab, setActiveTab] = useState("main");
     const [empresasPage, setEmpresasPage] = useState(1);
     const [pendingDelete, setPendingDelete] = useState(null);
-    const [activeHelp, setActiveHelp] = useState(null);
     const {
         applyError: applyFormError,
         clearErrors: clearFormErrors,
@@ -187,7 +158,6 @@ export default function UserManagement({ permissions }) {
         setSaving(false);
         setActiveTab("main");
         setEmpresasPage(1);
-        setActiveHelp(null);
     };
 
     const handleChange = (event) => {
@@ -412,19 +382,17 @@ export default function UserManagement({ permissions }) {
                             {formError && <div className="user-management-error" role="alert">{formError}</div>}
 
                             <CrudModalTabPanel active={activeTab === "main"}>
-                            <div className="field-help-field">
-                                <span className="field-help-label">
+                            <div className="user-form-field">
+                                <span className="user-form-field-label">
                                     <label htmlFor="usuario-nome">Nome</label>
-                                    <HelpButton help={fieldHelp.nome} onHelp={setActiveHelp} />
                                     <FormFieldError formId={USER_FORM_ID} field="nome" message={fieldErrors.nome} />
                                 </span>
                                 <input id="usuario-nome" name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || saving} {...fieldErrorProps("nome")} />
                             </div>
 
-                            <div className="field-help-field">
-                                <span className="field-help-label">
+                            <div className="user-form-field">
+                                <span className="user-form-field-label">
                                     <label htmlFor="usuario-login">Login</label>
-                                    <HelpButton help={fieldHelp.login} onHelp={setActiveHelp} />
                                     <FormFieldError formId={USER_FORM_ID} field="login" message={fieldErrors.login} />
                                 </span>
                                 <input
@@ -438,10 +406,9 @@ export default function UserManagement({ permissions }) {
                                 />
                             </div>
 
-                            <div className="field-help-field">
-                                <span className="field-help-label">
+                            <div className="user-form-field">
+                                <span className="user-form-field-label">
                                     <label htmlFor="usuario-email">E-mail</label>
-                                    <HelpButton help={fieldHelp.email} onHelp={setActiveHelp} />
                                     <FormFieldError formId={USER_FORM_ID} field="email" message={fieldErrors.email} />
                                 </span>
                                 <input
@@ -457,10 +424,9 @@ export default function UserManagement({ permissions }) {
                             </div>
 
                             {!readonly && (
-                                <div className="field-help-field">
-                                    <span className="field-help-label">
+                                <div className="user-form-field">
+                                    <span className="user-form-field-label">
                                         <label htmlFor="usuario-senha">Senha</label>
-                                        <HelpButton help={fieldHelp.senha} onHelp={setActiveHelp} />
                                         {modalMode === "edit" && <small>preencha apenas para alterar.</small>}
                                         <FormFieldError formId={USER_FORM_ID} field="senha" message={fieldErrors.senha} />
                                     </span>
@@ -477,10 +443,9 @@ export default function UserManagement({ permissions }) {
                                 </div>
                             )}
 
-                            <div className="field-help-field">
-                                <span className="field-help-label">
+                            <div className="user-form-field">
+                                <span className="user-form-field-label">
                                     <span>Grupo</span>
-                                    <HelpButton help={fieldHelp.grupo} onHelp={setActiveHelp} />
                                     <FormFieldError formId={USER_FORM_ID} field="grupoId" message={fieldErrors.grupoId} />
                                 </span>
                                 <CustomDropdown
@@ -506,7 +471,6 @@ export default function UserManagement({ permissions }) {
                                 <div className="user-company-header">
                                     <div>
                                         <span>Empresas vinculadas</span>
-                                        <HelpButton help={fieldHelp.empresas} onHelp={setActiveHelp} />
                                         <FormFieldError formId={USER_FORM_ID} field="empresaIds" message={fieldErrors.empresaIds} />
                                         <strong>
                                             {form.empresaIds.length === 1
@@ -581,8 +545,6 @@ export default function UserManagement({ permissions }) {
                             </CrudModalTabPanel>
                 </CrudModal>
             )}
-
-            <FieldHelpDialog help={activeHelp} onClose={() => setActiveHelp(null)} />
 
             <ConfirmDialog
                 open={!!pendingDelete}

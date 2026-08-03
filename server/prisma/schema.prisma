@@ -655,6 +655,7 @@ model ProjetoTarefa {
   projetoRecurso ProjetoRecurso?              @relation(fields: [projetoRecursoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   taxas          ProjetoTarefaTaxaHistorico[]
   alocacoes      ProjetoAlocacao[]
+  custos         ProjetoCusto[]
 
   @@index([empresaId, ativo], map: "IX_ProjetoTarefas_Empresa_Ativo")
   @@index([empresaId, recursoId, ativo], map: "IX_ProjetoTarefas_Empresa_Recurso_Ativo")
@@ -821,6 +822,7 @@ model ProjetoCusto {
   tipo              String   @map("Tipo") @db.NVarChar(20)
   descricao         String   @map("Descricao") @db.NVarChar(240)
   recursoId         String?  @map("RecursoId") @db.UniqueIdentifier
+  tarefaId          String?  @map("TarefaId") @db.UniqueIdentifier
   quantidadeMinutos Int?     @map("QuantidadeMinutos")
   taxaHora          Decimal? @map("TaxaHora") @db.Decimal(18, 4)
   valorPlanejado    Decimal  @default(0) @map("ValorPlanejado") @db.Decimal(18, 2)
@@ -836,11 +838,13 @@ model ProjetoCusto {
   orcamento ProjetoOrcamento            @relation(fields: [orcamentoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   categoria ProjetoOrcamentoCategoria?  @relation(fields: [categoriaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   recurso   ProjetoRecurso?             @relation("ProjetoCustoRecurso", fields: [recursoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tarefa    ProjetoTarefa?              @relation(fields: [tarefaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   criadoPor Usuario                     @relation("ProjetoCustoCriadoPor", fields: [criadoPorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   taxas     ProjetoCustoTaxaHistorico[]
 
   @@index([empresaId, projetoId, tipo], map: "IX_ProjetoCustos_Empresa_Projeto_Tipo")
   @@index([categoriaId], map: "IX_ProjetoCustos_CategoriaId")
+  @@index([tarefaId], map: "IX_ProjetoCustos_TarefaId")
   @@map("ProjetoCustos")
 }
 

@@ -9,7 +9,6 @@ import { useFormFieldErrors } from "../hooks/useFormFieldErrors";
 import ConfirmDialog from "./ConfirmDialog";
 import FormFieldError from "./FormFieldError";
 import CrudGrid from "./CrudGrid";
-import { FieldHelpDialog, HelpButton } from "./FieldHelp";
 import { CrudModal, CrudModalTabPanel, CrudModalTabs } from "./CrudModal";
 
 import "../styles/companyManagement.css";
@@ -29,21 +28,6 @@ const initialForm = {
 const booleanLabel = (value) => (value ? "Sim" : "Não");
 const canDeleteEmpresa = (empresa) => !empresa?.padraoSistema;
 
-const fieldHelp = {
-    nome: {
-        title: "Nome",
-        text: "Nome da empresa exibido nos cadastros, no seletor de empresa e nas telas administrativas."
-    },
-    solucoes: {
-        title: "Soluções",
-        text: "Define quais soluções a empresa contratou e pode acessar no Hub."
-    },
-    usuarios: {
-        title: "Usuários vinculados",
-        text: "Lista as pessoas que possuem acesso a esta empresa."
-    }
-};
-
 export default function CompanyManagement({ permissions }) {
     const { user: currentUser } = useAuth();
     const [empresas, setEmpresas] = useState([]);
@@ -60,7 +44,6 @@ export default function CompanyManagement({ permissions }) {
     const [form, setForm] = useState(initialForm);
     const [activeTab, setActiveTab] = useState("main");
     const [pendingDelete, setPendingDelete] = useState(null);
-    const [activeHelp, setActiveHelp] = useState(null);
     const {
         applyError: applyFormError,
         clearErrors: clearFormErrors,
@@ -137,7 +120,6 @@ export default function CompanyManagement({ permissions }) {
         setForm(initialForm);
         setSaving(false);
         setActiveTab("main");
-        setActiveHelp(null);
     };
 
     const handleChange = (event) => {
@@ -360,10 +342,9 @@ export default function CompanyManagement({ permissions }) {
                             {formError && <div className="crud-error" role="alert">{formError}</div>}
 
                             <CrudModalTabPanel active={activeTab === "main"}>
-                            <div className="field-help-field">
-                                <span className="field-help-label">
+                            <div className="user-form-field">
+                                <span className="user-form-field-label">
                                     <label htmlFor="empresa-nome">Nome <FormFieldError formId={COMPANY_FORM_ID} field="nome" errors={fieldErrors} /></label>
-                                    <HelpButton help={fieldHelp.nome} onHelp={setActiveHelp} />
                                 </span>
                                 <input id="empresa-nome" name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || saving} {...fieldErrorProps("nome")} />
                             </div>
@@ -372,7 +353,6 @@ export default function CompanyManagement({ permissions }) {
                             <CrudModalTabPanel active={activeTab === "solutions"}>
                             <div className="company-access-header">
                                 <span>Soluções</span>
-                                <HelpButton help={fieldHelp.solucoes} onHelp={setActiveHelp} />
                             </div>
                             <div className="company-access-grid">
                                 {solucoes.map((solucao) => (
@@ -393,7 +373,6 @@ export default function CompanyManagement({ permissions }) {
                             <CrudModalTabPanel active={readonly && activeTab === "users"} className="company-linked-users">
                                     <div className="company-linked-users-header">
                                         <span>Usuários vinculados</span>
-                                        <HelpButton help={fieldHelp.usuarios} onHelp={setActiveHelp} />
                                         <strong>
                                             {linkedUsers.length === 1
                                                 ? "1 usuário vinculado"
@@ -422,8 +401,6 @@ export default function CompanyManagement({ permissions }) {
                             </CrudModalTabPanel>
                 </CrudModal>
             )}
-
-            <FieldHelpDialog help={activeHelp} onClose={() => setActiveHelp(null)} />
 
             <ConfirmDialog
                 open={!!pendingDelete}

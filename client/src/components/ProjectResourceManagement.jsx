@@ -7,7 +7,6 @@ import "../styles/projectResource.css";
 
 const emptyPanel = { candidatos: [], recursos: [], permissoes: {} };
 const userLabel = (user) => user?.nome || user?.login || user?.email || "Usuário";
-const projectLabel = (project) => `${project.chave} — ${project.nome}`;
 
 export default function ProjectResourceManagement() {
   const [panel, setPanel] = useState(emptyPanel);
@@ -18,7 +17,6 @@ export default function ProjectResourceManagement() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [editor, setEditor] = useState(null);
-  const [resourceToView, setResourceToView] = useState(null);
   const [resourceToDelete, setResourceToDelete] = useState(null);
   const selectedResource = useMemo(() => panel.recursos.find((item) => item.id === selectedId) || null, [panel.recursos, selectedId]);
   const activeProjects = useMemo(() => projects.filter((item) => !item.arquivadoEm), [projects]);
@@ -81,13 +79,27 @@ export default function ProjectResourceManagement() {
     });
   };
 
+  const openView = (resource) => {
+    setSelectedId(resource.id);
+    setEditor({
+      mode: "view",
+      id: resource.id,
+      versao: resource.versao,
+      usuarioId: resource.usuarioId,
+      projetoIds: resource.projetos?.filter((item) => item.ativo).map((item) => item.projetoId) || [],
+      ativo: resource.ativo
+    });
+  };
+
   const toggleProject = (projectId) => {
     const selected = editor.projetoIds.includes(projectId);
+    if (editor.mode === "view") return;
     setEditor({ ...editor, projetoIds: selected ? editor.projetoIds.filter((id) => id !== projectId) : [...editor.projetoIds, projectId] });
   };
 
   const submitResource = (event) => {
     event.preventDefault();
+    if (editor.mode === "view") return;
     const input = {
       usuarioId: editor.usuarioId,
       projetoIds: editor.projetoIds,
@@ -133,10 +145,7 @@ export default function ProjectResourceManagement() {
       onSelect={setSelectedId}
       onCreate={openCreate}
       onEdit={openEdit}
-      onView={(item) => {
-        setSelectedId(item.id);
-        setResourceToView(item);
-      }}
+      onView={openView}
       onDelete={() => selectedResource && setResourceToDelete(selectedResource)}
       emptyMessage={loading ? "Carregando recursos..." : "Nenhum recurso cadastrado."}
       busy={loading}
@@ -147,49 +156,21 @@ export default function ProjectResourceManagement() {
       selectedIds={selectedResource ? [selectedResource.id] : []}
       selectable={false}
     />
-    {resourceToView && <CrudModal
-      mode="view"
-      title={userLabel(resourceToView.usuario)}
-      ariaLabel="Detalhes do recurso"
-      onClose={() => setResourceToView(null)}
-      onSubmit={(event) => event.preventDefault()}
-      formClassName="resource-view"
-      actions={<button type="button" onClick={() => setResourceToView(null)}>Fechar</button>}
-    >
-      <div className="resource-view-grid">
-        <article>
-          <span>E-mail</span>
-          <strong>{resourceToView.usuario.email}</strong>
-        </article>
-        <article>
-          <span>Situação</span>
-          <strong>{resourceToView.ativo ? "Ativo" : "Inativo"}</strong>
-        </article>
-        <article className="wide">
-          <span>Projetos vinculados</span>
-          <div className="resource-view-projects">
-            {resourceToView.projetos?.filter((item) => item.ativo).length
-              ? resourceToView.projetos.filter((item) => item.ativo).map((item) => <strong key={item.id}>{projectLabel(item.projeto)}</strong>)
-              : <strong>Nenhum projeto ativo.</strong>}
-          </div>
-        </article>
-      </div>
-    </CrudModal>}
     {editor && <CrudModal
-      mode={editor.mode === "create" ? "create" : "edit"}
-      title={editor.mode === "create" ? "Cadastrar recurso" : "Alterar recurso"}
+      mode={editor.mode}
+      title={editor.mode === "create" ? "Cadastrar recurso" : editor.mode === "view" ? "Visualizar recurso" : "Alterar recurso"}
+      ariaLabel={editor.mode === "view" ? "Visualizar recurso" : undefined}
       onClose={() => setEditor(null)}
       onSubmit={submitResource}
       formClassName="resource-form"
-      actions={<>
-        <button type="button" className="secondary" onClick={() => setEditor(null)}>Cancelar</button>
-        <button type="submit" disabled={saving || !editor.usuarioId || editor.projetoIds.length === 0}>{saving ? "Salvando..." : "Salvar"}</button>
-      </>}
+      actions={editor.mode === "view"
+        ? <button type="button" onClick={() => setEditor(null)}>Fechar</button>
+        : <><button type="button" className="secondary" onClick={() => setEditor(null)}>Cancelar</button><button type="submit" disabled={saving || !editor.usuarioId || editor.projetoIds.length === 0}>{saving ? "Salvando..." : "Salvar"}</button></>}
     >
       <div className="resource-form-grid">
         <label className="resource-form-user">
           <span>Usuário</span>
-          <select required disabled={editor.mode === "edit"} value={editor.usuarioId} onChange={(event) => setEditor({ ...editor, usuarioId: event.target.value })}>
+          <select required disabled={editor.mode !== "create"} value={editor.usuarioId} onChange={(event) => setEditor({ ...editor, usuarioId: event.target.value })}>
             <option value="">Selecione</option>
             {availableUsers.map((item) => <option key={item.id} value={item.id}>{userLabel(item)} — {item.email}</option>)}
           </select>
@@ -202,7 +183,7 @@ export default function ProjectResourceManagement() {
             {projects.map((item) => {
               const checked = editor.projetoIds.includes(item.id);
               return <label key={item.id} className={`resource-project-option${checked ? " selected" : ""}${item.arquivadoEm ? " disabled" : ""}`}>
-                <input type="checkbox" checked={checked} disabled={!!item.arquivadoEm} onChange={() => toggleProject(item.id)} />
+                <input type="checkbox" checked={checked} disabled={editor.mode === "view" || !!item.arquivadoEm} onChange={() => toggleProject(item.id)} />
                 <span><strong>{item.chave}</strong><small>{item.nome}{item.arquivadoEm ? " · Arquivado" : ""}</small></span>
               </label>;
             })}
@@ -211,7 +192,7 @@ export default function ProjectResourceManagement() {
         </fieldset>
       </div>
       <label className="resource-form-check">
-        <input type="checkbox" checked={editor.ativo} onChange={(event) => setEditor({ ...editor, ativo: event.target.checked })} />
+        <input type="checkbox" checked={editor.ativo} disabled={editor.mode === "view"} onChange={(event) => setEditor({ ...editor, ativo: event.target.checked })} />
         <span><strong>Recurso ativo</strong><small>Recursos inativos não participam das atividades dos projetos.</small></span>
       </label>
       <p className="resource-form-note">A capacidade e a alocação deste recurso serão definidas separadamente na Grade de capacitação.</p>

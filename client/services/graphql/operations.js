@@ -1698,10 +1698,11 @@ export const PROJETO_ORCAMENTO_QUERY = gql`
   query ProjetoOrcamento($projetoId: String!) {
     projetoOrcamento(projetoId: $projetoId) {
       recursos { id usuarioId ativo versao usuario { ...ProjetoRecursoUserFields } }
+      tarefas { id projetoRecursoId funcionalidade estimativaMinutos valorHora moeda ativo }
       financeiro {
         id moeda status versao totalPlanejado totalComprometido totalRealizado variacao aprovadoEm
         categorias { id nome valorPlanejado valorComprometido valorRealizado variacao versao }
-        custos { id categoriaId tipo descricao recursoId quantidadeMinutos taxaHora valorPlanejado valorComprometido valorRealizado versao recurso { id usuarioId ativo versao usuario { ...ProjetoRecursoUserFields } } taxas { id taxaHora criadoEm criadoPor { ...ProjetoRecursoUserFields } } }
+        custos { id categoriaId tipo descricao recursoId tarefaId quantidadeMinutos taxaHora valorPlanejado valorComprometido valorRealizado versao recurso { id usuarioId ativo versao usuario { ...ProjetoRecursoUserFields } } tarefa { id projetoRecursoId funcionalidade estimativaMinutos valorHora moeda ativo } taxas { id taxaHora criadoEm criadoPor { ...ProjetoRecursoUserFields } } }
       }
       permissoes { podeVisualizarFinanceiro podeGerenciarFinanceiro podeAprovarOrcamento }
     }

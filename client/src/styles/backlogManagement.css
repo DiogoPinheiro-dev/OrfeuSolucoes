@@ -379,38 +379,6 @@
   color: var(--danger-text);
 }
 
-.backlog-history,
-.backlog-permissions {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.backlog-history li,
-.backlog-permissions li {
-  display: grid;
-  gap: 4px;
-  padding: 11px 12px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--surface-white);
-}
-
-.backlog-history span {
-  color: var(--muted);
-  font-size: 0.8rem;
-}
-
-.backlog-permissions .allowed {
-  color: var(--success-text);
-}
-
-.backlog-permissions .denied {
-  color: var(--muted);
-}
-
 .backlog-overlay-state {
   position: fixed;
   inset: 0;

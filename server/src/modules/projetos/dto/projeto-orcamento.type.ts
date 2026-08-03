@@ -20,6 +20,17 @@ export class ProjetoRecursoResumoType {
 }
 
 @ObjectType()
+export class ProjetoCustoTarefaResumoType {
+  @Field() id!: string;
+  @Field(() => String, { nullable: true }) projetoRecursoId?: string | null;
+  @Field() funcionalidade!: string;
+  @Field(() => Int) estimativaMinutos!: number;
+  @Field() valorHora!: string;
+  @Field() moeda!: string;
+  @Field() ativo!: boolean;
+}
+
+@ObjectType()
 export class ProjetoOrcamentoCategoriaType {
   @Field() id!: string;
   @Field() nome!: string;
@@ -45,6 +56,7 @@ export class ProjetoCustoType {
   @Field(() => ProjetoCustoTipo) tipo!: ProjetoCustoTipo;
   @Field() descricao!: string;
   @Field(() => String, { nullable: true }) recursoId?: string | null;
+  @Field(() => String, { nullable: true }) tarefaId?: string | null;
   @Field(() => Int, { nullable: true }) quantidadeMinutos?: number | null;
   @Field(() => String, { nullable: true }) taxaHora?: string | null;
   @Field() valorPlanejado!: string;
@@ -52,6 +64,7 @@ export class ProjetoCustoType {
   @Field() valorRealizado!: string;
   @Field(() => Int) versao!: number;
   @Field(() => ProjetoRecursoResumoType, { nullable: true }) recurso?: ProjetoRecursoResumoType | null;
+  @Field(() => ProjetoCustoTarefaResumoType, { nullable: true }) tarefa?: ProjetoCustoTarefaResumoType | null;
   @Field(() => [ProjetoCustoTaxaHistoricoType]) taxas!: ProjetoCustoTaxaHistoricoType[];
 }
 
@@ -80,6 +93,7 @@ export class ProjetoOrcamentoPermissoesType {
 @ObjectType()
 export class ProjetoOrcamentoPainelType {
   @Field(() => [ProjetoRecursoResumoType]) recursos!: ProjetoRecursoResumoType[];
+  @Field(() => [ProjetoCustoTarefaResumoType]) tarefas!: ProjetoCustoTarefaResumoType[];
   @Field(() => ProjetoFinanceiroType, { nullable: true }) financeiro?: ProjetoFinanceiroType | null;
   @Field(() => ProjetoOrcamentoPermissoesType) permissoes!: ProjetoOrcamentoPermissoesType;
 }

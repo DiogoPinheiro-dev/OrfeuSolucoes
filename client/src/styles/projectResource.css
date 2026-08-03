@@ -9,16 +9,6 @@
 .resource-feedback.success { background: var(--success-soft); color: var(--success); }
 .resource-feedback.info { background: var(--surface-soft); color: var(--muted); }
 .resource-empty { padding: 20px; color: var(--muted); text-align: center; }
-.resource-view { display: grid; gap: 18px; padding: 20px 22px 22px; }
-.resource-view-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.resource-view-grid article { display: grid; gap: 5px; min-width: 0; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
-.resource-view-grid article.wide { grid-column: 1 / -1; }
-.resource-view-grid article > span { color: var(--muted); font-size: .78rem; }
-.resource-view-grid article > strong { overflow-wrap: anywhere; }
-.resource-view-projects { display: flex; flex-wrap: wrap; gap: 8px; }
-.resource-view-projects strong { padding: 7px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface-white); font-size: .84rem; font-weight: 600; }
-.resource-view .crud-modal-actions { margin-top: 0; padding-top: 16px; border-top: 1px solid var(--line); }
-.resource-view .crud-modal-actions button { min-width: 112px; min-height: 44px; font-weight: 700; }
 .resource-form { display: grid; gap: 18px; padding: 20px 22px 22px; }
 .resource-form-grid { display: grid; gap: 18px; }
 .resource-form label { display: grid; gap: 8px; min-width: 0; color: var(--primary); font-size: .9rem; font-weight: 700; }
@@ -47,8 +37,6 @@
 
 @media (max-width: 860px) { .resource-header { align-items: stretch; flex-direction: column; } }
 @media (max-width: 640px) {
-  .resource-view { padding: 16px; }
-  .resource-view-grid { grid-template-columns: 1fr; }
   .resource-form { padding: 16px; }
   .resource-project-options { grid-template-columns: 1fr; }
   .resource-form .crud-modal-actions { display: grid; grid-template-columns: 1fr; }

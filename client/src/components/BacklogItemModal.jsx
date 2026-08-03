@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
-import { CrudModal, CrudModalTabPanel, CrudModalTabs } from "./CrudModal";
+import { CrudModal } from "./CrudModal";
 
 const TIPOS = {
     HISTORIA: "História",
@@ -27,7 +27,6 @@ const userLabel = (user) => user?.nome || user?.login || user?.email || "Não at
 export default function BacklogItemModal({
     mode,
     item,
-    history = [],
     responsaveis,
     parentOptions,
     saving,
@@ -36,7 +35,6 @@ export default function BacklogItemModal({
     onSubmit
 }) {
     const isView = mode === "view";
-    const [tab, setTab] = useState("dados");
     const [form, setForm] = useState({
         tipo: "TAREFA",
         titulo: "",
@@ -51,7 +49,6 @@ export default function BacklogItemModal({
     });
 
     useEffect(() => {
-        setTab("dados");
         setForm({
             tipo: item?.tipo || "TAREFA",
             titulo: item?.titulo || "",
@@ -65,15 +62,6 @@ export default function BacklogItemModal({
             estimativaMinutos: item?.estimativaMinutos ?? ""
         });
     }, [item, mode]);
-
-    const tabs = useMemo(() => isView
-        ? [
-            { id: "dados", label: "Dados" },
-            { id: "historico", label: "Histórico" },
-            { id: "permissoes", label: "Permissões" }
-        ]
-        : [{ id: "dados", label: "Dados" }],
-    [isView]);
 
     const change = (key, value) => setForm((current) => ({
         ...current,
@@ -106,179 +94,132 @@ export default function BacklogItemModal({
             onClose={onClose}
             onSubmit={submit}
             formClassName="backlog-modal-form"
-            actions={(
-                <>
-                    <button type="button" className="secondary" onClick={onClose} disabled={saving}>
-                        {isView ? "Fechar" : "Cancelar"}
-                    </button>
-                    {!isView && (
-                        <button type="submit" disabled={saving || !form.titulo.trim()}>
-                            {saving ? "Salvando..." : "Salvar"}
-                        </button>
-                    )}
-                </>
-            )}
+            actions={isView
+                ? <button type="button" onClick={onClose}>Fechar</button>
+                : <><button type="button" className="secondary" onClick={onClose} disabled={saving}>Cancelar</button><button type="submit" disabled={saving || !form.titulo.trim()}>{saving ? "Salvando..." : "Salvar"}</button></>}
         >
             {error && <p className="backlog-modal-error" role="alert">{error}</p>}
 
-            {isView && (
-                <CrudModalTabs
-                    tabs={tabs}
-                    activeTab={tab}
-                    onChange={setTab}
-                    ariaLabel="Seções da demanda"
-                />
-            )}
-
-            <CrudModalTabPanel active={!isView || tab === "dados"}>
-                <fieldset className="backlog-form-grid" disabled={saving || isView}>
-                    <label>
-                        Tipo
-                        <select
-                            value={form.tipo}
-                            disabled={isView}
-                            onChange={(event) => change("tipo", event.target.value)}
-                        >
-                            {Object.entries(TIPOS).map(([value, label]) => (
-                                <option key={value} value={value}>{label}</option>
-                            ))}
-                        </select>
-                    </label>
-                    <label>
-                        Prioridade
-                        <select
-                            value={form.prioridade}
-                            disabled={isView}
-                            onChange={(event) => change("prioridade", event.target.value)}
-                        >
-                            {Object.entries(PRIORIDADES).map(([value, label]) => (
-                                <option key={value} value={value}>{label}</option>
-                            ))}
-                        </select>
-                    </label>
-                    <label className="backlog-form-wide">
-                        Título
-                        <input
-                            value={form.titulo}
-                            disabled={isView}
-                            maxLength={200}
-                            required
-                            onChange={(event) => change("titulo", event.target.value)}
-                        />
-                    </label>
-                    <label className="backlog-form-wide">
-                        Descrição
-                        <textarea
-                            value={form.descricao}
-                            disabled={isView}
-                            rows={4}
-                            maxLength={4000}
-                            onChange={(event) => change("descricao", event.target.value)}
-                        />
-                    </label>
-                    <label>
-                        Responsável
-                        <select
-                            value={form.responsavelId}
-                            disabled={isView}
-                            onChange={(event) => change("responsavelId", event.target.value)}
-                        >
-                            <option value="">Não atribuído</option>
-                            {responsaveis.map((user) => (
-                                <option key={user.id} value={user.id}>{userLabel(user)}</option>
-                            ))}
-                        </select>
-                    </label>
-                    <label>
-                        Item pai
-                        <select
-                            value={form.paiId}
-                            disabled={isView}
-                            onChange={(event) => change("paiId", event.target.value)}
-                        >
-                            <option value="">Sem item pai</option>
-                            {parentOptions.map((parent) => (
-                                <option key={parent.id} value={parent.id}>
-                                    {parent.chave} — {parent.titulo}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-                    <label>
-                        Início previsto
-                        <input
-                            type="date"
-                            value={form.inicioPrevistoEm}
-                            disabled={isView}
-                            onChange={(event) => change("inicioPrevistoEm", event.target.value)}
-                        />
-                    </label>
-                    <label>
-                        Término previsto
-                        <input
-                            type="date"
-                            value={form.fimPrevistoEm}
-                            disabled={isView}
-                            onChange={(event) => change("fimPrevistoEm", event.target.value)}
-                        />
-                    </label>
-                    <label>
-                        Estimativa (minutos)
-                        <input
-                            type="number"
-                            min="0"
-                            step="1"
-                            value={form.estimativaMinutos}
-                            disabled={isView}
-                            onChange={(event) => change("estimativaMinutos", event.target.value)}
-                        />
-                    </label>
-                    <label>
-                        Status
-                        <select
-                            value={form.status}
-                            disabled={isView}
-                            onChange={(event) => change("status", event.target.value)}
-                        >
-                            {Object.entries(STATUS).map(([value, label]) => (
-                                <option key={value} value={value}>{label}</option>
-                            ))}
-                        </select>
-                    </label>
-                </fieldset>
-                {item?.arquivadoEm && (
-                    <p className="backlog-archived-message" role="status">
-                        Item arquivado em {new Date(item.arquivadoEm).toLocaleString("pt-BR")}.
-                    </p>
-                )}
-            </CrudModalTabPanel>
-
-            <CrudModalTabPanel active={tab === "historico"}>
-                {history.length ? (
-                    <ol className="backlog-history">
-                        {history.map((entry) => (
-                            <li key={entry.id}>
-                                <strong>{entry.evento.replaceAll("_", " ")}</strong>
-                                <span>
-                                    {new Date(entry.criadoEm).toLocaleString("pt-BR")}
-                                    {entry.usuario ? ` · ${userLabel(entry.usuario)}` : ""}
-                                </span>
-                            </li>
+            <fieldset className="backlog-form-grid" disabled={saving || isView}>
+                <label>
+                    Tipo
+                    <select
+                        value={form.tipo}
+                        disabled={isView}
+                        onChange={(event) => change("tipo", event.target.value)}
+                    >
+                        {Object.entries(TIPOS).map(([value, label]) => (
+                            <option key={value} value={value}>{label}</option>
                         ))}
-                    </ol>
-                ) : <p>Nenhum evento registrado.</p>}
-            </CrudModalTabPanel>
-
-            <CrudModalTabPanel active={tab === "permissoes"}>
-                <ul className="backlog-permissions">
-                    {Object.entries(item?.permissoes || {}).map(([key, enabled]) => (
-                        <li key={key} className={enabled ? "allowed" : "denied"}>
-                            {key.replace(/^pode/, "").replace(/([A-Z])/g, " $1").trim()}: {enabled ? "permitido" : "negado"}
-                        </li>
-                    ))}
-                </ul>
-            </CrudModalTabPanel>
-
+                    </select>
+                </label>
+                <label>
+                    Prioridade
+                    <select
+                        value={form.prioridade}
+                        disabled={isView}
+                        onChange={(event) => change("prioridade", event.target.value)}
+                    >
+                        {Object.entries(PRIORIDADES).map(([value, label]) => (
+                            <option key={value} value={value}>{label}</option>
+                        ))}
+                    </select>
+                </label>
+                <label className="backlog-form-wide">
+                    Título
+                    <input
+                        value={form.titulo}
+                        disabled={isView}
+                        maxLength={200}
+                        required
+                        onChange={(event) => change("titulo", event.target.value)}
+                    />
+                </label>
+                <label className="backlog-form-wide">
+                    Descrição
+                    <textarea
+                        value={form.descricao}
+                        disabled={isView}
+                        rows={4}
+                        maxLength={4000}
+                        onChange={(event) => change("descricao", event.target.value)}
+                    />
+                </label>
+                <label>
+                    Responsável
+                    <select
+                        value={form.responsavelId}
+                        disabled={isView}
+                        onChange={(event) => change("responsavelId", event.target.value)}
+                    >
+                        <option value="">Não atribuído</option>
+                        {responsaveis.map((user) => (
+                            <option key={user.id} value={user.id}>{userLabel(user)}</option>
+                        ))}
+                    </select>
+                </label>
+                <label>
+                    Item pai
+                    <select
+                        value={form.paiId}
+                        disabled={isView}
+                        onChange={(event) => change("paiId", event.target.value)}
+                    >
+                        <option value="">Sem item pai</option>
+                        {parentOptions.map((parent) => (
+                            <option key={parent.id} value={parent.id}>
+                                {parent.chave} — {parent.titulo}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+                <label>
+                    Início previsto
+                    <input
+                        type="date"
+                        value={form.inicioPrevistoEm}
+                        disabled={isView}
+                        onChange={(event) => change("inicioPrevistoEm", event.target.value)}
+                    />
+                </label>
+                <label>
+                    Término previsto
+                    <input
+                        type="date"
+                        value={form.fimPrevistoEm}
+                        disabled={isView}
+                        onChange={(event) => change("fimPrevistoEm", event.target.value)}
+                    />
+                </label>
+                <label>
+                    Estimativa (minutos)
+                    <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={form.estimativaMinutos}
+                        disabled={isView}
+                        onChange={(event) => change("estimativaMinutos", event.target.value)}
+                    />
+                </label>
+                <label>
+                    Status
+                    <select
+                        value={form.status}
+                        disabled={isView}
+                        onChange={(event) => change("status", event.target.value)}
+                    >
+                        {Object.entries(STATUS).map(([value, label]) => (
+                            <option key={value} value={value}>{label}</option>
+                        ))}
+                    </select>
+                </label>
+            </fieldset>
+            {!isView && item?.arquivadoEm && (
+                <p className="backlog-archived-message" role="status">
+                    Item arquivado em {new Date(item.arquivadoEm).toLocaleString("pt-BR")}.
+                </p>
+            )}
         </CrudModal>
     );
 }

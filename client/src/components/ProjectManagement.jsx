@@ -27,7 +27,6 @@ const TRANSICOES = {
     CONCLUIDO: ["CONCLUIDO", "PLANEJADO"],
     CANCELADO: ["CANCELADO", "PLANEJADO"]
 };
-const PAPEIS = { RESPONSAVEL: "Responsável", MEMBRO: "Membro", OBSERVADOR: "Observador" };
 
 const formatDate = (value, withTime = false) => {
     if (!value) return "Não informado";
@@ -36,14 +35,7 @@ const formatDate = (value, withTime = false) => {
 };
 const userLabel = (user) => user?.nome || user?.login || user?.email || "Não informado";
 
-function DetailField({ label, children }) {
-    return <div className="project-detail-field"><span>{label}</span><strong>{children || "Não informado"}</strong></div>;
-}
 
-function PermissionList({ permissions }) {
-    const labels = { podeVisualizar: "Visualizar", podeAlterar: "Alterar cadastro", podeAlterarStatus: "Alterar status", podeArquivar: "Arquivar", podeReativar: "Reativar" };
-    return <div className="project-permissions" aria-label="Permissões efetivas">{Object.entries(labels).map(([key, label]) => <span key={key} className={permissions?.[key] ? "allowed" : "denied"}>{label}: {permissions?.[key] ? "sim" : "não"}</span>)}</div>;
-}
 
 export default function ProjectManagement({ permissions }) {
     const [rows, setRows] = useState([]);
@@ -58,7 +50,6 @@ export default function ProjectManagement({ permissions }) {
     const [detail, setDetail] = useState(null);
     const [detailLoading, setDetailLoading] = useState(false);
     const [detailError, setDetailError] = useState("");
-    const [activeTab, setActiveTab] = useState("geral");
     const [editor, setEditor] = useState(null);
     const [saving, setSaving] = useState(false);
     const [editorError, setEditorError] = useState("");
@@ -101,7 +92,7 @@ export default function ProjectManagement({ permissions }) {
 
     const openDetail = async (project) => {
         if (project.permissoes?.podeVisualizar === false) return;
-        setDetail(project); setDetailLoading(true); setDetailError(""); setActiveTab("geral");
+        setDetail(project); setDetailLoading(true); setDetailError("");
         try { setDetail(await getProjeto(project.id)); } catch (loadError) { setDetailError(loadError.message); } finally { setDetailLoading(false); }
     };
 
@@ -181,6 +172,6 @@ export default function ProjectManagement({ permissions }) {
 
         {editor && <ProjectEditorModal mode={editor.mode} project={editor.project} saving={saving} error={editorError} canEditDetails={editor.mode === "create" || editor.project?.permissoes?.podeAlterar} onClose={() => setEditor(null)} onSuggestKey={sugerirChaveProjeto} onSubmit={saveProject} />}
         {archiveCandidate && <CrudModal mode="archive" title="Arquivar projeto" ariaLabel="Confirmar arquivamento do projeto" onClose={() => setArchiveCandidate(null)} onSubmit={confirmArchive} formClassName="project-archive-confirm" actions={<><button type="button" className="secondary" onClick={() => setArchiveCandidate(null)} disabled={saving}>Cancelar</button><button type="submit" className="danger" disabled={saving}>{saving ? "Arquivando..." : "Arquivar"}</button></>}><p>Você está prestes a arquivar o projeto:</p><strong>{archiveCandidate.chave} — {archiveCandidate.nome}</strong><p>O projeto deixará de aparecer na listagem ativa, mas poderá ser consultado e reativado pelo filtro de arquivados.</p>{editorError && <p className="project-detail-error" role="alert">{editorError}</p>}</CrudModal>}        {cycle && <CrudModal mode="edit" title={`Ciclo de ${cycle.chave}`} onClose={() => setCycle(null)} onSubmit={saveCycle} formClassName="project-form" actions={<><button type="button" className="secondary" onClick={() => setCycle(null)}>Cancelar</button><button type="submit" disabled={saving}>{saving ? "Salvando..." : "Salvar"}</button></>}><div className="project-form-grid"><label>Status<select value={cycle.situacao} onChange={(event) => setCycle((current) => ({ ...current, situacao: event.target.value }))}>{(TRANSICOES[cycle.situacaoOriginal] || [cycle.situacaoOriginal]).map((value) => <option key={value} value={value}>{SITUACOES[value]}</option>)}</select></label><label>Saúde<select value={cycle.saude} onChange={(event) => setCycle((current) => ({ ...current, saude: event.target.value }))}>{Object.entries(SAUDES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label></div>{editorError && <p className="project-detail-error" role="alert">{editorError}</p>}</CrudModal>}
-        {detail && <CrudModal mode="view" title={`${detail.chave} — ${detail.nome}`} ariaLabel="Detalhes do projeto" onClose={() => setDetail(null)} onSubmit={(event) => event.preventDefault()} actions={<button type="button" onClick={() => setDetail(null)}>Fechar</button>}><nav className="crud-modal-tabs" aria-label="Seções do projeto">{[{ id: "geral", label: "Geral" }, { id: "planejamento", label: "Planejamento" }].map((tab) => <button key={tab.id} type="button" className={activeTab === tab.id ? "active" : ""} onClick={() => setActiveTab(tab.id)}>{tab.label}</button>)}</nav>{detailLoading && <p role="status">Carregando detalhes...</p>}{detailError && <p className="project-detail-error" role="alert">{detailError}</p>}{activeTab === "geral" && <><div className="project-detail-grid"><DetailField label="Chave">{detail.chave}</DetailField><DetailField label="Nome">{detail.nome}</DetailField><DetailField label="Metodologia">{METODOLOGIAS[detail.metodologia]}</DetailField><DetailField label="Status">{SITUACOES[detail.situacao]}</DetailField><DetailField label="Saúde">{SAUDES[detail.saude]}</DetailField><DetailField label="Responsável">{userLabel(detail.responsavel)}</DetailField><DetailField label="Objetivo">{detail.objetivo}</DetailField><DetailField label="Descrição">{detail.descricao}</DetailField><DetailField label="Seu papel">{PAPEIS[detail.meuPapel] || "Administrador"}</DetailField><DetailField label="Arquivado em">{formatDate(detail.arquivadoEm, true)}</DetailField></div><h4>Permissões efetivas</h4><PermissionList permissions={detail.permissoes} /></>}{activeTab === "planejamento" && <div className="project-detail-grid"><DetailField label="Início previsto">{formatDate(detail.inicioPrevistoEm)}</DetailField><DetailField label="Término previsto">{formatDate(detail.fimPrevistoEm)}</DetailField><DetailField label="Início real">{formatDate(detail.inicioRealEm)}</DetailField><DetailField label="Término real">{formatDate(detail.fimRealEm)}</DetailField><DetailField label="Criado por">{userLabel(detail.criadoPor)}</DetailField><DetailField label="Criado em">{formatDate(detail.criadoEm, true)}</DetailField><DetailField label="Atualizado em">{formatDate(detail.atualizadoEm, true)}</DetailField><DetailField label="Arquivado por">{userLabel(detail.arquivadoPor)}</DetailField></div>}</CrudModal>}
+        {detail && <ProjectEditorModal mode="view" project={detail} loading={detailLoading} error={detailError} canEditDetails={false} onClose={() => setDetail(null)} />}
     </div>;
 }

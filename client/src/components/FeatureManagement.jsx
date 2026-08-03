@@ -12,7 +12,6 @@ import { useFormFieldErrors } from "../hooks/useFormFieldErrors";
 import ConfirmDialog from "./ConfirmDialog";
 import FormFieldError from "./FormFieldError";
 import CrudGrid from "./CrudGrid";
-import { FieldHelpDialog, HelpButton } from "./FieldHelp";
 import { CrudModal, CrudModalTabPanel, CrudModalTabs } from "./CrudModal";
 import CustomDropdown from "./CustomDropdown";
 
@@ -50,65 +49,6 @@ const createLocalKey = () => {
     }
 
     return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-};
-
-const fieldHelp = {
-    solucao: {
-        title: "Solução",
-        text: "Solução à qual esta funcionalidade pertence. Ela define onde a rotina aparece no Hub."
-    },
-    titulo: {
-        title: "Título",
-        text: "Nome da funcionalidade exibido para os usuários no menu e nas telas."
-    },
-    slug: {
-        title: "Identificador",
-        text: "Código curto usado pelo sistema para montar o endereço da funcionalidade. Use letras minúsculas, números e hifens."
-    },
-    registryKey: {
-        title: "Rota da funcionalidade",
-        text: "Caminho gerado automaticamente a partir da solução escolhida e do identificador da funcionalidade."
-    },
-    label: {
-        title: "Label",
-        text: "Nome curto opcional para exibir a funcionalidade em espaços menores."
-    },
-    descricao: {
-        title: "Descrição",
-        text: "Resumo que explica o objetivo da funcionalidade."
-    },
-    ordem: {
-        title: "Ordem",
-        text: "Número usado para ordenar funcionalidades nas listagens. Números menores aparecem primeiro."
-    },
-    ativo: {
-        title: "Ativo",
-        text: "Indica se a funcionalidade está disponível para uso."
-    },
-    somenteAdminSistema: {
-        title: "Somente admin",
-        text: "Restringe a funcionalidade ao administrador inicial do sistema."
-    },
-    acoes: {
-        title: "Ações da funcionalidade",
-        text: "Ações usadas nas permissões dos grupos, como visualizar, incluir, alterar, excluir ou ações customizadas."
-    },
-    chaveAcao: {
-        title: "Chave",
-        text: "Código gerado automaticamente a partir do nome da ação."
-    },
-    nomeAcao: {
-        title: "Nome",
-        text: "Nome da ação exibido para quem configura permissões."
-    },
-    detalheAcao: {
-        title: "Detalhe da ação customizada",
-        text: "Informação opcional para diferenciar ações específicas, como exportar, importar ou aprovar."
-    },
-    acaoPadrao: {
-        title: "Padrão",
-        text: "Indica ações básicas do sistema. Ações padrão não devem ser removidas."
-    }
 };
 
 const normalizeFeatureForm = (feature) => ({
@@ -188,7 +128,6 @@ export default function FeatureManagement({ permissions }) {
     const [form, setForm] = useState(initialForm);
     const [activeTab, setActiveTab] = useState("main");
     const [pendingDelete, setPendingDelete] = useState(null);
-    const [activeHelp, setActiveHelp] = useState(null);
     const {
         applyError: applyFormError,
         clearErrors: clearFormErrors,
@@ -251,7 +190,6 @@ export default function FeatureManagement({ permissions }) {
         setForm(initialForm);
         setSaving(false);
         setActiveTab("main");
-        setActiveHelp(null);
     };
 
     const handleChange = (event) => {
@@ -456,10 +394,9 @@ export default function FeatureManagement({ permissions }) {
                             {formError && <div className="crud-error" role="alert">{formError}</div>}
 
                             <CrudModalTabPanel active={activeTab === "main"}>
-                                    <div className="field-help-field">
-                                        <span className="field-help-label">
+                                    <div className="user-form-field">
+                                        <span className="user-form-field-label">
                                             <span>Solução <FormFieldError formId={FEATURE_FORM_ID} field="solucaoId" errors={fieldErrors} /></span>
-                                            <HelpButton help={fieldHelp.solucao} onHelp={setActiveHelp} />
                                         </span>
                                         <CustomDropdown
                                             name="solucaoId"
@@ -479,26 +416,23 @@ export default function FeatureManagement({ permissions }) {
                                         />
                                     </div>
 
-                                    <div className="field-help-field">
-                                        <span className="field-help-label">
+                                    <div className="user-form-field">
+                                        <span className="user-form-field-label">
                                             <label htmlFor="funcionalidade-titulo">Título <FormFieldError formId={FEATURE_FORM_ID} field="titulo" errors={fieldErrors} /></label>
-                                            <HelpButton help={fieldHelp.titulo} onHelp={setActiveHelp} />
                                         </span>
                                         <input id="funcionalidade-titulo" name="titulo" value={form.titulo || ""} onChange={handleChange} disabled={readonly || saving} {...fieldErrorProps("titulo")} />
                                     </div>
 
-                                    <div className="field-help-field">
-                                        <span className="field-help-label">
+                                    <div className="user-form-field">
+                                        <span className="user-form-field-label">
                                             <label htmlFor="funcionalidade-slug">Identificador <FormFieldError formId={FEATURE_FORM_ID} field="slug" errors={fieldErrors} /></label>
-                                            <HelpButton help={fieldHelp.slug} onHelp={setActiveHelp} />
                                         </span>
                                         <input id="funcionalidade-slug" name="slug" value={form.slug || ""} onChange={handleChange} disabled={readonly || saving} {...fieldErrorProps("slug")} />
                                     </div>
 
-                                    <div className="field-help-field">
-                                        <span className="field-help-label">
+                                    <div className="user-form-field">
+                                        <span className="user-form-field-label">
                                             <label htmlFor="funcionalidade-registry">Rota da funcionalidade</label>
-                                            <HelpButton help={fieldHelp.registryKey} onHelp={setActiveHelp} />
                                         </span>
                                         <input
                                             id="funcionalidade-registry"
@@ -509,26 +443,23 @@ export default function FeatureManagement({ permissions }) {
                                         />
                                     </div>
 
-                                    <div className="field-help-field">
-                                        <span className="field-help-label">
+                                    <div className="user-form-field">
+                                        <span className="user-form-field-label">
                                             <label htmlFor="funcionalidade-label">Label</label>
-                                            <HelpButton help={fieldHelp.label} onHelp={setActiveHelp} />
                                         </span>
                                         <input id="funcionalidade-label" name="label" value={form.label || ""} onChange={handleChange} disabled={readonly || saving} />
                                     </div>
 
-                                    <div className="field-help-field">
-                                        <span className="field-help-label">
+                                    <div className="user-form-field">
+                                        <span className="user-form-field-label">
                                             <label htmlFor="funcionalidade-descricao">Descrição</label>
-                                            <HelpButton help={fieldHelp.descricao} onHelp={setActiveHelp} />
                                         </span>
                                         <input id="funcionalidade-descricao" name="descricao" value={form.descricao || ""} onChange={handleChange} disabled={readonly || saving} />
                                     </div>
 
-                                    <div className="field-help-field">
-                                        <span className="field-help-label">
+                                    <div className="user-form-field">
+                                        <span className="user-form-field-label">
                                             <label htmlFor="funcionalidade-ordem">Ordem</label>
-                                            <HelpButton help={fieldHelp.ordem} onHelp={setActiveHelp} />
                                         </span>
                                         <input id="funcionalidade-ordem" name="ordem" type="number" value={form.ordem ?? 0} onChange={handleChange} disabled={readonly || saving} />
                                     </div>
@@ -537,12 +468,10 @@ export default function FeatureManagement({ permissions }) {
                                             <label className="user-permission-option">
                                                 <input type="checkbox" name="ativo" checked={!!form.ativo} onChange={handleChange} disabled={readonly || saving} />
                                                 Ativo
-                                                <HelpButton help={fieldHelp.ativo} onHelp={setActiveHelp} />
                                             </label>
                                             <label className="user-permission-option">
                                                 <input type="checkbox" name="somenteAdminSistema" checked={!!form.somenteAdminSistema} onChange={handleChange} disabled={readonly || saving} />
                                                 Somente admin
-                                                <HelpButton help={fieldHelp.somenteAdminSistema} onHelp={setActiveHelp} />
                                             </label>
                                         </div>
                                     </section>
@@ -552,7 +481,6 @@ export default function FeatureManagement({ permissions }) {
                                     <div className="user-company-header">
                                         <div>
                                             <span>Ações da funcionalidade</span> <FormFieldError formId={FEATURE_FORM_ID} field="acoes" errors={fieldErrors} />
-                                            <HelpButton help={fieldHelp.acoes} onHelp={setActiveHelp} />
                                             <strong>Opções exibidas no grid de permissões</strong>
                                         </div>
                                         {!readonly && (
@@ -568,7 +496,6 @@ export default function FeatureManagement({ permissions }) {
                                                 <div className="user-feature-crud-options">
                                                     <label>
                                                         Nome
-                                                        <HelpButton help={fieldHelp.nomeAcao} onHelp={setActiveHelp} />
                                                         <input                                                            name="acoes"
 
                                                             value={acao.nome || ""}
@@ -579,7 +506,6 @@ export default function FeatureManagement({ permissions }) {
                                                     </label>
                                                     <label>
                                                         Ordem
-                                                        <HelpButton help={fieldHelp.ordem} onHelp={setActiveHelp} />
                                                         <input
                                                             type="number"
                                                             value={acao.ordem ?? 0}
@@ -591,7 +517,6 @@ export default function FeatureManagement({ permissions }) {
 
                                                 <label>
                                                     Detalhe da ação customizada
-                                                    <HelpButton help={fieldHelp.detalheAcao} onHelp={setActiveHelp} />
                                                     <input
                                                         value={acao.configuracao || ""}
                                                         onChange={(event) => handleActionChange(index, "configuracao", event.target.value)}
@@ -602,7 +527,6 @@ export default function FeatureManagement({ permissions }) {
 
                                                 <label>
                                                     Descrição
-                                                    <HelpButton help={fieldHelp.descricao} onHelp={setActiveHelp} />
                                                     <input
                                                         value={acao.descricao || ""}
                                                         onChange={(event) => handleActionChange(index, "descricao", event.target.value)}
@@ -619,7 +543,6 @@ export default function FeatureManagement({ permissions }) {
                                                             disabled={readonly || saving}
                                                         />
                                                         Ativa
-                                                        <HelpButton help={fieldHelp.ativo} onHelp={setActiveHelp} />
                                                     </label>
                                                     <label className="user-permission-option">
                                                         <input
@@ -629,7 +552,6 @@ export default function FeatureManagement({ permissions }) {
                                                             disabled={readonly || saving}
                                                         />
                                                     Padrão
-                                                    <HelpButton help={fieldHelp.acaoPadrao} onHelp={setActiveHelp} />
                                                     </label>
                                                     {!readonly && !acao.acaoPadrao && (
                                                         <button className="crud-inline-action crud-inline-action--danger" type="button" onClick={() => removeAction(index)} disabled={saving}>
@@ -643,8 +565,6 @@ export default function FeatureManagement({ permissions }) {
                             </CrudModalTabPanel>
                 </CrudModal>
             )}
-
-            <FieldHelpDialog help={activeHelp} onClose={() => setActiveHelp(null)} />
 
             <ConfirmDialog
                 open={!!pendingDelete}

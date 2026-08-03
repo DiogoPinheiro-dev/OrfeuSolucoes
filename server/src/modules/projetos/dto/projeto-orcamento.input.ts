@@ -32,6 +32,7 @@ export class SalvarProjetoCustoInput {
   @Field(() => ProjetoCustoTipo) @IsEnum(ProjetoCustoTipo) tipo!: ProjetoCustoTipo;
   @Field() @IsString() @MinLength(1) @MaxLength(240) descricao!: string;
   @Field(() => String, { nullable: true }) @IsOptional() @IsUUID() recursoId?: string | null;
+  @Field(() => String, { nullable: true }) @IsOptional() @IsUUID() tarefaId?: string | null;
   @Field(() => Int, { nullable: true }) @IsOptional() @IsInt() @Min(1) quantidadeMinutos?: number | null;
   @Field(() => String, { nullable: true }) @IsOptional() @Matches(MONEY) taxaHora?: string | null;
   @Field() @Matches(MONEY) valorPlanejado!: string;

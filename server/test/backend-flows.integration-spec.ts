@@ -560,8 +560,19 @@ class InMemoryPrismaService {
           if (!relation.some((item) => this.matchesWhere(relationModel, item, condition))) {
             return false;
           }
-        } else if (!relation || !this.matchesWhere(relationModel, relation, condition)) {
-          return false;
+        } else {
+          const relCondition = condition as AnyRecord;
+          if ('is' in relCondition) {
+            if (!relation || !this.matchesWhere(relationModel, relation, relCondition.is)) {
+              return false;
+            }
+          } else if ('isNot' in relCondition) {
+            if (relation && this.matchesWhere(relationModel, relation, relCondition.isNot)) {
+              return false;
+            }
+          } else if (!relation || !this.matchesWhere(relationModel, relation, condition)) {
+            return false;
+          }
         }
         continue;
       }
@@ -1038,6 +1049,8 @@ class InMemoryPrismaService {
         return this.data.projetoTarefa.filter((item) => item.recursoId === row.id);
       case 'projetoTarefa.recurso':
         return this.data.recurso.find((item) => item.id === row.recursoId) ?? null;
+      case 'projetoTarefa.projetoRecurso':
+        return row.projetoRecursoId ? this.data.projetoRecurso.find((item) => item.id === row.projetoRecursoId) ?? null : null;
       case 'projetoTarefa.taxas':
         return this.data.projetoTarefaTaxaHistorico.filter((item) => item.tarefaId === row.id);
       case 'projetoTarefaTaxaHistorico.criadoPor':
@@ -1056,6 +1069,8 @@ class InMemoryPrismaService {
         return this.data.projetoCusto.filter((item) => item.orcamentoId === row.id);
       case 'projetoCusto.recurso':
         return row.recursoId ? this.data.projetoRecurso.find((recurso) => recurso.id === row.recursoId) ?? null : null;
+      case 'projetoCusto.tarefa':
+        return row.tarefaId ? this.data.projetoTarefa.find((tarefa) => tarefa.id === row.tarefaId) ?? null : null;
       case 'projetoCusto.taxas':
         return this.data.projetoCustoTaxaHistorico.filter((item) => item.custoId === row.id);
       case 'projetoCustoTaxaHistorico.criadoPor':
@@ -1183,6 +1198,7 @@ class InMemoryPrismaService {
       'recurso.projetos': 'projetoRecurso',
       'recurso.tarefas': 'projetoTarefa',
       'projetoTarefa.recurso': 'recurso',
+      'projetoTarefa.projetoRecurso': 'projetoRecurso',
       'projetoTarefa.taxas': 'projetoTarefaTaxaHistorico',
       'projetoTarefaTaxaHistorico.criadoPor': 'usuario',
       'projetoRecurso.cadastro': 'recurso',
@@ -1192,6 +1208,7 @@ class InMemoryPrismaService {
       'projetoOrcamento.categorias': 'projetoOrcamentoCategoria',
       'projetoOrcamento.custos': 'projetoCusto',
       'projetoCusto.recurso': 'projetoRecurso',
+      'projetoCusto.tarefa': 'projetoTarefa',
       'projetoCusto.taxas': 'projetoCustoTaxaHistorico',
       'projetoCustoTaxaHistorico.criadoPor': 'usuario',      'projetoSequencia.projeto': 'projeto',
       'projetoOperacaoIdempotente.projeto': 'projeto',
@@ -1416,7 +1433,7 @@ class InMemoryPrismaService {
         row.valorPlanejado = row.valorPlanejado ?? '0.00'; row.valorComprometido = row.valorComprometido ?? '0.00'; row.valorRealizado = row.valorRealizado ?? '0.00'; row.versao = row.versao ?? 1; row.criadoEm = row.criadoEm ?? now; row.atualizadoEm = row.atualizadoEm ?? now;
         break;
       case 'projetoCusto':
-        row.categoriaId = row.categoriaId ?? null; row.recursoId = row.recursoId ?? null; row.quantidadeMinutos = row.quantidadeMinutos ?? null; row.taxaHora = row.taxaHora ?? null; row.valorPlanejado = row.valorPlanejado ?? '0.00'; row.valorComprometido = row.valorComprometido ?? '0.00'; row.valorRealizado = row.valorRealizado ?? '0.00'; row.versao = row.versao ?? 1; row.criadoEm = row.criadoEm ?? now; row.atualizadoEm = row.atualizadoEm ?? now;
+        row.categoriaId = row.categoriaId ?? null; row.recursoId = row.recursoId ?? null; row.tarefaId = row.tarefaId ?? null; row.quantidadeMinutos = row.quantidadeMinutos ?? null; row.taxaHora = row.taxaHora ?? null; row.valorPlanejado = row.valorPlanejado ?? '0.00'; row.valorComprometido = row.valorComprometido ?? '0.00'; row.valorRealizado = row.valorRealizado ?? '0.00'; row.versao = row.versao ?? 1; row.criadoEm = row.criadoEm ?? now; row.atualizadoEm = row.atualizadoEm ?? now;
         break;
       case 'projetoCustoTaxaHistorico':
         row.criadoEm = row.criadoEm ?? now;
@@ -5767,6 +5784,15 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
     expect(linhaPlanejada.planejamentoTarefasMinutos).toBe(3000);
     expect(linhaPlanejada.saldoTarefasMinutos).toBe(-600);
     expect(linhaPlanejada.possuiRisco).toBe(true);
+    const tarefaMoedaDiferente = await world.projetoTarefaService.salvar({
+      recursoId: recurso.id,
+      projetoRecursoId: vinculo.id,
+      funcionalidade: 'Revisar custos internacionais',
+      estimativaMinutos: 120,
+      valorHora: '50',
+      moeda: 'USD',
+      ativo: true
+    }, admin);
 
     const orcamento = await world.projetoOrcamentoService.salvarOrcamento({ projetoId: projeto.id, moeda: 'BRL' }, admin);
     let categoria = await world.projetoOrcamentoService.salvarCategoria({
@@ -5774,19 +5800,30 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
     }, admin);
     expect(categoria.valorPlanejado).toBe('100.01');
     expect(categoria.variacao).toBe('-19.99');
+    await expect(world.projetoOrcamentoService.salvarCusto({
+      projetoId: projeto.id, categoriaId: categoria.id, tipo: 'RECURSO' as any, descricao: 'Custo em moeda divergente', recursoId: vinculo.id, tarefaId: tarefaMoedaDiferente.id,
+      quantidadeMinutos: 60, taxaHora: '50', valorPlanejado: '0', valorComprometido: '0', valorRealizado: '0'
+    }, admin)).rejects.toThrow('mesma moeda do orcamento');
 
     let custo = await world.projetoOrcamentoService.salvarCusto({
-      projetoId: projeto.id, categoriaId: categoria.id, tipo: 'RECURSO' as any, descricao: 'Desenvolvimento', recursoId: vinculo.id,
+      projetoId: projeto.id, categoriaId: categoria.id, tipo: 'RECURSO' as any, descricao: 'Desenvolvimento', recursoId: vinculo.id, tarefaId: tarefaPlanejada.id,
       quantidadeMinutos: 60, taxaHora: '10.5555', valorPlanejado: '0', valorComprometido: '10.5555', valorRealizado: '0'
     }, admin);
     expect(custo.valorPlanejado).toBe('10.56');
     expect(custo.taxas.map((item: any) => item.taxaHora)).toEqual(['10.5555']);
     custo = await world.projetoOrcamentoService.salvarCusto({
-      projetoId: projeto.id, id: custo.id, versao: custo.versao, categoriaId: categoria.id, tipo: 'RECURSO' as any, descricao: 'Desenvolvimento', recursoId: vinculo.id,
+      projetoId: projeto.id, id: custo.id, versao: custo.versao, categoriaId: categoria.id, tipo: 'RECURSO' as any, descricao: 'Desenvolvimento', recursoId: vinculo.id, tarefaId: tarefaPlanejada.id,
       quantidadeMinutos: 60, taxaHora: '12', valorPlanejado: '0', valorComprometido: '12', valorRealizado: '0'
     }, admin);
     expect(custo.taxas).toHaveLength(2);
     expect(custo.taxas.map((item: any) => item.taxaHora)).toEqual(expect.arrayContaining(['12.0000', '10.5555']));
+    expect(custo.tarefaId).toBe(tarefaPlanejada.id);
+    expect(custo.tarefa?.funcionalidade).toBe('Implementar e homologar a integracao financeira');
+    const painelFinanceiro = await world.projetoOrcamentoService.painel(projeto.id, admin);
+    expect(painelFinanceiro.tarefas.map((item) => item.id)).toEqual(expect.arrayContaining([tarefaPlanejada.id, tarefaMoedaDiferente.id]));
+    expect(painelFinanceiro.financeiro?.custos[0]?.tarefaId).toBe(tarefaPlanejada.id);
+    await expect(world.projetoOrcamentoService.salvarOrcamento({ projetoId: projeto.id, id: orcamento.id, versao: orcamento.versao, moeda: 'USD' }, admin)).rejects.toThrow('nao pode ser alterada');
+    await expect(world.projetoTarefaService.excluir({ id: tarefaPlanejada.id, versao: tarefaPlanejada.versao }, admin)).rejects.toThrow('Desative a tarefa');
 
     categoria = await world.projetoOrcamentoService.salvarCategoria({
       projetoId: projeto.id, id: categoria.id, versao: categoria.versao, nome: 'Equipe',
@@ -5818,7 +5855,9 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
     const permissionSpy = jest.spyOn(world.projetoOrcamentoAuthorizationService, 'permissoes').mockResolvedValueOnce({
       podeVisualizarFinanceiro: false, podeGerenciarFinanceiro: false, podeAprovarOrcamento: false
     });
-    expect((await world.projetoOrcamentoService.painel(projeto.id, admin)).financeiro).toBeNull();
+    const painelSemFinanceiro = await world.projetoOrcamentoService.painel(projeto.id, admin);
+    expect(painelSemFinanceiro.financeiro).toBeNull();
+    expect(painelSemFinanceiro.tarefas).toEqual([]);
     permissionSpy.mockRestore();
 
     const aprovado = await world.projetoOrcamentoService.aprovar({ projetoId: projeto.id, id: orcamento.id, versao: orcamento.versao }, admin);

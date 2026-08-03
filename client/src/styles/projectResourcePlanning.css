@@ -75,8 +75,7 @@
   gap: 10px;
 }
 
-.resource-planning-summary article,
-.resource-planning-view-grid article {
+.resource-planning-summary article {
   display: grid;
   gap: 4px;
   min-width: 0;
@@ -86,8 +85,7 @@
   background: var(--surface-white);
 }
 
-.resource-planning-summary span,
-.resource-planning-view-grid span {
+.resource-planning-summary span {
   color: var(--muted);
   font-size: .78rem;
 }
@@ -167,7 +165,6 @@
 }
 
 .resource-planning-form,
-.resource-planning-view-form,
 .resource-planning-task-form,
 .resource-planning-period-form {
   display: grid;
@@ -176,7 +173,6 @@
 }
 
 .resource-planning-form-grid,
-.resource-planning-view-grid,
 .resource-planning-task-grid,
 .resource-planning-period-grid {
   display: grid;
@@ -242,7 +238,6 @@
 }
 
 .resource-planning-form .crud-modal-actions,
-.resource-planning-view-form .crud-modal-actions,
 .resource-planning-task-form .crud-modal-actions,
 .resource-planning-period-form .crud-modal-actions {
   margin-top: 0;
@@ -251,7 +246,6 @@
 }
 
 .resource-planning-form .crud-modal-actions button,
-.resource-planning-view-form .crud-modal-actions button,
 .resource-planning-task-form .crud-modal-actions button,
 .resource-planning-period-form .crud-modal-actions button {
   min-width: 116px;
@@ -402,29 +396,9 @@
   font-weight: 700;
 }
 
-.resource-planning-task-observation {
-  display: grid;
-  gap: 6px;
-  padding: 14px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--surface-soft);
-}
-
-.resource-planning-task-observation span {
-  color: var(--muted);
-  font-size: .78rem;
-  font-weight: 700;
-}
-
-.resource-planning-task-observation p {
-  margin: 0;
-  white-space: pre-wrap;
-}
 @media (max-width: 800px) {
   .resource-planning-summary,
   .resource-planning-form-grid,
-  .resource-planning-view-grid,
   .resource-planning-task-grid,
   .resource-planning-period-grid {
     grid-template-columns: 1fr;
@@ -436,7 +410,6 @@
   }
 
   .resource-planning-form,
-  .resource-planning-view-form,
   .resource-planning-task-form,
   .resource-planning-period-form {
     padding: 16px;
@@ -462,7 +435,6 @@
   }
 
   .resource-planning-form .crud-modal-actions,
-  .resource-planning-view-form .crud-modal-actions,
   .resource-planning-task-form .crud-modal-actions,
   .resource-planning-period-form .crud-modal-actions {
     display: grid;
@@ -470,7 +442,6 @@
   }
 
   .resource-planning-form .crud-modal-actions button,
-  .resource-planning-view-form .crud-modal-actions button,
   .resource-planning-task-form .crud-modal-actions button,
   .resource-planning-period-form .crud-modal-actions button {
     width: 100%;

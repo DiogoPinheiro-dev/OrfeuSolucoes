@@ -43,6 +43,7 @@ export default function ProjectEditorModal({
     mode,
     project,
     saving,
+    loading = false,
     error,
     canEditDetails,
     onClose,
@@ -76,8 +77,8 @@ export default function ProjectEditorModal({
 
 
     useEffect(() => {
-        if (error) applyFormError(error, "Nao foi possivel salvar o projeto.");
-    }, [error, applyFormError]);
+        if (error) applyFormError(error, mode === "view" ? "Nao foi possivel carregar o projeto." : "Nao foi possivel salvar o projeto.");
+    }, [error, mode, applyFormError]);
 
     const setField = (field, value) => {
         clearFieldError(field);
@@ -99,6 +100,7 @@ export default function ProjectEditorModal({
 
     const submit = (event) => {
         event.preventDefault();
+        if (mode === "view") return;
         clearFormErrors();
         const localErrors = {};
         if (!form.nome.trim()) localErrors.nome = "Preencha o nome do projeto.";
@@ -127,13 +129,14 @@ export default function ProjectEditorModal({
             mode={mode}
             formId={PROJECT_FORM_ID}
             noValidate
-            title={mode === "create" ? "Novo projeto" : `Alterar ${project?.chave}`}
-            ariaLabel={mode === "create" ? "Cadastrar projeto" : "Alterar projeto"}
+            title={mode === "create" ? "Novo projeto" : mode === "view" ? `${project?.chave} — ${project?.nome}` : `Alterar ${project?.chave}`}
+            ariaLabel={mode === "create" ? "Cadastrar projeto" : mode === "view" ? "Visualizar projeto" : "Alterar projeto"}
             onClose={onClose}
             onSubmit={submit}
             formClassName="project-form"
-            actions={
-                <>
+            actions={mode === "view"
+                ? <button type="button" onClick={onClose}>Fechar</button>
+                : <>
                     <button type="button" className="secondary" onClick={onClose} disabled={saving}>Cancelar</button>
                     <button type="submit" disabled={saving}>{saving ? "Salvando..." : "Salvar"}</button>
                 </>
@@ -148,10 +151,11 @@ export default function ProjectEditorModal({
                 onChange={setActiveTab}
             />
 
+            {loading && <p role="status">Carregando detalhes...</p>}
             {formError && <p className="project-detail-error" role="alert">{formError}</p>}
 
             <CrudModalTabPanel active={activeTab === "geral"}>
-                <fieldset className="project-form-grid" disabled={!canEditDetails || saving}>
+                <fieldset className="project-form-grid" disabled={mode === "view" || !canEditDetails || saving || loading}>
                 <label className="project-form-wide">
                     Nome <FormFieldError formId={PROJECT_FORM_ID} field="nome" errors={fieldErrors} />
                     <input name="nome" maxLength={200} value={form.nome} onChange={(event) => setField("nome", event.target.value)} {...fieldErrorProps("nome")} />
@@ -181,7 +185,7 @@ export default function ProjectEditorModal({
             </CrudModalTabPanel>
 
             <CrudModalTabPanel active={activeTab === "planejamento"}>
-                <fieldset className="project-form-grid" disabled={!canEditDetails || saving}>
+                <fieldset className="project-form-grid" disabled={mode === "view" || !canEditDetails || saving || loading}>
                 {mode === "create" && <label>Status inicial<select value={form.situacao} onChange={(event) => setField("situacao", event.target.value)}><option value="RASCUNHO">Rascunho</option><option value="PLANEJADO">Planejado</option></select></label>}
                 {mode === "create" && <label>Saúde inicial<select value={form.saude} onChange={(event) => setField("saude", event.target.value)}><option value="EM_DIA">Em dia</option><option value="EM_RISCO">Em risco</option><option value="ATRASADO">Atrasado</option></select></label>}
                 <label>Início previsto <FormFieldError formId={PROJECT_FORM_ID} field="inicioPrevistoEm" errors={fieldErrors} /><input type="date" name="inicioPrevistoEm" value={form.inicioPrevistoEm} onChange={(event) => setField("inicioPrevistoEm", event.target.value)} {...fieldErrorProps("inicioPrevistoEm")} /></label>

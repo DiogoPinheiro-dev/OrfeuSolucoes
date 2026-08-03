@@ -69,8 +69,11 @@ export class ProjetoTarefaService {
 
   async excluir(input: ExcluirProjetoTarefaInput, user: JwtPayload) {
     const empresaId = await this.authorization.empresa(user, ProjetoAcao.EXCLUIR);
-    const usos = await this.prisma.projetoAlocacao.count({ where: { empresaId, tarefaId: input.id } });
-    if (usos > 0) throw new BadRequestException('A tarefa possui execucoes planejadas. Exclua ou realoque essas execucoes antes de excluir.');
+    const [execucoes, custos] = await Promise.all([
+      this.prisma.projetoAlocacao.count({ where: { empresaId, tarefaId: input.id } }),
+      this.prisma.projetoCusto.count({ where: { empresaId, tarefaId: input.id } })
+    ]);
+    if (execucoes + custos > 0) throw new BadRequestException('A tarefa possui planejamento ou custos vinculados. Desative a tarefa para preservar o planejamento e o historico.');
     const result = await this.prisma.projetoTarefa.deleteMany({ where: { id: input.id, empresaId, versao: input.versao } });
     if (result.count !== 1) throw new ConflictException('A tarefa foi alterada por outra pessoa ou nao existe mais. Atualize os dados.');
     return true;
