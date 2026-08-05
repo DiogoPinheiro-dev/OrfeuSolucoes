@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { FormFieldBadRequestException, FormFieldConflictException } from '../../common/exceptions/form-field.exception';
 import { PrismaService } from '../../prisma/prisma.service';
 import { DEFAULT_ACTIONS } from './constants/solucao.constants';
 import { FuncionalidadeAcaoInput } from './dto/funcionalidade-acao.input';
@@ -35,7 +36,7 @@ export class FuncionalidadeAcaoService {
     return [...byKey.values()];
   }
 
-  async syncFuncionalidadeAcoes(funcionalidadeId: number, acoes?: FuncionalidadeAcaoInput[]): Promise<void> {
+  async syncFuncionalidadeAcoes(funcionalidadeId: number, acoes?: FuncionalidadeAcaoInput[], options: { preserveAdditionalActions?: boolean } = {}): Promise<void> {
     const normalized = this.normalizeActionInputs(acoes);
     const submittedIds = normalized.map((acao) => acao.id).filter((id): id is number => !!id);
     const submittedKeys = normalized.map((acao) => acao.chave).filter(Boolean);
@@ -87,17 +88,85 @@ export class FuncionalidadeAcaoService {
       }
     }
 
-    await (this.prisma as never as { funcionalidadeAcao: { deleteMany: Function } }).funcionalidadeAcao.deleteMany({
-      where: {
-        funcionalidadeId,
-        acaoPadrao: false,
-        NOT: [
-          ...(submittedIds.length ? [{ id: { in: submittedIds } }] : []),
-          ...(submittedKeys.length ? [{ chave: { in: submittedKeys } }] : []),
-          ...(submittedConfigs.length ? [{ configuracao: { in: submittedConfigs } }] : [])
-        ]
+    if (!options.preserveAdditionalActions) {
+      await (this.prisma as never as { funcionalidadeAcao: { deleteMany: Function } }).funcionalidadeAcao.deleteMany({
+        where: {
+          funcionalidadeId,
+          acaoPadrao: false,
+          NOT: [
+            ...(submittedIds.length ? [{ id: { in: submittedIds } }] : []),
+            ...(submittedKeys.length ? [{ chave: { in: submittedKeys } }] : []),
+            ...(submittedConfigs.length ? [{ configuracao: { in: submittedConfigs } }] : [])
+          ]
+        }
+      });
+    }
+
+    await this.syncMissingActionPermissionsForFeature(funcionalidadeId);
+  }
+
+  async appendFuncionalidadeAcoes(funcionalidadeId: number, acoes: FuncionalidadeAcaoInput[]): Promise<void> {
+    if (!acoes.length) {
+      return;
+    }
+
+    const existingActions = (await (this.prisma as never as { funcionalidadeAcao: { findMany: Function } }).funcionalidadeAcao.findMany({
+      where: { funcionalidadeId },
+      select: { id: true, chave: true, configuracao: true }
+    })) as Pick<FuncionalidadeAcaoRecord, 'id' | 'chave' | 'configuracao'>[];
+    const actionsToCreate: Array<{
+      chave: string;
+      nome: string;
+      descricao: string | null;
+      ordem: number;
+      ativo: boolean;
+      acaoPadrao: false;
+      configuracao: string | null;
+    }> = [];
+
+    for (const acao of acoes) {
+      if (acao.id) {
+        throw new FormFieldBadRequestException('acoes', 'Em funcionalidades padrao, somente novas acoes podem ser adicionadas.');
       }
-    });
+
+      const chave = normalizeActionKey(acao.chave || acao.nome);
+      const nome = acao.nome.trim();
+      const configuracao = acao.configuracao?.trim() || null;
+
+      if (!chave || !nome) {
+        throw new FormFieldBadRequestException('acoes', 'Informe o nome e o identificador da nova acao.');
+      }
+
+      const comparableKey = comparableActionKey(chave);
+      const comparableConfig = comparableActionKey(configuracao);
+      const duplicate = existingActions.find((item) =>
+        item.chave === chave ||
+        (!!configuracao && item.configuracao === configuracao) ||
+        comparableActionKey(item.chave) === comparableKey ||
+        (!!comparableConfig && comparableActionKey(item.configuracao) === comparableConfig)
+      );
+
+      if (duplicate) {
+        throw new FormFieldConflictException('acoes', 'A funcionalidade ja possui uma acao com este identificador.');
+      }
+
+      actionsToCreate.push({
+        chave,
+        nome,
+        descricao: acao.descricao?.trim() || null,
+        ordem: acao.ordem ?? 0,
+        ativo: acao.ativo ?? true,
+        acaoPadrao: false,
+        configuracao
+      });
+      existingActions.push({ id: 0, chave, configuracao });
+    }
+
+    for (const acao of actionsToCreate) {
+      await (this.prisma as never as { funcionalidadeAcao: { create: Function } }).funcionalidadeAcao.create({
+        data: { funcionalidadeId, ...acao }
+      });
+    }
 
     await this.syncMissingActionPermissionsForFeature(funcionalidadeId);
   }

@@ -7,11 +7,10 @@ import { ExcluirProjetoTarefaInput, SalvarProjetoTarefaInput } from './dto/proje
 import { ProjetoTarefaAuthorizationService } from './projeto-tarefa-authorization.service';
 
 const USER_SELECT = { id: true, nome: true, login: true, email: true };
-const PROJECT_SELECT = { id: true, chave: true, nome: true, arquivadoEm: true };
 const RESOURCE_INCLUDE = { usuario: { select: USER_SELECT } };
+const TASK_RESOURCE_INCLUDE = { recurso: { include: RESOURCE_INCLUDE } };
 const TASK_INCLUDE = {
-  recurso: { include: RESOURCE_INCLUDE },
-  projetoRecurso: { include: { projeto: { select: PROJECT_SELECT } } },
+  recursos: { include: TASK_RESOURCE_INCLUDE, orderBy: { criadoEm: 'asc' as const } },
   alocacoes: { orderBy: { inicioEm: 'asc' as const } },
   taxas: { include: { criadoPor: { select: USER_SELECT } }, orderBy: { criadoEm: 'desc' as const } }
 };
@@ -22,15 +21,13 @@ export class ProjetoTarefaService {
 
   async painel(user: JwtPayload) {
     const empresaId = await this.authorization.empresa(user);
-    const [tarefas, recursos, permissoes] = await Promise.all([
+    const [tarefas, recursos] = await Promise.all([
       this.prisma.projetoTarefa.findMany({ where: { empresaId }, include: TASK_INCLUDE, orderBy: { criadoEm: 'asc' } }),
-      this.prisma.recurso.findMany({ where: { empresaId }, include: RESOURCE_INCLUDE, orderBy: { criadoEm: 'asc' } }),
-      this.authorization.permissoes(user)
+      this.prisma.recurso.findMany({ where: { empresaId }, include: RESOURCE_INCLUDE, orderBy: { criadoEm: 'asc' } })
     ]);
     return {
       tarefas: tarefas.map((item) => this.tarefa(item)),
-      recursos: recursos.map((item) => this.recurso(item)),
-      permissoes
+      recursos: recursos.map((item) => this.recurso(item))
     };
   }
 
@@ -40,12 +37,40 @@ export class ProjetoTarefaService {
       ? await this.prisma.projetoTarefa.findFirst({ where: { id: input.id, empresaId }, include: TASK_INCLUDE })
       : null;
     if (input.id && !atual) throw new NotFoundException('Tarefa nao encontrada.');
-    if (atual && atual.recursoId !== input.recursoId) throw new BadRequestException('O recurso da tarefa nao pode ser alterado. Cadastre outra tarefa.');
 
-    const recurso = await this.prisma.recurso.findFirst({ where: { id: input.recursoId, empresaId }, include: RESOURCE_INCLUDE });
-    if (!recurso) throw new BadRequestException('Selecione um recurso da empresa.');
-    if (input.ativo && !recurso.ativo) throw new BadRequestException('Recursos inativos nao podem receber tarefas ativas.');
-    const projetoRecurso = await this.resolveProjetoRecurso(empresaId, input.recursoId, input.projetoRecursoId, atual, input.ativo);
+    const recursoIds = [...new Set(input.recursoIds ?? [])];
+    if (!recursoIds.length) throw new BadRequestException('Selecione ao menos um recurso para a tarefa.');
+    if (recursoIds.length !== input.recursoIds.length) throw new BadRequestException('Nao repita o mesmo recurso na tarefa.');
+
+    const recursos = await this.prisma.recurso.findMany({
+      where: { id: { in: recursoIds }, empresaId },
+      include: RESOURCE_INCLUDE
+    });
+    if (recursos.length !== recursoIds.length) throw new BadRequestException('Selecione somente recursos cadastrados na empresa.');
+    if (input.ativo && recursos.some((item) => !item.ativo)) {
+      throw new BadRequestException('Tarefas ativas exigem recursos ativos.');
+    }
+
+    if (atual) {
+      const solicitados = new Set(recursoIds);
+      const removidos = atual.recursos.map((item) => item.recursoId).filter((id) => !solicitados.has(id));
+      if (removidos.length) {
+        const vinculosProjeto = await this.prisma.projetoRecurso.findMany({
+          where: { empresaId, recursoId: { in: removidos } },
+          select: { id: true }
+        });
+        const projetoRecursoIds = vinculosProjeto.map((item) => item.id);
+        const [execucoes, custos] = projetoRecursoIds.length
+          ? await Promise.all([
+              this.prisma.projetoAlocacao.count({ where: { empresaId, tarefaId: atual.id, recursoId: { in: projetoRecursoIds } } }),
+              this.prisma.projetoCusto.count({ where: { empresaId, tarefaId: atual.id, recursoId: { in: projetoRecursoIds } } })
+            ])
+          : [0, 0];
+        if (execucoes + custos > 0) {
+          throw new BadRequestException('Um recurso da tarefa possui planejamento ou custos. Remova essas dependencias antes de desvincular o recurso.');
+        }
+      }
+    }
 
     const funcionalidade = input.funcionalidade.trim();
     if (!funcionalidade) throw new BadRequestException('Descreva a funcionalidade da tarefa.');
@@ -53,11 +78,23 @@ export class ProjetoTarefaService {
     const valorHora = this.money(input.valorHora);
     const moeda = input.moeda.trim().toUpperCase();
     const observacao = input.observacao?.trim() || null;
+
     const saved = await this.prisma.$transaction(async (tx) => {
-      const data = { recursoId: input.recursoId, projetoRecursoId: projetoRecurso?.id ?? atual?.projetoRecursoId ?? null, funcionalidade, estimativaMinutos: input.estimativaMinutos, valorHora, moeda, observacao, ativo: input.ativo };
+      const data = { funcionalidade, estimativaMinutos: input.estimativaMinutos, valorHora, moeda, observacao, ativo: input.ativo };
       const tarefa = atual
         ? await this.updateVersioned(tx.projetoTarefa, atual.id, input.versao, data, empresaId)
         : await tx.projetoTarefa.create({ data: { empresaId, ...data } });
+
+      await tx.projetoTarefaRecurso.deleteMany({
+        where: { tarefaId: tarefa.id, recursoId: { notIn: recursoIds } }
+      });
+      const existentes = new Set(atual?.recursos.map((item) => item.recursoId) ?? []);
+      for (const recursoId of recursoIds) {
+        if (!existentes.has(recursoId)) {
+          await tx.projetoTarefaRecurso.create({ data: { empresaId, tarefaId: tarefa.id, recursoId } });
+        }
+      }
+
       const taxaAlterada = !atual || !new Prisma.Decimal(atual.valorHora).equals(valorHora) || atual.moeda !== moeda;
       if (taxaAlterada) {
         await tx.projetoTarefaTaxaHistorico.create({ data: { tarefaId: tarefa.id, valorHora, moeda, criadoPorId: user.sub } });
@@ -74,9 +111,12 @@ export class ProjetoTarefaService {
       this.prisma.projetoCusto.count({ where: { empresaId, tarefaId: input.id } })
     ]);
     if (execucoes + custos > 0) throw new BadRequestException('A tarefa possui planejamento ou custos vinculados. Desative a tarefa para preservar o planejamento e o historico.');
-    const result = await this.prisma.projetoTarefa.deleteMany({ where: { id: input.id, empresaId, versao: input.versao } });
-    if (result.count !== 1) throw new ConflictException('A tarefa foi alterada por outra pessoa ou nao existe mais. Atualize os dados.');
-    return true;
+    return this.prisma.$transaction(async (tx) => {
+      const result = await tx.projetoTarefa.deleteMany({ where: { id: input.id, empresaId, versao: input.versao } });
+      if (result.count !== 1) throw new ConflictException('A tarefa foi alterada por outra pessoa ou nao existe mais. Atualize os dados.');
+      await tx.projetoTarefaRecurso.deleteMany({ where: { tarefaId: input.id, empresaId } });
+      return true;
+    });
   }
 
   private async find(id: string, empresaId: number) {
@@ -90,7 +130,9 @@ export class ProjetoTarefaService {
       const decimal = new Prisma.Decimal(value);
       if (!decimal.isPositive()) throw new Error();
       return decimal.toDecimalPlaces(4, Prisma.Decimal.ROUND_HALF_UP).toFixed(4);
-    } catch { throw new BadRequestException('O valor por hora deve ser maior que zero.'); }
+    } catch {
+      throw new BadRequestException('O valor por hora deve ser maior que zero.');
+    }
   }
 
   private async updateVersioned(model: any, id: string, versao: number | null | undefined, data: any, empresaId: number) {
@@ -102,44 +144,41 @@ export class ProjetoTarefaService {
     return record;
   }
 
-  private async resolveProjetoRecurso(empresaId: number, recursoId: string, solicitadoId: string | null | undefined, atual: any, ativo: boolean) {
-    if (atual?.projetoRecursoId && solicitadoId && atual.projetoRecursoId !== solicitadoId) {
-      throw new BadRequestException('O projeto da tarefa nao pode ser alterado. Cadastre outra tarefa.');
-    }
-    const id = solicitadoId || atual?.projetoRecursoId;
-    if (id) {
-      const vinculo = await this.prisma.projetoRecurso.findFirst({ where: { id, empresaId, recursoId }, include: { projeto: { select: PROJECT_SELECT } } });
-      if (!vinculo) throw new BadRequestException('Selecione um projeto vinculado ao recurso.');
-      if (ativo && (!vinculo.ativo || vinculo.projeto.arquivadoEm)) throw new BadRequestException('Tarefas ativas exigem um vinculo ativo com um projeto nao arquivado.');
-      return vinculo;
-    }
-    if (atual) return null;
-    const candidatos = await this.prisma.projetoRecurso.findMany({
-      where: { empresaId, recursoId, ativo: true, projeto: { arquivadoEm: null } },
-      include: { projeto: { select: PROJECT_SELECT } },
-      take: 2
-    });
-    if (candidatos.length === 1) return candidatos[0];
-    throw new BadRequestException(candidatos.length === 0
-      ? 'Vincule o recurso a um projeto antes de cadastrar a tarefa.'
-      : 'Selecione o projeto em que esta tarefa sera executada.');
-  }
-
   private tarefa(item: any) {
     const planejadoMinutos = (item.alocacoes ?? []).reduce((total: number, alocacao: any) => total + Number(alocacao.alocacaoMinutos || 0), 0);
+    const recursos = (item.recursos ?? []).map((vinculo: any) => this.recursoVinculo(vinculo));
     return {
       ...item,
       valorHora: new Prisma.Decimal(item.valorHora).toFixed(4),
       observacao: item.observacao ?? null,
-      projeto: item.projetoRecurso?.projeto ?? null,
-      pendenteVinculo: !item.projetoRecursoId,
+      recursoIds: recursos.map((vinculo: any) => vinculo.recursoId),
+      recursos,
+      pendenteRecurso: recursos.length === 0,
       planejadoMinutos,
       saldoMinutos: Number(item.estimativaMinutos || 0) - planejadoMinutos,
       sobreplanejada: planejadoMinutos > Number(item.estimativaMinutos || 0),
-      recurso: this.recurso(item.recurso),
-      taxas: (item.taxas ?? []).map((taxa: any) => ({ ...taxa, valorHora: new Prisma.Decimal(taxa.valorHora).toFixed(4), criadoPor: this.user(taxa.criadoPor) }))
+      taxas: (item.taxas ?? []).map((taxa: any) => ({
+        ...taxa,
+        valorHora: new Prisma.Decimal(taxa.valorHora).toFixed(4),
+        criadoPor: this.user(taxa.criadoPor)
+      }))
     };
   }
-  private recurso(item: any) { return { id: item.id, ativo: item.ativo, usuario: this.user(item.usuario) }; }
-  private user(item: any) { return { id: item.id, nome: item.nome ?? null, login: item.login ?? null, email: item.email }; }
+
+  private recursoVinculo(item: any) {
+    return {
+      id: item.id,
+      recursoId: item.recursoId,
+      ativo: item.recurso.ativo,
+      recurso: this.recurso(item.recurso)
+    };
+  }
+
+  private recurso(item: any) {
+    return { id: item.id, ativo: item.ativo, usuario: this.user(item.usuario) };
+  }
+
+  private user(item: any) {
+    return { id: item.id, nome: item.nome ?? null, login: item.login ?? null, email: item.email };
+  }
 }

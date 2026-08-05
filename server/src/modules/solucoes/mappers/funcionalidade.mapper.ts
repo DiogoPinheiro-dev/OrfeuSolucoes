@@ -15,6 +15,7 @@ export function toFuncionalidadeType(funcionalidade: FuncionalidadeRecord): Func
     ativo: funcionalidade.ativo,
     registryKey: funcionalidade.registryKey ?? null,
     somenteAdminSistema: funcionalidade.somenteAdminSistema,
+    padraoSistema: funcionalidade.padraoSistema,
     podeVisualizar: funcionalidade.podeVisualizar ?? true,
     podeIncluir: funcionalidade.podeIncluir ?? false,
     podeAlterar: funcionalidade.podeAlterar ?? false,

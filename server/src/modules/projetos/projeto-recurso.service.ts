@@ -107,16 +107,14 @@ export class ProjetoRecursoService {
 
       const vinculos = await tx.projetoRecurso.findMany({ where: { recursoId: input.id, empresaId } });
       const vinculoIds = vinculos.map((item) => item.id);
-      const [tarefas, capacidades, alocacoes, custos] = await Promise.all([
-        tx.projetoTarefa.count({ where: { recursoId: input.id, empresaId } }),
-        vinculoIds.length ? tx.projetoCapacidade.count({ where: { recursoId: { in: vinculoIds }, empresaId } }) : Promise.resolve(0),
+      const [tarefas, alocacoes, custos] = await Promise.all([
+        tx.projetoTarefaRecurso.count({ where: { recursoId: input.id, empresaId } }),
         vinculoIds.length ? tx.projetoAlocacao.count({ where: { recursoId: { in: vinculoIds }, empresaId } }) : Promise.resolve(0),
         vinculoIds.length ? tx.projetoCusto.count({ where: { recursoId: { in: vinculoIds }, empresaId } }) : Promise.resolve(0)
       ]);
       const dependencias = [
         tarefas ? `${tarefas} tarefa(s)` : null,
-        capacidades ? `${capacidades} capacidade(s)` : null,
-        alocacoes ? `${alocacoes} alocacao(oes)` : null,
+        alocacoes ? `${alocacoes} execucao(oes)` : null,
         custos ? `${custos} custo(s)` : null
       ].filter(Boolean);
       if (dependencias.length) {

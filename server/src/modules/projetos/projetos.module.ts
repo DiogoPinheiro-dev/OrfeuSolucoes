@@ -26,9 +26,7 @@ import { ProjetoRecursoService } from './projeto-recurso.service';
 import { ProjetoTarefaAuthorizationService } from './projeto-tarefa-authorization.service';
 import { ProjetoTarefaResolver } from './projeto-tarefa.resolver';
 import { ProjetoTarefaService } from './projeto-tarefa.service';
-import { ProjetoGradeCapacitacaoAuthorizationService } from './projeto-grade-capacitacao-authorization.service';
-import { ProjetoGradeCapacitacaoResolver } from './projeto-grade-capacitacao.resolver';
-import { ProjetoGradeCapacitacaoService } from './projeto-grade-capacitacao.service';
+import { ProjetoPlanejamentoRecursoResolver } from './projeto-planejamento-recurso.resolver';
 import { ProjetoPlanejamentoRecursoService } from './projeto-planejamento-recurso.service';
 import { ProjetoAnexoStorageService } from './projeto-anexo-storage.service';
 import { ProjetoAuditoriaService } from './projeto-auditoria.service';
@@ -66,8 +64,6 @@ import { ProjetosService } from './projetos.service';
     ProjetoRecursoService,
     ProjetoTarefaAuthorizationService,
     ProjetoTarefaService,
-    ProjetoGradeCapacitacaoAuthorizationService,
-    ProjetoGradeCapacitacaoService,
     ProjetoPlanejamentoRecursoService,
     ProjetoOrcamentoAuthorizationService,
     ProjetoOrcamentoService,
@@ -93,7 +89,7 @@ import { ProjetosService } from './projetos.service';
     ProjetoComunicacaoResolver,
     ProjetoRecursoResolver,
     ProjetoTarefaResolver,
-    ProjetoGradeCapacitacaoResolver,
+    ProjetoPlanejamentoRecursoResolver,
     ProjetoOrcamentoResolver,
   ],
   exports: [
@@ -107,8 +103,6 @@ import { ProjetosService } from './projetos.service';
     ProjetoRecursoService,
     ProjetoTarefaAuthorizationService,
     ProjetoTarefaService,
-    ProjetoGradeCapacitacaoAuthorizationService,
-    ProjetoGradeCapacitacaoService,
     ProjetoPlanejamentoRecursoService,
     ProjetoOrcamentoAuthorizationService,
     ProjetoOrcamentoService,

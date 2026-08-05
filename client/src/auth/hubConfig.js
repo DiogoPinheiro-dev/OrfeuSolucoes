@@ -22,9 +22,7 @@ export const FEATURE_COMPONENT_REGISTRY = {
     "projetos.marcos-e-entregas": "project-milestones-deliveries",
     "projetos.cronograma-e-gantt": "project-schedule-gantt",
     "projetos.comunicacao-do-projeto": "project-communication",
-    "projetos.recursos-do-projeto": "project-resources",
-    "projetos.cadastro-de-tarefas": "project-resource-planning",
-    "projetos.grade-de-capacitacao": "project-resource-planning",
+    "projetos.planejamento-de-recursos": "project-resource-planning",
     "projetos.orcamento-do-projeto": "project-budget"
 };
 

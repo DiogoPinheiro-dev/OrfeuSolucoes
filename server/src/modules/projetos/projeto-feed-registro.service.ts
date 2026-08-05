@@ -64,10 +64,7 @@ export class ProjetoFeedRegistroService {
         where: { empresaId, id: { in: [...(idsPorEntidade.get('RECURSO') ?? [])] } },
         select: { id: true, usuarioId: true }
       })),
-      this.buscarQuando(idsPorEntidade.get('CAPACIDADE'), () => this.prisma.projetoCapacidade.findMany({
-        where: { empresaId, projetoId: projeto.id, id: { in: [...(idsPorEntidade.get('CAPACIDADE') ?? [])] } },
-        select: { id: true, recursoId: true, inicioEm: true, fimEm: true }
-      })),
+
       this.buscarQuando(idsPorEntidade.get('ALOCACAO'), () => this.prisma.projetoAlocacao.findMany({
         where: { empresaId, projetoId: projeto.id, id: { in: [...(idsPorEntidade.get('ALOCACAO') ?? [])] } },
         select: { id: true, recursoId: true, tarefaId: true, atividade: true, inicioEm: true, fimEm: true }
@@ -94,7 +91,7 @@ export class ProjetoFeedRegistroService {
       }))
     ]) as AnyRecord[][];
     const [itensIniciais = [], dependencias = [], sprints = [], marcos = [], entregas = [], recursosIniciais = [],
-      capacidades = [], alocacoes = [], orcamentos = [], categorias = [], custos = [], comentarios = [], anexos = []] = resultados;
+      alocacoes = [], orcamentos = [], categorias = [], custos = [], comentarios = [], anexos = []] = resultados;
 
     const comentarioIds = new Set<string>(comentarios.map((item) => item.id));
     anexos.forEach((item) => this.adicionarTexto(comentarioIds, item.comentarioId));
@@ -159,7 +156,6 @@ export class ProjetoFeedRegistroService {
     const categoriaPorId = new Map<string, AnyRecord>([...categorias, ...categoriasAdicionais].map((item) => [item.id, item]));
 
     const projetoRecursoIds = new Set<string>([
-      ...capacidades.map((item) => item.recursoId),
       ...alocacoes.map((item) => item.recursoId)
     ]);
     eventosComDados.forEach((item) => this.adicionarTexto(projetoRecursoIds, this.valor(item.dadosConvertidos, 'projetoRecursoId')));
@@ -210,10 +206,7 @@ export class ProjetoFeedRegistroService {
       const nome = this.usuarioLabel(usuarioPorId.get(item.usuarioId));
       if (nome) registros.set(this.chave('RECURSO', item.id), nome);
     });
-    capacidades.forEach((item) => {
-      const nome = this.nomeRecursoProjeto(item.recursoId, projetoRecursoPorId, recursos, usuarioPorId);
-      registros.set(this.chave('CAPACIDADE', item.id), this.periodoLabel(`Capacidade${nome ? ` de ${nome}` : ''}`, item.inicioEm, item.fimEm));
-    });
+
     alocacoes.forEach((item) => {
       const tarefa = item.tarefaId ? tarefaPorId.get(item.tarefaId)?.funcionalidade : null;
       const nome = this.nomeRecursoProjeto(item.recursoId, projetoRecursoPorId, recursos, usuarioPorId);
@@ -236,10 +229,7 @@ export class ProjetoFeedRegistroService {
     marcoPorId.forEach((item) => contextos.set(this.chave('MARCO', item.id), projetoContexto));
     entregas.forEach((item) => contextos.set(this.chave('ENTREGA', item.id), this.trilha(projetoContexto, item.marcoId ? marcoPorId.get(item.marcoId)?.nome : '')));
     recursos.forEach((item) => contextos.set(this.chave('RECURSO', item.id), projetoContexto));
-    capacidades.forEach((item) => {
-      const nome = this.nomeRecursoProjeto(item.recursoId, projetoRecursoPorId, recursos, usuarioPorId);
-      contextos.set(this.chave('CAPACIDADE', item.id), this.trilha(projetoContexto, nome ? `Recurso: ${nome}` : ''));
-    });
+
     alocacoes.forEach((item) => {
       const nome = this.nomeRecursoProjeto(item.recursoId, projetoRecursoPorId, recursos, usuarioPorId);
       const tarefa = item.tarefaId ? tarefaPorId.get(item.tarefaId)?.funcionalidade : null;
@@ -275,7 +265,7 @@ export class ProjetoFeedRegistroService {
         const nome = this.nomeDosDados(evento, projeto, itens, projetoRecursoPorId, recursos, usuarioPorId, tarefaPorId);
         if (nome) registros.set(chave, nome);
       }
-      if (evento.entidade === 'CAPACIDADE' || evento.entidade === 'ALOCACAO') {
+      if (evento.entidade === 'ALOCACAO') {
         const projetoRecursoId = String(this.valor(evento.dadosConvertidos, 'projetoRecursoId') ?? '');
         const nome = this.nomeRecursoProjeto(projetoRecursoId, projetoRecursoPorId, recursos, usuarioPorId);
         const tarefaId = String(this.valor(evento.dadosConvertidos, 'tarefaId') ?? '');
@@ -353,12 +343,12 @@ export class ProjetoFeedRegistroService {
     }
     if (evento.entidade === 'CUSTO') return this.resumo(this.valor(dados, 'descricao'));
     if (evento.entidade === 'RECURSO') return this.usuarioLabel(usuarios.get(String(this.valor(dados, 'usuarioId') ?? '')));
-    if (evento.entidade === 'CAPACIDADE' || evento.entidade === 'ALOCACAO') {
+    if (evento.entidade === 'ALOCACAO') {
       const projetoRecursoId = String(this.valor(dados, 'projetoRecursoId') ?? '');
       const nomeRecurso = this.nomeRecursoProjeto(projetoRecursoId, projetoRecursoPorId, recursos, usuarios);
       const tarefaId = String(this.valor(dados, 'tarefaId') ?? '');
       const atividade = this.resumo(this.valor(dados, 'atividade')) || tarefas.get(tarefaId)?.funcionalidade;
-      const base = evento.entidade === 'CAPACIDADE' ? `Capacidade${nomeRecurso ? ` de ${nomeRecurso}` : ''}` : atividade || `Alocação${nomeRecurso ? ` de ${nomeRecurso}` : ''}`;
+      const base = atividade || `Execução${nomeRecurso ? ` de ${nomeRecurso}` : ''}`;
       return this.periodoLabel(base, this.valor(dados, 'inicioEm'), this.valor(dados, 'fimEm'));
     }
     if (evento.entidade === 'ORCAMENTO') return `Orçamento — ${projeto.chave} — ${projeto.nome}`;

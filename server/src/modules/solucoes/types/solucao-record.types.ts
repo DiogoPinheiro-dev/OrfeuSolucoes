@@ -22,6 +22,7 @@ export type FuncionalidadeRecord = {
   ativo: boolean;
   registryKey?: string | null;
   somenteAdminSistema: boolean;
+  padraoSistema: boolean;
   podeVisualizar?: boolean;
   podeIncluir?: boolean;
   podeAlterar?: boolean;

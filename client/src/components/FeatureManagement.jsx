@@ -33,6 +33,7 @@ const initialForm = {
     ativo: true,
     registryKey: "",
     somenteAdminSistema: false,
+    padraoSistema: false,
     acoes: [
         { localKey: "default-visualizar", chave: "visualizar", nome: "Visualizar", ordem: 10, ativo: true, acaoPadrao: true, descricao: "", configuracao: "" },
         { localKey: "default-incluir", chave: "incluir", nome: "Incluir", ordem: 20, ativo: true, acaoPadrao: true, descricao: "", configuracao: "" },
@@ -120,6 +121,7 @@ export default function FeatureManagement({ permissions }) {
     const [selectedId, setSelectedId] = useState("");
     const [selectedIds, setSelectedIds] = useState([]);
     const [search, setSearch] = useState("");
+    const [showSystemFeatures, setShowSystemFeatures] = useState(false);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [gridBusy, setGridBusy] = useState(false);
@@ -144,20 +146,24 @@ export default function FeatureManagement({ permissions }) {
         setActiveTab
     });
     const features = useMemo(() => flattenFeatures(solucoes), [solucoes]);
+    const selectedFeature = useMemo(() => features.find((feature) => feature.id === selectedId) || null, [features, selectedId]);
 
     const filteredFeatures = useMemo(() => {
         const term = search.toLowerCase().trim();
+        const visibleFeatures = showSystemFeatures
+            ? features
+            : features.filter((feature) => !feature.padraoSistema);
 
         if (!term) {
-            return features;
+            return visibleFeatures;
         }
 
-        return features.filter((feature) =>
+        return visibleFeatures.filter((feature) =>
             [feature.titulo, feature.slug, feature.label, feature.registryKey, feature.solucaoNome]
                 .filter(Boolean)
                 .some((value) => value.toLowerCase().includes(term))
         );
-    }, [features, search]);
+    }, [features, search, showSystemFeatures]);
 
     const loadSolucoes = async () => {
         setError("");
@@ -255,7 +261,14 @@ export default function FeatureManagement({ permissions }) {
             }
 
             if (modalMode === "edit") {
-                await updateFuncionalidade({ id: form.id, ...payload });
+                if (form.padraoSistema) {
+                    await updateFuncionalidade({
+                        id: form.id,
+                        acoes: payload.acoes.filter((acao) => !acao.id)
+                    });
+                } else {
+                    await updateFuncionalidade({ id: form.id, ...payload });
+                }
             }
 
             closeModal();
@@ -268,10 +281,14 @@ export default function FeatureManagement({ permissions }) {
     };
 
     const handleDelete = (ids) => {
-        const featuresToDelete = features.filter((feature) => ids.includes(feature.id));
+        const featuresToDelete = features.filter((feature) => ids.includes(feature.id) && !feature.padraoSistema);
+        if (!featuresToDelete.length) {
+            setError("Funcionalidades padrao do sistema nao podem ser excluidas.");
+            return;
+        }
 
         setPendingDelete({
-            ids,
+            ids: featuresToDelete.map((feature) => feature.id),
             label: featuresToDelete.length === 1
                 ? featuresToDelete[0].titulo || "funcionalidade selecionada"
                 : `${featuresToDelete.length} funcionalidades selecionadas`
@@ -300,6 +317,11 @@ export default function FeatureManagement({ permissions }) {
     };
 
     const toggleSelectedFeature = (featureId) => {
+        const feature = features.find((item) => item.id === featureId);
+
+        if (feature?.padraoSistema) {
+            return;
+        }
         setSelectedIds((current) =>
             current.includes(featureId)
                 ? current.filter((id) => id !== featureId)
@@ -308,7 +330,7 @@ export default function FeatureManagement({ permissions }) {
     };
 
     const toggleVisibleFeatures = (checked, visibleFeatures) => {
-        const visibleIds = visibleFeatures.map((feature) => feature.id);
+        const visibleIds = visibleFeatures.filter((feature) => !feature.padraoSistema).map((feature) => feature.id);
 
         setSelectedIds((current) => {
             if (!checked) {
@@ -319,9 +341,24 @@ export default function FeatureManagement({ permissions }) {
         });
     };
 
+    const toggleSystemFeatures = () => {
+        const nextValue = !showSystemFeatures;
+        setShowSystemFeatures(nextValue);
+
+        if (!nextValue) {
+            if (selectedFeature?.padraoSistema) {
+                setSelectedId("");
+            }
+            setSelectedIds((current) => current.filter((id) => features.some((feature) => feature.id === id && !feature.padraoSistema)));
+        }
+    };
+
     const selectedSolution = solucoes.find((solucao) => String(solucao.id) === String(form.solucaoId));
     const generatedRegistryKey = buildRegistryKey(selectedSolution, form.slug);
     const readonly = modalMode === "view";
+    const standardFeatureLocked = modalMode === "edit" && !!form.padraoSistema;
+    const cadastralReadonly = readonly || standardFeatureLocked;
+    const newStandardActionsCount = standardFeatureLocked ? form.acoes.filter((acao) => !acao.id).length : 0;
 
     return (
         <>
@@ -338,7 +375,8 @@ export default function FeatureManagement({ permissions }) {
                         { key: "registryKey", label: "Rota", render: (feature) => feature.registryKey || "-" },
                         { key: "ordem", label: "Ordem" },
                         { key: "ativo", label: "Ativo", render: (feature) => booleanLabel(feature.ativo) },
-                        { key: "somenteAdminSistema", label: "Admin", render: (feature) => booleanLabel(feature.somenteAdminSistema) }
+                        { key: "somenteAdminSistema", label: "Admin", render: (feature) => booleanLabel(feature.somenteAdminSistema) },
+                        { key: "padraoSistema", label: "Padrão", render: (feature) => booleanLabel(feature.padraoSistema) }
                     ]}
                     rows={filteredFeatures}
                     selectedId={selectedId}
@@ -346,13 +384,24 @@ export default function FeatureManagement({ permissions }) {
                     selectedIds={selectedIds}
                     onToggleSelect={toggleSelectedFeature}
                     onToggleSelectAll={toggleVisibleFeatures}
-                    isRowSelectable={() => true}
+                    isRowSelectable={(feature) => !feature.padraoSistema}
                     onCreate={() => openModal("create")}
                     onEdit={(feature) => openModal("edit", feature)}
                     onView={(feature) => openModal("view", feature)}
                     onDelete={handleDelete}
                     search={search}
                     onSearchChange={setSearch}
+                    filters={(
+                        <button
+                            type="button"
+                            className="crud-inline-action"
+                            onClick={toggleSystemFeatures}
+                            aria-pressed={showSystemFeatures}
+                        >
+                            {showSystemFeatures ? "Ocultar funcionalidades padrão" : "Mostrar funcionalidades padrão"}
+                        </button>
+                    )}
+                    emptyMessage={showSystemFeatures ? "Nenhuma funcionalidade encontrada." : "Nenhuma funcionalidade customizada encontrada."}
                     busy={gridBusy}
                     canCreate={canUseFeatureAction(currentUser, permissions, "incluir")}
                     canEdit={canUseFeatureAction(currentUser, permissions, "alterar")}
@@ -374,7 +423,7 @@ export default function FeatureManagement({ permissions }) {
                         <>
                             <button type="button" onClick={closeModal}>Fechar</button>
                             {!readonly && (
-                                <button type="submit" disabled={saving || !form.solucaoId}>
+                                <button type="submit" disabled={saving || !form.solucaoId || (standardFeatureLocked && newStandardActionsCount === 0)}>
                                     {saving ? "Salvando..." : "Salvar"}
                                 </button>
                             )}
@@ -394,6 +443,9 @@ export default function FeatureManagement({ permissions }) {
                             {formError && <div className="crud-error" role="alert">{formError}</div>}
 
                             <CrudModalTabPanel active={activeTab === "main"}>
+                                    {standardFeatureLocked && (
+                                        <small>Esta funcionalidade é padrão do sistema. Os dados cadastrais são somente leitura; utilize a aba de ações para adicionar uma nova ação.</small>
+                                    )}
                                     <div className="user-form-field">
                                         <span className="user-form-field-label">
                                             <span>Solução <FormFieldError formId={FEATURE_FORM_ID} field="solucaoId" errors={fieldErrors} /></span>
@@ -402,7 +454,7 @@ export default function FeatureManagement({ permissions }) {
                                             name="solucaoId"
                                             value={form.solucaoId || ""}
                                             onChange={handleChange}
-                                            disabled={readonly || saving}
+                                            disabled={cadastralReadonly || saving}
                                             invalid={!!fieldErrors.solucaoId}
                                             ariaDescribedBy={fieldErrorProps("solucaoId")["aria-describedby"]}
                                             ariaLabel="Selecionar solução da funcionalidade"
@@ -420,14 +472,14 @@ export default function FeatureManagement({ permissions }) {
                                         <span className="user-form-field-label">
                                             <label htmlFor="funcionalidade-titulo">Título <FormFieldError formId={FEATURE_FORM_ID} field="titulo" errors={fieldErrors} /></label>
                                         </span>
-                                        <input id="funcionalidade-titulo" name="titulo" value={form.titulo || ""} onChange={handleChange} disabled={readonly || saving} {...fieldErrorProps("titulo")} />
+                                        <input id="funcionalidade-titulo" name="titulo" value={form.titulo || ""} onChange={handleChange} disabled={cadastralReadonly || saving} {...fieldErrorProps("titulo")} />
                                     </div>
 
                                     <div className="user-form-field">
                                         <span className="user-form-field-label">
                                             <label htmlFor="funcionalidade-slug">Identificador <FormFieldError formId={FEATURE_FORM_ID} field="slug" errors={fieldErrors} /></label>
                                         </span>
-                                        <input id="funcionalidade-slug" name="slug" value={form.slug || ""} onChange={handleChange} disabled={readonly || saving} {...fieldErrorProps("slug")} />
+                                        <input id="funcionalidade-slug" name="slug" value={form.slug || ""} onChange={handleChange} disabled={cadastralReadonly || saving} {...fieldErrorProps("slug")} />
                                     </div>
 
                                     <div className="user-form-field">
@@ -447,30 +499,30 @@ export default function FeatureManagement({ permissions }) {
                                         <span className="user-form-field-label">
                                             <label htmlFor="funcionalidade-label">Label</label>
                                         </span>
-                                        <input id="funcionalidade-label" name="label" value={form.label || ""} onChange={handleChange} disabled={readonly || saving} />
+                                        <input id="funcionalidade-label" name="label" value={form.label || ""} onChange={handleChange} disabled={cadastralReadonly || saving} />
                                     </div>
 
                                     <div className="user-form-field">
                                         <span className="user-form-field-label">
                                             <label htmlFor="funcionalidade-descricao">Descrição</label>
                                         </span>
-                                        <input id="funcionalidade-descricao" name="descricao" value={form.descricao || ""} onChange={handleChange} disabled={readonly || saving} />
+                                        <input id="funcionalidade-descricao" name="descricao" value={form.descricao || ""} onChange={handleChange} disabled={cadastralReadonly || saving} />
                                     </div>
 
                                     <div className="user-form-field">
                                         <span className="user-form-field-label">
                                             <label htmlFor="funcionalidade-ordem">Ordem</label>
                                         </span>
-                                        <input id="funcionalidade-ordem" name="ordem" type="number" value={form.ordem ?? 0} onChange={handleChange} disabled={readonly || saving} />
+                                        <input id="funcionalidade-ordem" name="ordem" type="number" value={form.ordem ?? 0} onChange={handleChange} disabled={cadastralReadonly || saving} />
                                     </div>
                                     <section className="user-company-section" aria-label="Status da funcionalidade">
                                         <div className="user-permissions-grid">
                                             <label className="user-permission-option">
-                                                <input type="checkbox" name="ativo" checked={!!form.ativo} onChange={handleChange} disabled={readonly || saving} />
+                                                <input type="checkbox" name="ativo" checked={!!form.ativo} onChange={handleChange} disabled={cadastralReadonly || saving} />
                                                 Ativo
                                             </label>
                                             <label className="user-permission-option">
-                                                <input type="checkbox" name="somenteAdminSistema" checked={!!form.somenteAdminSistema} onChange={handleChange} disabled={readonly || saving} />
+                                                <input type="checkbox" name="somenteAdminSistema" checked={!!form.somenteAdminSistema} onChange={handleChange} disabled={cadastralReadonly || saving} />
                                                 Somente admin
                                             </label>
                                         </div>
@@ -481,7 +533,7 @@ export default function FeatureManagement({ permissions }) {
                                     <div className="user-company-header">
                                         <div>
                                             <span>Ações da funcionalidade</span> <FormFieldError formId={FEATURE_FORM_ID} field="acoes" errors={fieldErrors} />
-                                            <strong>Opções exibidas no grid de permissões</strong>
+                                            <strong>{standardFeatureLocked ? "Ações existentes são protegidas; adicione uma nova ação quando necessário." : "Opções exibidas no grid de permissões"}</strong>
                                         </div>
                                         {!readonly && (
                                             <button className="crud-inline-action" type="button" onClick={addAction} disabled={saving}>
@@ -491,17 +543,19 @@ export default function FeatureManagement({ permissions }) {
                                     </div>
 
                                     <div className="user-feature-permissions">
-                                        {form.acoes.map((acao, index) => (
-                                            <div key={acao.localKey || acao.id || index} className="user-feature-permission-row">
+                                        {form.acoes.map((acao, index) => {
+                                            const actionReadonly = readonly || saving || (standardFeatureLocked && !!acao.id);
+                                            return (
+                                                <div key={acao.localKey || acao.id || index} className="user-feature-permission-row">
                                                 <div className="user-feature-crud-options">
                                                     <label>
                                                         Nome
-                                                        <input                                                            name="acoes"
-
+                                                        <input
+                                                            name="acoes"
                                                             value={acao.nome || ""}
                                                             {...fieldErrorProps("acoes")}
                                                             onChange={(event) => handleActionChange(index, "nome", event.target.value)}
-                                                            disabled={readonly || saving}
+                                                            disabled={actionReadonly}
                                                         />
                                                     </label>
                                                     <label>
@@ -510,7 +564,7 @@ export default function FeatureManagement({ permissions }) {
                                                             type="number"
                                                             value={acao.ordem ?? 0}
                                                             onChange={(event) => handleActionChange(index, "ordem", event.target.value)}
-                                                            disabled={readonly || saving}
+                                                            disabled={actionReadonly}
                                                         />
                                                     </label>
                                                 </div>
@@ -520,7 +574,7 @@ export default function FeatureManagement({ permissions }) {
                                                     <input
                                                         value={acao.configuracao || ""}
                                                         onChange={(event) => handleActionChange(index, "configuracao", event.target.value)}
-                                                        disabled={readonly || saving}
+                                                        disabled={actionReadonly}
                                                         placeholder="Ex.: exportar-projetos, importar-csv, endpoint interno..."
                                                     />
                                                 </label>
@@ -530,7 +584,7 @@ export default function FeatureManagement({ permissions }) {
                                                     <input
                                                         value={acao.descricao || ""}
                                                         onChange={(event) => handleActionChange(index, "descricao", event.target.value)}
-                                                        disabled={readonly || saving}
+                                                        disabled={actionReadonly}
                                                     />
                                                 </label>
 
@@ -540,7 +594,7 @@ export default function FeatureManagement({ permissions }) {
                                                             type="checkbox"
                                                             checked={!!acao.ativo}
                                                             onChange={(event) => handleActionChange(index, "ativo", event.target.checked)}
-                                                            disabled={readonly || saving}
+                                                            disabled={actionReadonly}
                                                         />
                                                         Ativa
                                                     </label>
@@ -549,18 +603,19 @@ export default function FeatureManagement({ permissions }) {
                                                             type="checkbox"
                                                             checked={!!acao.acaoPadrao}
                                                             onChange={(event) => handleActionChange(index, "acaoPadrao", event.target.checked)}
-                                                            disabled={readonly || saving}
+                                                            disabled={actionReadonly || standardFeatureLocked}
                                                         />
                                                     Padrão
                                                     </label>
-                                                    {!readonly && !acao.acaoPadrao && (
+                                                    {!readonly && !acao.acaoPadrao && (!standardFeatureLocked || !acao.id) && (
                                                         <button className="crud-inline-action crud-inline-action--danger" type="button" onClick={() => removeAction(index)} disabled={saving}>
                                                             Remover
                                                         </button>
                                                     )}
                                                 </div>
-                                            </div>
-                                        ))}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                             </CrudModalTabPanel>
                 </CrudModal>

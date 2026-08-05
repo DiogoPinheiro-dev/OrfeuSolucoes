@@ -612,7 +612,7 @@ type EmpresaType {
   solucaoSlugs: [String!]!
 }
 
-input ExcluirGradeItemInput {
+input ExcluirPlanejamentoRecursoExecucaoInput {
   id: String!
   projetoId: String!
   versao: Int!
@@ -702,6 +702,7 @@ type FuncionalidadeType {
   id: Int!
   label: String
   ordem: Float!
+  padraoSistema: Boolean!
   podeAlterar: Boolean!
   podeExcluir: Boolean!
   podeIncluir: Boolean!
@@ -721,64 +722,6 @@ type GoogleEmailContaType {
   nome: String!
   principal: Boolean!
   tipo: String!
-}
-
-type GradeAlocacaoType {
-  alocacaoMinutos: Int!
-  alocadoTotalMinutos: Int!
-  atividade: String
-  capacidadeMinutos: Int!
-  fimEm: DateTime!
-  id: String!
-  inicioEm: DateTime!
-  percentualAlocado: Int!
-  projetoRecursoId: String!
-  sobrealocado: Boolean!
-  tarefaId: String
-  versao: Int!
-}
-
-type GradeCapacidadeType {
-  alocadoMinutos: Int!
-  capacidadeMinutos: Int!
-  fimEm: DateTime!
-  id: String!
-  inicioEm: DateTime!
-  percentualAlocado: Int!
-  projetoRecursoId: String!
-  sobrealocado: Boolean!
-  versao: Int!
-}
-
-type GradeCapacitacaoLinhaType {
-  alocacaoTotalMinutos: Int!
-  alocacoes: [GradeAlocacaoType!]!
-  cadastroRecursoId: String!
-  capacidadeTotalMinutos: Int!
-  capacidades: [GradeCapacidadeType!]!
-  id: String!
-  percentualAlocado: Int!
-  projeto: ProjetoRecursoProjetoType!
-  projetoId: String!
-  recursoAtivo: Boolean!
-  saldoMinutos: Int!
-  sobrealocado: Boolean!
-  usuario: ProjetoUsuarioType!
-  versao: Int!
-  vinculoAtivo: Boolean!
-}
-
-type GradeCapacitacaoPainelType {
-  linhas: [GradeCapacitacaoLinhaType!]!
-  permissoes: GradeCapacitacaoPermissoesType!
-  projetos: [ProjetoRecursoProjetoType!]!
-  recursos: [ProjetoRecursoType!]!
-}
-
-type GradeCapacitacaoPermissoesType {
-  podeAlterar: Boolean!
-  podeExcluir: Boolean!
-  podeIncluir: Boolean!
 }
 
 type GrupoUsuarioType {
@@ -870,8 +813,7 @@ type Mutation {
   deleteSolucao(id: Int!): Boolean!
   deleteUser(id: String!): Boolean!
   encerrarChamado(id: String!, observacao: String): ChamadoType!
-  excluirGradeAlocacao(input: ExcluirGradeItemInput!): Boolean!
-  excluirGradeCapacidade(input: ExcluirGradeItemInput!): Boolean!
+  excluirPlanejamentoRecursoExecucao(input: ExcluirPlanejamentoRecursoExecucaoInput!): Boolean!
   excluirProjetoComentario(input: ExcluirProjetoComentarioInput!): ProjetoComentarioType!
   excluirProjetoCusto(input: ExcluirProjetoOrcamentoItemInput!): Boolean!
   excluirProjetoOrcamentoCategoria(input: ExcluirProjetoOrcamentoItemInput!): Boolean!
@@ -895,9 +837,7 @@ type Mutation {
   removerItemProjetoSprint(input: AlterarEscopoProjetoSprintInput!): ProjetoSprintType!
   resolverChamado(id: String!, observacao: String): ChamadoType!
   responderChamado(input: ResponderChamadoInput!): ChamadoType!
-  salvarGradeAlocacao(input: SalvarGradeAlocacaoInput!): GradeAlocacaoType!
-  salvarGradeCapacidade(input: SalvarGradeCapacidadeInput!): GradeCapacidadeType!
-  salvarGradeVinculo(input: SalvarGradeVinculoInput!): GradeCapacitacaoLinhaType!
+  salvarPlanejamentoRecursoExecucao(input: SalvarPlanejamentoRecursoExecucaoInput!): PlanejamentoRecursoExecucaoType!
   salvarProjetoCusto(input: SalvarProjetoCustoInput!): ProjetoCustoType!
   salvarProjetoOrcamento(input: SalvarProjetoOrcamentoInput!): ProjetoFinanceiroType!
   salvarProjetoOrcamentoCategoria(input: SalvarProjetoOrcamentoCategoriaInput!): ProjetoOrcamentoCategoriaType!
@@ -933,25 +873,31 @@ type PlanejamentoRecursoCustoType {
   valor: String!
 }
 
+type PlanejamentoRecursoExecucaoType {
+  alocacaoMinutos: Int!
+  atividade: String
+  fimEm: DateTime!
+  id: String!
+  inicioEm: DateTime!
+  projetoRecursoId: String!
+  tarefaId: String
+  versao: Int!
+}
+
 type PlanejamentoRecursoLinhaType {
   alocacaoTotalMinutos: Int!
-  alocacoes: [GradeAlocacaoType!]!
+  alocacoes: [PlanejamentoRecursoExecucaoType!]!
   alocacoesPendentes: Int!
   cadastroRecursoId: String!
-  capacidadeTotalMinutos: Int!
-  capacidades: [GradeCapacidadeType!]!
   custosEstimados: [PlanejamentoRecursoCustoType!]!
   estimativaTotalMinutos: Int!
   id: String!
-  percentualAlocado: Int!
   planejamentoTarefasMinutos: Int!
   possuiRisco: Boolean!
   projeto: ProjetoRecursoProjetoType!
   projetoId: String!
   recursoAtivo: Boolean!
-  saldoMinutos: Int!
   saldoTarefasMinutos: Int!
-  sobrealocado: Boolean!
   tarefas: [ProjetoTarefaType!]!
   usuario: ProjetoUsuarioType!
   versao: Int!
@@ -960,9 +906,10 @@ type PlanejamentoRecursoLinhaType {
 
 type PlanejamentoRecursoPainelType {
   linhas: [PlanejamentoRecursoLinhaType!]!
-  permissoes: GradeCapacitacaoPermissoesType!
+  permissoes: ProjetoRecursoPermissoesType!
   projetos: [ProjetoRecursoProjetoType!]!
   recursos: [ProjetoRecursoType!]!
+  tarefas: [ProjetoTarefaType!]!
   tarefasPendentes: [ProjetoTarefaType!]!
 }
 
@@ -1165,7 +1112,7 @@ type ProjetoCustoTarefaResumoType {
   funcionalidade: String!
   id: String!
   moeda: String!
-  projetoRecursoId: String
+  recursoIds: [String!]!
   valorHora: String!
 }
 
@@ -1519,6 +1466,7 @@ type ProjetoRecursoProjetoType {
 
 type ProjetoRecursoResumoType {
   ativo: Boolean!
+  cadastroRecursoId: String!
   id: String!
   usuario: ProjetoUsuarioType!
   usuarioId: String!
@@ -1644,22 +1592,17 @@ type ProjetoSprintType {
   versao: Int!
 }
 
-type ProjetoTarefaPainelType {
-  permissoes: ProjetoTarefaPermissoesType!
-  recursos: [ProjetoTarefaRecursoType!]!
-  tarefas: [ProjetoTarefaType!]!
-}
-
-type ProjetoTarefaPermissoesType {
-  podeAlterar: Boolean!
-  podeExcluir: Boolean!
-  podeIncluir: Boolean!
-}
-
 type ProjetoTarefaRecursoType {
   ativo: Boolean!
   id: String!
   usuario: ProjetoUsuarioType!
+}
+
+type ProjetoTarefaRecursoVinculoType {
+  ativo: Boolean!
+  id: String!
+  recurso: ProjetoTarefaRecursoType!
+  recursoId: String!
 }
 
 type ProjetoTarefaTaxaHistoricoType {
@@ -1677,12 +1620,10 @@ type ProjetoTarefaType {
   id: String!
   moeda: String!
   observacao: String
-  pendenteVinculo: Boolean!
+  pendenteRecurso: Boolean!
   planejadoMinutos: Int!
-  projeto: ProjetoRecursoProjetoType
-  projetoRecursoId: String
-  recurso: ProjetoTarefaRecursoType!
-  recursoId: String!
+  recursoIds: [String!]!
+  recursos: [ProjetoTarefaRecursoVinculoType!]!
   saldoMinutos: Int!
   sobreplanejada: Boolean!
   taxas: [ProjetoTarefaTaxaHistoricoType!]!
@@ -1736,7 +1677,6 @@ type Query {
   filaChamados(filtro: ChamadoFiltroInput): ChamadoPageType!
   googleEmailAuthUrl(id: Int!): String!
   googleEmailContasChamado: [GoogleEmailContaType!]!
-  gradeCapacitacao: GradeCapacitacaoPainelType!
   gruposUsuarios: [GrupoUsuarioType!]!
   health: String!
   me: UserType!
@@ -1763,7 +1703,6 @@ type Query {
   projetoRecursos: ProjetoRecursoPainelType!
   projetoRecursosProjetos: [ProjetoRecursoProjetoType!]!
   projetoSprints(projetoId: String!): ProjetoSprintPainelType!
-  projetoTarefas: ProjetoTarefaPainelType!
   projetos(filtro: ProjetoFiltroInput): ProjetoPageType!
   regrasSlaChamado(ativas: Boolean = true): [ChamadoSlaRegraType!]!
   relatorioChamados(filtro: ChamadoRelatorioFiltroInput): ChamadoRelatorioPageType!
@@ -1783,33 +1722,14 @@ input ResponderChamadoInput {
   conteudo: String!
 }
 
-input SalvarGradeAlocacaoInput {
+input SalvarPlanejamentoRecursoExecucaoInput {
   alocacaoMinutos: Int!
-  atividade: String
   fimEm: String!
   id: String
   inicioEm: String!
   projetoId: String!
   projetoRecursoId: String!
-  tarefaId: String
-  versao: Int
-}
-
-input SalvarGradeCapacidadeInput {
-  capacidadeMinutos: Int!
-  fimEm: String!
-  id: String
-  inicioEm: String!
-  projetoId: String!
-  projetoRecursoId: String!
-  versao: Int
-}
-
-input SalvarGradeVinculoInput {
-  ativo: Boolean!
-  cadastroRecursoId: String!
-  id: String
-  projetoId: String!
+  tarefaId: String!
   versao: Int
 }
 
@@ -1861,8 +1781,7 @@ input SalvarProjetoTarefaInput {
   id: String
   moeda: String!
   observacao: String
-  projetoRecursoId: String
-  recursoId: String!
+  recursoIds: [String!]!
   valorHora: String!
   versao: Int
 }

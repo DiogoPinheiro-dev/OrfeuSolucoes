@@ -372,7 +372,7 @@ export class ProjetoComunicacaoService {
   private fieldLabel(value: string): string {
     const labels: Record<string, string> = { conteudo: 'Conteúdo', saudePercebida: 'Saúde percebida', inicioEm: 'Início', fimEm: 'Fim',
       inicioPrevistoEm: 'Início previsto', fimPrevistoEm: 'Fim previsto', status: 'Status', situacao: 'Situação', responsavelId: 'Responsável',
-      capacidadeMinutos: 'Capacidade', alocacaoMinutos: 'Alocação', quantidade: 'Quantidade', motivo: 'Motivo' };
+      alocacaoMinutos: 'Horas planejadas', quantidade: 'Quantidade', motivo: 'Motivo' };
     if (labels[value]) return labels[value];
     const humanized = value.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ').trim();
     return humanized ? humanized.charAt(0).toUpperCase() + humanized.slice(1).toLowerCase() : value;
@@ -390,7 +390,7 @@ export class ProjetoComunicacaoService {
       ATUALIZACAO: 'Comunicação do projeto', COMENTARIO: 'Comunicação do projeto', ANEXO: 'Comunicação do projeto',
       PROJETO: 'Cadastro de projetos', ITEM: 'Backlog de demandas', DEPENDENCIA: 'Cronograma e dependências', CRONOGRAMA: 'Cronograma e dependências',
       SPRINT: 'Sprints', MARCO: 'Marcos e entregas', ENTREGA: 'Marcos e entregas',
-      CAPACIDADE: 'Grade de capacitação', ALOCACAO: 'Grade de capacitação', RECURSO: 'Cadastro de recursos',
+      ALOCACAO: 'Planejamento de recursos', RECURSO: 'Planejamento de recursos',
       ORCAMENTO: 'Orçamento do projeto', ORCAMENTO_CATEGORIA: 'Orçamento do projeto', CUSTO: 'Orçamento do projeto'
     };
     return labels[entidade] ?? 'Gestão operacional de projetos';

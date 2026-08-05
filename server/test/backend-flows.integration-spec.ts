@@ -71,8 +71,6 @@ import { ProjetoRecursoAuthorizationService } from '../src/modules/projetos/proj
 import { ProjetoRecursoService } from '../src/modules/projetos/projeto-recurso.service';
 import { ProjetoTarefaAuthorizationService } from '../src/modules/projetos/projeto-tarefa-authorization.service';
 import { ProjetoTarefaService } from '../src/modules/projetos/projeto-tarefa.service';
-import { ProjetoGradeCapacitacaoAuthorizationService } from '../src/modules/projetos/projeto-grade-capacitacao-authorization.service';
-import { ProjetoGradeCapacitacaoService } from '../src/modules/projetos/projeto-grade-capacitacao.service';
 import { ProjetoPlanejamentoRecursoService } from '../src/modules/projetos/projeto-planejamento-recurso.service';
 import { validateProjetoAnexoFile } from '../src/modules/projetos/policies/projeto-anexo.policy';
 import { ProjetoAnexoStorageService } from '../src/modules/projetos/projeto-anexo-storage.service';
@@ -165,10 +163,9 @@ type ModelName =
   | 'projetoAnexo'
   | 'recurso'
   | 'projetoTarefa'
+  | 'projetoTarefaRecurso'
   | 'projetoTarefaTaxaHistorico'
   | 'projetoRecurso'
-  | 'projetoCapacidadeLegado'
-  | 'projetoCapacidade'
   | 'projetoAlocacao'
   | 'projetoOrcamento'
   | 'projetoOrcamentoCategoria'
@@ -223,10 +220,9 @@ const MODELS: ModelName[] = [
   'projetoAnexo',
   'recurso',
   'projetoTarefa',
+  'projetoTarefaRecurso',
   'projetoTarefaTaxaHistorico',
   'projetoRecurso',
-  'projetoCapacidadeLegado',
-  'projetoCapacidade',
   'projetoAlocacao',
   'projetoOrcamento',
   'projetoOrcamentoCategoria',
@@ -463,10 +459,9 @@ class InMemoryPrismaService {
   public projetoAnexo = new InMemoryDelegate(this, 'projetoAnexo');
   public recurso = new InMemoryDelegate(this, 'recurso');
   public projetoTarefa = new InMemoryDelegate(this, 'projetoTarefa');
+  public projetoTarefaRecurso = new InMemoryDelegate(this, 'projetoTarefaRecurso');
   public projetoTarefaTaxaHistorico = new InMemoryDelegate(this, 'projetoTarefaTaxaHistorico');
   public projetoRecurso = new InMemoryDelegate(this, 'projetoRecurso');
-  public projetoCapacidadeLegado = new InMemoryDelegate(this, 'projetoCapacidadeLegado');
-  public projetoCapacidade = new InMemoryDelegate(this, 'projetoCapacidade');
   public projetoAlocacao = new InMemoryDelegate(this, 'projetoAlocacao');
   public projetoOrcamento = new InMemoryDelegate(this, 'projetoOrcamento');
   public projetoOrcamentoCategoria = new InMemoryDelegate(this, 'projetoOrcamentoCategoria');
@@ -592,6 +587,10 @@ class InMemoryPrismaService {
       }
 
       if ('in' in condition && !condition.in.includes(value)) {
+        return false;
+      }
+
+      if ('notIn' in condition && condition.notIn.includes(value)) {
         return false;
       }
 
@@ -1046,11 +1045,13 @@ class InMemoryPrismaService {
       case 'recurso.projetos':
         return this.data.projetoRecurso.filter((item) => item.recursoId === row.id);
       case 'recurso.tarefas':
-        return this.data.projetoTarefa.filter((item) => item.recursoId === row.id);
-      case 'projetoTarefa.recurso':
+        return this.data.projetoTarefaRecurso.filter((item) => item.recursoId === row.id);
+      case 'projetoTarefa.recursos':
+        return this.data.projetoTarefaRecurso.filter((item) => item.tarefaId === row.id);
+      case 'projetoTarefaRecurso.tarefa':
+        return this.data.projetoTarefa.find((item) => item.id === row.tarefaId) ?? null;
+      case 'projetoTarefaRecurso.recurso':
         return this.data.recurso.find((item) => item.id === row.recursoId) ?? null;
-      case 'projetoTarefa.projetoRecurso':
-        return row.projetoRecursoId ? this.data.projetoRecurso.find((item) => item.id === row.projetoRecursoId) ?? null : null;
       case 'projetoTarefa.taxas':
         return this.data.projetoTarefaTaxaHistorico.filter((item) => item.tarefaId === row.id);
       case 'projetoTarefaTaxaHistorico.criadoPor':
@@ -1059,8 +1060,7 @@ class InMemoryPrismaService {
         return this.data.recurso.find((item) => item.id === row.recursoId) ?? null;
       case 'projetoRecurso.projeto':
         return this.data.projeto.find((item) => item.id === row.projetoId) ?? null;
-      case 'projetoRecurso.capacidades':
-        return this.data.projetoCapacidade.filter((item) => item.recursoId === row.id);
+
       case 'projetoRecurso.alocacoes':
         return this.data.projetoAlocacao.filter((item) => item.recursoId === row.id);
       case 'projetoOrcamento.categorias':
@@ -1196,14 +1196,14 @@ class InMemoryPrismaService {
       'projetoAnexo.autor': 'usuario',
       'recurso.usuario': 'usuario',
       'recurso.projetos': 'projetoRecurso',
-      'recurso.tarefas': 'projetoTarefa',
-      'projetoTarefa.recurso': 'recurso',
-      'projetoTarefa.projetoRecurso': 'projetoRecurso',
+      'recurso.tarefas': 'projetoTarefaRecurso',
+      'projetoTarefa.recursos': 'projetoTarefaRecurso',
+      'projetoTarefaRecurso.tarefa': 'projetoTarefa',
+      'projetoTarefaRecurso.recurso': 'recurso',
       'projetoTarefa.taxas': 'projetoTarefaTaxaHistorico',
       'projetoTarefaTaxaHistorico.criadoPor': 'usuario',
       'projetoRecurso.cadastro': 'recurso',
       'projetoRecurso.projeto': 'projeto',
-      'projetoRecurso.capacidades': 'projetoCapacidade',
       'projetoRecurso.alocacoes': 'projetoAlocacao',
       'projetoOrcamento.categorias': 'projetoOrcamentoCategoria',
       'projetoOrcamento.custos': 'projetoCusto',
@@ -1273,6 +1273,7 @@ class InMemoryPrismaService {
         row.ativo = row.ativo ?? true;
         row.registryKey = row.registryKey ?? null;
         row.somenteAdminSistema = row.somenteAdminSistema ?? false;
+        row.padraoSistema = row.padraoSistema ?? false;
         break;
       case 'funcionalidadeAcao':
         row.descricao = row.descricao ?? null;
@@ -1419,10 +1420,10 @@ class InMemoryPrismaService {
       case 'projetoTarefa':
         row.moeda = row.moeda ?? 'BRL'; row.observacao = row.observacao ?? null; row.ativo = row.ativo ?? true; row.versao = row.versao ?? 1; row.criadoEm = row.criadoEm ?? now; row.atualizadoEm = row.atualizadoEm ?? now;
         break;
+      case 'projetoTarefaRecurso':
       case 'projetoTarefaTaxaHistorico':
         row.criadoEm = row.criadoEm ?? now;
         break;
-      case 'projetoCapacidade':
       case 'projetoAlocacao':
         row.versao = row.versao ?? 1; row.criadoEm = row.criadoEm ?? now; row.atualizadoEm = row.atualizadoEm ?? now;
         break;
@@ -1540,7 +1541,7 @@ class InMemoryPrismaService {
   }
 
   private isOperatorObject(value: AnyRecord): boolean {
-    return ['equals', 'in', 'not', 'contains', 'gt', 'gte', 'lt', 'lte'].some((key) => key in value);
+    return ['equals', 'in', 'notIn', 'not', 'contains', 'gt', 'gte', 'lt', 'lte'].some((key) => key in value);
   }
 }
 class TestChamadoAnexoStorage {
@@ -1602,8 +1603,6 @@ type TestWorld = {
   projetoRecursoService: ProjetoRecursoService;
   projetoTarefaAuthorizationService: ProjetoTarefaAuthorizationService;
   projetoTarefaService: ProjetoTarefaService;
-  projetoGradeCapacitacaoAuthorizationService: ProjetoGradeCapacitacaoAuthorizationService;
-  projetoGradeCapacitacaoService: ProjetoGradeCapacitacaoService;
   projetoPlanejamentoRecursoService: ProjetoPlanejamentoRecursoService;
   projetoOrcamentoAuthorizationService: ProjetoOrcamentoAuthorizationService;
   projetoOrcamentoService: ProjetoOrcamentoService;
@@ -1713,9 +1712,7 @@ function createWorld(): TestWorld {
   const projetoRecursoService = new ProjetoRecursoService(prismaService, projetoRecursoAuthorizationService, projetoAuditoriaService);
   const projetoTarefaAuthorizationService = new ProjetoTarefaAuthorizationService(projetoAuthorizationService);
   const projetoTarefaService = new ProjetoTarefaService(prismaService, projetoTarefaAuthorizationService);
-  const projetoGradeCapacitacaoAuthorizationService = new ProjetoGradeCapacitacaoAuthorizationService(prismaService, projetoAuthorizationService);
-  const projetoGradeCapacitacaoService = new ProjetoGradeCapacitacaoService(prismaService, projetoGradeCapacitacaoAuthorizationService, projetoAuditoriaService, projetoPeriodoService);
-  const projetoPlanejamentoRecursoService = new ProjetoPlanejamentoRecursoService(projetoGradeCapacitacaoService, projetoTarefaService);
+  const projetoPlanejamentoRecursoService = new ProjetoPlanejamentoRecursoService(prismaService, projetoRecursoAuthorizationService, projetoRecursoService, projetoTarefaService, projetoAuditoriaService, projetoPeriodoService);
   const projetoOrcamentoAuthorizationService = new ProjetoOrcamentoAuthorizationService(prismaService, projetoAuthorizationService);
   const projetoOrcamentoService = new ProjetoOrcamentoService(prismaService, projetoOrcamentoAuthorizationService, projetoAuditoriaService);
 
@@ -1735,7 +1732,6 @@ function createWorld(): TestWorld {
     projetoComunicacaoService,
     projetoRecursoService,
     projetoTarefaService,
-    projetoGradeCapacitacaoService,
     projetoPlanejamentoRecursoService,
     projetoOrcamentoService
   );
@@ -1814,8 +1810,6 @@ function createWorld(): TestWorld {
     projetoRecursoService,
     projetoTarefaAuthorizationService,
     projetoTarefaService,
-    projetoGradeCapacitacaoAuthorizationService,
-    projetoGradeCapacitacaoService,
     projetoPlanejamentoRecursoService,
     projetoOrcamentoAuthorizationService,
     projetoOrcamentoService,
@@ -3052,20 +3046,18 @@ describe('Fluxos integrados do backend', () => {
       ['marcos-e-entregas', 40],
       ['cronograma-e-gantt', 50],
       ['comunicacao-do-projeto', 60],
-      ['recursos-do-projeto', 70],
-      ['cadastro-de-tarefas', 80],
-      ['grade-de-capacitacao', 90],
+      ['planejamento-de-recursos', 70],
       ['orcamento-do-projeto', 100],
       ['horas-do-projeto', 110],
       ['templates-de-projeto', 120],
       ['portfolio-de-projetos', 130]
     ]);
     expect(projetos.funcionalidades.filter((funcionalidade) => funcionalidade.ativo).map((funcionalidade) => funcionalidade.slug))
-      .toEqual(['cadastro-de-projetos', 'backlog-de-demandas', 'sprints', 'marcos-e-entregas', 'cronograma-e-gantt', 'comunicacao-do-projeto', 'recursos-do-projeto', 'grade-de-capacitacao', 'orcamento-do-projeto']);
+      .toEqual(['cadastro-de-projetos', 'backlog-de-demandas', 'sprints', 'marcos-e-entregas', 'cronograma-e-gantt', 'comunicacao-do-projeto', 'planejamento-de-recursos', 'orcamento-do-projeto']);
     const hubProjetos = expectDefined((await world.solucoesService.myHubNavigation(admin))
       .find((solucao) => solucao.slug === 'projetos'));
     expect(hubProjetos.funcionalidades.map((funcionalidade) => funcionalidade.slug))
-      .toEqual(['cadastro-de-projetos', 'backlog-de-demandas', 'sprints', 'marcos-e-entregas', 'cronograma-e-gantt', 'comunicacao-do-projeto', 'recursos-do-projeto', 'grade-de-capacitacao', 'orcamento-do-projeto']);
+      .toEqual(['cadastro-de-projetos', 'backlog-de-demandas', 'sprints', 'marcos-e-entregas', 'cronograma-e-gantt', 'comunicacao-do-projeto', 'planejamento-de-recursos', 'orcamento-do-projeto']);
     expect(cadastroProjetos.registryKey).toBe('projetos.cadastro-de-projetos');
     expect(cadastroProjetos.acoes.map((acao) => acao.chave)).toEqual(expect.arrayContaining([
       'visualizar',
@@ -3076,7 +3068,46 @@ describe('Fluxos integrados do backend', () => {
       'alterar_status',
       'reativar_projeto'
     ]));
-    const projetosAntesDoSegundoBootstrap = projetos.funcionalidades.map((funcionalidade) => ({
+    expect(projetos.funcionalidades.every((funcionalidade) => funcionalidade.padraoSistema)).toBe(true);
+    expect(funcionalidadesControle.every((funcionalidade) => funcionalidade.padraoSistema)).toBe(true);
+    await expect(world.solucoesService.updateFuncionalidade({
+      id: cadastroProjetos.id,
+      titulo: 'Cadastro de projetos alterado indevidamente'
+    })).rejects.toThrow('Os dados cadastrais de uma funcionalidade padrao do sistema nao podem ser alterados.');
+    const visualizarProjetos = expectDefined(cadastroProjetos.acoes.find((acao) => acao.chave === 'visualizar'));
+    await expect(world.solucoesService.updateFuncionalidade({
+      id: cadastroProjetos.id,
+      acoes: [{
+        id: visualizarProjetos.id,
+        chave: visualizarProjetos.chave,
+        nome: 'Visualizar alterado',
+        ordem: visualizarProjetos.ordem,
+        ativo: visualizarProjetos.ativo,
+        acaoPadrao: visualizarProjetos.acaoPadrao
+      }]
+    })).rejects.toThrow('somente novas acoes podem ser adicionadas');
+    const cadastroProjetosComAcaoAdicional = await world.solucoesService.updateFuncionalidade({
+      id: cadastroProjetos.id,
+      acoes: [{
+        chave: 'exportar_configuracao',
+        nome: 'Exportar configuracao',
+        descricao: 'Permite exportar a configuracao cadastral do projeto.',
+        ordem: 80,
+        ativo: true,
+        configuracao: 'exportar_configuracao'
+      }]
+    });
+    expect(cadastroProjetosComAcaoAdicional.titulo).toBe(cadastroProjetos.titulo);
+    expect(cadastroProjetosComAcaoAdicional.acoes.find((acao) => acao.id === visualizarProjetos.id)?.nome).toBe(visualizarProjetos.nome);
+    expect(cadastroProjetosComAcaoAdicional.acoes.map((acao) => acao.chave)).toContain('exportar_configuracao');
+    await expect(world.solucoesService.updateFuncionalidade({
+      id: cadastroProjetos.id,
+      acoes: [{ chave: 'exportar_configuracao', nome: 'Exportar novamente' }]
+    })).rejects.toThrow('ja possui uma acao com este identificador');
+    await expect(world.solucoesService.removeFuncionalidade(cadastroProjetos.id))
+      .rejects.toThrow('Uma funcionalidade padrao do sistema nao pode ser excluida.');
+    const projetosComAcaoAdicional = expectDefined((await world.solucoesService.findAll()).find((solucao) => solucao.slug === 'projetos'));
+    const projetosAntesDoSegundoBootstrap = projetosComAcaoAdicional.funcionalidades.map((funcionalidade) => ({
       id: funcionalidade.id,
       slug: funcionalidade.slug,
       ordem: funcionalidade.ordem,
@@ -3238,6 +3269,7 @@ describe('Fluxos integrados do backend', () => {
         { chave: 'exportar_relatorio', nome: 'Exportar relatorio', ordem: 50, ativo: true, configuracao: 'exportar_relatorio' }
       ]
     });
+    expect(funcionalidadeExtra.padraoSistema).toBe(false);
     const acessoGrupo = await world.solucoesService.findGroupAccess(grupo.id);
     const acessoEmpresa = await world.solucoesService.findCompanyAccess(empresa.id);
 
@@ -5636,23 +5668,21 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
     expect(paginaAjustada.feed).toEqual(ultimaPagina.feed);
   });
 
-  it('cadastra tarefas por recurso com funcionalidade textual e valor por hora versionado', async () => {
+  it('cadastra uma tarefa para um ou mais recursos sem vinculo direto com projetos', async () => {
     const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
     const recurso = await world.prisma.recurso.create({ data: { empresaId: empresaInicialId, usuarioId: admin.sub, ativo: true } });
-
-    const projeto = await world.prisma.projeto.create({ data: { empresaId: empresaInicialId, chave: 'TASK', nome: 'Projeto das tarefas', responsavelId: admin.sub, criadoPorId: admin.sub } });
-    const vinculo = await world.prisma.projetoRecurso.create({ data: { empresaId: empresaInicialId, projetoId: projeto.id, recursoId: recurso.id, ativo: true } });
+    const outroUsuario = await world.prisma.usuario.create({ data: { nome: 'Outro recurso', email: 'outro.recurso@teste.com', senhaHash: 'hash' } });
+    const outroRecurso = await world.prisma.recurso.create({ data: { empresaId: empresaInicialId, usuarioId: outroUsuario.id, ativo: true } });
     const painelInicial = await world.projetoTarefaService.painel(admin);
-    expect(painelInicial.recursos.map((item) => item.id)).toContain(recurso.id);
+    expect(painelInicial.recursos.map((item) => item.id)).toEqual(expect.arrayContaining([recurso.id, outroRecurso.id]));
 
     let tarefa = await world.projetoTarefaService.salvar({
-      recursoId: recurso.id,
-      projetoRecursoId: vinculo.id,
+      recursoIds: [recurso.id, outroRecurso.id],
       funcionalidade: 'Configurar o fluxo de cadastro de projetos',
       estimativaMinutos: 480,
       valorHora: '125.5',
       moeda: 'BRL',
-      observacao: 'Especialista responsavel pela configuracao',
+      observacao: 'Especialistas responsaveis pela configuracao',
       ativo: true
     }, admin);
     expect(tarefa.funcionalidade).toBe('Configurar o fluxo de cadastro de projetos');
@@ -5660,11 +5690,22 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
     expect(tarefa.valorHora).toBe('125.5000');
     expect(tarefa.taxas).toHaveLength(1);
     expect(tarefa.taxas[0]?.valorHora).toBe('125.5000');
-    expect(tarefa.projetoRecursoId).toBe(vinculo.id);
-    expect(tarefa.pendenteVinculo).toBe(false);
+    expect(tarefa.recursoIds).toEqual(expect.arrayContaining([recurso.id, outroRecurso.id]));
+    expect(tarefa.recursos.map((item: any) => item.recursoId)).toEqual(expect.arrayContaining([recurso.id, outroRecurso.id]));
+    expect(await world.prisma.projetoTarefaRecurso.count({ where: { tarefaId: tarefa.id } })).toBe(2);
+    expect(tarefa.pendenteRecurso).toBe(false);
 
     await expect(world.projetoTarefaService.salvar({
-      recursoId: recurso.id,
+      recursoIds: [],
+      funcionalidade: 'Tarefa sem vinculo',
+      estimativaMinutos: 480,
+      valorHora: '130',
+      moeda: 'BRL',
+      ativo: true
+    }, admin)).rejects.toThrow('Selecione ao menos um recurso');
+
+    await expect(world.projetoTarefaService.salvar({
+      recursoIds: [recurso.id],
       funcionalidade: '   ',
       estimativaMinutos: 480,
       valorHora: '130',
@@ -5673,7 +5714,7 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
     }, admin)).rejects.toThrow('Descreva a funcionalidade');
 
     await expect(world.projetoTarefaService.salvar({
-      recursoId: recurso.id,
+      recursoIds: [recurso.id],
       funcionalidade: 'Tarefa sem estimativa valida',
       estimativaMinutos: 0,
       valorHora: '130',
@@ -5684,7 +5725,7 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
     tarefa = await world.projetoTarefaService.salvar({
       id: tarefa.id,
       versao: tarefa.versao,
-      recursoId: recurso.id,
+      recursoIds: [recurso.id],
       funcionalidade: 'Configurar e revisar o fluxo de cadastro de projetos',
       estimativaMinutos: 600,
       valorHora: '150.25',
@@ -5696,26 +5737,27 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
     expect(tarefa.funcionalidade).toBe('Configurar e revisar o fluxo de cadastro de projetos');
     expect(tarefa.estimativaMinutos).toBe(600);
     expect(tarefa.valorHora).toBe('150.2500');
+    expect(tarefa.recursoIds).toEqual([recurso.id]);
+    expect(tarefa.recursoIds).not.toContain(outroRecurso.id);
     expect(tarefa.taxas.map((item: any) => item.valorHora)).toEqual(expect.arrayContaining(['125.5000', '150.2500']));
 
-    const outroRecurso = await world.prisma.recurso.create({ data: { empresaId: empresaInicialId, usuarioId: (await world.prisma.usuario.create({ data: { nome: 'Outro recurso', email: 'outro.recurso@teste.com', senhaHash: 'hash' } })).id, ativo: true } });
     await expect(world.projetoTarefaService.salvar({
       id: tarefa.id,
       versao: tarefa.versao,
-      recursoId: outroRecurso.id,
+      recursoIds: [recurso.id, recurso.id],
       funcionalidade: tarefa.funcionalidade,
       estimativaMinutos: tarefa.estimativaMinutos,
       valorHora: '150.25',
       moeda: 'BRL',
       ativo: true
-    }, admin)).rejects.toThrow('recurso da tarefa nao pode ser alterado');
+    }, admin)).rejects.toThrow('Nao repita o mesmo recurso');
 
     await expect(world.projetoRecursoService.excluirRecurso({ id: recurso.id, versao: recurso.versao }, admin)).rejects.toThrow('1 tarefa(s)');
     await expect(world.projetoTarefaService.excluir({ id: tarefa.id, versao: tarefa.versao }, admin)).resolves.toBe(true);
+    expect(await world.prisma.projetoTarefaRecurso.count({ where: { tarefaId: tarefa.id } })).toBe(0);
     await expect(world.projetoRecursoService.excluirRecurso({ id: recurso.id, versao: recurso.versao }, admin)).resolves.toBe(true);
   });
-
-  it('vincula o recurso a varios projetos, aceita usuarios da empresa, separa a grade e protege o orcamento', async () => {
+  it('vincula recursos a projetos e tarefas, planeja execucoes e protege o orcamento', async () => {
     const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
     const gerente = await world.prisma.usuario.create({ data: { nome: 'Gerente financeiro', login: 'gerente.financeiro', email: 'gerente.financeiro@teste.com', senhaHash: 'hash', grupoId: (admin as any).grupo.id } });
     await world.prisma.empresaUsuario.create({ data: { empresaId: empresaInicialId, usuarioId: gerente.id } });
@@ -5745,21 +5787,14 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
     expect(await world.prisma.projetoRecurso.count({ where: { projetoId: projeto.id } })).toBe(1);
     expect(recurso.projetos.filter((item: any) => item.ativo).map((item: any) => item.projetoId)).toEqual(expect.arrayContaining([projeto.id, projetoSecundario.id]));
     const vinculo = expectDefined(recurso.projetos.find((item: any) => item.projetoId === projeto.id));
+    const vinculoSecundario = expectDefined(recurso.projetos.find((item: any) => item.projetoId === projetoSecundario.id));
     expect(vinculo.ativo).toBe(true);
+    expect(vinculoSecundario.ativo).toBe(true);
     expect(await world.prisma.projetoMembro.findFirst({ where: { projetoId: projeto.id, usuarioId: admin.sub, origem: 'RECURSO' } })).not.toBeNull();
     await expect(world.projetoRecursoService.salvarRecurso({ id: recurso.id, versao: recurso.versao, usuarioId: 'outro-usuario', projetoIds: [projeto.id], ativo: true }, admin)).rejects.toThrow('nao pode ser alterado');
 
-    const capacidade = expectDefined(await world.projetoGradeCapacitacaoService.salvarCapacidade({
-      projetoId: projeto.id, projetoRecursoId: vinculo.id, inicioEm: '2026-08-01', fimEm: '2026-08-31', capacidadeMinutos: 2400
-    }, admin));
-    expect(capacidade.percentualAlocado).toBe(0);
-    await expect(world.projetoGradeCapacitacaoService.salvarCapacidade({
-      projetoId: projeto.id, projetoRecursoId: vinculo.id, inicioEm: '2026-08-15', fimEm: '2026-09-15', capacidadeMinutos: 1200
-    }, admin)).rejects.toThrow('periodo sobreposto');
-
     const tarefaPlanejada = await world.projetoTarefaService.salvar({
-      recursoId: recurso.id,
-      projetoRecursoId: vinculo.id,
+      recursoIds: [recurso.id],
       funcionalidade: 'Implementar e homologar a integracao financeira',
       estimativaMinutos: 2400,
       valorHora: '150',
@@ -5767,26 +5802,24 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
       ativo: true
     }, admin);
 
-    const alocacao = expectDefined(await world.projetoGradeCapacitacaoService.salvarAlocacao({
+    const alocacao = expectDefined(await world.projetoPlanejamentoRecursoService.salvarExecucao({
       projetoId: projeto.id, projetoRecursoId: vinculo.id, tarefaId: tarefaPlanejada.id, inicioEm: '2026-08-01', fimEm: '2026-08-31', alocacaoMinutos: 3000
     }, admin));
     expect(alocacao.atividade).toBe('Implementar e homologar a integracao financeira');
     expect(alocacao.tarefaId).toBe(tarefaPlanejada.id);
-    expect(alocacao.sobrealocado).toBe(true);
-    expect(alocacao.percentualAlocado).toBe(125);
-    const grade = await world.projetoGradeCapacitacaoService.painel(admin);
-    expect(grade.linhas).toHaveLength(2);
-    expect(grade.linhas.find((item) => item.id === vinculo.id)?.alocacoes[0]?.atividade).toBe('Implementar e homologar a integracao financeira');
     const planejamento = await world.projetoPlanejamentoRecursoService.painel(admin);
     const linhaPlanejada = expectDefined(planejamento.linhas.find((item) => item.id === vinculo.id));
+    const linhaSecundaria = expectDefined(planejamento.linhas.find((item) => item.id === vinculoSecundario.id));
+    expect(planejamento.tarefas.filter((item) => item.id === tarefaPlanejada.id)).toHaveLength(1);
     expect(linhaPlanejada.tarefas).toHaveLength(1);
+    expect(linhaSecundaria.tarefas).toHaveLength(1);
     expect(linhaPlanejada.estimativaTotalMinutos).toBe(2400);
     expect(linhaPlanejada.planejamentoTarefasMinutos).toBe(3000);
     expect(linhaPlanejada.saldoTarefasMinutos).toBe(-600);
+    expect(linhaSecundaria.planejamentoTarefasMinutos).toBe(0);
     expect(linhaPlanejada.possuiRisco).toBe(true);
     const tarefaMoedaDiferente = await world.projetoTarefaService.salvar({
-      recursoId: recurso.id,
-      projetoRecursoId: vinculo.id,
+      recursoIds: [recurso.id],
       funcionalidade: 'Revisar custos internacionais',
       estimativaMinutos: 120,
       valorHora: '50',
@@ -5840,11 +5873,18 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
     await expect(world.projetoOrcamentoService.excluirCategoria({
       projetoId: projeto.id, id: categoriaSemCusto.id, versao: categoriaSemCusto.versao
     }, admin)).resolves.toBe(true);
-    const recursoDesalocado = await world.projetoGradeCapacitacaoService.salvarVinculo({ id: vinculo.id, versao: vinculo.versao, cadastroRecursoId: recurso.id, projetoId: projeto.id, ativo: false }, admin);
-    expect(recursoDesalocado.vinculoAtivo).toBe(false);
+    const recursoAtualizado = await world.projetoRecursoService.salvarRecurso({
+      id: recurso.id,
+      versao: recurso.versao,
+      usuarioId: recurso.usuarioId,
+      projetoIds: [projetoSecundario.id],
+      ativo: true
+    }, admin);
+    const recursoDesalocado = expectDefined(recursoAtualizado.projetos.find((item: any) => item.projetoId === projeto.id));
+    expect(recursoDesalocado.ativo).toBe(false);
     expect(await world.prisma.projetoRecurso.count({ where: { projetoId: projeto.id } })).toBe(1);
     expect(await world.prisma.projetoMembro.findFirst({ where: { projetoId: projeto.id, usuarioId: admin.sub, origem: 'RECURSO' } })).toBeNull();
-    await expect(world.projetoRecursoService.excluirRecurso({ id: recurso.id, versao: recurso.versao }, admin)).rejects.toThrow('1 capacidade(s)');
+    await expect(world.projetoRecursoService.excluirRecurso({ id: recurso.id, versao: recursoAtualizado.versao }, admin)).rejects.toThrow('1 execucao(oes)');
     await expect(world.projetoOrcamentoService.excluirCusto({
       projetoId: projeto.id, id: custo.id, versao: custo.versao
     }, admin)).resolves.toBe(true);

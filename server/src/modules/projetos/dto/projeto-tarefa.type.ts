@@ -1,5 +1,4 @@
 import { Field, Int, ObjectType } from '@nestjs/graphql';
-import { ProjetoRecursoProjetoType } from './projeto-recurso.type';
 import { ProjetoUsuarioType } from './projeto.type';
 
 @ObjectType()
@@ -7,6 +6,14 @@ export class ProjetoTarefaRecursoType {
   @Field() id!: string;
   @Field() ativo!: boolean;
   @Field(() => ProjetoUsuarioType) usuario!: ProjetoUsuarioType;
+}
+
+@ObjectType()
+export class ProjetoTarefaRecursoVinculoType {
+  @Field() id!: string;
+  @Field() recursoId!: string;
+  @Field() ativo!: boolean;
+  @Field(() => ProjetoTarefaRecursoType) recurso!: ProjetoTarefaRecursoType;
 }
 
 @ObjectType()
@@ -21,8 +28,8 @@ export class ProjetoTarefaTaxaHistoricoType {
 @ObjectType()
 export class ProjetoTarefaType {
   @Field() id!: string;
-  @Field() recursoId!: string;
-  @Field(() => String, { nullable: true }) projetoRecursoId?: string | null;
+  @Field(() => [String]) recursoIds!: string[];
+  @Field(() => [ProjetoTarefaRecursoVinculoType]) recursos!: ProjetoTarefaRecursoVinculoType[];
   @Field() funcionalidade!: string;
   @Field(() => Int) estimativaMinutos!: number;
   @Field() valorHora!: string;
@@ -30,25 +37,9 @@ export class ProjetoTarefaType {
   @Field(() => String, { nullable: true }) observacao?: string | null;
   @Field() ativo!: boolean;
   @Field(() => Int) versao!: number;
-  @Field(() => ProjetoTarefaRecursoType) recurso!: ProjetoTarefaRecursoType;
-  @Field(() => ProjetoRecursoProjetoType, { nullable: true }) projeto?: ProjetoRecursoProjetoType | null;
-  @Field() pendenteVinculo!: boolean;
+  @Field() pendenteRecurso!: boolean;
   @Field(() => Int) planejadoMinutos!: number;
   @Field(() => Int) saldoMinutos!: number;
   @Field() sobreplanejada!: boolean;
   @Field(() => [ProjetoTarefaTaxaHistoricoType]) taxas!: ProjetoTarefaTaxaHistoricoType[];
-}
-
-@ObjectType()
-export class ProjetoTarefaPermissoesType {
-  @Field() podeIncluir!: boolean;
-  @Field() podeAlterar!: boolean;
-  @Field() podeExcluir!: boolean;
-}
-
-@ObjectType()
-export class ProjetoTarefaPainelType {
-  @Field(() => [ProjetoTarefaType]) tarefas!: ProjetoTarefaType[];
-  @Field(() => [ProjetoTarefaRecursoType]) recursos!: ProjetoTarefaRecursoType[];
-  @Field(() => ProjetoTarefaPermissoesType) permissoes!: ProjetoTarefaPermissoesType;
 }

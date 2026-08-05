@@ -1,5 +1,5 @@
 import { Field, InputType, Int } from '@nestjs/graphql';
-import { IsBoolean, IsInt, IsOptional, IsString, IsUUID, Matches, MaxLength, Min } from 'class-validator';
+import { ArrayMinSize, ArrayUnique, IsArray, IsBoolean, IsInt, IsOptional, IsString, IsUUID, Matches, MaxLength, Min } from 'class-validator';
 
 const MONEY = /^\d{1,16}(\.\d{1,4})?$/;
 
@@ -7,8 +7,7 @@ const MONEY = /^\d{1,16}(\.\d{1,4})?$/;
 export class SalvarProjetoTarefaInput {
   @Field(() => String, { nullable: true }) @IsOptional() @IsUUID() id?: string | null;
   @Field(() => Int, { nullable: true }) @IsOptional() @IsInt() @Min(1) versao?: number | null;
-  @Field() @IsUUID() recursoId!: string;
-  @Field(() => String, { nullable: true }) @IsOptional() @IsUUID() projetoRecursoId?: string | null;
+  @Field(() => [String]) @IsArray() @ArrayMinSize(1) @ArrayUnique() @IsUUID('4', { each: true }) recursoIds!: string[];
   @Field() @IsString() @MaxLength(500) funcionalidade!: string;
   @Field(() => Int) @IsInt() @Min(1) estimativaMinutos!: number;
   @Field() @Matches(MONEY) valorHora!: string;

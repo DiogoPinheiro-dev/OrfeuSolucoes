@@ -31,6 +31,9 @@ export class FuncionalidadeType {
   somenteAdminSistema!: boolean;
 
   @Field()
+  padraoSistema!: boolean;
+
+  @Field()
   podeVisualizar!: boolean;
 
   @Field()

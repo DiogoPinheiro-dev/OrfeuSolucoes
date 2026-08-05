@@ -106,30 +106,12 @@ export const PROJETO_FEATURE_DEFINITIONS: ProjetoFeatureDefinition[] = [
     ]
   },
   {
-    slug: 'recursos-do-projeto',
-    titulo: 'Cadastro de recursos',
-    label: 'Recursos',
-    descricao: 'Cadastre a identidade dos recursos da empresa e mantenha sua situação operacional.',
-    ordem: 70,
-    registryKey: 'projetos.recursos-do-projeto',
-    ativo: true
-  },
-  {
-    slug: 'cadastro-de-tarefas',
-    titulo: 'Cadastro de tarefas',
-    label: 'Tarefas',
-    descricao: 'Vincule funcionalidades aos recursos e defina o valor cobrado por hora.',
-    ordem: 80,
-    registryKey: 'projetos.cadastro-de-tarefas',
-    ativo: false
-  },
-  {
-    slug: 'grade-de-capacitacao',
+    slug: 'planejamento-de-recursos',
     titulo: 'Planejamento de recursos',
     label: 'Planejamento de recursos',
-    descricao: 'Gerencie vínculos, capacidade, tarefas, custos e execuções planejadas por recurso e projeto.',
-    ordem: 90,
-    registryKey: 'projetos.grade-de-capacitacao',
+    descricao: 'Gerencie os vinculos dos recursos com os projetos e suas tarefas.',
+    ordem: 70,
+    registryKey: 'projetos.planejamento-de-recursos',
     ativo: true
   },
   {

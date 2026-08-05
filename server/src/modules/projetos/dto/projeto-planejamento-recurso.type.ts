@@ -1,6 +1,5 @@
 import { Field, Int, ObjectType } from '@nestjs/graphql';
-import { GradeAlocacaoType, GradeCapacidadeType, GradeCapacitacaoPermissoesType } from './projeto-grade-capacitacao.type';
-import { ProjetoRecursoProjetoType, ProjetoRecursoType } from './projeto-recurso.type';
+import { ProjetoRecursoPermissoesType, ProjetoRecursoProjetoType, ProjetoRecursoType } from './projeto-recurso.type';
 import { ProjetoTarefaType } from './projeto-tarefa.type';
 import { ProjetoUsuarioType } from './projeto.type';
 
@@ -8,6 +7,18 @@ import { ProjetoUsuarioType } from './projeto.type';
 export class PlanejamentoRecursoCustoType {
   @Field() moeda!: string;
   @Field() valor!: string;
+}
+
+@ObjectType()
+export class PlanejamentoRecursoExecucaoType {
+  @Field() id!: string;
+  @Field() projetoRecursoId!: string;
+  @Field(() => String, { nullable: true }) tarefaId?: string | null;
+  @Field(() => String, { nullable: true }) atividade?: string | null;
+  @Field(() => Date) inicioEm!: Date;
+  @Field(() => Date) fimEm!: Date;
+  @Field(() => Int) alocacaoMinutos!: number;
+  @Field(() => Int) versao!: number;
 }
 
 @ObjectType()
@@ -20,11 +31,7 @@ export class PlanejamentoRecursoLinhaType {
   @Field() vinculoAtivo!: boolean;
   @Field(() => ProjetoUsuarioType) usuario!: ProjetoUsuarioType;
   @Field(() => ProjetoRecursoProjetoType) projeto!: ProjetoRecursoProjetoType;
-  @Field(() => Int) capacidadeTotalMinutos!: number;
   @Field(() => Int) alocacaoTotalMinutos!: number;
-  @Field(() => Int) saldoMinutos!: number;
-  @Field(() => Int) percentualAlocado!: number;
-  @Field() sobrealocado!: boolean;
   @Field(() => Int) estimativaTotalMinutos!: number;
   @Field(() => Int) planejamentoTarefasMinutos!: number;
   @Field(() => Int) saldoTarefasMinutos!: number;
@@ -32,8 +39,7 @@ export class PlanejamentoRecursoLinhaType {
   @Field() possuiRisco!: boolean;
   @Field(() => [PlanejamentoRecursoCustoType]) custosEstimados!: PlanejamentoRecursoCustoType[];
   @Field(() => [ProjetoTarefaType]) tarefas!: ProjetoTarefaType[];
-  @Field(() => [GradeCapacidadeType]) capacidades!: GradeCapacidadeType[];
-  @Field(() => [GradeAlocacaoType]) alocacoes!: GradeAlocacaoType[];
+  @Field(() => [PlanejamentoRecursoExecucaoType]) alocacoes!: PlanejamentoRecursoExecucaoType[];
 }
 
 @ObjectType()
@@ -41,6 +47,7 @@ export class PlanejamentoRecursoPainelType {
   @Field(() => [ProjetoRecursoType]) recursos!: ProjetoRecursoType[];
   @Field(() => [ProjetoRecursoProjetoType]) projetos!: ProjetoRecursoProjetoType[];
   @Field(() => [PlanejamentoRecursoLinhaType]) linhas!: PlanejamentoRecursoLinhaType[];
+  @Field(() => [ProjetoTarefaType]) tarefas!: ProjetoTarefaType[];
   @Field(() => [ProjetoTarefaType]) tarefasPendentes!: ProjetoTarefaType[];
-  @Field(() => GradeCapacitacaoPermissoesType) permissoes!: GradeCapacitacaoPermissoesType;
+  @Field(() => ProjetoRecursoPermissoesType) permissoes!: ProjetoRecursoPermissoesType;
 }

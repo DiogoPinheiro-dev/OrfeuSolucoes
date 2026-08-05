@@ -15,7 +15,7 @@ export class ProjetoRecursoAuthorizationService {
   constructor(private readonly prisma: PrismaService, private readonly authorization: ProjetoAuthorizationService) {}
 
   empresa(user: JwtPayload, action: string = ProjetoAcao.VISUALIZAR): Promise<number> {
-    return this.authorization.assertFeatureActionAccess(user, ProjetoFuncionalidade.RECURSOS, action);
+    return this.authorization.assertFeatureActionAccess(user, ProjetoFuncionalidade.PLANEJAMENTO_RECURSOS, action);
   }
 
   async contexto(projetoId: string, user: JwtPayload, action: string = ProjetoAcao.VISUALIZAR): Promise<ProjetoRecursoContexto> {

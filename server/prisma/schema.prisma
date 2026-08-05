@@ -54,7 +54,6 @@ model Usuario {
   projetoAnexos                    ProjetoAnexo[]                @relation("ProjetoAnexoAutor")
   projetoAnexosExcluidos           ProjetoAnexo[]                @relation("ProjetoAnexoExcluidoPor")
   recursos                         Recurso[]
-  projetoCapacidadesLegadas        ProjetoCapacidadeLegado[]
   projetoOrcamentosAprovados       ProjetoOrcamento[]            @relation("ProjetoOrcamentoAprovadoPor")
   projetoCustosCriados             ProjetoCusto[]                @relation("ProjetoCustoCriadoPor")
   projetoCustoTaxasCriadas         ProjetoCustoTaxaHistorico[]   @relation("ProjetoCustoTaxaCriadaPor")
@@ -141,15 +140,14 @@ model Empresa {
   ProjetoAtualizacao              ProjetoAtualizacao[]
   ProjetoComentario               ProjetoComentario[]
   ProjetoAnexo                    ProjetoAnexo[]
-  projetoCapacidades              ProjetoCapacidade[]
   projetoAlocacoes                ProjetoAlocacao[]
   recursos                        Recurso[]
   projetoRecursos                 ProjetoRecurso[]
-  projetoCapacidadesLegadas       ProjetoCapacidadeLegado[]
   projetoOrcamentos               ProjetoOrcamento[]
   projetoOrcamentoCategorias      ProjetoOrcamentoCategoria[]
   projetoCustos                   ProjetoCusto[]
   projetoTarefas                  ProjetoTarefa[]
+  projetoTarefaRecursos           ProjetoTarefaRecurso[]
 
   @@map("Empresas")
 }
@@ -201,7 +199,6 @@ model Projeto {
   orcamento           ProjetoOrcamento?
   orcamentoCategorias ProjetoOrcamentoCategoria[]
   custos              ProjetoCusto[]
-  capacidades         ProjetoCapacidade[]
 
   @@unique([empresaId, chave], map: "UX_Projetos_EmpresaId_Chave")
   @@index([empresaId, arquivadoEm], map: "IX_Projetos_EmpresaId_ArquivadoEm")
@@ -625,10 +622,10 @@ model Recurso {
   criadoEm     DateTime @default(now()) @map("CriadoEm")
   atualizadoEm DateTime @updatedAt @map("AtualizadoEm")
 
-  empresa  Empresa          @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  usuario  Usuario          @relation(fields: [usuarioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  empresa  Empresa                @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuario  Usuario                @relation(fields: [usuarioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   projetos ProjetoRecurso[]
-  tarefas  ProjetoTarefa[]
+  tarefas  ProjetoTarefaRecurso[]
 
   @@unique([empresaId, usuarioId], map: "UX_Recursos_Empresa_Usuario")
   @@index([empresaId, ativo], map: "IX_Recursos_Empresa_Ativo")
@@ -638,8 +635,6 @@ model Recurso {
 model ProjetoTarefa {
   id                String   @id @default(uuid()) @map("Id") @db.UniqueIdentifier
   empresaId         Int      @map("EmpresaId")
-  recursoId         String   @map("RecursoId") @db.UniqueIdentifier
-  projetoRecursoId  String?  @map("ProjetoRecursoId") @db.UniqueIdentifier
   funcionalidade    String   @map("Funcionalidade") @db.NVarChar(500)
   estimativaMinutos Int      @default(0) @map("EstimativaMinutos")
   valorHora         Decimal  @map("ValorHora") @db.Decimal(18, 4)
@@ -650,17 +645,30 @@ model ProjetoTarefa {
   criadoEm          DateTime @default(now()) @map("CriadoEm")
   atualizadoEm      DateTime @updatedAt @map("AtualizadoEm")
 
-  empresa        Empresa                      @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  recurso        Recurso                      @relation(fields: [recursoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  projetoRecurso ProjetoRecurso?              @relation(fields: [projetoRecursoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  taxas          ProjetoTarefaTaxaHistorico[]
-  alocacoes      ProjetoAlocacao[]
-  custos         ProjetoCusto[]
+  empresa   Empresa                      @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  recursos  ProjetoTarefaRecurso[]
+  taxas     ProjetoTarefaTaxaHistorico[]
+  alocacoes ProjetoAlocacao[]
+  custos    ProjetoCusto[]
 
   @@index([empresaId, ativo], map: "IX_ProjetoTarefas_Empresa_Ativo")
-  @@index([empresaId, recursoId, ativo], map: "IX_ProjetoTarefas_Empresa_Recurso_Ativo")
-  @@index([empresaId, projetoRecursoId, ativo], map: "IX_ProjetoTarefas_Empresa_ProjetoRecurso_Ativo")
   @@map("ProjetoTarefas")
+}
+
+model ProjetoTarefaRecurso {
+  id        String   @id @default(uuid()) @map("Id") @db.UniqueIdentifier
+  empresaId Int      @map("EmpresaId")
+  tarefaId  String   @map("TarefaId") @db.UniqueIdentifier
+  recursoId String   @map("RecursoId") @db.UniqueIdentifier
+  criadoEm  DateTime @default(now()) @map("CriadoEm")
+
+  empresa Empresa       @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tarefa  ProjetoTarefa @relation(fields: [tarefaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  recurso Recurso       @relation(fields: [recursoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([tarefaId, recursoId], map: "UX_ProjetoTarefaRecursos_Tarefa_Recurso")
+  @@index([empresaId, recursoId], map: "IX_ProjetoTarefaRecursos_Empresa_Recurso")
+  @@map("ProjetoTarefaRecursos")
 }
 
 model ProjetoTarefaTaxaHistorico {
@@ -688,59 +696,16 @@ model ProjetoRecurso {
   criadoEm     DateTime @default(now()) @map("CriadoEm")
   atualizadoEm DateTime @updatedAt @map("AtualizadoEm")
 
-  empresa     Empresa             @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  projeto     Projeto             @relation(fields: [projetoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  cadastro    Recurso             @relation(fields: [recursoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  capacidades ProjetoCapacidade[]
-  alocacoes   ProjetoAlocacao[]
-  tarefas     ProjetoTarefa[]
-  custos      ProjetoCusto[]      @relation("ProjetoCustoRecurso")
+  empresa   Empresa           @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  projeto   Projeto           @relation(fields: [projetoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  cadastro  Recurso           @relation(fields: [recursoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  alocacoes ProjetoAlocacao[]
+  custos    ProjetoCusto[]    @relation("ProjetoCustoRecurso")
 
   @@unique([projetoId, recursoId], map: "UX_ProjetoRecursos_Projeto_Recurso")
   @@index([empresaId, recursoId, ativo], map: "IX_ProjetoRecursos_Empresa_Recurso_Ativo")
   @@index([projetoId, ativo], map: "IX_ProjetoRecursos_Projeto_Ativo")
   @@map("ProjetoRecursos")
-}
-
-model ProjetoCapacidadeLegado {
-  id                String   @id @map("Id") @db.UniqueIdentifier
-  empresaId         Int      @map("EmpresaId")
-  usuarioId         String   @map("UsuarioId") @db.UniqueIdentifier
-  inicioEm          DateTime @map("InicioEm") @db.Date
-  fimEm             DateTime @map("FimEm") @db.Date
-  capacidadeMinutos Int      @map("CapacidadeMinutos")
-  versao            Int      @map("Versao")
-  criadoEm          DateTime @map("CriadoEm")
-  atualizadoEm      DateTime @map("AtualizadoEm")
-  motivo            String   @map("Motivo") @db.NVarChar(240)
-  arquivadoEm       DateTime @default(now()) @map("ArquivadoEm")
-
-  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@index([empresaId, usuarioId], map: "IX_ProjetoCapacidadesLegado_Empresa_Usuario")
-  @@map("ProjetoCapacidadesLegadoSemProjeto")
-}
-
-model ProjetoCapacidade {
-  id                String   @id @default(uuid()) @map("Id") @db.UniqueIdentifier
-  empresaId         Int      @map("EmpresaId")
-  projetoId         String   @map("ProjetoId") @db.UniqueIdentifier
-  recursoId         String   @map("RecursoId") @db.UniqueIdentifier
-  inicioEm          DateTime @map("InicioEm") @db.Date
-  fimEm             DateTime @map("FimEm") @db.Date
-  capacidadeMinutos Int      @map("CapacidadeMinutos")
-  versao            Int      @default(1) @map("Versao")
-  criadoEm          DateTime @default(now()) @map("CriadoEm")
-  atualizadoEm      DateTime @updatedAt @map("AtualizadoEm")
-
-  empresa Empresa        @relation(fields: [empresaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  projeto Projeto        @relation(fields: [projetoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  recurso ProjetoRecurso @relation(fields: [recursoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@index([empresaId, recursoId, inicioEm, fimEm], map: "IX_ProjetoCapacidades_Empresa_Recurso_Periodo")
-  @@index([projetoId, inicioEm, fimEm], map: "IX_ProjetoCapacidades_Projeto_Periodo")
-  @@map("ProjetoCapacidades")
 }
 
 model ProjetoAlocacao {
@@ -893,6 +858,7 @@ model Funcionalidade {
   ativo               Boolean @default(true) @map("Ativo")
   registryKey         String? @map("RegistryKey")
   somenteAdminSistema Boolean @default(false) @map("SomenteAdminSistema")
+  padraoSistema       Boolean @default(false) @map("PadraoSistema")
 
   solucao                           Solucao                            @relation(fields: [solucaoId], references: [id], onDelete: Cascade)
   grupos                            GrupoFuncionalidade[]

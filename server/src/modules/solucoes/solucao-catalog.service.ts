@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { FormFieldConflictException } from '../../common/exceptions/form-field.exception';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateFuncionalidadeInput } from './dto/create-funcionalidade.input';
@@ -110,7 +110,26 @@ export class SolucaoCatalogService {
   }
 
   async updateFuncionalidade(input: UpdateFuncionalidadeInput): Promise<FuncionalidadeType> {
-    await this.ensureFuncionalidade(input.id);
+    const existing = await this.ensureFuncionalidade(input.id);
+
+    if (existing.padraoSistema) {
+      const hasCadastralChanges = input.solucaoId !== undefined ||
+        input.slug !== undefined ||
+        input.titulo !== undefined ||
+        input.label !== undefined ||
+        input.descricao !== undefined ||
+        input.ordem !== undefined ||
+        input.ativo !== undefined ||
+        input.registryKey !== undefined ||
+        input.somenteAdminSistema !== undefined;
+
+      if (hasCadastralChanges) {
+        throw new BadRequestException('Os dados cadastrais de uma funcionalidade padrao do sistema nao podem ser alterados.');
+      }
+
+      await this.funcionalidadeAcaoService.appendFuncionalidadeAcoes(input.id, input.acoes ?? []);
+      return toFuncionalidadeType(await this.findFuncionalidadeRecord(input.id));
+    }
 
     if (input.solucaoId !== undefined) {
       await this.ensureSolucao(input.solucaoId);
@@ -143,7 +162,12 @@ export class SolucaoCatalogService {
   }
 
   async removeFuncionalidade(id: number): Promise<boolean> {
-    await this.ensureFuncionalidade(id);
+    const funcionalidade = await this.ensureFuncionalidade(id);
+
+    if (funcionalidade.padraoSistema) {
+      throw new BadRequestException('Uma funcionalidade padrao do sistema nao pode ser excluida.');
+    }
+
     await (this.prisma as never as { funcionalidade: { delete: Function } }).funcionalidade.delete({ where: { id } });
     return true;
   }
@@ -156,12 +180,14 @@ export class SolucaoCatalogService {
     }
   }
 
-  private async ensureFuncionalidade(id: number): Promise<void> {
-    const exists = await (this.prisma as never as { funcionalidade: { findUnique: Function } }).funcionalidade.findUnique({ where: { id } });
+  private async ensureFuncionalidade(id: number): Promise<FuncionalidadeRecord> {
+    const exists = (await (this.prisma as never as { funcionalidade: { findUnique: Function } }).funcionalidade.findUnique({ where: { id } })) as FuncionalidadeRecord | null;
 
     if (!exists) {
       throw new NotFoundException('Funcionalidade nao encontrada.');
     }
+
+    return exists;
   }
 
   private async findFuncionalidadeRecord(id: number): Promise<FuncionalidadeRecord> {

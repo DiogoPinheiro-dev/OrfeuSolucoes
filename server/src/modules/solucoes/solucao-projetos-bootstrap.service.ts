@@ -68,7 +68,8 @@ export class SolucaoProjetosBootstrapService {
               ordem: feature.ordem,
               ativo: feature.ativo,
               registryKey: feature.registryKey,
-              somenteAdminSistema: false
+              somenteAdminSistema: false,
+              padraoSistema: true
             }
           })) as FuncionalidadeRecord
         : (await (this.prisma as never as { funcionalidade: { create: Function } }).funcionalidade.create({
@@ -81,11 +82,12 @@ export class SolucaoProjetosBootstrapService {
               ordem: feature.ordem,
               ativo: feature.ativo,
               registryKey: feature.registryKey,
-              somenteAdminSistema: false
+              somenteAdminSistema: false,
+              padraoSistema: true
             }
           })) as FuncionalidadeRecord;
 
-      await this.funcionalidadeAcaoService.syncFuncionalidadeAcoes(funcionalidade.id, feature.acoes);
+      await this.funcionalidadeAcaoService.syncFuncionalidadeAcoes(funcionalidade.id, feature.acoes, { preserveAdditionalActions: true });
 
       if (!existing) {
         await this.solucaoAcessoService.syncNewFuncionalidadeAccess(funcionalidade);

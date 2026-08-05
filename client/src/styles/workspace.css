@@ -109,11 +109,16 @@
 }
 
 .workspace-panel-link .workspace-label {
-  width: fit-content;
+  width: 100%;
+  max-width: 100%;
+  justify-content: center;
   margin: 0;
   padding: 5px 8px;
   font-size: 0.68rem;
-  white-space: nowrap;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  text-align: center;
+  white-space: normal;
 }
 
 .workspace-panel-copy {

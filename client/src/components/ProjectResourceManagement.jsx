@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { excluirRecurso, getRecursos, getRecursosProjetos, salvarRecurso } from "../../services/Projetos/RecursoService";
+import { useCrudSelection } from "../hooks/useCrudSelection";
 import CrudGrid from "./CrudGrid";
 import { CrudModal } from "./CrudModal";
 import "../styles/crudGrid.css";
@@ -11,15 +12,19 @@ const userLabel = (user) => user?.nome || user?.login || user?.email || "Usuári
 export default function ProjectResourceManagement() {
   const [panel, setPanel] = useState(emptyPanel);
   const [projects, setProjects] = useState([]);
-  const [selectedId, setSelectedId] = useState(null);
+  const [projectFilter, setProjectFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [editor, setEditor] = useState(null);
-  const [resourceToDelete, setResourceToDelete] = useState(null);
-  const selectedResource = useMemo(() => panel.recursos.find((item) => item.id === selectedId) || null, [panel.recursos, selectedId]);
+  const [resourcesToDelete, setResourcesToDelete] = useState([]);
   const activeProjects = useMemo(() => projects.filter((item) => !item.arquivadoEm), [projects]);
+  const filteredResources = useMemo(() => panel.recursos.filter((resource) =>
+    !projectFilter || resource.projetos?.some((item) => item.ativo && item.projetoId === projectFilter)
+  ), [panel.recursos, projectFilter]);
+  const selection = useCrudSelection(filteredResources);
+  const selectedResource = useMemo(() => filteredResources.find((item) => item.id === selection.selectedId) || null, [filteredResources, selection.selectedId]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -28,7 +33,6 @@ export default function ProjectResourceManagement() {
       const [result, projectOptions] = await Promise.all([getRecursos(), getRecursosProjetos()]);
       setPanel(result || emptyPanel);
       setProjects(projectOptions || []);
-      setSelectedId((current) => result?.recursos?.some((item) => item.id === current) ? current : result?.recursos?.[0]?.id || null);
     } catch (loadError) {
       setError(loadError.message);
       setPanel(emptyPanel);
@@ -80,7 +84,7 @@ export default function ProjectResourceManagement() {
   };
 
   const openView = (resource) => {
-    setSelectedId(resource.id);
+    selection.selectRow(resource.id);
     setEditor({
       mode: "view",
       id: resource.id,
@@ -111,7 +115,13 @@ export default function ProjectResourceManagement() {
 
   const confirmDelete = (event) => {
     event.preventDefault();
-    void run(() => excluirRecurso({ id: resourceToDelete.id, versao: resourceToDelete.versao }), "Recurso excluído.", () => setResourceToDelete(null));
+    if (!resourcesToDelete.length) return;
+    const quantidade = resourcesToDelete.length;
+    void run(
+      () => Promise.all(resourcesToDelete.map((resource) => excluirRecurso({ id: resource.id, versao: resource.versao }))),
+      quantidade === 1 ? "Recurso excluído." : quantidade + " recursos excluídos.",
+      () => { setResourcesToDelete([]); selection.resetSelection(); }
+    );
   };
 
   const columns = useMemo(() => [
@@ -126,13 +136,6 @@ export default function ProjectResourceManagement() {
   ], []);
 
   return <section className="project-resource">
-    <header className="crud-grid resource-header">
-      <div>
-        <span className="workspace-label">Cadastro empresarial</span>
-        <h2>Recursos</h2>
-        <p>Cadastre o recurso e escolha o projeto diretamente no formulário.</p>
-      </div>
-    </header>
     {error && <div className="resource-feedback error" role="alert">{error}</div>}
     {success && <div className="resource-feedback success">{success}</div>}
     {!loading && activeProjects.length === 0 && <div className="resource-feedback info">Cadastre um projeto ativo antes de incluir recursos.</div>}
@@ -140,21 +143,25 @@ export default function ProjectResourceManagement() {
       title="Cadastro de recursos"
       kicker="Recursos"
       columns={columns}
-      rows={panel.recursos}
-      selectedId={selectedId}
-      onSelect={setSelectedId}
+      rows={filteredResources}
+      selectedId={selection.selectedId}
+      selectedIds={selection.selectedIds}
+      onSelect={selection.selectRow}
+      onToggleSelect={selection.toggleSelected}
+      onToggleSelectAll={selection.toggleVisible}
       onCreate={openCreate}
       onEdit={openEdit}
       onView={openView}
-      onDelete={() => selectedResource && setResourceToDelete(selectedResource)}
-      emptyMessage={loading ? "Carregando recursos..." : "Nenhum recurso cadastrado."}
+      onDelete={(ids) => setResourcesToDelete(panel.recursos.filter((resource) => ids.includes(resource.id)))}
+      filters={<label>Projeto<select value={projectFilter} onChange={(event) => setProjectFilter(event.target.value)}><option value="">Todos os projetos</option>{projects.map((project) => <option key={project.id} value={project.id}>{project.chave} — {project.nome}{project.arquivadoEm ? " (arquivado)" : ""}</option>)}</select></label>}
+      emptyMessage={loading ? "Carregando recursos..." : projectFilter ? "Nenhum recurso vinculado ao projeto selecionado." : "Nenhum recurso cadastrado."}
       busy={loading}
       canCreate={panel.permissoes?.podeIncluir && availableUsers.length > 0 && activeProjects.length > 0}
       canEdit={!!selectedResource && panel.permissoes?.podeAlterar}
       canView={!!selectedResource}
-      canDelete={!!selectedResource && panel.permissoes?.podeExcluir}
-      selectedIds={selectedResource ? [selectedResource.id] : []}
-      selectable={false}
+      canDelete={panel.permissoes?.podeExcluir}
+      isRowSelectable={() => panel.permissoes?.podeExcluir === true}
+      getRowLabel={(resource) => userLabel(resource.usuario)}
     />
     {editor && <CrudModal
       mode={editor.mode}
@@ -191,12 +198,12 @@ export default function ProjectResourceManagement() {
           <small className="resource-project-count">{editor.projetoIds.length === 0 ? "Nenhum projeto selecionado." : `${editor.projetoIds.length} projeto(s) selecionado(s).`}</small>
         </fieldset>
       </div>
-      <label className="resource-form-check">
+      <label className="resource-planning-check">
         <input type="checkbox" checked={editor.ativo} disabled={editor.mode === "view"} onChange={(event) => setEditor({ ...editor, ativo: event.target.checked })} />
         <span><strong>Recurso ativo</strong><small>Recursos inativos não participam das atividades dos projetos.</small></span>
       </label>
-      <p className="resource-form-note">A capacidade e a alocação deste recurso serão definidas separadamente na Grade de capacitação.</p>
+      <p className="resource-form-note">As tarefas deste recurso serão vinculadas na aba Tarefas do Planejamento de recursos.</p>
     </CrudModal>}
-    {resourceToDelete && <CrudModal mode="delete" title="Excluir recurso" onClose={() => setResourceToDelete(null)} onSubmit={confirmDelete} actions={<><button type="button" className="secondary" onClick={() => setResourceToDelete(null)}>Cancelar</button><button type="submit" className="danger" disabled={saving}>Excluir</button></>}><p>Confirma a exclusão de <strong>{userLabel(resourceToDelete.usuario)}</strong>? Os vínculos simples com projetos serão removidos. Tarefas, capacidades, alocações ou custos vinculados devem ser removidos antes.</p></CrudModal>}
+    {resourcesToDelete.length > 0 && <CrudModal mode="delete" title={resourcesToDelete.length === 1 ? "Excluir recurso" : "Excluir recursos"} onClose={() => setResourcesToDelete([])} onSubmit={confirmDelete} actions={<><button type="button" className="secondary" onClick={() => setResourcesToDelete([])}>Cancelar</button><button type="submit" className="danger" disabled={saving}>Excluir</button></>}><p>{resourcesToDelete.length === 1 ? <>Confirma a exclusão de <strong>{userLabel(resourcesToDelete[0].usuario)}</strong>?</> : <>Confirma a exclusão de <strong>{resourcesToDelete.length} recursos selecionados</strong>?</>} Os vínculos simples com projetos serão removidos. Tarefas, execuções ou custos vinculados devem ser removidos antes.</p></CrudModal>}
   </section>;
 }

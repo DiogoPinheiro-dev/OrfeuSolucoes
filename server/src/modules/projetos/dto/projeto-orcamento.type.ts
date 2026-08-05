@@ -13,6 +13,7 @@ export class ProjetoOrcamentoProjetoType {
 @ObjectType()
 export class ProjetoRecursoResumoType {
   @Field() id!: string;
+  @Field() cadastroRecursoId!: string;
   @Field() usuarioId!: string;
   @Field() ativo!: boolean;
   @Field(() => Int) versao!: number;
@@ -22,7 +23,7 @@ export class ProjetoRecursoResumoType {
 @ObjectType()
 export class ProjetoCustoTarefaResumoType {
   @Field() id!: string;
-  @Field(() => String, { nullable: true }) projetoRecursoId?: string | null;
+  @Field(() => [String]) recursoIds!: string[];
   @Field() funcionalidade!: string;
   @Field(() => Int) estimativaMinutos!: number;
   @Field() valorHora!: string;
