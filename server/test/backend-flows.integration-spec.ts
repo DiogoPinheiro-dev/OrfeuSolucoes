@@ -5807,6 +5807,7 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
     }, admin));
     expect(alocacao.atividade).toBe('Implementar e homologar a integracao financeira');
     expect(alocacao.tarefaId).toBe(tarefaPlanejada.id);
+    expect(alocacao.alocacaoMinutos).toBe(2400);
     const planejamento = await world.projetoPlanejamentoRecursoService.painel(admin);
     const linhaPlanejada = expectDefined(planejamento.linhas.find((item) => item.id === vinculo.id));
     const linhaSecundaria = expectDefined(planejamento.linhas.find((item) => item.id === vinculoSecundario.id));
@@ -5814,10 +5815,10 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
     expect(linhaPlanejada.tarefas).toHaveLength(1);
     expect(linhaSecundaria.tarefas).toHaveLength(1);
     expect(linhaPlanejada.estimativaTotalMinutos).toBe(2400);
-    expect(linhaPlanejada.planejamentoTarefasMinutos).toBe(3000);
-    expect(linhaPlanejada.saldoTarefasMinutos).toBe(-600);
+    expect(linhaPlanejada.planejamentoTarefasMinutos).toBe(2400);
+    expect(linhaPlanejada.saldoTarefasMinutos).toBe(0);
     expect(linhaSecundaria.planejamentoTarefasMinutos).toBe(0);
-    expect(linhaPlanejada.possuiRisco).toBe(true);
+    expect(linhaPlanejada.possuiRisco).toBe(false);
     const tarefaMoedaDiferente = await world.projetoTarefaService.salvar({
       recursoIds: [recurso.id],
       funcionalidade: 'Revisar custos internacionais',

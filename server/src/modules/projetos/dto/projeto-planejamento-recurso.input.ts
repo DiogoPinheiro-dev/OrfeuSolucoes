@@ -10,7 +10,7 @@ export class SalvarPlanejamentoRecursoExecucaoInput {
   @Field() @IsUUID() tarefaId!: string;
   @Field() @IsDateString() inicioEm!: string;
   @Field() @IsDateString() fimEm!: string;
-  @Field(() => Int) @IsInt() @Min(1) alocacaoMinutos!: number;
+  @Field(() => Int, { nullable: true }) @IsOptional() @IsInt() @Min(1) alocacaoMinutos?: number | null;
 }
 
 @InputType()

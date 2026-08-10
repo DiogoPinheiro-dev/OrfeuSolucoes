@@ -1,0 +1,22 @@
+.resource-planning-execution {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.resource-planning-execution > .crud-shell .crud-table {
+  min-width: 1180px;
+}
+
+.resource-planning-execution-modal {
+  width: min(100%, 760px);
+}
+
+.resource-planning-field-error {
+  padding: 10px 12px;
+  border: 1px solid var(--danger);
+  border-radius: 10px;
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: .85rem;
+}

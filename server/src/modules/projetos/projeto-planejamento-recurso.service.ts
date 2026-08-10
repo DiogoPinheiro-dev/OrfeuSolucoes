@@ -69,11 +69,12 @@ export class ProjetoPlanejamentoRecursoService {
     this.periodo.assertPeriodoValido(inicio, fim);
     const tarefa = await this.resolveTarefa(contexto, vinculo.recursoId, input.tarefaId);
     const atividade = tarefa.funcionalidade;
+    const alocacaoMinutos = tarefa.estimativaMinutos;
     const record = await this.prisma.$transaction(async (tx) => {
       const saved = input.id
-        ? await this.updateVersioned(tx.projetoAlocacao, input.id, input.versao, { tarefaId: tarefa.id, atividade, inicioEm: inicio, fimEm: fim, alocacaoMinutos: input.alocacaoMinutos }, 'A execucao', { projetoId: input.projetoId, recursoId: input.projetoRecursoId })
-        : await tx.projetoAlocacao.create({ data: { empresaId: contexto.empresaId, projetoId: input.projetoId, recursoId: input.projetoRecursoId, tarefaId: tarefa.id, atividade, inicioEm: inicio, fimEm: fim, alocacaoMinutos: input.alocacaoMinutos } });
-      await this.audit(tx, contexto.empresaId, input.projetoId, user, 'ALOCACAO', saved.id, input.id ? 'ALTERADA' : 'CRIADA', { projetoRecursoId: input.projetoRecursoId, tarefaId: tarefa.id, atividade, alocacaoMinutos: input.alocacaoMinutos });
+        ? await this.updateVersioned(tx.projetoAlocacao, input.id, input.versao, { tarefaId: tarefa.id, atividade, inicioEm: inicio, fimEm: fim, alocacaoMinutos }, 'A execucao', { projetoId: input.projetoId, recursoId: input.projetoRecursoId })
+        : await tx.projetoAlocacao.create({ data: { empresaId: contexto.empresaId, projetoId: input.projetoId, recursoId: input.projetoRecursoId, tarefaId: tarefa.id, atividade, inicioEm: inicio, fimEm: fim, alocacaoMinutos } });
+      await this.audit(tx, contexto.empresaId, input.projetoId, user, 'ALOCACAO', saved.id, input.id ? 'ALTERADA' : 'CRIADA', { projetoRecursoId: input.projetoRecursoId, tarefaId: tarefa.id, atividade, estimativaMinutos: alocacaoMinutos });
       return saved;
     });
     return this.findExecucao(input.projetoRecursoId, record.id, user);
@@ -112,11 +113,16 @@ export class ProjetoPlanejamentoRecursoService {
   }
 
   private linha(item: any, tarefas: any[]) {
-    const alocacoes = (item.alocacoes ?? []).map((entry: any) => ({ ...entry, projetoRecursoId: entry.recursoId }));
+    const estimativas = new Map(tarefas.map((tarefa) => [tarefa.id, Number(tarefa.estimativaMinutos || 0)]));
+    const alocacoes = (item.alocacoes ?? []).map((entry: any) => ({
+      ...entry,
+      projetoRecursoId: entry.recursoId,
+      alocacaoMinutos: entry.tarefaId && estimativas.has(entry.tarefaId) ? estimativas.get(entry.tarefaId) : entry.alocacaoMinutos
+    }));
     const tarefasPlanejadas = tarefas.map((tarefa) => {
-      const planejadoMinutos = alocacoes
-        .filter((alocacao: any) => alocacao.tarefaId === tarefa.id)
-        .reduce((total: number, alocacao: any) => total + Number(alocacao.alocacaoMinutos || 0), 0);
+      const planejadoMinutos = alocacoes.some((alocacao: any) => alocacao.tarefaId === tarefa.id)
+        ? Number(tarefa.estimativaMinutos || 0)
+        : 0;
       return { ...tarefa, planejadoMinutos, saldoMinutos: Number(tarefa.estimativaMinutos || 0) - planejadoMinutos, sobreplanejada: planejadoMinutos > Number(tarefa.estimativaMinutos || 0) };
     });
     const estimativaTotalMinutos = tarefasPlanejadas.reduce((total, tarefa) => total + Number(tarefa.estimativaMinutos || 0), 0);

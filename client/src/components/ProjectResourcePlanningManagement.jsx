@@ -10,6 +10,7 @@ import ConfirmDialog from "./ConfirmDialog";
 import CrudGrid from "./CrudGrid";
 import { CrudModal } from "./CrudModal";
 import ProjectResourceManagement from "./ProjectResourceManagement";
+import ProjectResourceExecutionManagement from "./ProjectResourceExecutionManagement";
 import "../styles/crudGrid.css";
 import "../styles/projectResourcePlanning.css";
 
@@ -196,8 +197,9 @@ export default function ProjectResourcePlanningManagement() {
     {error && <div className="resource-planning-feedback error" role="alert">{error}</div>}
     {success && <div className="resource-planning-feedback success" role="status">{success}</div>}
     <nav className="resource-planning-view-tabs" aria-label="Visões do planejamento">
-      <button type="button" className={activeView === "cadastro" ? "active" : ""} onClick={() => selectActiveView("cadastro")}>Cadastro de recursos</button>
-      <button type="button" className={activeView === "tarefas" ? "active" : ""} onClick={() => selectActiveView("tarefas")}>Cadastro de tarefas</button>
+      <button type="button" className={activeView === "cadastro" ? "active" : ""} aria-current={activeView === "cadastro" ? "page" : undefined} onClick={() => selectActiveView("cadastro")}>Cadastro de recursos</button>
+      <button type="button" className={activeView === "tarefas" ? "active" : ""} aria-current={activeView === "tarefas" ? "page" : undefined} onClick={() => selectActiveView("tarefas")}>Cadastro de tarefas</button>
+      <button type="button" className={activeView === "planejamento" ? "active" : ""} aria-current={activeView === "planejamento" ? "page" : undefined} onClick={() => selectActiveView("planejamento")}>Cadastro de planejamento</button>
     </nav>
 
     {activeView === "cadastro" && <ProjectResourceManagement />}
@@ -250,6 +252,8 @@ export default function ProjectResourcePlanningManagement() {
         getRowLabel={(task) => task.funcionalidade}
       />
     </>}
+
+    {activeView === "planejamento" && <ProjectResourceExecutionManagement />}
 
     {taskEditor && <TaskEditor
       editor={taskEditor}

@@ -145,7 +145,9 @@ export class ProjetoTarefaService {
   }
 
   private tarefa(item: any) {
-    const planejadoMinutos = (item.alocacoes ?? []).reduce((total: number, alocacao: any) => total + Number(alocacao.alocacaoMinutos || 0), 0);
+    const planejadoMinutos = (item.alocacoes ?? []).length > 0
+      ? Number(item.estimativaMinutos || 0)
+      : 0;
     const recursos = (item.recursos ?? []).map((vinculo: any) => this.recursoVinculo(vinculo));
     return {
       ...item,

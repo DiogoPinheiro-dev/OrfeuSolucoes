@@ -372,7 +372,7 @@ export class ProjetoComunicacaoService {
   private fieldLabel(value: string): string {
     const labels: Record<string, string> = { conteudo: 'Conteúdo', saudePercebida: 'Saúde percebida', inicioEm: 'Início', fimEm: 'Fim',
       inicioPrevistoEm: 'Início previsto', fimPrevistoEm: 'Fim previsto', status: 'Status', situacao: 'Situação', responsavelId: 'Responsável',
-      alocacaoMinutos: 'Horas planejadas', quantidade: 'Quantidade', motivo: 'Motivo' };
+      alocacaoMinutos: 'Horas estimadas', estimativaMinutos: 'Horas estimadas', quantidade: 'Quantidade', motivo: 'Motivo' };
     if (labels[value]) return labels[value];
     const humanized = value.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ').trim();
     return humanized ? humanized.charAt(0).toUpperCase() + humanized.slice(1).toLowerCase() : value;
