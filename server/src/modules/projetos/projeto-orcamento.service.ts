@@ -55,7 +55,7 @@ export class ProjetoOrcamentoService {
     const orcamento = await this.orcamentoRascunho(input.projetoId);
     return this.prisma.$transaction(async (tx) => {
       const data = { nome: input.nome.trim(), valorPlanejado: this.money(input.valorPlanejado), valorComprometido: this.money(input.valorComprometido), valorRealizado: this.money(input.valorRealizado) };
-      const record = input.id ? await this.updateVersioned(tx.projetoOrcamentoCategoria, input.id, input.versao, data, 'A categoria', { orcamentoId: orcamento.id }) : await tx.projetoOrcamentoCategoria.create({ data: { ...data, empresaId: contexto.empresaId, projetoId: input.projetoId, orcamentoId: orcamento.id } });
+      const record = input.id ? await this.updateVersioned(tx.projetoOrcamentoCategoria, input.id, input.versao, data, 'O cadastro da categoria', { orcamentoId: orcamento.id }) : await tx.projetoOrcamentoCategoria.create({ data: { ...data, empresaId: contexto.empresaId, projetoId: input.projetoId, orcamentoId: orcamento.id } });
       await this.audit(tx, contexto, user, 'ORCAMENTO_CATEGORIA', record.id, input.id ? 'ALTERADA' : 'CRIADA', data); return record;
     }).then((item) => this.categoria(item));
   }

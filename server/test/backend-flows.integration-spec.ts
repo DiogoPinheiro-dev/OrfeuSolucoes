@@ -5919,6 +5919,427 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
     expect(reaprovado.status).toBe('APROVADO');
     await expect(world.projetoOrcamentoService.reabrir({ projetoId: projeto.id, id: reaprovado.id, versao: reaberto.versao }, admin)).rejects.toThrow('alterado por outra pessoa');
   });
+  it('executa a jornada integrada do projeto do backlog ao planejamento financeiro', async () => {
+    const { world, admin } = await bootstrapBaseWorld();
+
+    const projeto = await world.projetosService.create({
+      chave: 'ACE',
+      nome: 'Aceite integrado do projeto',
+      objetivo: 'Validar em conjunto os modulos operacionais entregues',
+      metodologia: 'SCRUM' as any,
+      situacao: 'PLANEJADO' as any,
+      responsavelId: admin.sub,
+      inicioPrevistoEm: '2026-10-01',
+      fimPrevistoEm: '2026-12-31'
+    }, admin);
+
+    let itemEntrega = await world.projetosService.createItem({
+      projetoId: projeto.id,
+      tipo: ProjetoItemTipo.HISTORIA,
+      titulo: 'Entregar o incremento integrado',
+      prioridade: ProjetoItemPrioridade.ALTA,
+      responsavelId: admin.sub,
+      inicioPrevistoEm: '2026-10-01',
+      fimPrevistoEm: '2026-10-10',
+      estimativaMinutos: 480
+    }, admin);
+    const itemPosterior = await world.projetosService.createItem({
+      projetoId: projeto.id,
+      tipo: ProjetoItemTipo.TAREFA,
+      titulo: 'Homologar o incremento integrado',
+      prioridade: ProjetoItemPrioridade.MEDIA,
+      responsavelId: admin.sub,
+      inicioPrevistoEm: '2026-10-11',
+      fimPrevistoEm: '2026-10-20',
+      estimativaMinutos: 240
+    }, admin);
+
+    const backlogInicial = await world.projetosService.itens(admin, {
+      projetoId: projeto.id,
+      pagina: 1,
+      limite: 20
+    });
+    await world.projetosService.moverItemBacklog({
+      itemId: itemPosterior.id,
+      backlogVersao: backlogInicial.backlogVersao,
+      direcao: ProjetoBacklogDirecao.TOPO
+    }, admin);
+    const backlogPriorizado = await world.projetosService.itens(admin, {
+      projetoId: projeto.id,
+      pagina: 1,
+      limite: 20
+    });
+    expect(backlogPriorizado.items.map((item) => item.id)).toEqual([itemPosterior.id, itemEntrega.id]);
+
+    let sprint = await world.projetoSprintService.create({
+      projetoId: projeto.id,
+      nome: 'Sprint de aceite integrado',
+      objetivo: 'Concluir o incremento principal',
+      inicioPrevistoEm: '2026-10-01',
+      fimPrevistoEm: '2026-10-14'
+    }, admin);
+    sprint = await world.projetoSprintService.adicionarItem({
+      sprintId: sprint.id,
+      itemId: itemEntrega.id,
+      versao: sprint.versao
+    }, admin);
+    sprint = await world.projetoSprintService.iniciar({ id: sprint.id, versao: sprint.versao }, admin);
+    itemEntrega = await world.projetosService.alterarStatusItem({
+      id: itemEntrega.id,
+      versao: itemEntrega.versao,
+      status: ProjetoItemStatus.EM_ANDAMENTO
+    }, admin);
+    itemEntrega = await world.projetosService.alterarStatusItem({
+      id: itemEntrega.id,
+      versao: itemEntrega.versao,
+      status: ProjetoItemStatus.CONCLUIDO
+    }, admin);
+    sprint = await world.projetoSprintService.concluir({
+      id: sprint.id,
+      versao: sprint.versao,
+      destinoIncompletos: ProjetoSprintDestinoIncompletos.BACKLOG,
+      resultado: 'Incremento principal concluido.'
+    }, admin);
+    expect(sprint.status).toBe(ProjetoSprintStatus.CONCLUIDA);
+    expect(sprint.itensConcluidos).toBe(1);
+
+    const marco = await world.projetoMarcoEntregaService.createMarco({
+      projetoId: projeto.id,
+      nome: 'Aceite operacional',
+      descricao: 'Marco da jornada integrada',
+      responsavelId: admin.sub,
+      status: 'PLANEJADO' as any,
+      dataPrevistaEm: '2026-10-20',
+      itemIds: [itemEntrega.id]
+    }, admin);
+    const entrega = await world.projetoMarcoEntregaService.createEntrega({
+      projetoId: projeto.id,
+      nome: 'Incremento integrado',
+      resultadoEsperado: 'Fluxo operacional validado',
+      criteriosAceite: 'Todos os modulos respondem no mesmo projeto',
+      responsavelId: admin.sub,
+      status: 'PLANEJADA' as any,
+      inicioPrevistoEm: '2026-10-01',
+      fimPrevistoEm: '2026-10-20',
+      marcoId: marco.id,
+      itemIds: [itemEntrega.id]
+    }, admin);
+    const dependencia = await world.projetoCronogramaService.createDependencia({
+      projetoId: projeto.id,
+      bloqueadorId: itemEntrega.id,
+      bloqueadoId: itemPosterior.id
+    }, admin);
+    const cronograma = await world.projetoCronogramaService.painel({ projetoId: projeto.id }, admin);
+    expect(cronograma.dependencias.map((item) => item.id)).toContain(dependencia.id);
+    expect(cronograma.elementos.map((item) => item.id)).toEqual(expect.arrayContaining([itemEntrega.id, itemPosterior.id, marco.id, entrega.id]));
+
+    const atualizacao = await world.projetoComunicacaoService.createAtualizacao({
+      projetoId: projeto.id,
+      conteudo: 'Jornada integrada pronta para validacao financeira',
+      saudePercebida: 'EM_DIA' as any
+    }, admin);
+    const comentario = await world.projetoComunicacaoService.createComentario({
+      projetoId: projeto.id,
+      itemId: itemEntrega.id,
+      conteudo: 'Incremento concluido na sprint de aceite.'
+    }, admin);
+
+    const recurso = await world.projetoRecursoService.salvarRecurso({
+      usuarioId: admin.sub,
+      projetoIds: [projeto.id],
+      ativo: true
+    }, admin);
+    const vinculo = expectDefined(recurso.projetos.find((item: any) => item.projetoId === projeto.id));
+    const tarefa = await world.projetoTarefaService.salvar({
+      recursoIds: [recurso.id],
+      funcionalidade: 'Executar o aceite integrado',
+      estimativaMinutos: 480,
+      valorHora: '100',
+      moeda: 'BRL',
+      ativo: true
+    }, admin);
+    const execucao = await world.projetoPlanejamentoRecursoService.salvarExecucao({
+      projetoId: projeto.id,
+      projetoRecursoId: vinculo.id,
+      tarefaId: tarefa.id,
+      inicioEm: '2026-10-01',
+      fimEm: '2026-10-10'
+    }, admin);
+    expect(execucao.alocacaoMinutos).toBe(tarefa.estimativaMinutos);
+
+    let orcamento = await world.projetoOrcamentoService.salvarOrcamento({ projetoId: projeto.id, moeda: 'BRL' }, admin);
+    const categoria = await world.projetoOrcamentoService.salvarCategoria({
+      projetoId: projeto.id,
+      nome: 'Equipe do aceite',
+      valorPlanejado: '800',
+      valorComprometido: '800',
+      valorRealizado: '0'
+    }, admin);
+    const custo = await world.projetoOrcamentoService.salvarCusto({
+      projetoId: projeto.id,
+      categoriaId: categoria.id,
+      tipo: 'RECURSO' as any,
+      descricao: 'Execucao do aceite integrado',
+      recursoId: vinculo.id,
+      tarefaId: tarefa.id,
+      quantidadeMinutos: tarefa.estimativaMinutos,
+      taxaHora: '100',
+      valorPlanejado: '0',
+      valorComprometido: '800',
+      valorRealizado: '0'
+    }, admin);
+    orcamento = await world.projetoOrcamentoService.aprovar({ projetoId: projeto.id, id: orcamento.id, versao: orcamento.versao }, admin);
+    expect(orcamento.status).toBe('APROVADO');
+    expect(custo.tarefaId).toBe(tarefa.id);
+
+    const painelMarcos = await world.projetoMarcoEntregaService.painel(projeto.id, false, admin);
+    const painelPlanejamento = await world.projetoPlanejamentoRecursoService.painel(admin);
+    const painelOrcamento = await world.projetoOrcamentoService.painel(projeto.id, admin);
+    const painelComunicacao = await world.projetoComunicacaoService.painel(projeto.id, admin, { pagina: 1, limite: 20 });
+    expect(painelMarcos.marcos.map((item) => item.id)).toContain(marco.id);
+    expect(painelMarcos.entregas.map((item) => item.id)).toContain(entrega.id);
+    expect(painelPlanejamento.linhas.find((item) => item.id === vinculo.id)?.planejamentoTarefasMinutos).toBe(480);
+    expect(painelOrcamento.financeiro?.status).toBe('APROVADO');
+    expect(painelComunicacao.feed.map((item) => item.entidadeId)).toEqual(expect.arrayContaining([atualizacao.id, comentario.id]));
+  });
+
+  it('isola planejamento e financeiro por empresa e preserva consulta ao arquivar', async () => {
+    const { world, admin } = await bootstrapBaseWorld();
+    const projeto = await world.projetosService.create({
+      chave: 'SEC',
+      nome: 'Seguranca operacional integrada',
+      metodologia: 'SCRUM' as any,
+      situacao: 'PLANEJADO' as any,
+      responsavelId: admin.sub,
+      inicioPrevistoEm: '2026-11-01',
+      fimPrevistoEm: '2026-11-30'
+    }, admin);
+    const recurso = await world.projetoRecursoService.salvarRecurso({
+      usuarioId: admin.sub,
+      projetoIds: [projeto.id],
+      ativo: true
+    }, admin);
+    const vinculo = expectDefined(recurso.projetos.find((item: any) => item.projetoId === projeto.id));
+    const tarefa = await world.projetoTarefaService.salvar({
+      recursoIds: [recurso.id],
+      funcionalidade: 'Validar isolamento e arquivamento',
+      estimativaMinutos: 360,
+      valorHora: '120',
+      moeda: 'BRL',
+      ativo: true
+    }, admin);
+    const execucao = await world.projetoPlanejamentoRecursoService.salvarExecucao({
+      projetoId: projeto.id,
+      projetoRecursoId: vinculo.id,
+      tarefaId: tarefa.id,
+      inicioEm: '2026-11-03',
+      fimEm: '2026-11-07'
+    }, admin);
+    const execucaoAtualizada = await world.projetoPlanejamentoRecursoService.salvarExecucao({
+      id: execucao.id,
+      versao: execucao.versao,
+      projetoId: projeto.id,
+      projetoRecursoId: vinculo.id,
+      tarefaId: tarefa.id,
+      inicioEm: '2026-11-04',
+      fimEm: '2026-11-08'
+    }, admin);
+    await expect(world.projetoPlanejamentoRecursoService.salvarExecucao({
+      id: execucao.id,
+      versao: execucao.versao,
+      projetoId: projeto.id,
+      projetoRecursoId: vinculo.id,
+      tarefaId: tarefa.id,
+      inicioEm: '2026-11-05',
+      fimEm: '2026-11-09'
+    }, admin)).rejects.toThrow('alterado por outra pessoa');
+
+    const orcamento = await world.projetoOrcamentoService.salvarOrcamento({ projetoId: projeto.id, moeda: 'BRL' }, admin);
+    const categoria = await world.projetoOrcamentoService.salvarCategoria({
+      projetoId: projeto.id,
+      nome: 'Seguranca',
+      valorPlanejado: '720',
+      valorComprometido: '360',
+      valorRealizado: '0'
+    }, admin);
+    const categoriaAtualizada = await world.projetoOrcamentoService.salvarCategoria({
+      projetoId: projeto.id,
+      id: categoria.id,
+      versao: categoria.versao,
+      nome: 'Seguranca e conformidade',
+      valorPlanejado: '720',
+      valorComprometido: '360',
+      valorRealizado: '0'
+    }, admin);
+    await expect(world.projetoOrcamentoService.salvarCategoria({
+      projetoId: projeto.id,
+      id: categoria.id,
+      versao: categoria.versao,
+      nome: 'Atualizacao concorrente',
+      valorPlanejado: '720',
+      valorComprometido: '360',
+      valorRealizado: '0'
+    }, admin)).rejects.toThrow('alterado por outra pessoa');
+
+    const empresaExterna = await world.prisma.empresa.create({ data: { nome: 'Empresa externa da seguranca', acessoProjetos: true } });
+    const usuarioExterno = { ...admin, empresaId: empresaExterna.id };
+    await expect(world.projetoPlanejamentoRecursoService.salvarExecucao({
+      projetoId: projeto.id,
+      projetoRecursoId: vinculo.id,
+      tarefaId: tarefa.id,
+      inicioEm: '2026-11-10',
+      fimEm: '2026-11-11'
+    }, usuarioExterno)).rejects.toThrow('Projeto nao encontrado');
+    expect((await world.projetoPlanejamentoRecursoService.painel(usuarioExterno)).linhas).toEqual([]);
+    await expect(world.projetoOrcamentoService.painel(projeto.id, usuarioExterno)).rejects.toThrow('Projeto nao encontrado');
+
+    await world.projetosService.arquivar(projeto.id, admin);
+    await expect(world.projetoPlanejamentoRecursoService.salvarExecucao({
+      id: execucaoAtualizada.id,
+      versao: execucaoAtualizada.versao,
+      projetoId: projeto.id,
+      projetoRecursoId: vinculo.id,
+      tarefaId: tarefa.id,
+      inicioEm: '2026-11-06',
+      fimEm: '2026-11-10'
+    }, admin)).rejects.toThrow('projeto arquivado esta disponivel somente para consulta');
+    await expect(world.projetoOrcamentoService.salvarCategoria({
+      projetoId: projeto.id,
+      id: categoriaAtualizada.id,
+      versao: categoriaAtualizada.versao,
+      nome: categoriaAtualizada.nome,
+      valorPlanejado: categoriaAtualizada.valorPlanejado,
+      valorComprometido: categoriaAtualizada.valorComprometido,
+      valorRealizado: categoriaAtualizada.valorRealizado
+    }, admin)).rejects.toThrow('projeto arquivado esta disponivel somente para consulta');
+
+    const planejamentoArquivado = await world.projetoPlanejamentoRecursoService.painel(admin);
+    const orcamentoArquivado = await world.projetoOrcamentoService.painel(projeto.id, admin);
+    expect(planejamentoArquivado.linhas.find((item) => item.id === vinculo.id)?.alocacoes.map((item: any) => item.id)).toContain(execucao.id);
+    expect(orcamentoArquivado.financeiro?.id).toBe(orcamento.id);
+    expect(orcamentoArquivado.financeiro?.categorias.map((item: any) => item.id)).toContain(categoria.id);
+    expect(orcamentoArquivado.permissoes.podeGerenciarFinanceiro).toBe(false);
+    expect(orcamentoArquivado.permissoes.podeAprovarOrcamento).toBe(false);
+  });
+
+  it('vincula muitos recursos a uma tarefa com uma unica insercao em lote', async () => {
+    const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
+    const usuarios = Array.from({ length: 25 }, (_, index) => ({
+      id: randomUUID(),
+      nome: `Recurso de volume ${index + 1}`,
+      login: `recurso.volume.${index + 1}`,
+      email: `recurso.volume.${index + 1}@orfeu.test`,
+      senhaHash: 'hash'
+    }));
+    await world.prisma.usuario.createMany({ data: usuarios });
+    const recursos = usuarios.map((usuario) => ({
+      id: randomUUID(),
+      empresaId: empresaInicialId,
+      usuarioId: usuario.id,
+      ativo: true
+    }));
+    await world.prisma.recurso.createMany({ data: recursos });
+    const createManySpy = jest.spyOn(world.prisma.projetoTarefaRecurso, 'createMany');
+
+    const tarefa = await world.projetoTarefaService.salvar({
+      recursoIds: recursos.map((recurso) => recurso.id),
+      funcionalidade: 'Executar cadastro em lote sem N mais um',
+      estimativaMinutos: 600,
+      valorHora: '100',
+      moeda: 'BRL',
+      ativo: true
+    }, admin);
+
+    expect(tarefa.recursos).toHaveLength(25);
+    expect(createManySpy).toHaveBeenCalledTimes(1);
+    expect((expectDefined(createManySpy.mock.calls[0])[0] as any).data).toHaveLength(25);
+    createManySpy.mockRestore();
+  });
+
+  it('mantem backlog, Gantt e feed paginados sem N mais um com volume representativo', async () => {
+    const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
+    const projeto = await world.prisma.projeto.create({
+      data: {
+        empresaId: empresaInicialId,
+        chave: 'VOL',
+        nome: 'Volume operacional representativo',
+        responsavelId: admin.sub,
+        criadoPorId: admin.sub,
+        backlogVersao: 300
+      }
+    });
+    const itemIds = Array.from({ length: 300 }, () => randomUUID());
+    const inicio = new Date('2026-12-01T00:00:00.000Z');
+    const fim = new Date('2026-12-31T00:00:00.000Z');
+    await world.prisma.projetoItem.createMany({
+      data: itemIds.map((id, index) => ({
+        id,
+        empresaId: empresaInicialId,
+        projetoId: projeto.id,
+        numero: index + 1,
+        chave: `VOL-${index + 1}`,
+        titulo: `Item de volume ${index + 1}`,
+        tipo: 'TAREFA',
+        status: index % 3 === 0 ? 'CONCLUIDO' : 'ABERTO',
+        prioridade: 'MEDIA',
+        autorId: admin.sub,
+        ordemBacklog: index + 1,
+        inicioPrevistoEm: inicio,
+        fimPrevistoEm: fim,
+        estimativaMinutos: 60
+      }))
+    });
+    await world.prisma.projetoItemDependencia.createMany({
+      data: itemIds.slice(1).map((id, index) => ({
+        id: randomUUID(),
+        empresaId: empresaInicialId,
+        projetoId: projeto.id,
+        bloqueadorId: itemIds[index],
+        bloqueadoId: id,
+        criadoPorId: admin.sub
+      }))
+    });
+    await world.prisma.projetoEvento.createMany({
+      data: itemIds.map((id, index) => ({
+        id: randomUUID(),
+        empresaId: empresaInicialId,
+        projetoId: projeto.id,
+        usuarioId: admin.sub,
+        entidade: 'ITEM',
+        entidadeId: id,
+        evento: 'CRIADO',
+        criadoEm: new Date(inicio.getTime() + index * 1000)
+      }))
+    });
+
+    const itemFindManySpy = jest.spyOn(world.prisma.projetoItem, 'findMany');
+    const dependencyFindManySpy = jest.spyOn(world.prisma.projetoItemDependencia, 'findMany');
+    const eventFindManySpy = jest.spyOn(world.prisma.projetoEvento, 'findMany');
+    const startedAt = Date.now();
+    const backlog = await world.projetosService.itens(admin, { projetoId: projeto.id, pagina: 3, limite: 100 });
+    const backlogElapsed = Date.now() - startedAt;
+    const ganttStartedAt = Date.now();
+    const gantt = await world.projetoCronogramaService.painel({ projetoId: projeto.id }, admin);
+    const ganttElapsed = Date.now() - ganttStartedAt;
+    const feedStartedAt = Date.now();
+    const comunicacao = await world.projetoComunicacaoService.painel(projeto.id, admin, { pagina: 60, limite: 5 });
+    const feedElapsed = Date.now() - feedStartedAt;
+
+    expect(backlog).toMatchObject({ total: 300, pagina: 3, limite: 100, totalPaginas: 3 });
+    expect(backlog.items).toHaveLength(100);
+    expect(gantt.elementos).toHaveLength(300);
+    expect(gantt.dependencias).toHaveLength(299);
+    expect(comunicacao).toMatchObject({ feedTotal: 300, feedPagina: 60, feedLimite: 5, feedTotalPaginas: 60 });
+    expect(comunicacao.feed).toHaveLength(5);
+    expect(itemFindManySpy).toHaveBeenCalledTimes(4);
+    expect(dependencyFindManySpy).toHaveBeenCalledTimes(1);
+    expect(eventFindManySpy).toHaveBeenCalledTimes(2);
+    expect(Math.max(backlogElapsed, ganttElapsed, feedElapsed)).toBeLessThan(5000);
+    itemFindManySpy.mockRestore();
+    dependencyFindManySpy.mockRestore();
+    eventFindManySpy.mockRestore();
+  });
+
   it('impede excluir usuario com vinculos e informa todas as dependencias sem remover empresas', async () => {
     const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
     const usuario = await world.usersService.create({

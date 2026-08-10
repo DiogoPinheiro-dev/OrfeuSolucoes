@@ -89,10 +89,11 @@ export class ProjetoTarefaService {
         where: { tarefaId: tarefa.id, recursoId: { notIn: recursoIds } }
       });
       const existentes = new Set(atual?.recursos.map((item) => item.recursoId) ?? []);
-      for (const recursoId of recursoIds) {
-        if (!existentes.has(recursoId)) {
-          await tx.projetoTarefaRecurso.create({ data: { empresaId, tarefaId: tarefa.id, recursoId } });
-        }
+      const novosRecursoIds = recursoIds.filter((recursoId) => !existentes.has(recursoId));
+      if (novosRecursoIds.length) {
+        await tx.projetoTarefaRecurso.createMany({
+          data: novosRecursoIds.map((recursoId) => ({ empresaId, tarefaId: tarefa.id, recursoId }))
+        });
       }
 
       const taxaAlterada = !atual || !new Prisma.Decimal(atual.valorHora).equals(valorHora) || atual.moeda !== moeda;
