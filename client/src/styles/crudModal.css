@@ -8,7 +8,6 @@
   background: rgba(14, 32, 50, 0.35);
   backdrop-filter: blur(4px);
 }
-
 .crud-modal {
   width: min(100%, 720px);
   max-height: calc(100vh - 36px);
@@ -18,23 +17,34 @@
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
 }
-
+.crud-modal--warning {
+  border-color: color-mix(in srgb, #b7791f 42%, var(--line));
+}
+.crud-modal--destructive {
+  border-color: color-mix(in srgb, var(--danger-text) 42%, var(--line));
+}
 .crud-modal-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 16px;
   padding: 20px 22px 14px;
   border-bottom: 1px solid var(--line);
+  background: var(--surface-white);
 }
-
 .crud-modal-header span {
   color: var(--detail-accent-text);
   font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
-
+.crud-modal-header h3 {
+  margin: 4px 0 0;
+  color: var(--primary);
+}
 .crud-modal-header button {
   width: 36px;
   height: 36px;
@@ -43,8 +53,26 @@
   background: var(--surface-soft);
   color: var(--primary);
   cursor: pointer;
+  font-size: 1.35rem;
 }
-
+.crud-modal-header button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 70%, transparent);
+}
+.crud-modal-header button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.crud-modal-form {
+  min-width: 0;
+}
+.crud-modal-error {
+  margin: 14px 22px 0;
+  padding: 11px 13px;
+  border: 1px solid color-mix(in srgb, var(--danger-text) 30%, var(--line));
+  border-radius: 10px;
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
 .crud-modal-tabs {
   display: flex;
   align-items: stretch;
@@ -59,16 +87,13 @@
   scrollbar-color: var(--line-strong) transparent;
   -webkit-overflow-scrolling: touch;
 }
-
 .crud-modal-tabs::-webkit-scrollbar {
   height: 6px;
 }
-
 .crud-modal-tabs::-webkit-scrollbar-thumb {
   border-radius: 999px;
   background: var(--line-strong);
 }
-
 .crud-modal-tabs button {
   flex: 1 0 max(180px, calc((100% - 8px) / 2));
   min-height: 42px;
@@ -81,32 +106,35 @@
   font-weight: 700;
   white-space: nowrap;
 }
-
 .crud-modal-tabs button.active {
   border-color: var(--button-primary-border);
   background: var(--button-primary-bg);
   color: var(--button-primary-text);
 }
-
 .crud-modal-tabs button:hover,
 .crud-modal-tabs button:focus-visible {
   border-color: var(--button-primary-border);
-  outline: none;
+  outline: 3px solid color-mix(in srgb, var(--accent) 70%, transparent);
+  outline-offset: -3px;
 }
-
 .crud-modal-tab-panel {
   display: grid;
   gap: 14px;
 }
-
+.crud-modal-tab-panel:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 4px;
+}
 .crud-modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
   flex-wrap: wrap;
-  margin-top: 8px;
+  min-width: 0;
+  margin: 8px 0 0;
+  padding: 0;
+  border: 0;
 }
-
 .crud-modal-actions button {
   padding: 11px 16px;
   border-radius: var(--button-radius);
@@ -115,20 +143,22 @@
   color: var(--primary);
   cursor: pointer;
 }
-
 .crud-modal-actions button[type="submit"] {
   background: var(--button-primary-bg);
   color: var(--button-primary-text);
   border-color: var(--button-primary-border);
 }
-
 .crud-modal-actions button:hover,
 .crud-modal-actions button:focus-visible {
   background: var(--button-primary-hover-bg);
   color: var(--button-primary-hover-text);
-  outline: none;
+  outline: 3px solid color-mix(in srgb, var(--accent) 70%, transparent);
 }
-
+.crud-modal-actions:disabled,
+.crud-modal-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
 .crud-inline-action {
   min-height: 40px;
   padding: 10px 14px;
@@ -140,7 +170,6 @@
   font-weight: 700;
   white-space: nowrap;
 }
-
 .crud-inline-action:hover,
 .crud-inline-action:focus-visible {
   background: var(--button-primary-hover-bg);
@@ -148,42 +177,50 @@
   border-color: var(--button-primary-hover-border);
   outline: none;
 }
-
 .crud-inline-action:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }
-
 .crud-inline-action--danger {
   border-color: var(--danger-text);
   background: var(--danger-bg);
   color: var(--danger-text);
 }
-
 .crud-inline-action--danger:hover,
 .crud-inline-action--danger:focus-visible {
   border-color: var(--danger-text);
   background: var(--danger-text);
   color: var(--button-primary-text);
 }
-
 .form-field-error {
   color: var(--danger-text);
   font-size: 0.78rem;
   font-weight: 700;
   line-height: 1.25;
 }
-
 .crud-modal [aria-invalid="true"] {
   border-color: var(--danger-text) !important;
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger-text) 14%, transparent);
 }
-
 .crud-modal .user-form-field-label:has(.form-field-error) {
   width: 100%;
   flex-wrap: wrap;
 }
-
 .crud-modal label:has(> .form-field-error) {
   align-items: start;
+}
+@media (max-width: 560px) {
+  .crud-modal-backdrop {
+    padding: 10px;
+  }
+  .crud-modal {
+    max-height: calc(100vh - 20px);
+    border-radius: 16px;
+  }
+  .crud-modal-header {
+    padding: 16px;
+  }
+  .crud-modal-actions button {
+    flex: 1 1 140px;
+  }
 }

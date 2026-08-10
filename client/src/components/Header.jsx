@@ -7,6 +7,7 @@ import { useHubNavigation } from "../hooks/useHubNavigation";
 import { useAuth } from "../hooks/useAuth";
 import CustomDropdown from "./CustomDropdown";
 import ChamadoNotifications from "./ChamadoNotifications";
+import ConfirmDialog from "./ConfirmDialog";
 
 import logo from "../assets/logo.ico";
 
@@ -31,6 +32,7 @@ export default function Header() {
     const [expandedSolutions, setExpandedSolutions] = useState({});
     const [isHubSidebarCollapsed, setIsHubSidebarCollapsed] = useState(false);
     const [selectedCompanyId, setSelectedCompanyId] = useState(user?.empresa?.id ? String(user.empresa.id) : "");
+    const [companySwitchError, setCompanySwitchError] = useState("");
     const { solutions: hubSolutions } = useHubNavigation();
 
     const isHubView = location.pathname.startsWith("/hub");
@@ -108,7 +110,7 @@ export default function Header() {
             navigate("/hub");
         } catch (error) {
             setSelectedCompanyId(user?.empresa?.id ? String(user.empresa.id) : "");
-            window.alert(error.message || "Não foi possível trocar a empresa ativa.");
+            setCompanySwitchError(error.message || "Não foi possível trocar a empresa ativa.");
         }
     };
 
@@ -407,6 +409,7 @@ export default function Header() {
                     )}
                 </div>
             </header>
+            <ConfirmDialog open={Boolean(companySwitchError)} title="Não foi possível trocar a empresa" message={companySwitchError} confirmLabel="Fechar" showCancel={false} variant="warning" onConfirm={() => setCompanySwitchError("")} onCancel={() => setCompanySwitchError("")} />
 
             {open && (
                 <div

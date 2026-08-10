@@ -1694,3 +1694,99 @@ export const EXCLUIR_PROJETO_ORCAMENTO_CATEGORIA_MUTATION = gql`mutation Excluir
 export const EXCLUIR_PROJETO_CUSTO_MUTATION = gql`mutation ExcluirProjetoCusto($input: ExcluirProjetoOrcamentoItemInput!) { excluirProjetoCusto(input: $input) }`;
 export const APROVAR_PROJETO_ORCAMENTO_MUTATION = gql`mutation AprovarProjetoOrcamento($input: AprovarProjetoOrcamentoInput!) { aprovarProjetoOrcamento(input: $input) { id status versao } }`;
 export const REABRIR_PROJETO_ORCAMENTO_MUTATION = gql`mutation ReabrirProjetoOrcamento($input: AprovarProjetoOrcamentoInput!) { reabrirProjetoOrcamento(input: $input) { id status versao } }`;
+
+const PROJETO_SPRINT_ITEM_FIELDS = gql`
+  fragment ProjetoSprintItemFields on ProjetoSprintItemType {
+    vinculoId itemId chave titulo tipo status prioridade estimativaMinutos
+    escopoInicial adicionadoAposInicio retiradoAposInicio incluidoEm retiradoEm
+    statusAoIniciar estimativaAoIniciar statusAoEncerrar estimativaAoEncerrar concluidoNoSprint
+  }
+`;
+const PROJETO_SPRINT_FIELDS = gql`
+  fragment ProjetoSprintFields on ProjetoSprintType {
+    id projetoId nome objetivo status inicioPrevistoEm fimPrevistoEm inicioRealEm fimRealEm
+    resultado versao escopoInicialItens escopoInicialEstimativa itensConcluidos estimativaConcluida
+    itensAdicionadosAposInicio itensRetiradosAposInicio totalItens totalConcluidos progressoPercentual
+    itens { ...ProjetoSprintItemFields } criadoEm atualizadoEm
+  }
+  ${PROJETO_SPRINT_ITEM_FIELDS}
+`;
+export const PROJETO_SPRINTS_QUERY = gql`
+  query ProjetoSprints($projetoId: String!) {
+    projetoSprints(projetoId: $projetoId) {
+      planejadas { ...ProjetoSprintFields } ativa { ...ProjetoSprintFields } historico { ...ProjetoSprintFields }
+      candidatos { id chave titulo tipo status prioridade estimativaMinutos }
+      permissoes { podeVisualizar podeCriar podeEditar podePlanejar podeIniciar podeConcluir podeCancelar }
+    }
+  }
+  ${PROJETO_SPRINT_FIELDS}
+`;
+export const CREATE_PROJETO_SPRINT_MUTATION = gql`mutation CreateProjetoSprint($input: CreateProjetoSprintInput!) { createProjetoSprint(input: $input) { ...ProjetoSprintFields } } ${PROJETO_SPRINT_FIELDS}`;
+export const UPDATE_PROJETO_SPRINT_MUTATION = gql`mutation UpdateProjetoSprint($input: UpdateProjetoSprintInput!) { updateProjetoSprint(input: $input) { ...ProjetoSprintFields } } ${PROJETO_SPRINT_FIELDS}`;
+export const ADICIONAR_ITEM_PROJETO_SPRINT_MUTATION = gql`mutation AdicionarItemProjetoSprint($input: AlterarEscopoProjetoSprintInput!) { adicionarItemProjetoSprint(input: $input) { ...ProjetoSprintFields } } ${PROJETO_SPRINT_FIELDS}`;
+export const REMOVER_ITEM_PROJETO_SPRINT_MUTATION = gql`mutation RemoverItemProjetoSprint($input: AlterarEscopoProjetoSprintInput!) { removerItemProjetoSprint(input: $input) { ...ProjetoSprintFields } } ${PROJETO_SPRINT_FIELDS}`;
+export const INICIAR_PROJETO_SPRINT_MUTATION = gql`mutation IniciarProjetoSprint($input: TransicionarProjetoSprintInput!) { iniciarProjetoSprint(input: $input) { ...ProjetoSprintFields } } ${PROJETO_SPRINT_FIELDS}`;
+export const CONCLUIR_PROJETO_SPRINT_MUTATION = gql`mutation ConcluirProjetoSprint($input: ConcluirProjetoSprintInput!) { concluirProjetoSprint(input: $input) { ...ProjetoSprintFields } } ${PROJETO_SPRINT_FIELDS}`;
+export const CANCELAR_PROJETO_SPRINT_MUTATION = gql`mutation CancelarProjetoSprint($input: TransicionarProjetoSprintInput!) { cancelarProjetoSprint(input: $input) { ...ProjetoSprintFields } } ${PROJETO_SPRINT_FIELDS}`;
+
+const PROJETO_COMPROMISSO_ITEM_FIELDS = gql`fragment ProjetoCompromissoItemFields on ProjetoCompromissoItemType { id chave titulo status estimativaMinutos }`;
+const PROJETO_MARCO_FIELDS = gql`
+  fragment ProjetoMarcoFields on ProjetoMarcoType {
+    id projetoId nome descricao status dataPrevistaEm dataRealizadaEm versao atrasado progressoPercentual
+    itensSemEstimativa arquivadoEm criadoEm atualizadoEm responsavel { id nome login email }
+    itens { ...ProjetoCompromissoItemFields }
+  }
+  ${PROJETO_COMPROMISSO_ITEM_FIELDS}
+`;
+const PROJETO_ENTREGA_FIELDS = gql`
+  fragment ProjetoEntregaFields on ProjetoEntregaType {
+    id projetoId nome resultadoEsperado criteriosAceite status inicioPrevistoEm fimPrevistoEm concluidaEm
+    marcoId marcoNome versao atrasada progressoPercentual itensSemEstimativa arquivadoEm criadoEm atualizadoEm
+    responsavel { id nome login email } itens { ...ProjetoCompromissoItemFields }
+  }
+  ${PROJETO_COMPROMISSO_ITEM_FIELDS}
+`;
+export const PROJETO_MARCOS_ENTREGAS_QUERY = gql`
+  query ProjetoMarcosEntregas($projetoId: String!, $incluirArquivados: Boolean) {
+    projetoMarcosEntregas(projetoId: $projetoId, incluirArquivados: $incluirArquivados) {
+      marcos { ...ProjetoMarcoFields } entregas { ...ProjetoEntregaFields }
+      itensDisponiveis { ...ProjetoCompromissoItemFields } responsaveis { id nome login email }
+      permissoes { podeVisualizar podeCriar podeEditar podeArquivar podeReativar }
+    }
+  }
+  ${PROJETO_MARCO_FIELDS}
+  ${PROJETO_ENTREGA_FIELDS}
+`;
+export const CREATE_PROJETO_MARCO_MUTATION = gql`mutation CreateProjetoMarco($input: CreateProjetoMarcoInput!) { createProjetoMarco(input: $input) { ...ProjetoMarcoFields } } ${PROJETO_MARCO_FIELDS}`;
+export const UPDATE_PROJETO_MARCO_MUTATION = gql`mutation UpdateProjetoMarco($input: UpdateProjetoMarcoInput!) { updateProjetoMarco(input: $input) { ...ProjetoMarcoFields } } ${PROJETO_MARCO_FIELDS}`;
+export const CREATE_PROJETO_ENTREGA_MUTATION = gql`mutation CreateProjetoEntrega($input: CreateProjetoEntregaInput!) { createProjetoEntrega(input: $input) { ...ProjetoEntregaFields } } ${PROJETO_ENTREGA_FIELDS}`;
+export const UPDATE_PROJETO_ENTREGA_MUTATION = gql`mutation UpdateProjetoEntrega($input: UpdateProjetoEntregaInput!) { updateProjetoEntrega(input: $input) { ...ProjetoEntregaFields } } ${PROJETO_ENTREGA_FIELDS}`;
+export const ARQUIVAR_PROJETO_MARCO_MUTATION = gql`mutation ArquivarProjetoMarco($input: VersionarProjetoCompromissoInput!) { arquivarProjetoMarco(input: $input) { id } }`;
+export const REATIVAR_PROJETO_MARCO_MUTATION = gql`mutation ReativarProjetoMarco($input: VersionarProjetoCompromissoInput!) { reativarProjetoMarco(input: $input) { id } }`;
+export const ARQUIVAR_PROJETO_ENTREGA_MUTATION = gql`mutation ArquivarProjetoEntrega($input: VersionarProjetoCompromissoInput!) { arquivarProjetoEntrega(input: $input) { id } }`;
+export const REATIVAR_PROJETO_ENTREGA_MUTATION = gql`mutation ReativarProjetoEntrega($input: VersionarProjetoCompromissoInput!) { reativarProjetoEntrega(input: $input) { id } }`;
+
+const PROJETO_CRONOGRAMA_ITEM_REFERENCIA_FIELDS = gql`fragment ProjetoCronogramaItemReferenciaFields on ProjetoCronogramaItemReferenciaType { id chave titulo status inicioPrevistoEm fimPrevistoEm arquivadoEm }`;
+const PROJETO_ITEM_DEPENDENCIA_FIELDS = gql`
+  fragment ProjetoItemDependenciaFields on ProjetoItemDependenciaType {
+    id projetoId versao arquivadoEm criadoEm atualizadoEm
+    bloqueador { ...ProjetoCronogramaItemReferenciaFields } bloqueado { ...ProjetoCronogramaItemReferenciaFields }
+  }
+  ${PROJETO_CRONOGRAMA_ITEM_REFERENCIA_FIELDS}
+`;
+const PROJETO_CRONOGRAMA_ELEMENTO_FIELDS = gql`fragment ProjetoCronogramaElementoFields on ProjetoCronogramaElementoType { id tipo titulo chave status grupo inicioEm fimEm versao progressoPercentual semPeriodo bloqueado riscoAtraso arquivado itemIds }`;
+export const PROJETO_CRONOGRAMA_QUERY = gql`
+  query ProjetoCronograma($filtro: ProjetoCronogramaFiltroInput!) {
+    projetoCronograma(filtro: $filtro) {
+      inicioEm fimEm permissoes { podeVisualizar podeGerenciarDependencias podeEditarDatas }
+      elementos { ...ProjetoCronogramaElementoFields } dependencias { ...ProjetoItemDependenciaFields }
+      inconsistencias { codigo severidade mensagem elementoIds }
+    }
+  }
+  ${PROJETO_CRONOGRAMA_ELEMENTO_FIELDS}
+  ${PROJETO_ITEM_DEPENDENCIA_FIELDS}
+`;
+export const CREATE_PROJETO_ITEM_DEPENDENCIA_MUTATION = gql`mutation CreateProjetoItemDependencia($input: CreateProjetoItemDependenciaInput!) { createProjetoItemDependencia(input: $input) { ...ProjetoItemDependenciaFields } } ${PROJETO_ITEM_DEPENDENCIA_FIELDS}`;
+export const ARQUIVAR_PROJETO_ITEM_DEPENDENCIA_MUTATION = gql`mutation ArquivarProjetoItemDependencia($input: VersionarProjetoItemDependenciaInput!) { arquivarProjetoItemDependencia(input: $input) { ...ProjetoItemDependenciaFields } } ${PROJETO_ITEM_DEPENDENCIA_FIELDS}`;
+export const REATIVAR_PROJETO_ITEM_DEPENDENCIA_MUTATION = gql`mutation ReativarProjetoItemDependencia($input: VersionarProjetoItemDependenciaInput!) { reativarProjetoItemDependencia(input: $input) { ...ProjetoItemDependenciaFields } } ${PROJETO_ITEM_DEPENDENCIA_FIELDS}`;
+export const UPDATE_PROJETO_CRONOGRAMA_ITEM_DATAS_MUTATION = gql`mutation UpdateProjetoCronogramaItemDatas($input: UpdateProjetoCronogramaItemDatasInput!) { updateProjetoCronogramaItemDatas(input: $input) { ...ProjetoCronogramaElementoFields } } ${PROJETO_CRONOGRAMA_ELEMENTO_FIELDS}`;

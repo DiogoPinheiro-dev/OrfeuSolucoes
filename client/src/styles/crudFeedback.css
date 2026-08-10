@@ -1,0 +1,147 @@
+.crud-feedback-state,
+.crud-access-state {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: start;
+  gap: 11px;
+  padding: 13px 15px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--primary);
+}
+.crud-feedback-state > svg,
+.crud-access-state > svg {
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+}
+.crud-feedback-state strong,
+.crud-access-state strong,
+.crud-empty-state strong {
+  display: block;
+  color: inherit;
+}
+.crud-feedback-state-content:empty {
+  display: none;
+}
+.crud-feedback-state--error {
+  border-color: color-mix(in srgb, var(--danger-text) 30%, var(--line));
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+.crud-feedback-state--success {
+  border-color: color-mix(in srgb, var(--success-text) 30%, var(--line));
+  background: var(--success-soft);
+  color: var(--success-text);
+}
+.crud-feedback-state--warning {
+  border-color: color-mix(in srgb, var(--warning-text) 30%, var(--line));
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+.crud-feedback-state--info {
+  border-color: color-mix(in srgb, var(--secondary) 24%, var(--line));
+  background: var(--detail-accent-bg);
+  color: var(--primary);
+}
+.crud-feedback-state-action {
+  align-self: center;
+}
+.crud-feedback-state-dismiss {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: currentColor;
+  cursor: pointer;
+}
+.crud-feedback-state--compact,
+.crud-access-state--compact {
+  padding: 10px 12px;
+  font-size: 0.88rem;
+}
+.crud-loading-state,
+.crud-empty-state {
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  min-height: 180px;
+  padding: 28px;
+  color: var(--muted);
+  text-align: center;
+}
+.crud-loading-state svg {
+  width: 34px;
+  height: 34px;
+  color: var(--button-primary-bg);
+  animation: crud-shared-spin 0.8s linear infinite;
+}
+.crud-loading-state--overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  min-height: 220px;
+  background: color-mix(in srgb, var(--surface-white) 82%, transparent);
+  backdrop-filter: blur(2px);
+}
+.crud-loading-state--compact,
+.crud-empty-state--compact {
+  min-height: 76px;
+  padding: 18px;
+}
+.crud-empty-state {
+  border: 1px dashed var(--line-strong);
+}
+.crud-empty-state > svg {
+  width: 30px;
+  height: 30px;
+}
+.crud-empty-state p,
+.crud-access-state p {
+  margin: 4px 0 0;
+  color: inherit;
+  line-height: 1.5;
+}
+.crud-empty-state-action {
+  margin-top: 4px;
+}
+.crud-access-state {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+.crud-access-state--forbidden {
+  border-color: color-mix(in srgb, var(--danger-text) 24%, var(--line));
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+.crud-access-state--readonly {
+  border-color: color-mix(in srgb, var(--secondary) 24%, var(--line));
+  background: var(--surface-muted);
+  color: var(--primary);
+}
+@keyframes crud-shared-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .crud-loading-state svg {
+    animation-duration: 1.8s;
+  }
+}
+@media (max-width: 560px) {
+  .crud-feedback-state {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .crud-feedback-state-action {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+  .crud-feedback-state-action > * {
+    width: 100%;
+  }
+}

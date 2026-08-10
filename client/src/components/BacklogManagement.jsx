@@ -16,6 +16,7 @@ import {
 } from "../../services/Projetos/BacklogService";
 import "../styles/backlogManagement.css";
 import BacklogItemModal from "./BacklogItemModal";
+import { useConfirmAction } from "../hooks/useConfirmAction";
 
 const TIPOS = { HISTORIA: "História", TAREFA: "Tarefa", BUG: "Bug", MELHORIA: "Melhoria" };
 const PRIORIDADES = { BAIXA: "Baixa", MEDIA: "Média", ALTA: "Alta", CRITICA: "Crítica" };
@@ -79,6 +80,7 @@ function applyLocalMove(rows, itemId, direction) {
 }
 
 export default function BacklogManagement() {
+    const { requestConfirmation, confirmationDialog } = useConfirmAction();
     const [searchParams, setSearchParams] = useSearchParams();
     const linkedProjectId = searchParams.get("projetoId") || "";
     const linkedItemId = searchParams.get("itemId") || "";
@@ -304,7 +306,12 @@ export default function BacklogManagement() {
 
     const toggleArchive = async (item) => {
         const action = item.arquivadoEm ? "reativar" : "arquivar";
-        if (!window.confirm(`Deseja ${action} ${item.chave}?`)) return;
+        if (!await requestConfirmation({
+            title: item.arquivadoEm ? "Reativar demanda" : "Arquivar demanda",
+            message: `Deseja ${action} ${item.chave}?`,
+            confirmLabel: item.arquivadoEm ? "Reativar" : "Arquivar",
+            variant: item.arquivadoEm ? "normal" : "warning"
+        })) return;
         setLoading(true);
         setError("");
         try {
@@ -648,6 +655,7 @@ export default function BacklogManagement() {
                 />
             )}
             {modal?.loading && <div className="backlog-overlay-state" role="status">Carregando demanda...</div>}
+            {confirmationDialog}
         </div>
     );
 }

@@ -8,7 +8,6 @@
   background: rgba(14, 32, 50, 0.38);
   backdrop-filter: blur(4px);
 }
-
 .confirm-dialog {
   width: min(100%, 420px);
   padding: 22px;
@@ -17,27 +16,39 @@
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
 }
-
+.confirm-dialog--warning {
+  border-color: color-mix(in srgb, #b7791f 48%, var(--line));
+}
+.confirm-dialog--destructive {
+  border-color: color-mix(in srgb, var(--danger-text) 48%, var(--line));
+}
 .confirm-dialog h3 {
   margin: 0 0 12px;
   color: var(--primary);
   font-size: 1.15rem;
 }
-
-.confirm-dialog p {
+.confirm-dialog-message {
   margin: 0;
   color: var(--muted);
   line-height: 1.6;
 }
-
+.confirm-dialog-error {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
 .confirm-dialog-actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
   flex-wrap: wrap;
-  margin-top: 20px;
+  min-width: 0;
+  margin: 20px 0 0;
+  padding: 0;
+  border: 0;
 }
-
 .confirm-dialog-actions button {
   min-width: 96px;
   padding: 10px 16px;
@@ -47,25 +58,30 @@
   color: var(--primary);
   cursor: pointer;
 }
-
-.confirm-dialog-actions button:last-child {
+.confirm-dialog-actions .confirm-dialog-confirm {
   background: var(--button-primary-bg);
   border-color: var(--button-primary-border);
   color: var(--button-primary-text);
 }
-
+.confirm-dialog--warning .confirm-dialog-confirm {
+  background: #8a5a12;
+  border-color: #8a5a12;
+}
+.confirm-dialog--destructive .confirm-dialog-confirm {
+  background: var(--danger-text);
+  border-color: var(--danger-text);
+}
 .confirm-dialog-actions button:hover,
 .confirm-dialog-actions button:focus-visible {
   background: var(--button-primary-hover-bg);
   color: var(--button-primary-hover-text);
-  outline: none;
+  outline: 3px solid color-mix(in srgb, var(--accent) 70%, transparent);
 }
-
+.confirm-dialog-actions:disabled,
 .confirm-dialog-actions button:disabled {
   cursor: not-allowed;
   opacity: 0.65;
 }
-
 @media (max-width: 420px) {
   .confirm-dialog-actions button {
     width: 100%;

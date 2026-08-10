@@ -14,6 +14,7 @@ import {
     uploadProjetoAnexos
 } from "../../services/Projetos/ComunicacaoService";
 import { CrudModal } from "./CrudModal";
+import { useConfirmAction } from "../hooks/useConfirmAction";
 import "../styles/crudGrid.css";
 import "../styles/projectCommunication.css";
 
@@ -26,6 +27,7 @@ const detailLabel = (value) => { const labels = { ATUALIZACAO: "Atualização", 
 const sizeLabel = (bytes) => bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 
 export default function ProjectCommunicationManagement() {
+    const { requestConfirmation, confirmationDialog } = useConfirmAction();
     const [projects, setProjects] = useState([]);
     const [projectId, setProjectId] = useState("");
     const [panel, setPanel] = useState(emptyPanel);
@@ -110,14 +112,24 @@ export default function ProjectCommunicationManagement() {
     };
 
     const removeComment = async (record) => {
-        if (!window.confirm("Excluir este comentário?")) return;
+        if (!await requestConfirmation({
+            title: "Excluir comentário",
+            message: "Excluir este comentário?",
+            confirmLabel: "Excluir",
+            variant: "destructive"
+        })) return;
         setSaving(true); setError("");
         try { await excluirProjetoComentario({ id: record.id, versao: record.versao }); setSuccess("Comentário excluído."); await reload(projectId); }
         catch (removeError) { setError(removeError.message); }
         finally { setSaving(false); }
     };
     const removeAttachment = async (attachment) => {
-        if (!window.confirm(`Excluir o anexo "${attachment.nomeOriginal}"?`)) return;
+        if (!await requestConfirmation({
+            title: "Excluir anexo",
+            message: `Excluir o anexo "${attachment.nomeOriginal}"?`,
+            confirmLabel: "Excluir",
+            variant: "destructive"
+        })) return;
         setSaving(true); setError("");
         try { await excluirProjetoAnexo(projectId, attachment.id); setSuccess("Anexo excluído."); await reload(projectId); }
         catch (removeError) { setError(removeError.message); }
@@ -214,6 +226,7 @@ export default function ProjectCommunicationManagement() {
                     </div>
                 </footer>
             )}
+            {confirmationDialog}
         </section>
     );
 }

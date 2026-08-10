@@ -20,6 +20,7 @@ import {
     updateCronogramaItemDatas
 } from "../../services/Projetos/CronogramaService";
 import { getBacklogProjetos } from "../../services/Projetos/BacklogService";
+import { useConfirmAction } from "../hooks/useConfirmAction";
 import "../styles/cronogramaManagement.css";
 
 const DAY = 86400000;
@@ -119,6 +120,7 @@ function DateEditor({ item, saving, error, onClose, onSubmit }) {
 }
 
 export default function CronogramaManagement() {
+    const { requestConfirmation, confirmationDialog } = useConfirmAction();
     const navigate = useNavigate();
     const [projects, setProjects] = useState([]);
     const [projectId, setProjectId] = useState("");
@@ -377,9 +379,14 @@ export default function CronogramaManagement() {
                             <button
                                 type="button"
                                 disabled={!panel.permissoes.podeGerenciarDependencias}
-                                onClick={() => {
+                                onClick={async () => {
                                     const action = dependency.arquivadoEm ? "reativar" : "arquivar";
-                                    if (!window.confirm(`Deseja ${action} esta dependência?`)) return;
+                                    if (!await requestConfirmation({
+                                        title: dependency.arquivadoEm ? "Reativar dependência" : "Arquivar dependência",
+                                        message: `Deseja ${action} esta dependência?`,
+                                        confirmLabel: dependency.arquivadoEm ? "Reativar" : "Arquivar",
+                                        variant: dependency.arquivadoEm ? "normal" : "warning"
+                                    })) return;
                                     run(() => archiveDependencia({ id: dependency.id, versao: dependency.versao }, !!dependency.arquivadoEm), `Dependência ${dependency.arquivadoEm ? "reativada" : "arquivada"}.`, false);
                                 }}
                                 title={dependency.arquivadoEm ? "Reativar" : "Arquivar"}
@@ -394,6 +401,7 @@ export default function CronogramaManagement() {
 
             {modal?.type === "dependency" && <DependencyEditor items={itemCandidates} saving={saving} error={modalError} onClose={() => setModal(null)} onSubmit={(form) => run(() => createDependencia({ projetoId: projectId, ...form }), "Dependência incluída com sucesso.")} />}
             {modal?.type === "dates" && <DateEditor item={modal.item} saving={saving} error={modalError} onClose={() => setModal(null)} onSubmit={(form) => run(() => updateCronogramaItemDatas({ id: modal.item.id, versao: modal.item.versao, inicioPrevistoEm: form.inicioPrevistoEm || null, fimPrevistoEm: form.fimPrevistoEm || null }), "Período atualizado com sucesso.")} />}
+            {confirmationDialog}
         </section>
     );
 }

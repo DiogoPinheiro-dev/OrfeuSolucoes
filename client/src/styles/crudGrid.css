@@ -83,6 +83,43 @@
   cursor: not-allowed;
 }
 
+.crud-grid-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  border-bottom: 1px solid color-mix(in srgb, var(--danger-text) 25%, var(--line));
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+.crud-grid-error button,
+.crud-pagination button {
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid var(--button-secondary-border);
+  border-radius: 9px;
+  background: var(--button-secondary-bg);
+  color: var(--primary);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.crud-grid-error button:focus-visible,
+.crud-pagination button:focus-visible,
+.crud-table tbody tr:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 70%, transparent);
+  outline-offset: -3px;
+}
+
+.crud-grid-error button:disabled,
+.crud-pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .crud-table-wrap {
   width: 100%;
   overflow: auto;
@@ -175,7 +212,6 @@
   color: var(--muted);
 }
 
-
 .crud-description {
   margin: 5px 0 0;
   color: var(--muted);
@@ -213,6 +249,7 @@
 .crud-shell--compact .crud-table {
   min-width: 720px;
 }
+
 @media (max-width: 760px) {
   .crud-header {
     flex-direction: column;
@@ -240,4 +277,21 @@
   padding: 12px 18px;
   border-top: 1px solid var(--line);
   background: var(--surface-soft);
+}
+
+.crud-pagination-actions {
+  display: flex;
+  gap: 8px;
+}
+
+@media (max-width: 760px) {
+  .crud-grid-error,
+  .crud-pagination {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .crud-pagination-actions button {
+    flex: 1 1 0;
+  }
 }

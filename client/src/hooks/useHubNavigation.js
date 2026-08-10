@@ -4,45 +4,38 @@ import { getMyHubNavigation } from "../../services/Solucoes/SolucaoService";
 import { normalizeSolutions } from "../auth/hubConfig";
 import { HUB_NAVIGATION_CHANGED_EVENT } from "../auth/hubNavigationEvents";
 import { useAuth } from "./useAuth";
+import { useLatestRequest } from "./useLatestRequest";
 
 export function useHubNavigation() {
     const { isAuthenticated, user } = useAuth();
     const [solutions, setSolutions] = useState([]);
     const [loading, setLoading] = useState(isAuthenticated);
     const [error, setError] = useState("");
+    const navigationRequest = useLatestRequest();
 
     useEffect(() => {
-        let active = true;
-
         if (!isAuthenticated) {
+            navigationRequest.invalidate();
             setSolutions([]);
             setLoading(false);
             setError("");
-            return () => {
-                active = false;
-            };
+            return undefined;
         }
 
-        const loadNavigation = async () => {
+        const loadNavigation = () => {
             setLoading(true);
             setError("");
 
-            try {
-                const navigation = await getMyHubNavigation();
-
-                if (active) {
+            return navigationRequest.run(getMyHubNavigation, {
+                onSuccess: (navigation) => {
                     setSolutions(normalizeSolutions(navigation));
-                }
-            } catch (loadError) {
-                if (active) {
+                },
+                onError: (loadError) => {
                     setError(loadError.message || "Não foi possível carregar o hub.");
                     setSolutions([]);
-                }
-            } finally {
-                if (active) {
-                    setLoading(false);
-                }
-            }
+                },
+                onSettled: () => setLoading(false)
+            });
         };
 
         const handleHubNavigationChanged = () => {
@@ -53,10 +46,10 @@ export function useHubNavigation() {
         window.addEventListener(HUB_NAVIGATION_CHANGED_EVENT, handleHubNavigationChanged);
 
         return () => {
-            active = false;
+            navigationRequest.invalidate();
             window.removeEventListener(HUB_NAVIGATION_CHANGED_EVENT, handleHubNavigationChanged);
         };
-    }, [isAuthenticated, user?.empresa?.id]);
+    }, [isAuthenticated, navigationRequest, user?.empresa?.id]);
 
     return { error, loading, solutions };
 }

@@ -25,6 +25,7 @@ import {
 import "../styles/crudGrid.css";
 import "../styles/crudModal.css";
 import "../styles/sprintManagement.css";
+import { useConfirmAction } from "../hooks/useConfirmAction";
 
 const STATUS = {
     ABERTO: "Aberto",
@@ -254,6 +255,7 @@ function ScopeList({ sprint, canPlan, onRemove }) {
 }
 
 export default function SprintManagement() {
+    const { requestConfirmation, confirmationDialog } = useConfirmAction();
     const [projects, setProjects] = useState([]);
     const [projectId, setProjectId] = useState("");
     const [panel, setPanel] = useState({
@@ -432,10 +434,13 @@ export default function SprintManagement() {
                                         <button
                                             className="danger"
                                             type="button"
-                                            onClick={() => window.confirm(`Cancelar a sprint ${sprint.nome}?`) && run(
-                                                () => cancelSprint({ id: sprint.id, versao: sprint.versao }),
-                                                "Sprint cancelada."
-                                            )}
+                                            onClick={async () => {
+                                                if (!await requestConfirmation({ title: "Cancelar sprint", message: `Cancelar a sprint ${sprint.nome}?`, confirmLabel: "Cancelar sprint", variant: "destructive" })) return;
+                                                run(
+                                                    () => cancelSprint({ id: sprint.id, versao: sprint.versao }),
+                                                    "Sprint cancelada."
+                                                );
+                                            }}
                                         >
                                             <FaBan /> Cancelar
                                         </button>
@@ -520,10 +525,13 @@ export default function SprintManagement() {
                                     <button
                                         className="danger"
                                         type="button"
-                                        onClick={() => window.confirm(`Cancelar a sprint ${panel.ativa.nome}?`) && run(
-                                            () => cancelSprint({ id: panel.ativa.id, versao: panel.ativa.versao }),
-                                            "Sprint cancelada."
-                                        )}
+                                        onClick={async () => {
+                                            if (!await requestConfirmation({ title: "Cancelar sprint", message: `Cancelar a sprint ${panel.ativa.nome}?`, confirmLabel: "Cancelar sprint", variant: "destructive" })) return;
+                                            run(
+                                                () => cancelSprint({ id: panel.ativa.id, versao: panel.ativa.versao }),
+                                                "Sprint cancelada."
+                                            );
+                                        }}
                                     >
                                         <FaBan /> Cancelar
                                     </button>
@@ -675,6 +683,7 @@ export default function SprintManagement() {
                     )}
                 />
             )}
+            {confirmationDialog}
         </section>
     );
 }

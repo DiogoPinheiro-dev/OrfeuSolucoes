@@ -48,6 +48,10 @@
     --success-soft: #dff3e8;
     --success-text: #1e6845;
     --success-on-dark: #eefbf4;
+    --warning-bg: #fff4d6;
+    --warning-text: #704400;
+    --info-bg: #e9f1f8;
+    --info-text: #16324b;
     --lm-bg: #ffffff;
     --lm-overlay: rgba(20, 40, 65, 0.45);
     --lm-border: rgba(42, 74, 110, 0.1);
@@ -81,6 +85,12 @@ button:focus-visible {
     outline: 3px solid color-mix(in srgb, var(--accent-green) 30%, transparent);
     outline-offset: 2px;
 }
+
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--accent-green) 42%, transparent);
+    outline-offset: 2px;
+}
+
 
 button:disabled {
     cursor: not-allowed;
@@ -248,4 +258,13 @@ button:disabled {
     border-radius: 10px;
     background: var(--danger-bg);
     color: var(--danger-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }

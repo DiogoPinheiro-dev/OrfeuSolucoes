@@ -9,6 +9,7 @@ import {
 } from "../../services/Chamados/ChamadoService";
 import { canUseFeatureAction } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
+import { useConfirmAction } from "../hooks/useConfirmAction";
 
 import "../styles/chamados.css";
 
@@ -21,6 +22,7 @@ const emptyAccount = {
 };
 
 export default function GoogleEmailManagement({ permissions }) {
+  const { requestConfirmation, confirmationDialog } = useConfirmAction();
   const { user } = useAuth();
   const [accounts, setAccounts] = useState([]);
   const [accountForm, setAccountForm] = useState(emptyAccount);
@@ -219,10 +221,14 @@ export default function GoogleEmailManagement({ permissions }) {
                     className="button-standard"
                     type="button"
                     onClick={async () => {
-                      if (confirm("Desativar esta conta?")) {
-                        await deleteGoogleEmailConta(item.id);
-                        await load();
-                      }
+                      if (!await requestConfirmation({
+                        title: "Desativar conta Google",
+                        message: `Desativar a conta ${item.emailGoogle || item.nome}?`,
+                        confirmLabel: "Desativar",
+                        variant: "destructive"
+                      })) return;
+                      await deleteGoogleEmailConta(item.id);
+                      await load();
                     }}
                   >
                     Desativar
@@ -234,6 +240,7 @@ export default function GoogleEmailManagement({ permissions }) {
           {!accounts.length && <p>Nenhuma conta Google cadastrada.</p>}
         </div>
       </section>
+      {confirmationDialog}
     </div>
   );
 }
