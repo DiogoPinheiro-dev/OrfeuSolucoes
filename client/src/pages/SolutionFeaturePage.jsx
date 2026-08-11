@@ -1,35 +1,37 @@
+import { lazy, Suspense } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 
 import { FEATURE_COMPONENT_REGISTRY, canAccessSolution, getFeatureBySlug, getSolutionBySlug } from "../auth/hubConfig";
-import CategoriaChamadoManagement from "../components/CategoriaChamadoManagement";
-import ChamadoConfiguracaoManagement from "../components/ChamadoConfiguracaoManagement";
-import ChamadoCreate from "../components/ChamadoCreate";
-import ChamadoDashboard from "../components/ChamadoDashboard";
-import ChamadoRelatorio from "../components/ChamadoRelatorio";
-import ChamadosArquivados from "../components/ChamadosArquivados";
-import CompanyManagement from "../components/CompanyManagement";
-import FeatureManagement from "../components/FeatureManagement";
 import Footer from "../components/Footer";
-import GroupManagement from "../components/GroupManagement";
 import Header from "../components/Header";
-import MeusChamados from "../components/MeusChamados";
-import ResponsavelChamadoManagement from "../components/ResponsavelChamadoManagement";
-import PainelAtendimento from "../components/PainelAtendimento";
-import ProjectManagement from "../components/ProjectManagement";
-import BacklogManagement from "../components/BacklogManagement";
-import SprintManagement from "../components/SprintManagement";
-import MarcoEntregaManagement from "../components/MarcoEntregaManagement";
-import CronogramaManagement from "../components/CronogramaManagement";
-import ProjectCommunicationManagement from "../components/ProjectCommunicationManagement";
-import ProjectBudgetManagement from "../components/ProjectBudgetManagement";
-import ProjectResourcePlanningManagement from "../components/ProjectResourcePlanningManagement";
-import SolutionManagement from "../components/SolutionManagement";
-import SlaChamadoManagement from "../components/SlaChamadoManagement";
-import GoogleEmailManagement from "../components/GoogleEmailManagement";
-import UserManagement from "../components/UserManagement";
 import { useHubNavigation } from "../hooks/useHubNavigation";
 
 import "../styles/workspace.css";
+
+const CategoriaChamadoManagement = lazy(() => import("../components/CategoriaChamadoManagement"));
+const ChamadoConfiguracaoManagement = lazy(() => import("../components/ChamadoConfiguracaoManagement"));
+const ChamadoCreate = lazy(() => import("../components/ChamadoCreate"));
+const ChamadoDashboard = lazy(() => import("../components/ChamadoDashboard"));
+const ChamadoRelatorio = lazy(() => import("../components/ChamadoRelatorio"));
+const ChamadosArquivados = lazy(() => import("../components/ChamadosArquivados"));
+const CompanyManagement = lazy(() => import("../components/CompanyManagement"));
+const FeatureManagement = lazy(() => import("../components/FeatureManagement"));
+const GroupManagement = lazy(() => import("../components/GroupManagement"));
+const MeusChamados = lazy(() => import("../components/MeusChamados"));
+const PainelAtendimento = lazy(() => import("../components/PainelAtendimento"));
+const ResponsavelChamadoManagement = lazy(() => import("../components/ResponsavelChamadoManagement"));
+const ProjectManagement = lazy(() => import("../components/ProjectManagement"));
+const BacklogManagement = lazy(() => import("../components/BacklogManagement"));
+const SprintManagement = lazy(() => import("../components/SprintManagement"));
+const MarcoEntregaManagement = lazy(() => import("../components/MarcoEntregaManagement"));
+const CronogramaManagement = lazy(() => import("../components/CronogramaManagement"));
+const ProjectCommunicationManagement = lazy(() => import("../components/ProjectCommunicationManagement"));
+const ProjectBudgetManagement = lazy(() => import("../components/ProjectBudgetManagement"));
+const ProjectResourcePlanningManagement = lazy(() => import("../components/ProjectResourcePlanningManagement"));
+const SolutionManagement = lazy(() => import("../components/SolutionManagement"));
+const SlaChamadoManagement = lazy(() => import("../components/SlaChamadoManagement"));
+const GoogleEmailManagement = lazy(() => import("../components/GoogleEmailManagement"));
+const UserManagement = lazy(() => import("../components/UserManagement"));
 
 const FEATURE_COMPONENTS = {
     "user-management": UserManagement,
@@ -58,6 +60,15 @@ const FEATURE_COMPONENTS = {
     "project-resource-planning": ProjectResourcePlanningManagement,
     "project-budget": ProjectBudgetManagement
 };
+
+function FeatureLoadingFallback() {
+    return (
+        <section className="workspace-panel workspace-panel-wide" aria-live="polite" aria-busy="true">
+            <span className="workspace-label">Hub</span>
+            <h2>Carregando funcionalidade...</h2>
+        </section>
+    );
+}
 
 export default function SolutionFeaturePage() {
     const { slug, areaSlug } = useParams();
@@ -115,7 +126,9 @@ export default function SolutionFeaturePage() {
 
                     <section className="workspace-feature-crud">
                         {FeatureComponent ? (
-                            <FeatureComponent permissions={area} />
+                            <Suspense fallback={<FeatureLoadingFallback />}>
+                                <FeatureComponent permissions={area} />
+                            </Suspense>
                         ) : (
                             <section className="workspace-panel workspace-panel-wide">
                                 <span className="workspace-label">{area.label}</span>

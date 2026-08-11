@@ -464,6 +464,7 @@ export default function ResponsavelChamadoManagement({ permissions }) {
                         { key: "ativo", label: "Ativo", render: (responsavel) => booleanLabel(responsavel.ativo) }
                     ]}
                     rows={filteredResponsaveis}
+                    getRowLabel={responsavelLabel}
                     selectedId={selectedId}
                     onSelect={setSelectedId}
                     selectedIds={selectedIds}

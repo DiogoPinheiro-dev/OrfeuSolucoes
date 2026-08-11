@@ -4,9 +4,13 @@ export function useLatestRequest() {
     const mountedRef = useRef(true);
     const requestIdRef = useRef(0);
 
-    useEffect(() => () => {
-        mountedRef.current = false;
-        requestIdRef.current += 1;
+    useEffect(() => {
+        mountedRef.current = true;
+
+        return () => {
+            mountedRef.current = false;
+            requestIdRef.current += 1;
+        };
     }, []);
 
     const invalidate = useCallback(() => {

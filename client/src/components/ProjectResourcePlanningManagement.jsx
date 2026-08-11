@@ -244,10 +244,10 @@ export default function ProjectResourcePlanningManagement() {
         </>}
         emptyMessage={loading ? "Carregando tarefas..." : "Nenhuma tarefa encontrada para os filtros selecionados."}
         busy={loading}
-        canCreate={panel.permissoes?.podeIncluir && writableTaskResources.length > 0}
-        canEdit={!!selectedTask && panel.permissoes?.podeAlterar}
+        canCreate={panel.permissoes?.podeIncluir === true && writableTaskResources.length > 0}
+        canEdit={!!selectedTask && panel.permissoes?.podeAlterar === true}
         canView={!!selectedTask}
-        canDelete={panel.permissoes?.podeExcluir}
+        canDelete={panel.permissoes?.podeExcluir === true}
         isRowSelectable={(task) => Number(task.planejadoMinutos) === 0}
         getRowLabel={(task) => task.funcionalidade}
       />

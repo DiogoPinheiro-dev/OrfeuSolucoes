@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createSolucao, deleteSolucao, getSolucoes, updateSolucao } from "../../services/Solucoes/SolucaoService";
 import { canUseFeatureAction } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
 import { useFormFieldErrors } from "../hooks/useFormFieldErrors";
+import { useLatestRequest } from "../hooks/useLatestRequest";
 import ConfirmDialog from "./ConfirmDialog";
 import FormFieldError from "./FormFieldError";
 import CrudGrid from "./CrudGrid";
@@ -69,6 +70,7 @@ export default function SolutionManagement({ permissions }) {
     const [modalMode, setModalMode] = useState(null);
     const [form, setForm] = useState(initialForm);
     const [pendingDelete, setPendingDelete] = useState(null);
+    const solutionsRequest = useLatestRequest();
     const {
         applyError: applyFormError,
         clearErrors: clearFormErrors,
@@ -82,22 +84,21 @@ export default function SolutionManagement({ permissions }) {
         fieldOrder: SOLUTION_FIELD_ORDER,
         fieldMatchers: SOLUTION_FIELD_MATCHERS
     });
-    const loadSolucoes = async () => {
+    const loadSolucoes = useCallback(() => {
         setError("");
         setLoading(true);
 
-        try {
-            setSolucoes(await getSolucoes());
-        } catch (loadError) {
-            setError(loadError.message || "Nao foi possivel carregar solucoes.");
-        } finally {
-            setLoading(false);
-        }
-    };
+        return solutionsRequest.run(getSolucoes, {
+            onSuccess: setSolucoes,
+            onError: (loadError) => setError(loadError.message || "Nao foi possivel carregar solucoes."),
+            onSettled: () => setLoading(false)
+        });
+    }, [solutionsRequest]);
 
     useEffect(() => {
         void loadSolucoes();
-    }, []);
+        return solutionsRequest.invalidate;
+    }, [loadSolucoes, solutionsRequest]);
 
     const filteredSolucoes = useMemo(() => {
         const term = search.toLowerCase().trim();
@@ -232,11 +233,7 @@ export default function SolutionManagement({ permissions }) {
 
     return (
         <>
-            {error && <div className="user-management-error" role="alert">{error}</div>}
-            {loading ? (
-                <div className="user-management-loading">Carregando solucoes...</div>
-            ) : (
-                <CrudGrid
+            <CrudGrid
                     title="Cadastro de solucoes"
                     columns={[
                         { key: "nome", label: "Nome", render: (solucao) => solucao.nome || "-" },
@@ -247,7 +244,7 @@ export default function SolutionManagement({ permissions }) {
                         { key: "somenteAdminSistema", label: "Admin", render: (solucao) => booleanLabel(solucao.somenteAdminSistema) },
                         { key: "funcionalidades", label: "Funcionalidades", render: (solucao) => solucao.funcionalidades?.length ?? 0 }
                     ]}
-                    rows={filteredSolucoes}
+                    rows={loading ? [] : filteredSolucoes}
                     selectedId={selectedId}
                     onSelect={setSelectedId}
                     selectedIds={selectedIds}
@@ -260,13 +257,15 @@ export default function SolutionManagement({ permissions }) {
                     onDelete={handleDelete}
                     search={search}
                     onSearchChange={setSearch}
-                    busy={gridBusy}
+                    busy={gridBusy || loading}
+                    error={error}
+                    onRetry={loadSolucoes}
+                    emptyMessage="Nenhuma solucao encontrada."
                     canCreate={canUseFeatureAction(currentUser, permissions, "incluir")}
                     canEdit={canUseFeatureAction(currentUser, permissions, "alterar")}
                     canView={canUseFeatureAction(currentUser, permissions, "visualizar")}
                     canDelete={canUseFeatureAction(currentUser, permissions, "excluir")}
                 />
-            )}
 
             {modalMode && (
                 <CrudModal

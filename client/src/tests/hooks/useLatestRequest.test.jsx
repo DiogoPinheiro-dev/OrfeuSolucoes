@@ -12,11 +12,26 @@ const deferred = () => {
 };
 
 describe("useLatestRequest", () => {
+    const strictOptions = { reactStrictMode: true };
+
+    it("continua ativo após a verificação de efeitos do StrictMode", async () => {
+        const onSuccess = vi.fn();
+        const onSettled = vi.fn();
+        const { result } = renderHook(() => useLatestRequest(), strictOptions);
+
+        await act(async () => {
+            await result.current.run(() => Promise.resolve("soluções"), { onSuccess, onSettled });
+        });
+
+        expect(onSuccess).toHaveBeenCalledWith("soluções");
+        expect(onSettled).toHaveBeenCalledOnce();
+    });
+
     it("aplica apenas a resposta mais recente", async () => {
         const first = deferred();
         const second = deferred();
         const onSuccess = vi.fn();
-        const { result } = renderHook(() => useLatestRequest());
+        const { result } = renderHook(() => useLatestRequest(), strictOptions);
 
         let firstRun;
         let secondRun;
@@ -34,7 +49,7 @@ describe("useLatestRequest", () => {
     it("não atualiza depois da desmontagem", async () => {
         const pending = deferred();
         const onSuccess = vi.fn();
-        const { result, unmount } = renderHook(() => useLatestRequest());
+        const { result, unmount } = renderHook(() => useLatestRequest(), strictOptions);
         let request;
 
         act(() => { request = result.current.run(() => pending.promise, { onSuccess }); });

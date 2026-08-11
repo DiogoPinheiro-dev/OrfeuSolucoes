@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { getEmpresas } from "../../services/Auth/AuthService";
 import { getGruposUsuarios } from "../../services/GruposUsuarios/GrupoUsuarioService";
@@ -6,6 +6,7 @@ import { createUser, deleteUser, getUsers, updateUser } from "../../services/Use
 import { canUseFeatureAction, isGroupAdmin } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
 import { useFormFieldErrors } from "../hooks/useFormFieldErrors";
+import { useLatestRequest } from "../hooks/useLatestRequest";
 import ConfirmDialog from "./ConfirmDialog";
 import CrudGrid from "./CrudGrid";
 import FormFieldError from "./FormFieldError";
@@ -63,6 +64,8 @@ export default function UserManagement({ permissions }) {
     const [activeTab, setActiveTab] = useState("main");
     const [empresasPage, setEmpresasPage] = useState(1);
     const [pendingDelete, setPendingDelete] = useState(null);
+    const usersRequest = useLatestRequest();
+    const referencesRequest = useLatestRequest();
     const {
         applyError: applyFormError,
         clearErrors: clearFormErrors,
@@ -79,37 +82,43 @@ export default function UserManagement({ permissions }) {
         setActiveTab
     });
 
-    const loadUsers = async () => {
+    const loadUsers = useCallback(() => {
         setError("");
         setLoading(true);
 
-        try {
-            const usersResponse = await getUsers();
-            setUsers(usersResponse);
-            setSelectedIds((current) =>
-                current.filter((id) => usersResponse.some((user) => user.id === id && !isProtectedAdminUser(user)))
-            );
-        } catch (loadError) {
-            setError(loadError.message || "Não foi possível carregar usuários.");
-        } finally {
-            setLoading(false);
-        }
-    };
+        return usersRequest.run(getUsers, {
+            onSuccess: (usersResponse) => {
+                setUsers(usersResponse);
+                setSelectedIds((current) =>
+                    current.filter((id) => usersResponse.some((user) => user.id === id && !isProtectedAdminUser(user)))
+                );
+            },
+            onError: (loadError) => setError(loadError.message || "Não foi possível carregar usuários."),
+            onSettled: () => setLoading(false)
+        });
+    }, [usersRequest]);
 
-    const loadEmpresas = async () => {
-        try {
-            const [empresasResponse, gruposResponse] = await Promise.all([getEmpresas(), getGruposUsuarios()]);
-            setEmpresas(empresasResponse);
-            setGrupos(gruposResponse);
-        } catch (loadError) {
-            setError(loadError.message || "Não foi possível carregar empresas e grupos.");
-        }
-    };
+    const loadReferences = useCallback(() => {
+        return referencesRequest.run(
+            () => Promise.all([getEmpresas(), getGruposUsuarios()]),
+            {
+                onSuccess: ([empresasResponse, gruposResponse]) => {
+                    setEmpresas(empresasResponse);
+                    setGrupos(gruposResponse);
+                },
+                onError: (loadError) => setError(loadError.message || "Não foi possível carregar empresas e grupos.")
+            }
+        );
+    }, [referencesRequest]);
 
     useEffect(() => {
         void loadUsers();
-        void loadEmpresas();
-    }, []);
+        void loadReferences();
+        return () => {
+            usersRequest.invalidate();
+            referencesRequest.invalidate();
+        };
+    }, [loadReferences, loadUsers, referencesRequest, usersRequest]);
 
     const currentUserIsAdmin = isGroupAdmin(currentUser);
 
@@ -308,11 +317,7 @@ export default function UserManagement({ permissions }) {
 
     return (
         <>
-            {error && <div className="user-management-error" role="alert">{error}</div>}
-            {loading ? (
-                <div className="user-management-loading">Carregando usuários...</div>
-            ) : (
-                <CrudGrid
+            <CrudGrid
                     title="Cadastro de usuários"
                     columns={[
                         { key: "nome", label: "Nome", render: (user) => user.nome || "-" },
@@ -328,26 +333,29 @@ export default function UserManagement({ permissions }) {
                             }
                         }
                     ]}
-                    rows={filteredUsers}
+                    rows={loading ? [] : filteredUsers}
                     selectedId={selectedId}
                     onSelect={setSelectedId}
                     selectedIds={selectedIds}
                     onToggleSelect={toggleSelectedUser}
                     onToggleSelectAll={toggleVisibleUsers}
                     isRowSelectable={(user) => !isProtectedAdminUser(user)}
+                    getRowSelectionDisabledReason={() => "O usuário administrador padrão não pode ser excluído."}
                     onCreate={() => openModal("create")}
                     onEdit={(user) => openModal("edit", user)}
                     onView={(user) => openModal("view", user)}
                     onDelete={handleDelete}
                     search={search}
                     onSearchChange={setSearch}
-                    busy={gridBusy}
+                    busy={gridBusy || loading}
+                    error={error}
+                    onRetry={() => Promise.all([loadUsers(), loadReferences()])}
+                    emptyMessage="Nenhum usuário encontrado."
                     canCreate={canUseFeatureAction(currentUser, permissions, "incluir")}
                     canEdit={canUseFeatureAction(currentUser, permissions, "alterar")}
                     canView={canUseFeatureAction(currentUser, permissions, "visualizar")}
                     canDelete={canUseFeatureAction(currentUser, permissions, "excluir")}
                 />
-            )}
 
             {modalMode && (
                 <CrudModal

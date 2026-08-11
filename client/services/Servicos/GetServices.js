@@ -1,5 +1,6 @@
 import { apolloClient } from "../../src/lib/apolloClient";
 import { GET_SERVICOS_QUERY } from "../graphql/operations";
+import { toServiceError } from "../graphql/serviceError";
 
 export const getAllServices = async () => {
     try {
@@ -10,7 +11,6 @@ export const getAllServices = async () => {
 
         return response?.data?.servicos ?? [];
     } catch (error) {
-        console.error("Error fetching services:", error);
-        throw error;
+        throw toServiceError(error);
     }
 };

@@ -95,4 +95,15 @@ describe("ConfirmDialog", () => {
         expect(screen.getByRole("button", { name: "Cancelar" })).toBeDisabled();
         expect(screen.getByRole("button", { name: "Processando..." })).toBeDisabled();
     });
+
+    it("mantém a rolagem bloqueada enquanto ainda existe outro diálogo aberto", () => {
+        const modal = <CrudModal mode="view" title="Registro" onClose={vi.fn()}><span>Conteúdo</span></CrudModal>;
+        const { rerender, unmount } = render(<>{modal}<ConfirmDialog open title="Confirmação" message="Confirme." onCancel={vi.fn()} onConfirm={vi.fn()} /></>);
+
+        expect(document.body).toHaveStyle({ overflow: "hidden" });
+        rerender(modal);
+        expect(document.body).toHaveStyle({ overflow: "hidden" });
+        unmount();
+        expect(document.body).not.toHaveStyle({ overflow: "hidden" });
+    });
 });

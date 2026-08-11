@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
     createGrupoUsuario,
@@ -13,6 +13,7 @@ import FormFieldError from "./FormFieldError";
 import { CrudModal, CrudModalTabPanel, CrudModalTabs } from "./CrudModal";
 import { useAuth } from "../hooks/useAuth";
 import { useFormFieldErrors } from "../hooks/useFormFieldErrors";
+import { useLatestRequest } from "../hooks/useLatestRequest";
 import { canUseFeatureAction } from "../auth/hubConfig";
 
 import "../styles/userManagement.css";
@@ -123,6 +124,7 @@ export default function GroupManagement({ permissions }) {
     const [form, setForm] = useState(initialForm);
     const [activeTab, setActiveTab] = useState("main");
     const [pendingDelete, setPendingDelete] = useState(null);
+    const groupsRequest = useLatestRequest();
     const {
         applyError: applyFormError,
         clearErrors: clearFormErrors,
@@ -139,25 +141,28 @@ export default function GroupManagement({ permissions }) {
         setActiveTab
     });
 
-    const loadGroups = async () => {
+    const loadGroups = useCallback(() => {
         setError("");
         setLoading(true);
 
-        try {
-            const [groupsResponse, solucoesResponse] = await Promise.all([getGruposUsuarios(), getSolucoes()]);
-            setGroups(groupsResponse);
-            setSelectedIds((current) => current.filter((id) => groupsResponse.some((group) => group.id === id && canDeleteGroup(group))));
-            setSolucoes(solucoesResponse.filter((solucao) => !solucao.somenteAdminSistema));
-        } catch (loadError) {
-            setError(loadError.message || "Não foi possível carregar grupos.");
-        } finally {
-            setLoading(false);
-        }
-    };
+        return groupsRequest.run(
+            () => Promise.all([getGruposUsuarios(), getSolucoes()]),
+            {
+                onSuccess: ([groupsResponse, solucoesResponse]) => {
+                    setGroups(groupsResponse);
+                    setSelectedIds((current) => current.filter((id) => groupsResponse.some((group) => group.id === id && canDeleteGroup(group))));
+                    setSolucoes(solucoesResponse.filter((solucao) => !solucao.somenteAdminSistema));
+                },
+                onError: (loadError) => setError(loadError.message || "Não foi possível carregar grupos."),
+                onSettled: () => setLoading(false)
+            }
+        );
+    }, [groupsRequest]);
 
     useEffect(() => {
         void loadGroups();
-    }, []);
+        return groupsRequest.invalidate;
+    }, [groupsRequest, loadGroups]);
 
     const filteredGroups = useMemo(() => {
         const term = search.toLowerCase().trim();
@@ -409,11 +414,7 @@ export default function GroupManagement({ permissions }) {
 
     return (
         <>
-            {error && <div className="user-management-error" role="alert">{error}</div>}
-            {loading ? (
-                <div className="user-management-loading">Carregando grupos...</div>
-            ) : (
-                <CrudGrid
+            <CrudGrid
                     title="Cadastro de grupos"
                     columns={[
                         { key: "nome", label: "Nome", render: (group) => group.nome || "-" },
@@ -425,26 +426,29 @@ export default function GroupManagement({ permissions }) {
                         })),
                         { key: "permissoes", label: "Permissões", render: summarizeGroupPermissions }
                     ]}
-                    rows={filteredGroups}
+                    rows={loading ? [] : filteredGroups}
                     selectedId={selectedId}
                     onSelect={setSelectedId}
                     selectedIds={selectedIds}
                     onToggleSelect={toggleSelectedGroup}
                     onToggleSelectAll={toggleVisibleGroups}
                     isRowSelectable={canDeleteGroup}
+                    getRowSelectionDisabledReason={() => "Grupos padrão do sistema não podem ser excluídos."}
                     onCreate={() => openModal("create")}
                     onEdit={(group) => openModal("edit", group)}
                     onView={(group) => openModal("view", group)}
                     onDelete={handleDelete}
                     search={search}
                     onSearchChange={setSearch}
-                    busy={gridBusy}
+                    busy={gridBusy || loading}
+                    error={error}
+                    onRetry={loadGroups}
+                    emptyMessage="Nenhum grupo encontrado."
                     canCreate={canUseFeatureAction(currentUser, permissions, "incluir")}
                     canEdit={canUseFeatureAction(currentUser, permissions, "alterar")}
                     canView={canUseFeatureAction(currentUser, permissions, "visualizar")}
                     canDelete={canUseFeatureAction(currentUser, permissions, "excluir")}
                 />
-            )}
 
             {modalMode && (
                 <CrudModal

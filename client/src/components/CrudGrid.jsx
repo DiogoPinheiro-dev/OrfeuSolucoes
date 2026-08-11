@@ -43,6 +43,8 @@ export default function CrudGrid({
     selectable = true,
     disabledReasons = {},
     isRowSelectable = () => true,
+    getRowSelectionDisabledReason = () => "Este registro não pode ser excluído.",
+    getRowClassName = () => "",
     getRowId = (row) => row.id,
     getRowLabel = (row) => row.nome || row.email || "registro"
 }) {
@@ -155,9 +157,10 @@ export default function CrudGrid({
                             const rowId = getRowId(row);
                             const selected = rowId === selectedId;
                             const rowSelectable = isRowSelectable(row);
+                            const selectionDisabledReason = rowSelectable ? "" : getRowSelectionDisabledReason(row);
                             return (
-                                <tr key={rowId} ref={(element) => element ? rowRefs.current.set(rowId, element) : rowRefs.current.delete(rowId)} className={selected ? "selected" : ""} aria-selected={selected} onClick={() => onSelect?.(rowId)} onDoubleClick={() => canView && onView?.(row)} onKeyDown={(event) => handleRowKeyDown(event, row, index, rowSelectable)} tabIndex={selected || (!selectedId && index === 0) ? 0 : -1}>
-                                    {selectable && <td><input type="checkbox" checked={selectedIdSet.has(rowId)} aria-label={`Selecionar ${getRowLabel(row)}`} disabled={!rowSelectable} onClick={(event) => event.stopPropagation()} onChange={() => rowSelectable && onToggleSelect?.(rowId)} /></td>}
+                                <tr key={rowId} ref={(element) => element ? rowRefs.current.set(rowId, element) : rowRefs.current.delete(rowId)} className={[getRowClassName(row), selected ? "selected" : ""].filter(Boolean).join(" ")} aria-selected={selected} onClick={() => onSelect?.(rowId)} onDoubleClick={() => canView && onView?.(row)} onKeyDown={(event) => handleRowKeyDown(event, row, index, rowSelectable)} tabIndex={selected || (!selectedId && index === 0) ? 0 : -1}>
+                                    {selectable && <td><input type="checkbox" checked={selectedIdSet.has(rowId)} aria-label={selectionDisabledReason ? `Selecionar ${getRowLabel(row)}. Indisponível: ${selectionDisabledReason}` : `Selecionar ${getRowLabel(row)}`} title={selectionDisabledReason || undefined} disabled={!rowSelectable} onClick={(event) => event.stopPropagation()} onChange={() => rowSelectable && onToggleSelect?.(rowId)} /></td>}
                                     {columns.map((column) => <td key={column.key}>{column.render ? column.render(row) : row[column.key]}</td>)}
                                 </tr>
                             );

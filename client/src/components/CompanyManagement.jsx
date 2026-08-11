@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { createEmpresa, deleteEmpresa, getEmpresas, updateEmpresa } from "../../services/Empresas/EmpresaService";
 import { getSolucoes } from "../../services/Solucoes/SolucaoService";
@@ -6,6 +6,7 @@ import { getUsers } from "../../services/Users/UserService";
 import { canUseFeatureAction, isGroupAdmin } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
 import { useFormFieldErrors } from "../hooks/useFormFieldErrors";
+import { useLatestRequest } from "../hooks/useLatestRequest";
 import ConfirmDialog from "./ConfirmDialog";
 import FormFieldError from "./FormFieldError";
 import CrudGrid from "./CrudGrid";
@@ -44,6 +45,7 @@ export default function CompanyManagement({ permissions }) {
     const [form, setForm] = useState(initialForm);
     const [activeTab, setActiveTab] = useState("main");
     const [pendingDelete, setPendingDelete] = useState(null);
+    const companiesRequest = useLatestRequest();
     const {
         applyError: applyFormError,
         clearErrors: clearFormErrors,
@@ -63,26 +65,29 @@ export default function CompanyManagement({ permissions }) {
             .filter((solucao) => solucaoIds.includes(solucao.id))
             .flatMap((solucao) => solucao.funcionalidades?.map((funcionalidade) => funcionalidade.id) || []);
 
-    const loadEmpresas = async () => {
+    const loadEmpresas = useCallback(() => {
         setError("");
         setLoading(true);
 
-        try {
-            const [empresasResponse, usersResponse, solucoesResponse] = await Promise.all([getEmpresas(), getUsers(), getSolucoes()]);
-            setEmpresas(empresasResponse);
-            setSelectedIds((current) => current.filter((id) => empresasResponse.some((empresa) => empresa.id === id && canDeleteEmpresa(empresa))));
-            setUsers(usersResponse);
-            setSolucoes(solucoesResponse.filter((solucao) => !solucao.somenteAdminSistema));
-        } catch (loadError) {
-            setError(loadError.message || "Não foi possível carregar empresas.");
-        } finally {
-            setLoading(false);
-        }
-    };
+        return companiesRequest.run(
+            () => Promise.all([getEmpresas(), getUsers(), getSolucoes()]),
+            {
+                onSuccess: ([empresasResponse, usersResponse, solucoesResponse]) => {
+                    setEmpresas(empresasResponse);
+                    setSelectedIds((current) => current.filter((id) => empresasResponse.some((empresa) => empresa.id === id && canDeleteEmpresa(empresa))));
+                    setUsers(usersResponse);
+                    setSolucoes(solucoesResponse.filter((solucao) => !solucao.somenteAdminSistema));
+                },
+                onError: (loadError) => setError(loadError.message || "Não foi possível carregar empresas."),
+                onSettled: () => setLoading(false)
+            }
+        );
+    }, [companiesRequest]);
 
     useEffect(() => {
         void loadEmpresas();
-    }, []);
+        return companiesRequest.invalidate;
+    }, [companiesRequest, loadEmpresas]);
 
     const filteredEmpresas = useMemo(() => {
         const term = search.toLowerCase().trim();
@@ -272,11 +277,7 @@ export default function CompanyManagement({ permissions }) {
 
     return (
         <>
-            {error && <div className="company-management-error" role="alert">{error}</div>}
-            {loading ? (
-                <div className="company-management-loading">Carregando empresas...</div>
-            ) : (
-                <CrudGrid
+            <CrudGrid
                     title="Cadastro de empresas"
                     columns={[
                         { key: "nome", label: "Nome", render: (empresa) => empresa.nome || "-" },
@@ -286,26 +287,29 @@ export default function CompanyManagement({ permissions }) {
                             render: (empresa) => booleanLabel(empresa.solucaoIds?.includes(solucao.id))
                         }))
                     ]}
-                    rows={filteredEmpresas}
+                    rows={loading ? [] : filteredEmpresas}
                     selectedId={selectedId}
                     selectedIds={selectedIds}
                     onSelect={setSelectedId}
                     onToggleSelect={toggleSelectedEmpresa}
                     onToggleSelectAll={toggleVisibleEmpresas}
                     isRowSelectable={canDeleteEmpresa}
+                    getRowSelectionDisabledReason={() => "A empresa padrão do sistema não pode ser excluída."}
                     onCreate={() => openModal("create")}
                     onEdit={(empresa) => openModal("edit", empresa)}
                     onView={(empresa) => openModal("view", empresa)}
                     onDelete={handleDelete}
                     search={search}
                     onSearchChange={setSearch}
-                    busy={gridBusy}
+                    busy={gridBusy || loading}
+                    error={error}
+                    onRetry={loadEmpresas}
+                    emptyMessage="Nenhuma empresa encontrada."
                     canCreate={canUseFeatureAction(currentUser, permissions, "incluir")}
                     canEdit={canUseFeatureAction(currentUser, permissions, "alterar")}
                     canView={canUseFeatureAction(currentUser, permissions, "visualizar")}
                     canDelete={canUseFeatureAction(currentUser, permissions, "excluir")}
                 />
-            )}
 
             {modalMode && (
                 <CrudModal

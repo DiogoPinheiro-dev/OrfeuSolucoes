@@ -259,10 +259,11 @@ export default function ChamadoConfiguracaoManagement({ permissions, kind }) {
                     onDelete={handleDelete}
                     canCreate={canUseFeatureAction(user, permissions, "incluir")}
                     canEdit={canUseFeatureAction(user, permissions, "alterar")}
+                    canView={canUseFeatureAction(user, permissions, "visualizar")}
                     canDelete={canUseFeatureAction(user, permissions, "excluir")}
                     search={search}
-                    onSearch={setSearch}
-                    loading={gridBusy}
+                    onSearchChange={setSearch}
+                    busy={gridBusy}
                     getRowId={(item) => item.id}
                 />
             )}

@@ -8,7 +8,6 @@ import {
     FaExpandAlt,
     FaLink,
     FaPlus,
-    FaTimes,
     FaUndoAlt
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
@@ -20,6 +19,7 @@ import {
     updateCronogramaItemDatas
 } from "../../services/Projetos/CronogramaService";
 import { getBacklogProjetos } from "../../services/Projetos/BacklogService";
+import { CrudModal } from "./CrudModal";
 import { useConfirmAction } from "../hooks/useConfirmAction";
 import "../styles/cronogramaManagement.css";
 
@@ -38,37 +38,17 @@ const startOfDay = (value) => {
     return date;
 };
 const addDays = (value, days) => new Date(startOfDay(value).getTime() + days * DAY);
-const inputDate = (value) => value ? startOfDay(value).toISOString().slice(0, 10) : "";
+const inputDate = (value) => value ? String(value).slice(0, 10) : "";
 const dateLabel = (value) => value
     ? new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(new Date(value))
     : "Sem data";
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
-function Modal({ title, children, onClose }) {
-    return (
-        <div className="crud-modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-            <section className="crud-modal gantt-modal" role="dialog" aria-modal="true" aria-label={title}>
-                <header className="crud-modal-header gantt-modal-header">
-                    <div>
-                        <span>Planejamento do cronograma</span>
-                        <h3>{title}</h3>
-                    </div>
-                    <button className="crud-modal-close" type="button" onClick={onClose} aria-label="Fechar">
-                        <FaTimes aria-hidden="true" />
-                    </button>
-                </header>
-                {children}
-            </section>
-        </div>
-    );
-}
-
 function DependencyEditor({ items, saving, error, onClose, onSubmit }) {
     const [form, setForm] = useState({ bloqueadorId: "", bloqueadoId: "" });
     const valid = form.bloqueadorId && form.bloqueadoId && form.bloqueadorId !== form.bloqueadoId;
     return (
-        <Modal title="Incluir dependência" onClose={onClose}>
-            <form onSubmit={(event) => { event.preventDefault(); if (valid) onSubmit(form); }}>
+        <CrudModal mode="create" title="Incluir dependência" onClose={onClose} onSubmit={(event) => { event.preventDefault(); if (valid) onSubmit(form); }} processing={saving} generalError={error} dirty={Boolean(form.bloqueadorId || form.bloqueadoId)} modalClassName="gantt-modal" formClassName="gantt-editor-form" actions={<><button type="button" className="secondary" onClick={onClose}>Cancelar</button><button type="submit" disabled={!valid}>{saving ? "Salvando..." : "Incluir"}</button></>}>
                 <div className="gantt-modal-form">
                     <label>
                         <span>Item que bloqueia</span>
@@ -85,14 +65,8 @@ function DependencyEditor({ items, saving, error, onClose, onSubmit }) {
                         </select>
                     </label>
                     <p>A relação criada será “bloqueia/é bloqueado por”. Ciclos e relações inválidas são rejeitados pelo servidor.</p>
-                    {error && <div className="gantt-feedback error" role="alert">{error}</div>}
                 </div>
-                <footer className="crud-modal-actions">
-                    <button type="button" className="secondary" onClick={onClose}>Cancelar</button>
-                    <button type="submit" disabled={!valid || saving}>{saving ? "Salvando..." : "Incluir"}</button>
-                </footer>
-            </form>
-        </Modal>
+        </CrudModal>
     );
 }
 
@@ -102,20 +76,13 @@ function DateEditor({ item, saving, error, onClose, onSubmit }) {
         fimPrevistoEm: inputDate(item.fimEm)
     });
     return (
-        <Modal title={`Editar período — ${item.chave}`} onClose={onClose}>
-            <form onSubmit={(event) => { event.preventDefault(); onSubmit(form); }}>
+        <CrudModal mode="edit" title={`Editar período — ${item.chave}`} onClose={onClose} onSubmit={(event) => { event.preventDefault(); onSubmit(form); }} processing={saving} generalError={error} dirty={form.inicioPrevistoEm !== inputDate(item.inicioEm) || form.fimPrevistoEm !== inputDate(item.fimEm)} modalClassName="gantt-modal" formClassName="gantt-editor-form" actions={<><button type="button" className="secondary" onClick={onClose}>Cancelar</button><button type="submit">{saving ? "Confirmando..." : "Confirmar alteração"}</button></>}>
                 <div className="gantt-modal-form two-columns">
                     <label><span>Início previsto</span><input type="date" value={form.inicioPrevistoEm} onChange={(event) => setForm((current) => ({ ...current, inicioPrevistoEm: event.target.value }))} /></label>
                     <label><span>Fim previsto</span><input type="date" value={form.fimPrevistoEm} onChange={(event) => setForm((current) => ({ ...current, fimPrevistoEm: event.target.value }))} /></label>
                     <p className="wide">A alteração será confirmada e auditada. O sistema não deslocará outros itens automaticamente; conflitos serão exibidos como inconsistências.</p>
-                    {error && <div className="gantt-feedback error wide" role="alert">{error}</div>}
                 </div>
-                <footer className="crud-modal-actions">
-                    <button type="button" className="secondary" onClick={onClose}>Cancelar</button>
-                    <button type="submit" disabled={saving}>{saving ? "Confirmando..." : "Confirmar alteração"}</button>
-                </footer>
-            </form>
-        </Modal>
+        </CrudModal>
     );
 }
 

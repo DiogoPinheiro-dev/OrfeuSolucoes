@@ -515,25 +515,27 @@ export const deleteChamadoCategoria = (id) =>
     });
 
 export const getChamadoNotificacoes = (limite = 30) =>
-    apolloClient.query({
+    query({
         query: CHAMADO_NOTIFICACOES_QUERY,
         variables: { limite },
-        fetchPolicy: "network-only"
-    }).then(({ data }) => ({
-        items: data.notificacoesChamado || [],
-        naoLidas: data.notificacoesChamadoNaoLidas || 0
-    }));
+        select: (data) => ({
+            items: data?.notificacoesChamado || [],
+            naoLidas: data?.notificacoesChamadoNaoLidas || 0
+        })
+    });
 
 export const marcarChamadoNotificacaoComoLida = (id) =>
-    apolloClient.mutate({
+    mutate({
         mutation: MARCAR_CHAMADO_NOTIFICACAO_LIDA_MUTATION,
-        variables: { id }
-    }).then(({ data }) => data.marcarChamadoNotificacaoComoLida);
+        variables: { id },
+        select: (data) => data?.marcarChamadoNotificacaoComoLida
+    });
 
 export const marcarTodasChamadoNotificacoesComoLidas = () =>
-    apolloClient.mutate({
-        mutation: MARCAR_TODAS_CHAMADO_NOTIFICACOES_LIDAS_MUTATION
-    }).then(({ data }) => data.marcarTodasChamadoNotificacoesComoLidas);
+    mutate({
+        mutation: MARCAR_TODAS_CHAMADO_NOTIFICACOES_LIDAS_MUTATION,
+        select: (data) => data?.marcarTodasChamadoNotificacoesComoLidas
+    });
 export const getGoogleEmailContas = () => query({ query: GOOGLE_EMAIL_CONTAS_QUERY, select: (data) => data?.googleEmailContasChamado || [] });
 export const getGoogleEmailAuthUrl = (id) => query({ query: GOOGLE_EMAIL_AUTH_URL_QUERY, variables: { id: Number(id) }, select: (data) => data?.googleEmailAuthUrl });
 export const createGoogleEmailConta = (input) => mutate({ mutation: CREATE_GOOGLE_EMAIL_CONTA_MUTATION, variables: { input }, select: (data) => data?.createGoogleEmailConta });

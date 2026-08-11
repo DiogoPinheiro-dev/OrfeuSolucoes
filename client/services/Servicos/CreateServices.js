@@ -1,5 +1,6 @@
 import { apolloClient } from "../../src/lib/apolloClient";
 import { CREATE_SERVICO_MUTATION } from "../graphql/operations";
+import { toServiceError } from "../graphql/serviceError";
 
 export const createService = async (serviceData) => {
     try {
@@ -18,7 +19,6 @@ export const createService = async (serviceData) => {
 
         return response?.data?.createServico;
     } catch (error) {
-        console.error("Error creating service:", error);
-        throw error;
+        throw toServiceError(error);
     }
 };

@@ -10,9 +10,12 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "test": "jest",
+    "test:unit": "jest --runInBand",
+    "test:coverage": "jest --coverage --runInBand --config ./test/jest-coverage.json",
     "test:watch": "jest --watch",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "test:integration": "jest --config ./test/jest-integration.json --runInBand"
+    "test:integration": "jest --config ./test/jest-integration.json --runInBand",
+    "test:regression": "npm run test:unit && npm run test:integration && npm run test:e2e && npm run build"
   },
   "keywords": [],
   "author": "",

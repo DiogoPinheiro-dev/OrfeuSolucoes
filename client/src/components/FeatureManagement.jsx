@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
     createFuncionalidade,
@@ -9,6 +9,7 @@ import {
 import { canUseFeatureAction } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
 import { useFormFieldErrors } from "../hooks/useFormFieldErrors";
+import { useLatestRequest } from "../hooks/useLatestRequest";
 import ConfirmDialog from "./ConfirmDialog";
 import FormFieldError from "./FormFieldError";
 import CrudGrid from "./CrudGrid";
@@ -130,6 +131,7 @@ export default function FeatureManagement({ permissions }) {
     const [form, setForm] = useState(initialForm);
     const [activeTab, setActiveTab] = useState("main");
     const [pendingDelete, setPendingDelete] = useState(null);
+    const solutionsRequest = useLatestRequest();
     const {
         applyError: applyFormError,
         clearErrors: clearFormErrors,
@@ -165,22 +167,21 @@ export default function FeatureManagement({ permissions }) {
         );
     }, [features, search, showSystemFeatures]);
 
-    const loadSolucoes = async () => {
+    const loadSolucoes = useCallback(() => {
         setError("");
         setLoading(true);
 
-        try {
-            setSolucoes(await getSolucoes());
-        } catch (loadError) {
-            setError(loadError.message || "Não foi possível carregar funcionalidades.");
-        } finally {
-            setLoading(false);
-        }
-    };
+        return solutionsRequest.run(getSolucoes, {
+            onSuccess: setSolucoes,
+            onError: (loadError) => setError(loadError.message || "Não foi possível carregar funcionalidades."),
+            onSettled: () => setLoading(false)
+        });
+    }, [solutionsRequest]);
 
     useEffect(() => {
         void loadSolucoes();
-    }, []);
+        return solutionsRequest.invalidate;
+    }, [loadSolucoes, solutionsRequest]);
 
     const openModal = (mode, feature = null) => {
         setError("");
@@ -362,11 +363,7 @@ export default function FeatureManagement({ permissions }) {
 
     return (
         <>
-            {error && <div className="user-management-error" role="alert">{error}</div>}
-            {loading ? (
-                <div className="user-management-loading">Carregando funcionalidades...</div>
-            ) : (
-                <CrudGrid
+            <CrudGrid
                     title="Cadastro de funcionalidades"
                     columns={[
                         { key: "titulo", label: "Título", render: (feature) => feature.titulo || "-" },
@@ -378,13 +375,15 @@ export default function FeatureManagement({ permissions }) {
                         { key: "somenteAdminSistema", label: "Admin", render: (feature) => booleanLabel(feature.somenteAdminSistema) },
                         { key: "padraoSistema", label: "Padrão", render: (feature) => booleanLabel(feature.padraoSistema) }
                     ]}
-                    rows={filteredFeatures}
+                    rows={loading ? [] : filteredFeatures}
+                    getRowLabel={(feature) => feature.titulo || feature.label || feature.slug || "funcionalidade"}
                     selectedId={selectedId}
                     onSelect={setSelectedId}
                     selectedIds={selectedIds}
                     onToggleSelect={toggleSelectedFeature}
                     onToggleSelectAll={toggleVisibleFeatures}
                     isRowSelectable={(feature) => !feature.padraoSistema}
+                    getRowSelectionDisabledReason={() => "Funcionalidades padrão do sistema não podem ser excluídas."}
                     onCreate={() => openModal("create")}
                     onEdit={(feature) => openModal("edit", feature)}
                     onView={(feature) => openModal("view", feature)}
@@ -402,13 +401,14 @@ export default function FeatureManagement({ permissions }) {
                         </button>
                     )}
                     emptyMessage={showSystemFeatures ? "Nenhuma funcionalidade encontrada." : "Nenhuma funcionalidade customizada encontrada."}
-                    busy={gridBusy}
+                    busy={gridBusy || loading}
+                    error={error}
+                    onRetry={loadSolucoes}
                     canCreate={canUseFeatureAction(currentUser, permissions, "incluir")}
                     canEdit={canUseFeatureAction(currentUser, permissions, "alterar")}
                     canView={canUseFeatureAction(currentUser, permissions, "visualizar")}
                     canDelete={canUseFeatureAction(currentUser, permissions, "excluir")}
                 />
-            )}
 
             {modalMode && (
                 <CrudModal
