@@ -162,6 +162,53 @@ button:disabled {
     color: var(--muted);
 }
 
+.route-loading-card {
+    display: grid;
+    justify-items: start;
+    gap: 4px;
+}
+
+.route-loading-indicator {
+    display: flex;
+    gap: 7px;
+    margin-top: 18px;
+}
+
+.route-loading-indicator span {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--accent-green);
+    animation: route-loading-pulse 1.2s ease-in-out infinite;
+}
+
+.route-loading-indicator span:nth-child(2) {
+    animation-delay: 0.15s;
+}
+
+.route-loading-indicator span:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+@keyframes route-loading-pulse {
+    0%, 60%, 100% {
+        opacity: 0.35;
+        transform: translateY(0);
+    }
+
+    30% {
+        opacity: 1;
+        transform: translateY(-5px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .route-loading-indicator span {
+        animation: none;
+        opacity: 0.7;
+    }
+}
+
 .auth-loading-badge {
     display: inline-flex;
     margin-bottom: 16px;
