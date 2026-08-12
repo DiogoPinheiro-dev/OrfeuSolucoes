@@ -65,11 +65,26 @@ describe("Central de Documentação", () => {
         expect(getDocumentacaoArtigo).not.toHaveBeenCalled();
     });
 
+    it("resolve ajuda contextual pelo registry key e abre o artigo correspondente", async () => {
+        renderAt("/hub/documentacao?registryKey=projetos.backlog-de-demandas");
+        await waitFor(() => expect(getDocumentacaoIndice).toHaveBeenCalledWith({ registryKey: "projetos.backlog-de-demandas" }));
+        await waitFor(() => expect(screen.getByLabelText("Rota atual")).toHaveTextContent("/hub/documentacao/backlog-visao-geral"));
+        expect(await screen.findByText("Conteúdo validado.")).toBeInTheDocument();
+    });
+
+    it("orienta a consulta geral quando não existe ajuda contextual", async () => {
+        getDocumentacaoIndice.mockResolvedValue([]);
+        renderAt("/hub/documentacao?registryKey=configurador.cadastro-de-usuarios");
+        expect(await screen.findByText("Nenhuma ajuda contextual disponível para esta funcionalidade.")).toBeInTheDocument();
+        expect(screen.getByRole("link", { name: "Consultar toda a documentação" })).toHaveAttribute("href", "/hub/documentacao");
+    });
+
     it("carrega artigo pela URL, renderiza o conteúdo e o sumário", async () => {
         renderAt("/hub/documentacao/backlog-visao-geral");
         expect(await screen.findByText("Conteúdo validado.")).toBeInTheDocument();
         expect(screen.getByRole("link", { name: "Pré-requisitos" })).toHaveAttribute("href", "#user-content-pré-requisitos");
         expect(screen.getByText("Validado em 10/08/2026")).toBeInTheDocument();
+        expect(screen.getByText("Nível: Usuário")).toBeInTheDocument();
         expect(document.title).toBe("Backlog de demandas | Documentação | Orfeu Soluções");
     });
 

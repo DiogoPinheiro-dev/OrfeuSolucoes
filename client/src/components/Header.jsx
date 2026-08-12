@@ -232,8 +232,6 @@ export default function Header() {
 
                     {isHubView && isAuthenticated && <ChamadoNotifications />}
 
-
-
                     {isHubView && (
                         <button
                             type="button"

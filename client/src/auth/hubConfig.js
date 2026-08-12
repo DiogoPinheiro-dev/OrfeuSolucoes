@@ -26,6 +26,20 @@ export const FEATURE_COMPONENT_REGISTRY = {
     "projetos.orcamento-do-projeto": "project-budget"
 };
 
+export const DOCUMENTATION_SOLUTION = {
+    id: "system-documentation",
+    slug: "documentacao",
+    title: "Documentação",
+    description: "Manuais de uso e referências do sistema conforme seu nível de acesso.",
+    eyebrow: "Central de conhecimento",
+    areas: []
+};
+
+export const includeSystemSolutions = (solutions = []) => {
+    const withoutDocumentation = solutions.filter((solution) => solution.slug !== DOCUMENTATION_SOLUTION.slug);
+    return [...withoutDocumentation, DOCUMENTATION_SOLUTION];
+};
+
 export const normalizeSolutions = (solutions = []) =>
     solutions.map((solution) => ({
         id: solution.id,

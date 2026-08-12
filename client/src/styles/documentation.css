@@ -138,6 +138,22 @@
   line-height: 1.35;
 }
 
+.documentation-catalog-group a span,
+.documentation-catalog-group a small {
+  display: block;
+}
+
+.documentation-catalog-group a small {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.documentation-catalog-group a.active small {
+  color: inherit;
+  opacity: 0.78;
+}
+
 .documentation-catalog-group a:hover,
 .documentation-catalog-group a:focus-visible,
 .documentation-catalog-group a.active {

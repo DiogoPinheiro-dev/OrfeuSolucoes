@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { getMyHubNavigation } from "../../services/Solucoes/SolucaoService";
-import { normalizeSolutions } from "../auth/hubConfig";
+import { includeSystemSolutions, normalizeSolutions } from "../auth/hubConfig";
 import { HUB_NAVIGATION_CHANGED_EVENT } from "../auth/hubNavigationEvents";
 import { useAuth } from "./useAuth";
 import { useLatestRequest } from "./useLatestRequest";
@@ -28,11 +28,11 @@ export function useHubNavigation() {
 
             return navigationRequest.run(getMyHubNavigation, {
                 onSuccess: (navigation) => {
-                    setSolutions(normalizeSolutions(navigation));
+                    setSolutions(includeSystemSolutions(normalizeSolutions(navigation)));
                 },
                 onError: (loadError) => {
                     setError(loadError.message || "Não foi possível carregar o hub.");
-                    setSolutions([]);
+                    setSolutions(includeSystemSolutions());
                 },
                 onSettled: () => setLoading(false)
             });

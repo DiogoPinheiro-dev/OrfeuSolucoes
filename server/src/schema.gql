@@ -599,6 +599,59 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 """
 scalar DateTime
 
+type DocumentacaoArtigoType {
+  audiencia: String!
+  categoria: String!
+  conteudo: String!
+  funcionalidade: String
+  id: String!
+  ordem: Int!
+  palavrasChave: [String!]!
+  registryKey: String
+  resumo: String!
+  slug: String!
+  solucao: String
+  titulo: String!
+  validadoEm: String!
+}
+
+type DocumentacaoBuscaResultadoType {
+  audiencia: String!
+  categoria: String!
+  funcionalidade: String
+  id: String!
+  ordem: Int!
+  palavrasChave: [String!]!
+  registryKey: String
+  resumo: String!
+  slug: String!
+  solucao: String
+  titulo: String!
+  trecho: String!
+  validadoEm: String!
+}
+
+input DocumentacaoFiltroInput {
+  categoria: String
+  registryKey: String
+  solucao: String
+}
+
+type DocumentacaoItemType {
+  audiencia: String!
+  categoria: String!
+  funcionalidade: String
+  id: String!
+  ordem: Int!
+  palavrasChave: [String!]!
+  registryKey: String
+  resumo: String!
+  slug: String!
+  solucao: String
+  titulo: String!
+  validadoEm: String!
+}
+
 type EmpresaType {
   acessoEcommerce: Boolean!
   acessoHoras: Boolean!
@@ -1664,59 +1717,6 @@ type ProjetoUsuarioType {
   id: String!
   login: String
   nome: String
-}
-
-input DocumentacaoFiltroInput {
-  categoria: String
-  registryKey: String
-  solucao: String
-}
-
-type DocumentacaoItemType {
-  audiencia: String!
-  categoria: String!
-  funcionalidade: String
-  id: String!
-  ordem: Int!
-  palavrasChave: [String!]!
-  registryKey: String
-  resumo: String!
-  slug: String!
-  solucao: String
-  titulo: String!
-  validadoEm: String!
-}
-
-type DocumentacaoArtigoType {
-  audiencia: String!
-  categoria: String!
-  conteudo: String!
-  funcionalidade: String
-  id: String!
-  ordem: Int!
-  palavrasChave: [String!]!
-  registryKey: String
-  resumo: String!
-  slug: String!
-  solucao: String
-  titulo: String!
-  validadoEm: String!
-}
-
-type DocumentacaoBuscaResultadoType {
-  audiencia: String!
-  categoria: String!
-  funcionalidade: String
-  id: String!
-  ordem: Int!
-  palavrasChave: [String!]!
-  registryKey: String
-  resumo: String!
-  slug: String!
-  solucao: String
-  titulo: String!
-  trecho: String!
-  validadoEm: String!
 }
 
 type Query {

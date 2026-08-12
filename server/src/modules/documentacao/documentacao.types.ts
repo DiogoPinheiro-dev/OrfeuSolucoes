@@ -1,4 +1,4 @@
-export type DocumentacaoAudiencia = 'usuario' | 'admin-sistema';
+export type DocumentacaoAudiencia = 'usuario' | 'admin-empresa' | 'admin-sistema';
 export type DocumentacaoCategoria = 'sistema' | 'solucao';
 
 export type DocumentacaoManifestoArtigo = {

@@ -1,6 +1,6 @@
 import { BookOpen, ChevronRight, FileText, Search, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { buscarDocumentacao, getDocumentacaoArtigo, getDocumentacaoIndice } from "../../services/Documentacao/DocumentacaoService";
 import DocumentationMarkdown from "../components/DocumentationMarkdown";
@@ -18,6 +18,12 @@ const solutionLabels = {
     projetos: "Gerenciador de Projetos"
 };
 
+const accessLevelLabels = {
+    usuario: "Usuário",
+    "admin-empresa": "Administrador da empresa",
+    "admin-sistema": "Administrador do sistema"
+};
+
 const groupArticles = (articles) => articles.reduce((groups, article) => {
     const key = article.solucao || "sistema";
     return { ...groups, [key]: [...(groups[key] || []), article] };
@@ -26,6 +32,8 @@ const groupArticles = (articles) => articles.reduce((groups, article) => {
 export default function DocumentationCenter() {
     const { articleSlug } = useParams();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const contextualRegistryKey = searchParams.get("registryKey") || "";
     const [articles, setArticles] = useState([]);
     const [article, setArticle] = useState(null);
     const [loadingIndex, setLoadingIndex] = useState(true);
@@ -43,12 +51,17 @@ export default function DocumentationCenter() {
     const loadIndex = useCallback(() => {
         setLoadingIndex(true);
         setIndexError("");
-        void indexRequest.run(getDocumentacaoIndice, {
-            onSuccess: setArticles,
+        void indexRequest.run(() => getDocumentacaoIndice(contextualRegistryKey ? { registryKey: contextualRegistryKey } : undefined), {
+            onSuccess: (items) => {
+                setArticles(items);
+                if (contextualRegistryKey && !articleSlug && items.length === 1) {
+                    navigate(`/hub/documentacao/${items[0].slug}`, { replace: true });
+                }
+            },
             onError: (error) => setIndexError(error.message || "Não foi possível carregar a documentação."),
             onSettled: () => setLoadingIndex(false)
         });
-    }, [indexRequest]);
+    }, [articleSlug, contextualRegistryKey, indexRequest, navigate]);
 
     useEffect(() => {
         loadIndex();
@@ -169,11 +182,16 @@ export default function DocumentationCenter() {
                             <div className="documentation-aside-title"><BookOpen size={19} /><h2>Conteúdo</h2></div>
                             {loadingIndex && <div className="documentation-feedback" role="status">Carregando artigos...</div>}
                             {indexError && <div className="documentation-feedback documentation-feedback-error" role="alert">{indexError}<button type="button" onClick={loadIndex}>Tentar novamente</button></div>}
-                            {!loadingIndex && !indexError && articles.length === 0 && <div className="documentation-feedback">Nenhum artigo disponível para seu perfil.</div>}
+                            {!loadingIndex && !indexError && articles.length === 0 && (
+                                <div className="documentation-feedback">
+                                    {contextualRegistryKey ? "Nenhuma ajuda contextual disponível para esta funcionalidade." : "Nenhum artigo disponível para seu perfil."}
+                                    {contextualRegistryKey && <Link to="/hub/documentacao">Consultar toda a documentação</Link>}
+                                </div>
+                            )}
                             {Object.entries(groups).map(([group, items]) => (
                                 <section className="documentation-catalog-group" key={group}>
                                     <h3>{group === "sistema" ? "Administração do sistema" : solutionLabels[group] || group}</h3>
-                                    <ul>{items.map((item) => <li key={item.id}><Link className={articleSlug === item.slug ? "active" : ""} to={`/hub/documentacao/${item.slug}`} aria-current={articleSlug === item.slug ? "page" : undefined}>{item.titulo}</Link></li>)}</ul>
+                                    <ul>{items.map((item) => <li key={item.id}><Link className={articleSlug === item.slug ? "active" : ""} to={`/hub/documentacao/${item.slug}`} aria-label={item.titulo} aria-current={articleSlug === item.slug ? "page" : undefined}><span>{item.titulo}</span><small>{accessLevelLabels[item.audiencia] || item.audiencia}</small></Link></li>)}</ul>
                                 </section>
                             ))}
                         </aside>
@@ -184,7 +202,7 @@ export default function DocumentationCenter() {
                             {articleError && <div className="documentation-feedback documentation-feedback-error" role="alert">{articleError}<button type="button" onClick={() => navigate("/hub/documentacao")}>Voltar ao catálogo</button></div>}
                             {article && !loadingArticle && (
                                 <>
-                                    <div className="documentation-article-meta"><span>{article.solucao ? solutionLabels[article.solucao] || article.solucao : "Sistema"}</span><span>Validado em {new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(new Date(`${article.validadoEm}T00:00:00Z`))}</span></div>
+                                    <div className="documentation-article-meta"><span>{article.solucao ? solutionLabels[article.solucao] || article.solucao : "Sistema"}</span><span>Nível: {accessLevelLabels[article.audiencia] || article.audiencia}</span><span>Validado em {new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(new Date(`${article.validadoEm}T00:00:00Z`))}</span></div>
                                     <DocumentationMarkdown content={article.conteudo} />
                                 </>
                             )}

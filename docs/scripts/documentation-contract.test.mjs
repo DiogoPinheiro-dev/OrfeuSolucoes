@@ -57,6 +57,13 @@ test("rejeita identificadores duplicados e registry key desconhecida", () => {
   assert.ok(result.errors.some((error) => error.includes("registryKey desconhecida")));
 });
 
+test("aceita nivel administrativo da empresa e exige contexto para artigos de usuario", () => {
+  const administrativo = run([fixture({ audiencia: "admin-empresa", solucao: undefined, funcionalidade: undefined, registryKey: undefined })]);
+  assert.deepEqual(administrativo.errors, []);
+  const usuarioSemContexto = run([fixture({ solucao: undefined, funcionalidade: undefined, registryKey: undefined })]);
+  assert.ok(usuarioSemContexto.errors.some((error) => error.includes("artigo de usuario deve estar vinculado")));
+});
+
 test("rejeita artigo publicado validado no futuro", () => {
   const result = run([fixture({ validadoEm: "2026-08-13" })]);
   assert.ok(result.errors.some((error) => error.includes("no futuro")));

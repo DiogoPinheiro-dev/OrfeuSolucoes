@@ -44,11 +44,14 @@ describe("Header autenticado", () => {
     beforeEach(() => {
         vi.clearAllMocks();
         useAuth.mockReturnValue(auth);
-        useHubNavigation.mockReturnValue({ solutions: [{
-            slug: "configurador",
-            title: "Configurador",
-            areas: [{ slug: "usuarios", title: "Usuários" }]
-        }] });
+        useHubNavigation.mockReturnValue({ solutions: [
+            {
+                slug: "configurador",
+                title: "Configurador",
+                areas: [{ slug: "usuarios", title: "Usuários", registryKey: "configurador.cadastro-de-usuarios" }]
+            },
+            { slug: "documentacao", title: "Documentação", areas: [] }
+        ] });
     });
     afterEach(() => {
         cleanup();
@@ -60,6 +63,20 @@ describe("Header autenticado", () => {
         expect(screen.getAllByText("Configurador").length).toBeGreaterThan(0);
         expect(screen.getByRole("link", { name: "Usuários" })).toHaveAttribute("href", "/hub/configurador/usuarios");
         expect(screen.getByRole("button", { name: "Minimizar menu do Hub" })).toBeInTheDocument();
+    });
+
+    it("apresenta documentação como solução do Hub", () => {
+        renderHeader("/hub");
+
+        expect(screen.getByRole("link", { name: "Documentação" }))
+            .toHaveAttribute("href", "/hub/documentacao");
+    });
+
+    it("não exibe documentação fora do Hub de Soluções", () => {
+        renderHeader("/ecommerce");
+
+        expect(screen.queryByRole("link", { name: /documentação|ajuda desta funcionalidade/i }))
+            .not.toBeInTheDocument();
     });
 
     it("troca a empresa, fecha o menu e retorna ao Hub", async () => {

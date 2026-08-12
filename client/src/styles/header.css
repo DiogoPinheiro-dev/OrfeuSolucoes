@@ -359,9 +359,9 @@
     }
 
     .header-actions .hub-user-card {
-      grid-template-columns: 34px minmax(0, 1fr) 30px;
       width: clamp(168px, 17vw, 210px);
     }
+
   }
 
   @media (max-width: 1010px) {

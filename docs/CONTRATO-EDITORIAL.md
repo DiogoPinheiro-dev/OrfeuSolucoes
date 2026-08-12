@@ -18,7 +18,7 @@ Cada artigo do catálogo possui:
 - `titulo` e `resumo`: textos exibidos na navegação e na pesquisa;
 - `arquivo`: caminho Markdown relativo à pasta `docs`;
 - `categoria`: `sistema` ou `solucao`;
-- `audiencia`: `usuario`, `admin-sistema` ou `interno`;
+- `audiencia`: nível de acesso `usuario`, `admin-empresa`, `admin-sistema` ou `interno`;
 - `status`: `publicado` ou `rascunho`;
 - `ordem`: número usado para ordenação determinística;
 - `validadoEm`: data ISO da última validação funcional do conteúdo;
@@ -33,15 +33,29 @@ Artigos associados a uma tela também informam `solucao`, `funcionalidade` e a `
 - IDs, slugs e arquivos não podem se repetir.
 - Todo arquivo referenciado deve existir dentro de `docs`.
 - Toda `registryKey` deve existir no registro ativo do frontend.
+- Todo artigo de nível `usuario` deve informar `solucao`, `funcionalidade` e `registryKey`; isso permite aplicar a mesma autorização de visualização do Hub.
 - Links relativos para arquivos ou imagens locais devem apontar para destinos existentes.
 - Links absolutos, âncoras e endereços web são preservados sem acesso à rede durante a validação.
 - O conteúdo publicado deve descrever somente comportamento implementado e validado.
 
-## Audiências
+## Níveis de acesso
 
-- `usuario`: conteúdo funcional; futuramente herdará a permissão de visualizar a funcionalidade no Hub.
-- `admin-sistema`: conteúdo administrativo ou técnico restrito ao administrador do sistema.
-- `interno`: conteúdo que não integra o manifesto público.
+O campo `audiencia` representa o nível mínimo necessário. A autorização é cumulativa: níveis administrativos também podem consultar os níveis inferiores quando possuem acesso à funcionalidade relacionada.
+
+| Nível | Uso editorial | Regra de visualização |
+|---|---|---|
+| `usuario` | Como usar telas, fluxos, campos e operações | Usuário autenticado com permissão de visualizar a `registryKey` |
+| `admin-empresa` | Configuração, governança e operação administrativa da empresa | Grupo com acesso administrativo completo; artigos contextuais também exigem acesso à `registryKey` |
+| `admin-sistema` | Arquitetura, desenvolvimento, implantação, testes e entranhas do produto | Somente o administrador inicial do sistema |
+| `interno` | Rascunhos técnicos, decisões internas e conteúdo não publicável | Não integra o manifesto nem a Central |
+
+Na dúvida, deve-se escolher o nível mais restritivo e reduzir somente após revisão do conteúdo.
+
+## Classificação atual
+
+- `Frontend`: `admin-sistema`, pois descreve organização interna, componentes e arquitetura do cliente.
+- `Testes automatizados`: `admin-sistema`, pois contém comandos, estrutura e limites técnicos das suítes.
+- `Backlog de demandas`: `usuario`, pois ensina a utilizar uma funcionalidade e herda sua permissão no Hub.
 
 ## Conteúdo orientado ao usuário
 

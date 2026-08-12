@@ -51,6 +51,10 @@ describe("useHubNavigation", () => {
             id: 10,
             slug: "solucao-10",
             title: "Configurador"
+        }), expect.objectContaining({
+            id: "system-documentation",
+            slug: "documentacao",
+            title: "Documentação"
         })]);
         expect(getMyHubNavigation).toHaveBeenCalledTimes(2);
     });
@@ -61,7 +65,9 @@ describe("useHubNavigation", () => {
         const { result } = renderHook(() => useHubNavigation(), strictOptions);
 
         await waitFor(() => expect(result.current.loading).toBe(false));
-        expect(result.current.solutions).toEqual([]);
+        expect(result.current.solutions).toEqual([
+            expect.objectContaining({ slug: "documentacao", title: "Documentação" })
+        ]);
         expect(result.current.error).toBe("Não foi possível carregar as soluções.");
     });
 
@@ -70,7 +76,9 @@ describe("useHubNavigation", () => {
         const { result } = renderHook(() => useHubNavigation(), strictOptions);
         await waitFor(() => expect(result.current.error).toBe("Serviço indisponível."));
         expect(result.current.loading).toBe(false);
-        expect(result.current.solutions).toEqual([]);
+        expect(result.current.solutions).toEqual([
+            expect.objectContaining({ slug: "documentacao", title: "Documentação" })
+        ]);
 
         getMyHubNavigation.mockResolvedValue(navigation(20, "Projetos"));
         act(() => window.dispatchEvent(new CustomEvent(HUB_NAVIGATION_CHANGED_EVENT)));
@@ -116,7 +124,7 @@ describe("useHubNavigation", () => {
     it("limpa imediatamente a navegação ao encerrar a sessão", async () => {
         getMyHubNavigation.mockResolvedValue(navigation(10, "Configurador"));
         const { result, rerender } = renderHook(() => useHubNavigation(), strictOptions);
-        await waitFor(() => expect(result.current.solutions).toHaveLength(1));
+        await waitFor(() => expect(result.current.solutions).toHaveLength(2));
 
         auth = { isAuthenticated: false, user: null };
         rerender();

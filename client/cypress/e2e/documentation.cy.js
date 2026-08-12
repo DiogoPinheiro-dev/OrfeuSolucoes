@@ -5,6 +5,7 @@ describe("Central de Documentação no navegador", () => {
     cy.contains("a", "Backlog — visão geral").click();
     cy.location("pathname").should("eq", "/hub/documentacao/backlog-visao-geral");
     cy.contains("h1", "Backlog — visão geral").should("be.visible");
+    cy.contains("Nível: Usuário").should("be.visible");
     cy.get('aside[aria-label="Nesta página"]').should("contain.text", "Consultar o backlog");
     cy.title().should("contain", "Backlog — visão geral");
   });
@@ -15,5 +16,11 @@ describe("Central de Documentação no navegador", () => {
     cy.contains("button", "Backlog — visão geral").should("be.visible").click();
     cy.location("pathname").should("eq", "/hub/documentacao/backlog-visao-geral");
     cy.contains("h2", "Consultar o backlog").should("be.visible");
+  });
+
+  it("resolve uma entrada contextual diretamente para o artigo", () => {
+    cy.visitAuthenticated("/hub/documentacao?registryKey=projetos.backlog-de-demandas");
+    cy.location("pathname").should("eq", "/hub/documentacao/backlog-visao-geral");
+    cy.contains("h1", "Backlog — visão geral").should("be.visible");
   });
 });

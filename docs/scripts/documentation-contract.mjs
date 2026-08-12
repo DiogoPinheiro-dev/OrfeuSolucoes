@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-export const ALLOWED_AUDIENCES = new Set(["usuario", "admin-sistema", "interno"]);
+export const ALLOWED_AUDIENCES = new Set(["usuario", "admin-empresa", "admin-sistema", "interno"]);
 export const ALLOWED_CATEGORIES = new Set(["sistema", "solucao"]);
 export const ALLOWED_STATUSES = new Set(["publicado", "rascunho"]);
 
@@ -78,6 +78,9 @@ export function validateCatalog({ catalog, docsRoot, registryKeys, today = new D
     if (contextualFields === 3) {
       if (`${article.solucao}.${article.funcionalidade}` !== article.registryKey) errors.push(`${label}: registryKey não corresponde a solucao e funcionalidade`);
       if (!registryKeys.has(article.registryKey)) errors.push(`${label}: registryKey desconhecida ou inativa: ${article.registryKey}`);
+    }
+    if (article?.audiencia === "usuario" && contextualFields !== 3) {
+      errors.push(`${label}: artigo de usuario deve estar vinculado a uma funcionalidade`);
     }
   }
 
