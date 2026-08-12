@@ -54,6 +54,7 @@ coverage/
 jest-*.json
 cypress/screenshots/
 cypress/videos/
+cypress/artifacts/
 
 # Cache de ferramentas
 .cache/
