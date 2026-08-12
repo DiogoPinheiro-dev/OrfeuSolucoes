@@ -37,6 +37,10 @@ import { ChamadoTipoConfigService } from '../src/modules/chamados/chamado-tipo-c
 import { ChamadosService } from '../src/modules/chamados/chamados.service';
 import { ChamadoQueryService } from '../src/modules/chamados/queries/chamado-query.service';
 import { EmpresaAcessoService } from '../src/modules/empresas/empresa-acesso.service';
+import { DocumentacaoAuthorizationService } from '../src/modules/documentacao/documentacao-authorization.service';
+import { DocumentacaoCatalogService } from '../src/modules/documentacao/documentacao-catalog.service';
+import { DocumentacaoSearchService } from '../src/modules/documentacao/documentacao-search.service';
+import { DocumentacaoService } from '../src/modules/documentacao/documentacao.service';
 import { EmpresaAdminService } from '../src/modules/empresas/empresa-admin.service';
 import { EmpresaCatalogService } from '../src/modules/empresas/empresa-catalog.service';
 import { EmpresasService } from '../src/modules/empresas/empresas.service';
@@ -1573,6 +1577,7 @@ class TestChamadoAnexoStorage {
 type TestWorld = {
   prisma: InMemoryPrismaService;
   solucoesService: SolucoesService;
+  documentacaoService: DocumentacaoService;
   gruposService: GruposUsuariosService;
   empresasService: EmpresasService;
   usersService: UsersService;
@@ -1622,6 +1627,10 @@ function createWorld(): TestWorld {
   const solucaoCatalogService = new SolucaoCatalogService(prismaService, funcionalidadeAcaoService, solucaoAcessoService);
   const hubNavigationService = new HubNavigationService(solucaoAcessoService, solucaoQueryService);
   const solucoesService = new SolucoesService(solucaoAcessoService, solucaoBootstrapService, solucaoCatalogService, hubNavigationService, solucaoQueryService);
+  const documentacaoCatalogService = new DocumentacaoCatalogService(join(process.cwd(), '../docs'));
+  const documentacaoAuthorizationService = new DocumentacaoAuthorizationService(hubNavigationService);
+  const documentacaoSearchService = new DocumentacaoSearchService();
+  const documentacaoService = new DocumentacaoService(documentacaoCatalogService, documentacaoAuthorizationService, documentacaoSearchService);
   const grupoUsuarioBootstrapService = new GrupoUsuarioBootstrapService(prismaService, solucoesService);
   const grupoUsuarioPermissaoService = new GrupoUsuarioPermissaoService();
   const grupoUsuarioCatalogService = new GrupoUsuarioCatalogService(prismaService, solucoesService, grupoUsuarioPermissaoService);
@@ -1780,6 +1789,7 @@ function createWorld(): TestWorld {
   return {
     prisma,
     solucoesService,
+    documentacaoService,
     gruposService,
     empresasService,
     usersService,
@@ -3032,6 +3042,63 @@ describe('Fluxos integrados do backend', () => {
     }, admin);
     expect(cicloAdmin.situacao).toBe('PAUSADO');
   });
+  it('filtra indice, leitura e busca da documentacao pelas permissoes efetivas do Hub', async () => {
+    const { world, admin } = await bootstrapBaseWorld();
+    const projetos = expectDefined((await world.solucoesService.findAll()).find((solucao) => solucao.slug === 'projetos'));
+    const backlog = expectDefined(projetos.funcionalidades.find((funcionalidade) => funcionalidade.slug === 'backlog-de-demandas'));
+    const grupo = await world.gruposService.create({
+      nome: 'Leitores do backlog',
+      descricao: 'Acesso restrito ao artigo contextual do backlog.',
+      acessoEcommerce: false,
+      acessoProjetos: false,
+      acessoHoras: false,
+      acessoConfigurador: false,
+      podeVisualizar: true,
+      podeIncluir: false,
+      podeAlterar: false,
+      podeExcluir: false,
+      solucaoIds: [projetos.id],
+      funcionalidadeIds: [backlog.id],
+      funcionalidadePermissoes: [buildPermissionForFeature(backlog)]
+    });
+    const empresa = await world.empresasService.create({
+      nome: 'Empresa com documentacao de projetos',
+      solucaoIds: [projetos.id],
+      funcionalidadeIds: [backlog.id]
+    }, admin);
+    const payload: JwtPayload = {
+      sub: randomUUID(),
+      email: 'leitor.documentacao@orfeu.test',
+      login: 'leitor.documentacao',
+      empresaId: empresa.id,
+      grupo: {
+        id: grupo.id,
+        nome: grupo.nome,
+        acessoEcommerce: false,
+        acessoProjetos: false,
+        acessoHoras: false,
+        acessoConfigurador: false
+      }
+    };
+
+    const indiceAdmin = await world.documentacaoService.indice(admin);
+    expect(indiceAdmin.map((artigo) => artigo.slug)).toEqual(expect.arrayContaining(['frontend', 'testes-automatizados', 'backlog-visao-geral']));
+    const indiceLeitor = await world.documentacaoService.indice(payload);
+    expect(indiceLeitor.map((artigo) => artigo.slug)).toEqual(['backlog-visao-geral']);
+    await expect(world.documentacaoService.artigo('frontend', payload)).rejects.toThrow('Artigo de documentacao nao encontrado.');
+    await expect(world.documentacaoService.artigo('slug-inexistente', payload)).rejects.toThrow('Artigo de documentacao nao encontrado.');
+
+    const artigo = await world.documentacaoService.artigo('backlog-visao-geral', payload);
+    expect(artigo.conteudo).toContain('# Backlog de demandas');
+    const busca = await world.documentacaoService.buscar('priorizacao', payload);
+    expect(busca.map((resultado) => resultado.slug)).toEqual(['backlog-visao-geral']);
+    expect(busca[0]?.trecho).toContain('priorização');
+    expect(await world.documentacaoService.buscar('priorizacao', payload, { categoria: 'sistema' })).toEqual([]);
+
+    const empresaSemAcesso = await world.empresasService.create({ nome: 'Empresa sem documentacao contextual', solucaoIds: [], funcionalidadeIds: [] }, admin);
+    expect(await world.documentacaoService.indice({ ...payload, empresaId: empresaSemAcesso.id })).toEqual([]);
+  });
+
   it('cadastra grupo, usuario e empresa, vincula acesso a solucoes/funcionalidades e valida o hub', async () => {
     const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
     const solucoes = await world.solucoesService.findAll();

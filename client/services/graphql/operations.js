@@ -560,6 +560,65 @@ export const MY_HUB_NAVIGATION_QUERY = gql`
   }
 `;
 
+export const DOCUMENTACAO_INDICE_QUERY = gql`
+  query DocumentacaoIndice($filtro: DocumentacaoFiltroInput) {
+    documentacaoIndice(filtro: $filtro) {
+      id
+      slug
+      titulo
+      resumo
+      categoria
+      audiencia
+      ordem
+      validadoEm
+      palavrasChave
+      solucao
+      funcionalidade
+      registryKey
+    }
+  }
+`;
+
+export const DOCUMENTACAO_ARTIGO_QUERY = gql`
+  query DocumentacaoArtigo($slug: String!) {
+    documentacaoArtigo(slug: $slug) {
+      id
+      slug
+      titulo
+      resumo
+      categoria
+      audiencia
+      ordem
+      validadoEm
+      palavrasChave
+      solucao
+      funcionalidade
+      registryKey
+      conteudo
+    }
+  }
+`;
+
+export const BUSCAR_DOCUMENTACAO_QUERY = gql`
+  query BuscarDocumentacao($termo: String!, $filtro: DocumentacaoFiltroInput) {
+    buscarDocumentacao(termo: $termo, filtro: $filtro) {
+      id
+      slug
+      titulo
+      resumo
+      categoria
+      audiencia
+      ordem
+      validadoEm
+      palavrasChave
+      solucao
+      funcionalidade
+      registryKey
+      trecho
+    }
+  }
+`;
+
 export const SOLUCOES_QUERY = gql`
   query Solucoes {
     solucoes {

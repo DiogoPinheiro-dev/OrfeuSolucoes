@@ -13,6 +13,7 @@ const CompanyLogin = lazy(() => import("./pages/CompanyLogin.jsx"));
 const Ecommerce = lazy(() => import("./pages/Ecommerce.jsx"));
 const Home = lazy(() => import("./pages/Home.jsx"));
 const Hub = lazy(() => import("./pages/Hub.jsx"));
+const DocumentationCenter = lazy(() => import("./pages/DocumentationCenter.jsx"));
 const SolutionFeaturePage = lazy(() => import("./pages/SolutionFeaturePage.jsx"));
 const SolutionWorkspace = lazy(() => import("./pages/SolutionWorkspace.jsx"));
 
@@ -39,6 +40,14 @@ const router = createBrowserRouter([
                     {
                         path: "hub",
                         element: <Hub />
+                    },
+                    {
+                        path: "hub/documentacao",
+                        element: <DocumentationCenter />
+                    },
+                    {
+                        path: "hub/documentacao/:articleSlug",
+                        element: <DocumentationCenter />
                     },
                     {
                         path: "hub/:slug",

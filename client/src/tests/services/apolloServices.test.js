@@ -7,6 +7,7 @@ import * as BacklogService from "../../../services/Projetos/BacklogService";
 import * as ChamadoService from "../../../services/Chamados/ChamadoService";
 import * as ComunicacaoService from "../../../services/Projetos/ComunicacaoService";
 import * as CronogramaService from "../../../services/Projetos/CronogramaService";
+import * as DocumentacaoService from "../../../services/Documentacao/DocumentacaoService";
 import * as EmpresaService from "../../../services/Empresas/EmpresaService";
 import * as GrupoUsuarioService from "../../../services/GruposUsuarios/GrupoUsuarioService";
 import * as MarcoEntregaService from "../../../services/Projetos/MarcoEntregaService";
@@ -56,6 +57,7 @@ const modules = {
     ChamadoService,
     ComunicacaoService,
     CronogramaService,
+    DocumentacaoService,
     EmpresaService,
     GrupoUsuarioService,
     MarcoEntregaService,

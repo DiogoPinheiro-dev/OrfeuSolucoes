@@ -1,0 +1,61 @@
+{
+  "versaoContrato": 1,
+  "geradoDe": "docs/catalogo.json",
+  "artigos": [
+    {
+      "id": "sistema.frontend",
+      "slug": "frontend",
+      "titulo": "Frontend",
+      "resumo": "Organização, navegação, permissões e componentes compartilhados do frontend.",
+      "arquivo": "sistema/frontend.md",
+      "categoria": "sistema",
+      "audiencia": "admin-sistema",
+      "status": "publicado",
+      "ordem": 10,
+      "validadoEm": "2026-08-10",
+      "palavrasChave": [
+        "componentes",
+        "frontend",
+        "navegação"
+      ]
+    },
+    {
+      "id": "solucoes.projetos.backlog-visao-geral",
+      "slug": "backlog-visao-geral",
+      "titulo": "Backlog de demandas",
+      "resumo": "Como consultar, criar, priorizar e arquivar demandas de um projeto.",
+      "arquivo": "solucoes/projetos/backlog-visao-geral.md",
+      "categoria": "solucao",
+      "audiencia": "usuario",
+      "status": "publicado",
+      "ordem": 20,
+      "validadoEm": "2026-08-10",
+      "solucao": "projetos",
+      "funcionalidade": "backlog-de-demandas",
+      "registryKey": "projetos.backlog-de-demandas",
+      "palavrasChave": [
+        "arquivar",
+        "backlog",
+        "demanda",
+        "prioridade"
+      ]
+    },
+    {
+      "id": "sistema.testes-automatizados",
+      "slug": "testes-automatizados",
+      "titulo": "Testes automatizados",
+      "resumo": "Suítes, comandos, cobertura e limites dos testes automatizados.",
+      "arquivo": "sistema/testes-automatizados.md",
+      "categoria": "sistema",
+      "audiencia": "admin-sistema",
+      "status": "publicado",
+      "ordem": 20,
+      "validadoEm": "2026-08-10",
+      "palavrasChave": [
+        "cobertura",
+        "qualidade",
+        "testes"
+      ]
+    }
+  ]
+}

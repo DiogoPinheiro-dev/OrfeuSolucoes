@@ -1,0 +1,1 @@
+export const DOCUMENTACAO_ROOT = Symbol('DOCUMENTACAO_ROOT');

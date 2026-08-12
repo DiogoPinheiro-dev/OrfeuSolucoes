@@ -1666,13 +1666,69 @@ type ProjetoUsuarioType {
   nome: String
 }
 
+input DocumentacaoFiltroInput {
+  categoria: String
+  registryKey: String
+  solucao: String
+}
+
+type DocumentacaoItemType {
+  audiencia: String!
+  categoria: String!
+  funcionalidade: String
+  id: String!
+  ordem: Int!
+  palavrasChave: [String!]!
+  registryKey: String
+  resumo: String!
+  slug: String!
+  solucao: String
+  titulo: String!
+  validadoEm: String!
+}
+
+type DocumentacaoArtigoType {
+  audiencia: String!
+  categoria: String!
+  conteudo: String!
+  funcionalidade: String
+  id: String!
+  ordem: Int!
+  palavrasChave: [String!]!
+  registryKey: String
+  resumo: String!
+  slug: String!
+  solucao: String
+  titulo: String!
+  validadoEm: String!
+}
+
+type DocumentacaoBuscaResultadoType {
+  audiencia: String!
+  categoria: String!
+  funcionalidade: String
+  id: String!
+  ordem: Int!
+  palavrasChave: [String!]!
+  registryKey: String
+  resumo: String!
+  slug: String!
+  solucao: String
+  titulo: String!
+  trecho: String!
+  validadoEm: String!
+}
+
 type Query {
   acompanhantesElegiveisChamado(chamadoId: String): [ChamadoResponsavelUsuarioOptionType!]!
   atendentesDisponiveis: [AtendenteChamadoType!]!
+  buscarDocumentacao(filtro: DocumentacaoFiltroInput, termo: String!): [DocumentacaoBuscaResultadoType!]!
   categoriasChamado(ativas: Boolean = true): [ChamadoCategoriaType!]!
   chamado(id: String!): ChamadoType!
   chamadosArquivados(filtro: ChamadoFiltroInput): ChamadoPageType!
   dashboardChamados: ChamadoDashboardType!
+  documentacaoArtigo(slug: String!): DocumentacaoArtigoType!
+  documentacaoIndice(filtro: DocumentacaoFiltroInput): [DocumentacaoItemType!]!
   empresas: [EmpresaType!]!
   filaChamados(filtro: ChamadoFiltroInput): ChamadoPageType!
   googleEmailAuthUrl(id: Int!): String!
