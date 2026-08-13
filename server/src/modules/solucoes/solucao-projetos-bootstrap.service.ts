@@ -29,7 +29,8 @@ export class SolucaoProjetosBootstrapService {
             ordem: 10,
             ativo: true,
             exibirNoHub: true,
-            somenteAdminSistema: false
+            somenteAdminSistema: false,
+            padraoSistema: true
           },
           select: { id: true }
         })) as { id: number }
@@ -42,7 +43,8 @@ export class SolucaoProjetosBootstrapService {
             ordem: 10,
             ativo: true,
             exibirNoHub: true,
-            somenteAdminSistema: false
+            somenteAdminSistema: false,
+            padraoSistema: true
           },
           select: { id: true }
         })) as { id: number };

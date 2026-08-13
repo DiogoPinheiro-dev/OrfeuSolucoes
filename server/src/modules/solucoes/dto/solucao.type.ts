@@ -30,6 +30,9 @@ export class SolucaoType {
   @Field()
   somenteAdminSistema!: boolean;
 
+  @Field()
+  padraoSistema!: boolean;
+
   @Field(() => [FuncionalidadeType])
   funcionalidades!: FuncionalidadeType[];
 }

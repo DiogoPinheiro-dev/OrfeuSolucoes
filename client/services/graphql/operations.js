@@ -528,6 +528,7 @@ export const MY_HUB_NAVIGATION_QUERY = gql`
       ativo
       exibirNoHub
       somenteAdminSistema
+      padraoSistema
       funcionalidades {
         id
         slug
@@ -631,6 +632,7 @@ export const SOLUCOES_QUERY = gql`
       ativo
       exibirNoHub
       somenteAdminSistema
+      padraoSistema
       funcionalidades {
         id
         slug
@@ -675,6 +677,7 @@ export const CREATE_SOLUCAO_MUTATION = gql`
       ativo
       exibirNoHub
       somenteAdminSistema
+      padraoSistema
       funcionalidades {
         id
         slug
@@ -703,6 +706,7 @@ export const UPDATE_SOLUCAO_MUTATION = gql`
       ativo
       exibirNoHub
       somenteAdminSistema
+      padraoSistema
       funcionalidades {
         id
         slug

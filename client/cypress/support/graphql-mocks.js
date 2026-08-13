@@ -9,8 +9,10 @@ export const usuarioAutenticado = {
   empresa: empresaA, empresas: [empresaA, empresaB],
 };
 export const navegacaoHub = [{
-  id: 20, slug: "projetos", nome: "Projetos", descricao: "Gestão de projetos", eyebrow: "Planejamento", ordem: 1, ativo: true, exibirNoHub: true, somenteAdminSistema: false,
+  id: 20, slug: "projetos", nome: "Projetos", descricao: "Gestão de projetos", eyebrow: "Planejamento", ordem: 1, ativo: true, exibirNoHub: true, somenteAdminSistema: false, padraoSistema: false,
   funcionalidades: [{ id: 21, slug: "cadastro-de-projetos", titulo: "Cadastro de projetos", label: "Projetos", descricao: "Cadastre e acompanhe projetos", ordem: 1, ativo: true, registryKey: "projetos.cadastro-de-projetos", somenteAdminSistema: false, padraoSistema: true, podeVisualizar: true, podeIncluir: true, podeAlterar: true, podeExcluir: true, acoes: [] }],
+}, {
+  id: 90, slug: "documentacao", nome: "Documentação", descricao: "Manuais de uso e referências do sistema conforme seu nível de acesso.", eyebrow: "Central de conhecimento", ordem: 900, ativo: true, exibirNoHub: true, somenteAdminSistema: false, padraoSistema: true, funcionalidades: [],
 }];
 export const artigoIndice = { id: "projetos-backlog-visao-geral", slug: "backlog-visao-geral", titulo: "Backlog — visão geral", resumo: "Como consultar e organizar o backlog do projeto.", categoria: "Operação", audiencia: ["usuario"], ordem: 10, validadoEm: "2026-08-12", palavrasChave: ["backlog", "projeto"], solucao: "projetos", funcionalidade: "Backlog", registryKey: "projetos.backlog" };
 

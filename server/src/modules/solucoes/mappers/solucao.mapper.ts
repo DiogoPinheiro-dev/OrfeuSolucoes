@@ -13,6 +13,7 @@ export function toType(solucao: SolucaoRecord): SolucaoType {
     ativo: solucao.ativo,
     exibirNoHub: solucao.exibirNoHub,
     somenteAdminSistema: solucao.somenteAdminSistema,
+    padraoSistema: solucao.padraoSistema,
     funcionalidades: (solucao.funcionalidades ?? []).map((funcionalidade) => toFuncionalidadeType(funcionalidade))
   };
 }

@@ -81,7 +81,8 @@ export class SolucaoChamadosBootstrapService {
             ordem: 40,
             ativo: true,
             exibirNoHub: true,
-            somenteAdminSistema: false
+            somenteAdminSistema: false,
+            padraoSistema: true
           },
           select: { id: true }
         })) as { id: number }
@@ -94,7 +95,8 @@ export class SolucaoChamadosBootstrapService {
             ordem: 40,
             ativo: true,
             exibirNoHub: true,
-            somenteAdminSistema: false
+            somenteAdminSistema: false,
+            padraoSistema: true
           },
           select: { id: true }
         })) as { id: number };

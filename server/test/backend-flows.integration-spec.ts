@@ -1269,6 +1269,7 @@ class InMemoryPrismaService {
         row.ativo = row.ativo ?? true;
         row.exibirNoHub = row.exibirNoHub ?? true;
         row.somenteAdminSistema = row.somenteAdminSistema ?? false;
+        row.padraoSistema = row.padraoSistema ?? false;
         break;
       case 'funcionalidade':
         row.label = row.label ?? null;
@@ -2014,6 +2015,14 @@ describe('Fluxos integrados do backend', () => {
   it('consulta projetos com identidade, filtros, papeis, privacidade e participantes elegiveis', async () => {
     const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
     const solucoes = await world.solucoesService.findAll();
+    const documentacao = expectDefined(solucoes.find((solucao) => solucao.slug === 'documentacao'));
+    expect(documentacao.padraoSistema).toBe(true);
+    expect(documentacao.ativo).toBe(true);
+    expect(documentacao.exibirNoHub).toBe(true);
+    await expect(world.solucoesService.update({ id: documentacao.id, nome: 'Documentacao alterada' }))
+      .rejects.toThrow('Os dados cadastrais de uma solucao padrao do sistema nao podem ser alterados.');
+    await expect(world.solucoesService.remove(documentacao.id))
+      .rejects.toThrow('Uma solucao padrao do sistema nao pode ser excluida.');
     const projetosSolucao = expectDefined(solucoes.find((item) => item.slug === 'projetos'));
     const cadastroProjetos = expectDefined(projetosSolucao.funcionalidades.find((item) => item.slug === 'cadastro-de-projetos'));
     await world.solucoesService.syncCompanyAccess(

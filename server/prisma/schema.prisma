@@ -837,6 +837,7 @@ model Solucao {
   ativo               Boolean @default(true) @map("Ativo")
   exibirNoHub         Boolean @default(true) @map("ExibirNoHub")
   somenteAdminSistema Boolean @default(false) @map("SomenteAdminSistema")
+  padraoSistema       Boolean @default(false) @map("PadraoSistema")
 
   funcionalidades            Funcionalidade[]
   grupos                     GrupoSolucao[]

@@ -8,6 +8,7 @@ export type SolucaoRecord = {
   ativo: boolean;
   exibirNoHub: boolean;
   somenteAdminSistema: boolean;
+  padraoSistema: boolean;
   funcionalidades?: FuncionalidadeRecord[];
 };
 

@@ -229,7 +229,7 @@ export default function SolutionManagement({ permissions }) {
         });
     };
 
-    const readonly = modalMode === "view";
+    const readonly = modalMode === "view" || (modalMode === "edit" && !!form.padraoSistema);
 
     return (
         <>
@@ -242,6 +242,7 @@ export default function SolutionManagement({ permissions }) {
                         { key: "ativo", label: "Ativo", render: (solucao) => booleanLabel(solucao.ativo) },
                         { key: "exibirNoHub", label: "Hub", render: (solucao) => booleanLabel(solucao.exibirNoHub) },
                         { key: "somenteAdminSistema", label: "Admin", render: (solucao) => booleanLabel(solucao.somenteAdminSistema) },
+                        { key: "padraoSistema", label: "Padrão", render: (solucao) => booleanLabel(solucao.padraoSistema) },
                         { key: "funcionalidades", label: "Funcionalidades", render: (solucao) => solucao.funcionalidades?.length ?? 0 }
                     ]}
                     rows={loading ? [] : filteredSolucoes}
@@ -250,7 +251,8 @@ export default function SolutionManagement({ permissions }) {
                     selectedIds={selectedIds}
                     onToggleSelect={toggleSelectedSolucao}
                     onToggleSelectAll={toggleVisibleSolucoes}
-                    isRowSelectable={() => true}
+                    isRowSelectable={(solucao) => !solucao.padraoSistema}
+                    getRowSelectionDisabledReason={() => "Soluções padrão do sistema não podem ser excluídas."}
                     onCreate={() => openModal("create")}
                     onEdit={(solucao) => openModal("edit", solucao)}
                     onView={(solucao) => openModal("view", solucao)}

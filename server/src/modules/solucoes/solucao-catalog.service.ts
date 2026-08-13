@@ -50,7 +50,11 @@ export class SolucaoCatalogService {
   }
 
   async update(input: UpdateSolucaoInput): Promise<SolucaoType> {
-    await this.ensureSolucao(input.id);
+    const current = await this.ensureSolucao(input.id);
+
+    if (current.padraoSistema) {
+      throw new BadRequestException('Os dados cadastrais de uma solucao padrao do sistema nao podem ser alterados.');
+    }
 
     if (input.slug !== undefined) {
       const slug = normalizeSlug(input.slug);
@@ -81,7 +85,10 @@ export class SolucaoCatalogService {
   }
 
   async remove(id: number): Promise<boolean> {
-    await this.ensureSolucao(id);
+    const solucao = await this.ensureSolucao(id);
+    if (solucao.padraoSistema) {
+      throw new BadRequestException('Uma solucao padrao do sistema nao pode ser excluida.');
+    }
     await (this.prisma as never as { solucao: { delete: Function } }).solucao.delete({ where: { id } });
     return true;
   }
@@ -172,12 +179,14 @@ export class SolucaoCatalogService {
     return true;
   }
 
-  private async ensureSolucao(id: number): Promise<void> {
-    const exists = await (this.prisma as never as { solucao: { findUnique: Function } }).solucao.findUnique({ where: { id } });
+  private async ensureSolucao(id: number): Promise<SolucaoRecord> {
+    const exists = await (this.prisma as never as { solucao: { findUnique: Function } }).solucao.findUnique({ where: { id } }) as SolucaoRecord | null;
 
     if (!exists) {
       throw new NotFoundException('Solucao nao encontrada.');
     }
+
+    return exists;
   }
 
   private async ensureFuncionalidade(id: number): Promise<FuncionalidadeRecord> {

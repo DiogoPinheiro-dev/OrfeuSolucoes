@@ -32,6 +32,10 @@ export class SolucoesService {
     return this.solucaoBootstrapService.ensureDefaultConfiguradorFeatures();
   }
 
+  async ensureDocumentationSolution(): Promise<void> {
+    return this.solucaoBootstrapService.ensureDocumentationSolution();
+  }
+
   async ensureControleChamadosSolution(): Promise<void> {
     return this.solucaoBootstrapService.ensureControleChamadosSolution();
   }

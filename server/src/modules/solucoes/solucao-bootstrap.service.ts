@@ -94,6 +94,33 @@ export class SolucaoBootstrapService {
     }
   }
 
+  async ensureDocumentationSolution(): Promise<void> {
+    await (this.prisma as never as { solucao: { upsert: Function } }).solucao.upsert({
+      where: { slug: 'documentacao' },
+      create: {
+        slug: 'documentacao',
+        nome: 'Documentacao',
+        descricao: 'Manuais de uso e referencias do sistema conforme seu nivel de acesso.',
+        eyebrow: 'Central de conhecimento',
+        ordem: 900,
+        ativo: true,
+        exibirNoHub: true,
+        somenteAdminSistema: false,
+        padraoSistema: true
+      },
+      update: {
+        nome: 'Documentacao',
+        descricao: 'Manuais de uso e referencias do sistema conforme seu nivel de acesso.',
+        eyebrow: 'Central de conhecimento',
+        ordem: 900,
+        ativo: true,
+        exibirNoHub: true,
+        somenteAdminSistema: false,
+        padraoSistema: true
+      }
+    });
+  }
+
   async ensureControleChamadosSolution(): Promise<void> {
     return this.solucaoChamadosBootstrap.ensureControleChamadosSolution();
   }

@@ -25,6 +25,10 @@ export class HubNavigationService {
     return solucoes
       .filter((solucao) => solucao.ativo && solucao.exibirNoHub)
       .filter((solucao) => {
+        if (solucao.padraoSistema && solucao.slug === 'documentacao') {
+          return true;
+        }
+
         if (solucao.somenteAdminSistema) {
           return systemAdmin;
         }

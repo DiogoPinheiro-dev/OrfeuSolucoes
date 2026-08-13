@@ -51,6 +51,7 @@ const solution = {
     ativo: true,
     exibirNoHub: true,
     somenteAdminSistema: false,
+    padraoSistema: false,
     funcionalidades: [{
         id: 11,
         slug: "usuarios",
@@ -72,6 +73,18 @@ const solution = {
         padraoSistema: false,
         acoes: []
     }]
+};
+const standardSolution = {
+    id: 90,
+    slug: "documentacao",
+    nome: "Documentação",
+    descricao: "Central de conhecimento",
+    ordem: 900,
+    ativo: true,
+    exibirNoHub: true,
+    somenteAdminSistema: false,
+    padraoSistema: true,
+    funcionalidades: []
 };
 const company = { id: 1, nome: "Empresa teste", padraoSistema: false, solucaoIds: [1], funcionalidadeIds: [11] };
 const systemCompany = { id: 2, nome: "Empresa padrão", padraoSistema: true, solucaoIds: [1], funcionalidadeIds: [11] };
@@ -102,7 +115,7 @@ beforeEach(() => {
     getAuthEmpresas.mockResolvedValue([company, systemCompany]);
     getEmpresas.mockResolvedValue([company, systemCompany]);
     getGruposUsuarios.mockResolvedValue([group, customGroup]);
-    getSolucoes.mockResolvedValue([solution]);
+    getSolucoes.mockResolvedValue([solution, standardSolution]);
     getUsers.mockResolvedValue([registeredUser, systemUser]);
     createEmpresa.mockResolvedValue(company);
     updateEmpresa.mockResolvedValue(company);
@@ -209,6 +222,19 @@ describe("CRUDs do Configurador", () => {
         await user.click(screen.getByRole("button", { name: "OK" }));
         await waitFor(() => expect(deleteSolucao).toHaveBeenCalledWith(1));
     }, 15000);
+
+    it("mantém solução padrão somente para consulta", async () => {
+        const user = userEvent.setup();
+        render(<SolutionManagement permissions={permissions} />);
+
+        await screen.findByRole("cell", { name: "Documentação" });
+        expect(screen.getByRole("checkbox", { name: /Selecionar Documentação\. Indisponível:/ })).toBeDisabled();
+        await user.click(screen.getByRole("cell", { name: "Documentação" }));
+        await user.click(screen.getByRole("button", { name: "Alterar" }));
+        const dialog = screen.getByRole("dialog", { name: "Cadastro de solucao" });
+        expect(within(dialog).getByRole("textbox", { name: "Nome" })).toBeDisabled();
+        expect(within(dialog).queryByRole("button", { name: "Salvar" })).not.toBeInTheDocument();
+    });
 
     it("executa inclusão, alteração e exclusão de usuário", async () => {
         const user = userEvent.setup();

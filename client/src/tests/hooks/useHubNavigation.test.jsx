@@ -17,13 +17,22 @@ vi.mock("../../hooks/useAuth", () => ({
 }));
 
 const strictOptions = { reactStrictMode: true };
-const navigation = (id, nome) => [{
-    id,
-    slug: `solucao-${id}`,
-    nome,
-    descricao: `${nome} descrição`,
-    funcionalidades: []
-}];
+const navigation = (id, nome) => [
+    {
+        id,
+        slug: `solucao-${id}`,
+        nome,
+        descricao: `${nome} descrição`,
+        funcionalidades: []
+    },
+    {
+        id: 99,
+        slug: "documentacao",
+        nome: "Documentação",
+        padraoSistema: true,
+        funcionalidades: []
+    }
+];
 
 const deferred = () => {
     let resolve;
@@ -52,7 +61,7 @@ describe("useHubNavigation", () => {
             slug: "solucao-10",
             title: "Configurador"
         }), expect.objectContaining({
-            id: "system-documentation",
+            id: 99,
             slug: "documentacao",
             title: "Documentação"
         })]);
@@ -65,9 +74,7 @@ describe("useHubNavigation", () => {
         const { result } = renderHook(() => useHubNavigation(), strictOptions);
 
         await waitFor(() => expect(result.current.loading).toBe(false));
-        expect(result.current.solutions).toEqual([
-            expect.objectContaining({ slug: "documentacao", title: "Documentação" })
-        ]);
+        expect(result.current.solutions).toEqual([]);
         expect(result.current.error).toBe("Não foi possível carregar as soluções.");
     });
 
@@ -76,9 +83,7 @@ describe("useHubNavigation", () => {
         const { result } = renderHook(() => useHubNavigation(), strictOptions);
         await waitFor(() => expect(result.current.error).toBe("Serviço indisponível."));
         expect(result.current.loading).toBe(false);
-        expect(result.current.solutions).toEqual([
-            expect.objectContaining({ slug: "documentacao", title: "Documentação" })
-        ]);
+        expect(result.current.solutions).toEqual([]);
 
         getMyHubNavigation.mockResolvedValue(navigation(20, "Projetos"));
         act(() => window.dispatchEvent(new CustomEvent(HUB_NAVIGATION_CHANGED_EVENT)));

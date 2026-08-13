@@ -103,6 +103,7 @@ export class GrupoUsuarioBootstrapService {
     });
 
     await this.ensureInitialAdminPasswordPolicy();
+    await this.solucoesService.ensureDocumentationSolution();
     await this.solucoesService.ensureDefaultConfiguradorFeatures();
     await this.solucoesService.ensureControleChamadosSolution();
     await this.solucoesService.ensureProjetosSolution();
