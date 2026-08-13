@@ -8,6 +8,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useFormFieldErrors } from "../hooks/useFormFieldErrors";
 import { useLatestRequest } from "../hooks/useLatestRequest";
 import ConfirmDialog from "./ConfirmDialog";
+import { FeedbackMessage } from "./CrudFeedback";
 import FormFieldError from "./FormFieldError";
 import CrudGrid from "./CrudGrid";
 import { CrudModal, CrudModalTabPanel, CrudModalTabs } from "./CrudModal";
@@ -172,7 +173,7 @@ export default function CompanyManagement({ permissions }) {
             closeModal();
             await loadEmpresas();
         } catch (saveError) {
-            applyFormError(saveError, "Nao foi possivel salvar a empresa.");
+            applyFormError(saveError, "Não foi possível salvar a empresa.");
         } finally {
             setSaving(false);
         }
@@ -182,7 +183,7 @@ export default function CompanyManagement({ permissions }) {
         const deleteEmpresas = empresas.filter((empresa) => ids.includes(empresa.id) && canDeleteEmpresa(empresa));
 
         if (!deleteEmpresas.length) {
-            setError("A empresa padrao do sistema nao pode ser excluida.");
+            setError("A empresa padrão do sistema não pode ser excluída.");
             return;
         }
 
@@ -343,7 +344,7 @@ export default function CompanyManagement({ permissions }) {
                                 ]}
                             />
 
-                            {formError && <div className="crud-error" role="alert">{formError}</div>}
+                            {formError && <FeedbackMessage type="error" compact>{formError}</FeedbackMessage>}
 
                             <CrudModalTabPanel active={activeTab === "main"}>
                             <div className="user-form-field">

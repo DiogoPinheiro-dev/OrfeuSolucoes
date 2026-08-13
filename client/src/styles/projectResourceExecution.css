@@ -14,9 +14,9 @@
 
 .resource-planning-field-error {
   padding: 10px 12px;
-  border: 1px solid var(--danger);
+  border: 1px solid var(--danger-text);
   border-radius: 10px;
-  background: var(--danger-soft);
-  color: var(--danger);
+  background: var(--danger-bg);
+  color: var(--danger-text);
   font-size: .85rem;
 }

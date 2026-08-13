@@ -40,9 +40,9 @@ export class SolucaoBootstrapService {
     const defaultFeatures = [
       {
         slug: 'cadastro-de-solucoes',
-        titulo: 'Cadastro de solucoes',
-        label: 'Solucoes',
-        descricao: 'Crie e mantenha as solucoes exibidas no hub do sistema.',
+        titulo: 'Cadastro de soluções',
+        label: 'Soluções',
+        descricao: 'Crie e mantenha as soluções exibidas no hub do sistema.',
         ordem: 35,
         registryKey: 'configurador.cadastro-de-solucoes'
       }
@@ -99,8 +99,8 @@ export class SolucaoBootstrapService {
       where: { slug: 'documentacao' },
       create: {
         slug: 'documentacao',
-        nome: 'Documentacao',
-        descricao: 'Manuais de uso e referencias do sistema conforme seu nivel de acesso.',
+        nome: 'Documentação',
+        descricao: 'Manuais de uso e referências do sistema conforme seu nível de acesso.',
         eyebrow: 'Central de conhecimento',
         ordem: 900,
         ativo: true,
@@ -109,8 +109,8 @@ export class SolucaoBootstrapService {
         padraoSistema: true
       },
       update: {
-        nome: 'Documentacao',
-        descricao: 'Manuais de uso e referencias do sistema conforme seu nivel de acesso.',
+        nome: 'Documentação',
+        descricao: 'Manuais de uso e referências do sistema conforme seu nível de acesso.',
         eyebrow: 'Central de conhecimento',
         ordem: 900,
         ativo: true,

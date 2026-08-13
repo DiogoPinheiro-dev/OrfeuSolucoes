@@ -13,6 +13,7 @@ import { canUseFeatureAction } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
 import ChamadoDetail from "./ChamadoDetail";
 import ChamadoSlaIndicator from "./ChamadoSlaIndicator";
+import { EmptyState, FeedbackMessage, LoadingState } from "./CrudFeedback";
 import {
     archivedKanbanStatusOptions,
     chamadoSlaDeadline,
@@ -44,8 +45,8 @@ const initialFilters = {
     criadoAte: ""
 };
 
-const chamadoResponsavelLabel = (chamado) => chamado.responsavelGrupoNome || chamado.responsavelNome || "Sem responsavel";
-const responsavelOptionLabel = (responsavel) => responsavel.responsavelNome || responsavel.usuarioNome || responsavel.grupoNome || "Responsavel";
+const chamadoResponsavelLabel = (chamado) => chamado.responsavelGrupoNome || chamado.responsavelNome || "Sem responsável";
+const responsavelOptionLabel = (responsavel) => responsavel.responsavelNome || responsavel.usuarioNome || responsavel.grupoNome || "Responsável";
 
 const uniqueResponsaveisBy = (responsaveis, keySelector) => {
     const map = new Map();
@@ -118,7 +119,7 @@ function ChamadoCard({
                 {isAcompanhando && <span className="chamado-badge-acompanhando">Acompanhando</span>}
             </span>
             <small>
-                Solicitante: {chamado.solicitanteNome || "-"} - Responsavel: {chamadoResponsavelLabel(chamado)}
+                Solicitante: {chamado.solicitanteNome || "-"} - Responsável: {chamadoResponsavelLabel(chamado)}
             </small>
             <small>Atualizado em {formatDateTime(chamado.atualizadoEm)}</small>
         </article>
@@ -216,7 +217,7 @@ export default function ChamadosList({ title, description, areaSlug, loadChamado
             setResult(await loadChamados(filtro));
         } catch (loadError) {
             setResult({ items: [], total: 0, page: 1, pageSize });
-            setError(loadError.message || "Nao foi possivel carregar chamados.");
+            setError(loadError.message || "Não foi possível carregar chamados.");
         } finally {
             setLoading(false);
         }
@@ -370,7 +371,7 @@ export default function ChamadosList({ title, description, areaSlug, loadChamado
         }
 
         if (!canMoveKanbanCards) {
-            setError("Seu grupo nao possui permissao para alterar status pelo Kanban.");
+            setError("Seu grupo não possui permissão para alterar status pelo Kanban.");
             return;
         }
 
@@ -389,7 +390,7 @@ export default function ChamadosList({ title, description, areaSlug, loadChamado
                 items: current.items.map((item) => (item.id === updated.id ? updated : item))
             }));
         } catch (dropError) {
-            setError(dropError.message || "Nao foi possivel mover o chamado no Kanban.");
+            setError(dropError.message || "Não foi possível mover o chamado no Kanban.");
             void load();
         } finally {
             setMovingChamadoId(null);
@@ -422,7 +423,7 @@ export default function ChamadosList({ title, description, areaSlug, loadChamado
                 </div>
             </header>
 
-            {error && <div className="user-management-error" role="alert">{error}</div>}
+            {error && <FeedbackMessage type="error" compact>{error}</FeedbackMessage>}
 
             <div className="chamados-filters">
                 <label>
@@ -432,7 +433,7 @@ export default function ChamadosList({ title, description, areaSlug, loadChamado
                         name="termo"
                         value={filters.termo}
                         onChange={handleFilterChange}
-                        placeholder="Titulo ou descricao"
+                        placeholder="Título ou descrição"
                     />
                 </label>
 
@@ -466,7 +467,7 @@ export default function ChamadosList({ title, description, areaSlug, loadChamado
                 </label>
 
                 <label>
-                    <span>Responsavel usuario</span>
+                    <span>Usuário responsável</span>
                     <select name="responsavelId" value={filters.responsavelId} onChange={handleFilterChange}>
                         <option value="">Todos</option>
                         {responsaveisUsuarios.map((responsavel) => (
@@ -476,7 +477,7 @@ export default function ChamadosList({ title, description, areaSlug, loadChamado
                 </label>
 
                 <label>
-                    <span>Grupo responsavel</span>
+                    <span>Grupo responsável</span>
                     <select name="responsavelGrupoId" value={filters.responsavelGrupoId} onChange={handleFilterChange}>
                         <option value="">Todos</option>
                         {responsaveisGrupos.map((responsavel) => (
@@ -519,13 +520,13 @@ export default function ChamadosList({ title, description, areaSlug, loadChamado
                 </label>
 
                 <label>
-                    <span>Ate</span>
+                    <span>Até</span>
                     <input type="date" name="criadoAte" value={filters.criadoAte} onChange={handleFilterChange} />
                 </label>
             </div>
 
             {loading ? (
-                <div className="user-management-loading">Carregando chamados...</div>
+                <LoadingState message="Carregando chamados..." />
             ) : result.items.length ? (
                 <div className="chamado-kanban-shell">
                     <div
@@ -597,13 +598,13 @@ export default function ChamadosList({ title, description, areaSlug, loadChamado
                     </button>
                 </div>
             ) : (
-                <div className="chamado-empty">Nenhum chamado encontrado para os filtros atuais.</div>
+                <EmptyState title="Nenhum chamado encontrado" description="Ajuste os filtros atuais para ampliar a busca." />
             )}
 
             <footer className="chamados-pagination">
                 <span>
                     {result.total} chamado(s)
-                    {result.total > result.items.length ? ` Ãƒâ€šÃ‚Â· exibindo ${result.items.length} mais recentes no Kanban` : ""}
+                    {result.total > result.items.length ? ` · exibindo ${result.items.length} mais recentes no Kanban` : ""}
                 </span>
             </footer>
         </section>

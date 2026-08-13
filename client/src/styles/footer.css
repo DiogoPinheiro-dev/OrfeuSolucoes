@@ -57,19 +57,19 @@ footer.site-footer .text-muted {
 }
 
 .footer-contacts a[href*="mail.google.com"] {
-  color: #d93025;
+  color: var(--brand-gmail);
 }
 
 .footer-contacts a[href*="linkedin"] {
-  color: #0a66c2;
+  color: var(--brand-linkedin);
 }
 
 .footer-contacts a[href*="instagram"] {
-  color: #c13584;
+  color: var(--brand-instagram);
 }
 
 .footer-contacts a[href*="wa.me"] {
-  color: #25d366;
+  color: var(--brand-whatsapp);
 }
 
 #contato,

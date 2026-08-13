@@ -386,9 +386,9 @@
 
 .project-management .status-pausado,
 .project-management .health-em_risco {
-  border-color: color-mix(in srgb, #8a6300 18%, var(--line));
-  background: #fff4d6;
-  color: #765400;
+  border-color: color-mix(in srgb, var(--warning-text) 18%, var(--line));
+  background: var(--warning-bg);
+  color: var(--warning-text);
 }
 
 .project-management .status-cancelado {

@@ -97,7 +97,7 @@ describe("Detalhe e atendimento de chamados", () => {
     it("executa assumir, alterar status, categoria e prioridade pelos contratos corretos", async () => {
         const user = userEvent.setup();
         render(<ChamadoDetail chamadoId="ch-1" mode="painel" permissions={permissions} onBack={vi.fn()} />);
-        await screen.findByRole("heading", { name: "Acoes do atendimento" });
+        await screen.findByRole("heading", { name: "Ações do atendimento" });
 
         await user.click(screen.getByRole("button", { name: "Assumir" }));
         await waitFor(() => expect(assumirChamado).toHaveBeenCalledWith("ch-1"));
@@ -118,7 +118,7 @@ describe("Detalhe e atendimento de chamados", () => {
     it("resolve e reabre respeitando o estado retornado pelo backend", async () => {
         const user = userEvent.setup();
         render(<ChamadoDetail chamadoId="ch-1" mode="painel" permissions={permissions} onBack={vi.fn()} />);
-        await screen.findByRole("heading", { name: "Acoes do atendimento" });
+        await screen.findByRole("heading", { name: "Ações do atendimento" });
 
         await user.click(screen.getByRole("button", { name: "Resolver" }));
         await waitFor(() => expect(resolverChamado).toHaveBeenCalledWith("ch-1", null));
@@ -130,7 +130,7 @@ describe("Detalhe e atendimento de chamados", () => {
     it("arquiva o chamado somente quando o usuário é responsável autorizado", async () => {
         const user = userEvent.setup();
         render(<ChamadoDetail chamadoId="ch-1" mode="painel" permissions={permissions} onBack={vi.fn()} />);
-        await screen.findByRole("heading", { name: "Acoes do atendimento" });
+        await screen.findByRole("heading", { name: "Ações do atendimento" });
 
         expect(screen.getByRole("button", { name: "Arquivar" })).toBeEnabled();
         await user.click(screen.getByRole("button", { name: "Arquivar" }));

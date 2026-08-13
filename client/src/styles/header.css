@@ -13,9 +13,9 @@
   background:
     linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.02) 0%,
-      rgba(255, 255, 255, 0.07) 48%,
-      rgba(255, 255, 255, 0.14) 100%
+      color-mix(in srgb, var(--surface-white) 2%, transparent) 0%,
+      color-mix(in srgb, var(--surface-white) 7%, transparent) 48%,
+      color-mix(in srgb, var(--surface-white) 14%, transparent) 100%
     );
   backdrop-filter: blur(8px);
   box-shadow: none;
@@ -269,9 +269,9 @@
   width: 100%;
   overflow: hidden;
   box-sizing: border-box;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  border: 1px solid color-mix(in srgb, var(--surface-white) 22%, transparent);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.08);
+  background: color-mix(in srgb, var(--surface-white) 8%, transparent);
   color: var(--button-primary-text);
   padding: 6px 10px;
   font-size: 0.78rem;
@@ -314,15 +314,15 @@
 .site-header--overlay .nav-links .nav-link:hover,
 .site-header--overlay .nav-button:focus-visible,
 .site-header--overlay .nav-links .nav-link:focus-visible {
-  background: rgba(255, 255, 255, 0.14);
+  background: color-mix(in srgb, var(--surface-white) 14%, transparent);
   color: var(--text-on-primary);
   outline: none;
 }
 
 .site-header--overlay .nav-role-chip span {
-  background: rgba(223, 243, 232, 0.16);
+  background: color-mix(in srgb, var(--success-soft) 16%, transparent);
   color: var(--success-on-dark);
-  border: 1px solid rgba(223, 243, 232, 0.18);
+  border: 1px solid color-mix(in srgb, var(--success-soft) 18%, transparent);
 }
 
 .mobile-auth-actions,
@@ -743,7 +743,7 @@
 
   .site-header--hub-sidebar .menu-overlay {
     display: block;
-    background: rgba(14, 32, 50, 0.14);
+    background: color-mix(in srgb, var(--primary) 14%, transparent);
   }
 
   .workspace-page .workspace-main,
@@ -754,13 +754,13 @@
 
   .site-header--menu-open .nav-button,
   .site-header--menu-open .nav-links .nav-link {
-    background: rgba(255, 255, 255, 0.08);
+    background: color-mix(in srgb, var(--surface-white) 8%, transparent);
   }
 
   .site-header--menu-open .nav-role-chip span {
-    background: rgba(223, 243, 232, 0.16);
+    background: color-mix(in srgb, var(--success-soft) 16%, transparent);
     color: var(--success-on-dark);
-    border: 1px solid rgba(223, 243, 232, 0.18);
+    border: 1px solid color-mix(in srgb, var(--success-soft) 18%, transparent);
   }
 
   .site-header--pinned.site-header--menu-open .nav-button,
@@ -772,7 +772,7 @@
   .site-header--pinned.site-header--menu-open .nav-role-chip span {
     background: var(--success-soft);
     color: var(--success-text);
-    border: 1px solid rgba(31, 122, 75, 0.18);
+    border: 1px solid color-mix(in srgb, var(--accent-green) 18%, transparent);
   }
 
   .header-main {
@@ -869,8 +869,8 @@
     text-align: left;
     padding: 13px 16px;
     border-radius: var(--button-radius);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid color-mix(in srgb, var(--surface-white) 14%, transparent);
+    background: color-mix(in srgb, var(--surface-white) 8%, transparent);
     color: var(--text-on-dark);
     font-weight: 400;
   }
@@ -893,7 +893,7 @@
     height: 52px;
     border: 1px solid transparent;
     border-radius: var(--button-radius);
-    background: rgba(255, 255, 255, 0.08);
+    background: color-mix(in srgb, var(--surface-white) 8%, transparent);
     color: inherit;
     cursor: pointer;
   }
@@ -1013,7 +1013,7 @@
     display: block;
     position: fixed;
     inset: 0;
-    background: rgba(14, 32, 50, 0.08);
+    background: color-mix(in srgb, var(--primary) 8%, transparent);
     backdrop-filter: blur(2px);
     z-index: 1;
     pointer-events: auto;
@@ -1172,10 +1172,10 @@
 
 .chamado-notifications-trigger > span {
   align-items: center;
-  background: #dc2626;
-  border: 2px solid #fff;
+  background: var(--action-danger-bg);
+  border: 2px solid var(--surface-white);
   border-radius: 999px;
-  color: #fff;
+  color: var(--surface-white);
   display: inline-flex;
   font-size: 0.62rem;
   font-weight: 800;
@@ -1189,11 +1189,11 @@
 }
 
 .chamado-notifications-popover {
-  background: #fff;
+  background: var(--surface-white);
   border: 1px solid var(--line);
   border-radius: 14px;
-  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.2);
-  color: #0f172a;
+  box-shadow: 0 18px 48px color-mix(in srgb, var(--primary) 20%, transparent);
+  color: var(--primary);
   max-height: min(70vh, 520px);
   overflow: hidden;
   position: fixed;
@@ -1202,7 +1202,7 @@
 
 .chamado-notifications-popover > header {
   align-items: center;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--line);
   display: flex;
   justify-content: space-between;
   padding: 12px 14px;
@@ -1211,7 +1211,7 @@
 .chamado-notifications-popover > header button {
   background: transparent;
   border: 0;
-  color: #174ea6;
+  color: var(--status-info-text);
   cursor: pointer;
 }
 
@@ -1221,10 +1221,10 @@
 }
 
 .chamado-notifications-list > button {
-  background: #fff;
+  background: var(--surface-white);
   border: 0;
-  border-bottom: 1px solid #eef2f7;
-  color: #334155;
+  border-bottom: 1px solid var(--line);
+  color: var(--secondary);
   cursor: pointer;
   display: grid;
   gap: 4px;
@@ -1236,11 +1236,11 @@
 .chamado-notifications-list > button:hover,
 .chamado-notifications-list > button:focus-visible,
 .chamado-notifications-list > button.chamado-notification-unread {
-  background: #eff6ff;
+  background: var(--info-bg);
 }
 
 .chamado-notifications-list strong {
-  color: #0f172a;
+  color: var(--primary);
   font-size: 0.86rem;
 }
 
@@ -1250,11 +1250,11 @@
 }
 
 .chamado-notifications-list small {
-  color: #64748b;
+  color: var(--muted);
 }
 
 .chamado-notifications-list > p {
-  color: #64748b;
+  color: var(--muted);
   margin: 0;
   padding: 24px 14px;
   text-align: center;

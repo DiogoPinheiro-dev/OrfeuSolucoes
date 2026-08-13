@@ -52,6 +52,38 @@
     --warning-text: #704400;
     --info-bg: #e9f1f8;
     --info-text: #16324b;
+    --status-neutral-bg: #f8fafc;
+    --status-neutral-border: #cbd5e1;
+    --status-neutral-text: #475569;
+    --status-info-bg: #eef4ff;
+    --status-info-border: #bfdbfe;
+    --status-info-text: #174ea6;
+    --status-success-bg: #ecfdf3;
+    --status-success-border: #bbf7d0;
+    --status-success-text: #166534;
+    --status-warning-bg: #fffbeb;
+    --status-warning-border: #fde68a;
+    --status-warning-text: #92400e;
+    --status-attention-bg: #fff7ed;
+    --status-attention-border: #fdba74;
+    --status-attention-text: #c2410c;
+    --status-danger-bg: #fef2f2;
+    --status-danger-border: #fecaca;
+    --status-danger-text: #b91c1c;
+    --action-danger-bg: #dc2626;
+    --action-danger-hover-bg: #b91c1c;
+    --action-danger-border: #991b1b;
+    --action-warning-bg: #facc15;
+    --action-warning-hover-bg: #eab308;
+    --action-warning-border: #ca8a04;
+    --action-warning-text: #422006;
+    --action-success-bg: #16a34a;
+    --action-success-hover-bg: #15803d;
+    --action-success-border: #166534;
+    --brand-gmail: #d93025;
+    --brand-linkedin: #0a66c2;
+    --brand-instagram: #c13584;
+    --brand-whatsapp: #25d366;
     --lm-bg: #ffffff;
     --lm-overlay: rgba(20, 40, 65, 0.45);
     --lm-border: rgba(42, 74, 110, 0.1);
@@ -62,11 +94,18 @@
     --lm-gap: 0.9rem;
     --site-header-height: 96px;
     --site-header-height-mobile: 88px;
+    --hub-sidebar-width: 260px;
+    --hub-sidebar-collapsed-width: 86px;
+}
+
+html {
+    scroll-behavior: smooth;
 }
 
 body {
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     color: var(--primary);
+    background: var(--bg);
 }
 
 a {
@@ -229,7 +268,7 @@ button:disabled {
     display: grid;
     place-items: center;
     padding: 20px;
-    background: rgba(14, 32, 50, 0.58);
+    background: color-mix(in srgb, var(--primary) 58%, transparent);
     backdrop-filter: blur(8px);
 }
 

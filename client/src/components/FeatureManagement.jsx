@@ -11,6 +11,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useFormFieldErrors } from "../hooks/useFormFieldErrors";
 import { useLatestRequest } from "../hooks/useLatestRequest";
 import ConfirmDialog from "./ConfirmDialog";
+import { FeedbackMessage } from "./CrudFeedback";
 import FormFieldError from "./FormFieldError";
 import CrudGrid from "./CrudGrid";
 import { CrudModal, CrudModalTabPanel, CrudModalTabs } from "./CrudModal";
@@ -242,10 +243,10 @@ export default function FeatureManagement({ permissions }) {
         setError("");
 
         const localErrors = {};
-        if (!form.solucaoId) localErrors.solucaoId = "Selecione a solucao.";
-        if (!form.titulo.trim()) localErrors.titulo = "Preencha o titulo da funcionalidade.";
+        if (!form.solucaoId) localErrors.solucaoId = "Selecione a solução.";
+        if (!form.titulo.trim()) localErrors.titulo = "Preencha o título da funcionalidade.";
         if (!form.slug.trim()) localErrors.slug = "Preencha o identificador da funcionalidade.";
-        if (form.acoes.some((acao) => !acao.nome.trim())) localErrors.acoes = "Preencha o nome de todas as acoes da funcionalidade.";
+        if (form.acoes.some((acao) => !acao.nome.trim())) localErrors.acoes = "Preencha o nome de todas as ações da funcionalidade.";
 
         if (Object.keys(localErrors).length) {
             showFieldErrors(localErrors);
@@ -275,7 +276,7 @@ export default function FeatureManagement({ permissions }) {
             closeModal();
             await loadSolucoes();
         } catch (saveError) {
-            applyFormError(saveError, "Nao foi possivel salvar a funcionalidade.");
+            applyFormError(saveError, "Não foi possível salvar a funcionalidade.");
         } finally {
             setSaving(false);
         }
@@ -284,7 +285,7 @@ export default function FeatureManagement({ permissions }) {
     const handleDelete = (ids) => {
         const featuresToDelete = features.filter((feature) => ids.includes(feature.id) && !feature.padraoSistema);
         if (!featuresToDelete.length) {
-            setError("Funcionalidades padrao do sistema nao podem ser excluidas.");
+            setError("Funcionalidades padrão do sistema não podem ser excluídas.");
             return;
         }
 
@@ -440,7 +441,7 @@ export default function FeatureManagement({ permissions }) {
                                 ]}
                             />
 
-                            {formError && <div className="crud-error" role="alert">{formError}</div>}
+                            {formError && <FeedbackMessage type="error" compact>{formError}</FeedbackMessage>}
 
                             <CrudModalTabPanel active={activeTab === "main"}>
                                     {standardFeatureLocked && (

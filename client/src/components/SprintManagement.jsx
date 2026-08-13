@@ -22,6 +22,8 @@ import {
     startSprint,
     updateSprint
 } from "../../services/Projetos/SprintService";
+import { CrudModal } from "./CrudModal";
+import { FeedbackMessage, LoadingState } from "./CrudFeedback";
 import "../styles/crudGrid.css";
 import "../styles/crudModal.css";
 import "../styles/sprintManagement.css";
@@ -71,20 +73,18 @@ function SprintFormModal({ sprint, saving, error, onClose, onSubmit }) {
     };
 
     return (
-        <div className="crud-modal-backdrop sprint-modal-backdrop" role="presentation">
-            <section className="crud-modal sprint-modal" role="dialog" aria-modal="true">
-                <header className="crud-modal-header">
-                    <div>
-                        <span className="crud-modal-eyebrow">Planejamento de execução</span>
-                        <h3>{sprint ? "Editar sprint" : "Nova sprint"}</h3>
-                    </div>
-                    <button className="crud-modal-close" type="button" onClick={onClose} aria-label="Fechar">
-                        <FaTimes />
-                    </button>
-                </header>
-                <form onSubmit={submit}>
-                    <div className="crud-modal-body sprint-modal-body">
-                        {error && <div className="crud-feedback error">{error}</div>}
+        <CrudModal
+            mode={sprint ? "edit" : "create"}
+            title="Sprint"
+            onClose={onClose}
+            onSubmit={submit}
+            processing={saving}
+            generalError={error}
+            modalClassName="sprint-modal"
+            formClassName=""
+            actions={<><button className="crud-button secondary" type="button" onClick={onClose}>Cancelar</button><button className="crud-button primary" type="submit">{saving ? "Salvando..." : "Salvar sprint"}</button></>}
+        >
+            <div className="crud-modal-body sprint-modal-body">
                         <label className="crud-field sprint-field-wide">
                             <span>Nome *</span>
                             <input
@@ -122,16 +122,8 @@ function SprintFormModal({ sprint, saving, error, onClose, onSubmit }) {
                                 onChange={(event) => setForm({ ...form, fimPrevistoEm: event.target.value })}
                             />
                         </label>
-                    </div>
-                    <footer className="crud-modal-actions">
-                        <button className="crud-button secondary" type="button" onClick={onClose}>Cancelar</button>
-                        <button className="crud-button primary" type="submit" disabled={saving}>
-                            {saving ? "Salvando..." : "Salvar sprint"}
-                        </button>
-                    </footer>
-                </form>
-            </section>
-        </div>
+            </div>
+        </CrudModal>
     );
 }
 
@@ -144,23 +136,21 @@ function CompleteModal({ sprint, planned, saving, error, onClose, onSubmit }) {
     ).length;
 
     return (
-        <div className="crud-modal-backdrop sprint-modal-backdrop" role="presentation">
-            <section className="crud-modal sprint-modal" role="dialog" aria-modal="true">
-                <header className="crud-modal-header">
-                    <div>
-                        <span className="crud-modal-eyebrow">Encerramento</span>
-                        <h3>Concluir {sprint.nome}</h3>
-                    </div>
-                    <button className="crud-modal-close" type="button" onClick={onClose} aria-label="Fechar">
-                        <FaTimes />
-                    </button>
-                </header>
-                <form onSubmit={(event) => {
-                    event.preventDefault();
-                    onSubmit({ destinoIncompletos: destination, sprintDestinoId, resultado });
-                }}>
-                    <div className="crud-modal-body sprint-modal-body">
-                        {error && <div className="crud-feedback error">{error}</div>}
+        <CrudModal
+            mode="archive"
+            title={`Concluir ${sprint.nome}`}
+            onClose={onClose}
+            onSubmit={(event) => {
+                event.preventDefault();
+                onSubmit({ destinoIncompletos: destination, sprintDestinoId, resultado });
+            }}
+            processing={saving}
+            generalError={error}
+            modalClassName="sprint-modal"
+            formClassName=""
+            actions={<><button className="crud-button secondary" type="button" onClick={onClose}>Voltar</button><button className="crud-button primary" type="submit">{saving ? "Concluindo..." : "Concluir sprint"}</button></>}
+        >
+            <div className="crud-modal-body sprint-modal-body">
                         <div className="sprint-complete-summary sprint-field-wide">
                             <strong>{sprint.totalConcluidos} concluídos</strong>
                             <span>{incomplete} incompletos precisam de destino.</span>
@@ -197,16 +187,8 @@ function CompleteModal({ sprint, planned, saving, error, onClose, onSubmit }) {
                                 placeholder="Registre aprendizados, resultado alcançado e observações."
                             />
                         </label>
-                    </div>
-                    <footer className="crud-modal-actions">
-                        <button className="crud-button secondary" type="button" onClick={onClose}>Voltar</button>
-                        <button className="crud-button primary" type="submit" disabled={saving}>
-                            {saving ? "Concluindo..." : "Concluir sprint"}
-                        </button>
-                    </footer>
-                </form>
-            </section>
-        </div>
+            </div>
+        </CrudModal>
     );
 }
 
@@ -378,8 +360,8 @@ export default function SprintManagement() {
                 )}
             </div>
 
-            {error && <div className="crud-feedback error">{error}</div>}
-            {notice && <div className="crud-feedback success">{notice}</div>}
+            {error && <FeedbackMessage type="error" compact>{error}</FeedbackMessage>}
+            {notice && <FeedbackMessage type="success" compact>{notice}</FeedbackMessage>}
 
             <nav className="sprint-tabs" aria-label="Visões de sprints">
                 <button className={tab === "PLANEJAMENTO" ? "active" : ""} onClick={() => setTab("PLANEJAMENTO")}>
@@ -394,7 +376,7 @@ export default function SprintManagement() {
             </nav>
 
             {loading ? (
-                <div className="sprint-loading" role="status" aria-live="polite"><span aria-hidden="true" /><p>Carregando sprints...</p></div>
+                <LoadingState message="Carregando sprints..." />
             ) : tab === "PLANEJAMENTO" ? (
                 <div className="sprint-planning-list">
                     {!panel.planejadas.length && (

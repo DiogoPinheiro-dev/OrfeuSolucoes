@@ -84,7 +84,7 @@ describe("Fluxos operacionais do Controle de Chamados", () => {
         expect(await screen.findByRole("heading", { name: "Abrir chamado" })).toBeInTheDocument();
         const submitButton = await screen.findByRole("button", { name: "Abrir chamado" });
         fireEvent.submit(submitButton.closest("form"));
-        expect(await screen.findByRole("alert")).toHaveTextContent("Preencha titulo e descricao");
+        expect(await screen.findByRole("alert")).toHaveTextContent("Preencha título e descrição");
         expect(criarChamado).not.toHaveBeenCalled();
     });
 
@@ -93,14 +93,14 @@ describe("Fluxos operacionais do Controle de Chamados", () => {
         renderCreate();
         await screen.findByRole("heading", { name: "Abrir chamado" });
 
-        await user.type(screen.getByRole("textbox", { name: "Titulo" }), "Falha no faturamento");
-        await user.type(screen.getByRole("textbox", { name: "Descricao" }), "Não foi possível emitir a nota fiscal.");
-        await user.selectOptions(screen.getByRole("combobox", { name: "Solucao" }), "10");
+        await user.type(screen.getByRole("textbox", { name: "Título" }), "Falha no faturamento");
+        await user.type(screen.getByRole("textbox", { name: "Descrição" }), "Não foi possível emitir a nota fiscal.");
+        await user.selectOptions(screen.getByRole("combobox", { name: "Solução" }), "10");
         await user.selectOptions(screen.getByRole("combobox", { name: "Funcionalidade" }), "11");
         await user.click(screen.getByRole("checkbox", { name: /Observadora/ }));
         await user.click(screen.getByRole("button", { name: "Abrir chamado" }));
 
-        const dialog = await screen.findByRole("dialog", { name: "Selecionar responsavel" });
+        const dialog = await screen.findByRole("dialog", { name: "Selecionar responsável" });
         expect(dialog).toHaveTextContent("Atendente");
         await user.click(screen.getAllByRole("button", { name: "Abrir chamado" }).at(-1));
 
@@ -125,11 +125,11 @@ describe("Fluxos operacionais do Controle de Chamados", () => {
         renderCreate();
         await screen.findByRole("heading", { name: "Abrir chamado" });
 
-        await user.type(screen.getByRole("textbox", { name: "Titulo" }), "Dúvida operacional");
-        await user.type(screen.getByRole("textbox", { name: "Descricao" }), "Preciso de orientação para concluir o processo.");
-        await user.selectOptions(screen.getByRole("combobox", { name: "Solucao" }), "10");
+        await user.type(screen.getByRole("textbox", { name: "Título" }), "Dúvida operacional");
+        await user.type(screen.getByRole("textbox", { name: "Descrição" }), "Preciso de orientação para concluir o processo.");
+        await user.selectOptions(screen.getByRole("combobox", { name: "Solução" }), "10");
         await user.click(screen.getByRole("button", { name: "Abrir chamado" }));
-        await user.click(await screen.findByRole("button", { name: "Abrir sem responsavel" }));
+        await user.click(await screen.findByRole("button", { name: "Abrir sem responsável" }));
 
         await waitFor(() => expect(criarChamado).toHaveBeenCalledWith(expect.objectContaining({ responsavelId: null, responsavelGrupoId: null })));
     });
@@ -148,7 +148,7 @@ describe("Fluxos operacionais do Controle de Chamados", () => {
             </MemoryRouter>
         );
         expect(await screen.findByRole("button", { name: "Abrir chamado" })).toBeDisabled();
-        expect(screen.getByText(/nao possui permissao para abrir chamados/i)).toBeInTheDocument();
+        expect(screen.getByText(/não possui permissão para abrir chamados/i)).toBeInTheDocument();
     });
 
     it("carrega o Kanban, aplica filtros e abre o detalhe por teclado", async () => {
@@ -186,7 +186,8 @@ describe("Fluxos operacionais do Controle de Chamados", () => {
                 <ChamadosList title="Chamados arquivados" description="Arquivo" areaSlug="chamados-arquivados" loadChamados={loadChamados} permissions={permissions} mode="arquivados" />
             </MemoryRouter>
         );
-        expect(await screen.findByText("Nenhum chamado encontrado para os filtros atuais.")).toBeInTheDocument();
+        expect(await screen.findByText("Nenhum chamado encontrado")).toBeInTheDocument();
+        expect(screen.getByText("Ajuste os filtros atuais para ampliar a busca.")).toBeInTheDocument();
     });
 
     it("move chamado no Kanban somente pelo contrato autorizado", async () => {

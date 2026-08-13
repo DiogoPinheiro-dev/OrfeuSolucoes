@@ -14,6 +14,7 @@ import {
     uploadProjetoAnexos
 } from "../../services/Projetos/ComunicacaoService";
 import { CrudModal } from "./CrudModal";
+import { AccessState, EmptyState, FeedbackMessage, LoadingState } from "./CrudFeedback";
 import { useConfirmAction } from "../hooks/useConfirmAction";
 import "../styles/crudGrid.css";
 import "../styles/projectCommunication.css";
@@ -162,9 +163,9 @@ export default function ProjectCommunicationManagement() {
                 <div><span className="workspace-label">Projetos</span><h2>Comunicação do projeto</h2><p>Centralize atualizações, decisões, comentários, anexos e eventos do projeto.</p></div>
                 <label><span>Projeto</span><select value={projectId} onChange={(event) => { setFeedPage(1); setProjectId(event.target.value); }}><option value="">Selecione</option>{projects.map((project) => <option key={project.id} value={project.id}>{project.chave} — {project.nome}{project.arquivadoEm ? " (arquivado)" : ""}</option>)}</select></label>
             </header>
-            {error && <div className="project-communication-feedback error">{error}</div>}
-            {success && <div className="project-communication-feedback success">{success}</div>}
-            {selectedProject?.arquivadoEm && <div className="project-communication-readonly">Projeto arquivado: o feed permanece disponível somente para consulta.</div>}
+            {error && <FeedbackMessage type="error" compact>{error}</FeedbackMessage>}
+            {success && <FeedbackMessage type="success" compact>{success}</FeedbackMessage>}
+            {selectedProject?.arquivadoEm && <AccessState type="readonly" compact>O feed permanece disponível somente para consulta.</AccessState>}
 
             {!!projectId && !selectedProject?.arquivadoEm && (permissions.podePublicarAtualizacao || permissions.podeComentar) && (
                 <form className="project-communication-composer" onSubmit={submit}>
@@ -182,7 +183,7 @@ export default function ProjectCommunicationManagement() {
 
             <div className="project-communication-toolbar"><strong>Feed cronológico</strong><span>{panel.feedTotal} registro(s)</span><button type="button" onClick={() => reload(projectId, feedPage)} disabled={loading || !projectId}><FaSyncAlt /> Atualizar</button></div>
             <div className="project-communication-feed" aria-live="polite">
-                {loading && <div className="project-communication-empty">Carregando comunicação...</div>}
+                {loading && <LoadingState message="Carregando comunicação..." compact />}
                 {!loading && panel.feed.map((item) => {
                     const record = item.tipo === "ATUALIZACAO" ? panel.atualizacoes.find((entry) => entry.id === item.entidadeId) : panel.comentarios.find((entry) => entry.id === item.entidadeId);
                     return <article key={item.id} className={`project-feed-card type-${item.tipo.toLowerCase()}`} role="button" tabIndex={0} aria-label={`Ver detalhes: ${item.conteudo}`} onClick={(event) => openFeedDetails(event, item)} onKeyDown={(event) => openFeedDetails(event, item)}>
@@ -196,8 +197,8 @@ export default function ProjectCommunicationManagement() {
                         </div>
                     </article>;
                 })}
-                {!loading && !!projectId && panel.feedTotal === 0 && <div className="project-communication-empty">Nenhuma comunicação registrada neste projeto.</div>}
-                {!loading && !projectId && <div className="project-communication-empty">Selecione um projeto para consultar o feed.</div>}
+                {!loading && !!projectId && panel.feedTotal === 0 && <EmptyState title="Nenhuma comunicação registrada neste projeto" compact />}
+                {!loading && !projectId && <EmptyState title="Selecione um projeto" description="Escolha um projeto para consultar o feed." compact />}
             </div>
             {selectedFeedItem && <CrudModal mode="view" title="Detalhes da modificação" ariaLabel="Detalhes do evento do projeto" onClose={() => setSelectedFeedItem(null)} onSubmit={(event) => event.preventDefault()} formClassName="project-feed-detail-modal" actions={<button type="button" onClick={() => setSelectedFeedItem(null)}>Fechar</button>}>
                 <section className="project-feed-detail-summary"><span>{selectedFeedItem.funcionalidade}</span><h4>{selectedFeedItem.conteudo}</h4><p>{dateTime(selectedFeedItem.criadoEm)}</p></section>

@@ -4,6 +4,7 @@ import { useFormFieldErrors } from "../hooks/useFormFieldErrors";
 
 import { CrudModal, CrudModalTabPanel, CrudModalTabs } from "./CrudModal";
 import FormFieldError from "./FormFieldError";
+import { FeedbackMessage, LoadingState } from "./CrudFeedback";
 
 const PROJECT_FORM_ID = "project-registration-form";
 const PROJECT_FIELD_ORDER = ["nome", "chave", "metodologia", "objetivo", "descricao", "situacao", "saude", "inicioPrevistoEm", "fimPrevistoEm"];
@@ -77,7 +78,7 @@ export default function ProjectEditorModal({
 
 
     useEffect(() => {
-        if (error) applyFormError(error, mode === "view" ? "Nao foi possivel carregar o projeto." : "Nao foi possivel salvar o projeto.");
+        if (error) applyFormError(error, mode === "view" ? "Não foi possível carregar o projeto." : "Não foi possível salvar o projeto.");
     }, [error, mode, applyFormError]);
 
     const setField = (field, value) => {
@@ -92,7 +93,7 @@ export default function ProjectEditorModal({
             clearFormErrors();
             setField("chave", await onSuggestKey(form.nome));
         } catch (suggestError) {
-            applyFormError(suggestError, "Nao foi possivel sugerir a chave.");
+            applyFormError(suggestError, "Não foi possível sugerir a chave.");
         } finally {
             setSuggesting(false);
         }
@@ -105,7 +106,7 @@ export default function ProjectEditorModal({
         const localErrors = {};
         if (!form.nome.trim()) localErrors.nome = "Preencha o nome do projeto.";
         if (!form.chave.trim()) localErrors.chave = "Preencha a chave do projeto.";
-        else if (!/^[A-Z][A-Z0-9]{1,9}$/.test(form.chave.trim())) localErrors.chave = "Use de 2 a 10 letras maiusculas ou numeros, iniciando por uma letra.";
+        else if (!/^[A-Z][A-Z0-9]{1,9}$/.test(form.chave.trim())) localErrors.chave = "Use de 2 a 10 letras maiúsculas ou números, iniciando por uma letra.";
         if (form.inicioPrevistoEm && form.fimPrevistoEm && form.inicioPrevistoEm > form.fimPrevistoEm) {
             localErrors.fimPrevistoEm = "O início previsto não pode ser posterior ao término previsto.";
         }
@@ -151,8 +152,8 @@ export default function ProjectEditorModal({
                 onChange={setActiveTab}
             />
 
-            {loading && <p role="status">Carregando detalhes...</p>}
-            {formError && <p className="project-detail-error" role="alert">{formError}</p>}
+            {loading && <LoadingState message="Carregando detalhes..." compact />}
+            {formError && <FeedbackMessage type="error" compact>{formError}</FeedbackMessage>}
 
             <CrudModalTabPanel active={activeTab === "geral"}>
                 <fieldset className="project-form-grid" disabled={mode === "view" || !canEditDetails || saving || loading}>

@@ -23,7 +23,7 @@
     border: 1px solid var(--line);
     border-radius: 14px;
     background: var(--surface-white);
-    box-shadow: 0 8px 24px rgb(15 23 42 / 5%);
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--primary) 5%, transparent);
 }
 
 .sprint-toolbar label {
@@ -52,8 +52,8 @@
 
 .sprint-readonly {
     border-radius: 999px;
-    background: #fff4d6;
-    color: #9a3412;
+    background: var(--warning-bg);
+    color: var(--warning-text);
     padding: 7px 12px;
     font-size: 0.82rem;
     font-weight: 700;
@@ -107,7 +107,7 @@
     border: 1px solid var(--line);
     border-radius: 16px;
     background: var(--surface-white);
-    box-shadow: 0 10px 30px rgb(15 23 42 / 6%);
+    box-shadow: 0 10px 30px color-mix(in srgb, var(--primary) 6%, transparent);
     overflow: hidden;
 }
 
@@ -158,8 +158,8 @@
 
 .sprint-status.status-ativa,
 .sprint-status.status-em_andamento {
-    background: #fff4d6;
-    color: #765400;
+    background: var(--warning-bg);
+    color: var(--warning-text);
 }
 
 .sprint-status.status-concluida,
@@ -278,8 +278,8 @@
 
 .sprint-scope-meta em {
     border-radius: 999px;
-    background: #fff4d6;
-    color: #765400;
+    background: var(--warning-bg);
+    color: var(--warning-text);
     padding: 4px 8px;
     font-size: 0.7rem;
     font-weight: 700;
@@ -446,7 +446,7 @@
     border: 1px solid var(--line);
     border-radius: 9px;
     background: var(--surface-white);
-    box-shadow: 0 3px 10px rgb(15 23 42 / 5%);
+    box-shadow: 0 3px 10px color-mix(in srgb, var(--primary) 5%, transparent);
 }
 
 .sprint-board article strong {
@@ -515,10 +515,6 @@
     border-block: 1px solid var(--line);
     background: var(--surface-soft);
     color: var(--secondary);
-}
-
-.sprint-modal-backdrop {
-    z-index: 2000;
 }
 
 .sprint-modal {
@@ -661,9 +657,9 @@
 }
 
 .sprint-management .sprint-readonly {
-    border: 1px solid color-mix(in srgb, #765400 18%, var(--line));
-    background: #fff4d6;
-    color: #765400;
+    border: 1px solid color-mix(in srgb, var(--warning-text) 18%, var(--line));
+    background: var(--warning-bg);
+    color: var(--warning-text);
 }
 
 .sprint-management .crud-feedback {
@@ -884,6 +880,12 @@
 @keyframes sprint-loading-spin {
     to {
         transform: rotate(360deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sprint-loading-spinner {
+        animation: none;
     }
 }
 

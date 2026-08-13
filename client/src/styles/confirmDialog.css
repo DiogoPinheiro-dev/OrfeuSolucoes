@@ -5,7 +5,7 @@
   display: grid;
   place-items: center;
   padding: 18px;
-  background: rgba(14, 32, 50, 0.38);
+  background: color-mix(in srgb, var(--primary) 38%, transparent);
   backdrop-filter: blur(4px);
 }
 .confirm-dialog {
@@ -17,7 +17,7 @@
   box-shadow: var(--shadow);
 }
 .confirm-dialog--warning {
-  border-color: color-mix(in srgb, #b7791f 48%, var(--line));
+  border-color: color-mix(in srgb, var(--warning-text) 48%, var(--line));
 }
 .confirm-dialog--destructive {
   border-color: color-mix(in srgb, var(--danger-text) 48%, var(--line));
@@ -64,8 +64,8 @@
   color: var(--button-primary-text);
 }
 .confirm-dialog--warning .confirm-dialog-confirm {
-  background: #8a5a12;
-  border-color: #8a5a12;
+  background: var(--warning-text);
+  border-color: var(--warning-text);
 }
 .confirm-dialog--destructive .confirm-dialog-confirm {
   background: var(--danger-text);

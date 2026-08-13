@@ -91,7 +91,7 @@
   position: absolute;
   z-index: 0;
   top: 50%;
-  left: calc(14px + var(--company-completion-offset, 0px));
+  left: 14px;
   transform: translateY(-50%);
   color: var(--muted);
   font: inherit;

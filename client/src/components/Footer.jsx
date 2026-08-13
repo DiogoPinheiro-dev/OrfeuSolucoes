@@ -6,7 +6,7 @@ export default function Footer() {
     return (
         <footer className="site-footer">
             <div className="container" id="contato">
-                <span className="text-muted">(c) {new Date().getFullYear()} Orfeu Sistemas</span>
+                <span className="text-muted">© {new Date().getFullYear()} Orfeu Sistemas</span>
 
                 <ul className="footer-contacts list-unstyled">
                     <li>

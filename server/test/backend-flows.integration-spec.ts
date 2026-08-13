@@ -1883,7 +1883,7 @@ async function seedConfigurador(world: TestWorld): Promise<void> {
   });
 
   const configuradorFeatures = [
-    ['cadastro-de-usuarios', 'Cadastro de usuarios', 'Usuarios', 'configurador.cadastro-de-usuarios'],
+    ['cadastro-de-usuarios', 'Cadastro de usuários', 'Usuários', 'configurador.cadastro-de-usuarios'],
     ['cadastro-de-grupos', 'Cadastro de grupos', 'Grupos', 'configurador.cadastro-de-grupos'],
     ['cadastro-de-empresas', 'Cadastro de empresas', 'Empresas', 'configurador.cadastro-de-empresas'],
     ['cadastro-de-funcionalidades', 'Cadastro de funcionalidades', 'Funcionalidades', 'configurador.cadastro-de-funcionalidades']
@@ -1941,14 +1941,14 @@ async function seedChamadoConfiguracoes(world: TestWorld, empresaId: number) {
   await world.solucoesService.ensureDefaultChamadoConfiguracoesForEmpresa(empresaId);
 
   const tipos = {
-    SOLICITACAO: expectDefined(await world.prisma.chamadoTipo.findFirst({ where: { empresaId, nome: 'Solicitacao' } })),
+    SOLICITACAO: expectDefined(await world.prisma.chamadoTipo.findFirst({ where: { empresaId, nome: 'Solicitação' } })),
     INCIDENTE: expectDefined(await world.prisma.chamadoTipo.findFirst({ where: { empresaId, nome: 'Incidente' } })),
-    DUVIDA: expectDefined(await world.prisma.chamadoTipo.findFirst({ where: { empresaId, nome: 'Duvida' } })),
+    DUVIDA: expectDefined(await world.prisma.chamadoTipo.findFirst({ where: { empresaId, nome: 'Dúvida' } })),
     MELHORIA: expectDefined(await world.prisma.chamadoTipo.findFirst({ where: { empresaId, nome: 'Melhoria' } }))
   };
   const prioridades = {
     BAIXA: expectDefined(await world.prisma.chamadoPrioridade.findFirst({ where: { empresaId, nome: 'Baixa' } })),
-    MEDIA: expectDefined(await world.prisma.chamadoPrioridade.findFirst({ where: { empresaId, nome: 'Media' } })),
+    MEDIA: expectDefined(await world.prisma.chamadoPrioridade.findFirst({ where: { empresaId, nome: 'Média' } })),
     ALTA: expectDefined(await world.prisma.chamadoPrioridade.findFirst({ where: { empresaId, nome: 'Alta' } })),
     URGENTE: expectDefined(await world.prisma.chamadoPrioridade.findFirst({ where: { empresaId, nome: 'Urgente' } }))
   };
@@ -2015,7 +2015,14 @@ describe('Fluxos integrados do backend', () => {
   it('consulta projetos com identidade, filtros, papeis, privacidade e participantes elegiveis', async () => {
     const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
     const solucoes = await world.solucoesService.findAll();
+    const configurador = expectDefined(solucoes.find((solucao) => solucao.slug === 'configurador'));
+    expect(configurador.funcionalidades.find((item) => item.slug === 'cadastro-de-usuarios'))
+      .toMatchObject({ titulo: 'Cadastro de usuários', label: 'Usuários' });
+    expect(configurador.funcionalidades.find((item) => item.slug === 'cadastro-de-solucoes'))
+      .toMatchObject({ titulo: 'Cadastro de soluções', label: 'Soluções' });
     const documentacao = expectDefined(solucoes.find((solucao) => solucao.slug === 'documentacao'));
+    expect(documentacao.nome).toBe('Documentação');
+    expect(documentacao.descricao).toBe('Manuais de uso e referências do sistema conforme seu nível de acesso.');
     expect(documentacao.padraoSistema).toBe(true);
     expect(documentacao.ativo).toBe(true);
     expect(documentacao.exibirNoHub).toBe(true);
@@ -2024,7 +2031,13 @@ describe('Fluxos integrados do backend', () => {
     await expect(world.solucoesService.remove(documentacao.id))
       .rejects.toThrow('Uma solucao padrao do sistema nao pode ser excluida.');
     const projetosSolucao = expectDefined(solucoes.find((item) => item.slug === 'projetos'));
+    expect(projetosSolucao.descricao).toContain('comunicação entre as equipes');
+    expect(projetosSolucao.funcionalidades.find((item) => item.slug === 'comunicacao-do-projeto'))
+      .toMatchObject({ titulo: 'Comunicação do projeto', label: 'Comunicação' });
     const cadastroProjetos = expectDefined(projetosSolucao.funcionalidades.find((item) => item.slug === 'cadastro-de-projetos'));
+    const chamadosSolucao = expectDefined(solucoes.find((item) => item.slug === 'controle-de-chamados'));
+    expect(chamadosSolucao.funcionalidades.find((item) => item.slug === 'responsaveis'))
+      .toMatchObject({ titulo: 'Cadastro de responsáveis', label: 'Responsáveis' });
     await world.solucoesService.syncCompanyAccess(
       empresaInicialId,
       [projetosSolucao.id],
@@ -4037,8 +4050,8 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
 
     const tiposIniciais = await world.chamadosService.tiposChamado(payload, true);
     const prioridadesIniciais = await world.chamadosService.prioridadesChamado(payload, true);
-    expect(tiposIniciais.map((tipo) => tipo.nome)).toEqual(expect.arrayContaining(['Solicitacao', 'Incidente']));
-    expect(prioridadesIniciais.map((prioridade) => prioridade.nome)).toEqual(expect.arrayContaining(['Media', 'Alta']));
+    expect(tiposIniciais.map((tipo) => tipo.nome)).toEqual(expect.arrayContaining(['Solicitação', 'Incidente']));
+    expect(prioridadesIniciais.map((prioridade) => prioridade.nome)).toEqual(expect.arrayContaining(['Média', 'Alta']));
 
     const tipoCustomizado = await world.chamadosService.createTipo({
       nome: 'Requisicao financeira',

@@ -8,6 +8,7 @@ import { useCrudSelection } from "../hooks/useCrudSelection";
 import ConfirmDialog from "./ConfirmDialog";
 import CrudGrid from "./CrudGrid";
 import { CrudModal } from "./CrudModal";
+import { FeedbackMessage } from "./CrudFeedback";
 import "../styles/projectResourceExecution.css";
 
 const emptyPanel = { recursos: [], projetos: [], linhas: [], tarefas: [], tarefasPendentes: [], permissoes: {} };
@@ -177,8 +178,8 @@ export default function ProjectResourceExecutionManagement() {
   const deleteCount = deleteTarget?.items?.length || 0;
 
   return <section className="resource-planning-execution">
-    {error && <div className="resource-planning-feedback error" role="alert">{error}</div>}
-    {success && <div className="resource-planning-feedback success" role="status">{success}</div>}
+    {error && <FeedbackMessage type="error" compact>{error}</FeedbackMessage>}
+    {success && <FeedbackMessage type="success" compact>{success}</FeedbackMessage>}
 
     <div className="resource-planning-summary">
       <article><span>Planejamentos exibidos</span><strong>{rows.length}</strong></article>

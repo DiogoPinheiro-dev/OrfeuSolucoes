@@ -283,10 +283,10 @@
   gap: 10px;
 }
 
-.responsavel-checkbox-option {
-  display: inline-flex !important;
+.user-form label.responsavel-checkbox-option {
+  display: inline-flex;
   align-items: center;
-  gap: 9px !important;
+  gap: 9px;
   min-height: 42px;
   padding: 10px 12px;
   border: 1px solid var(--line);
@@ -322,10 +322,10 @@
   flex-wrap: wrap;
 }
 
-.responsavel-geral-option {
-  display: inline-flex !important;
+.user-form label.responsavel-geral-option {
+  display: inline-flex;
   align-items: center;
-  gap: 8px !important;
+  gap: 8px;
   width: fit-content;
   min-height: 34px;
   padding: 6px 10px;

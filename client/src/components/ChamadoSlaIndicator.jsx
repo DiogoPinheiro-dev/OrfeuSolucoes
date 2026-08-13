@@ -18,11 +18,11 @@ export default function ChamadoSlaIndicator({ chamado, showWithoutSla = false, d
 
     const primeiraResposta = chamado?.primeiraRespostaLimiteEm
         ? formatDateTime(chamado.primeiraRespostaLimiteEm)
-        : "Nao configurado";
+        : "Não configurado";
     const resolucao = chamado?.resolucaoLimiteEm
         ? formatDateTime(chamado.resolucaoLimiteEm)
-        : "Nao configurado";
-    const tooltip = "Primeira resposta: " + primeiraResposta + ". Resolucao: " + resolucao + ".";
+        : "Não configurado";
+    const tooltip = "Primeira resposta: " + primeiraResposta + ". Resolução: " + resolucao + ".";
     const deadline = chamadoSlaDeadline(chamado);
 
     return (

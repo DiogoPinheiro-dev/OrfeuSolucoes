@@ -10,6 +10,7 @@ import { canUseFeatureAction } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
 import { useFormFieldErrors } from "../hooks/useFormFieldErrors";
 import ConfirmDialog from "./ConfirmDialog";
+import { FeedbackMessage, LoadingState } from "./CrudFeedback";
 import FormFieldError from "./FormFieldError";
 import CrudGrid from "./CrudGrid";
 import { CrudModal } from "./CrudModal";
@@ -25,7 +26,7 @@ const initialForm = {
     ativo: true
 };
 
-const booleanLabel = (value) => (value ? "Sim" : "Nao");
+const booleanLabel = (value) => (value ? "Sim" : "Não");
 
 export default function CategoriaChamadoManagement({ permissions }) {
     const { user } = useAuth();
@@ -56,7 +57,7 @@ export default function CategoriaChamadoManagement({ permissions }) {
         try {
             setCategorias(await getCategoriasChamado(false));
         } catch (loadError) {
-            setError(loadError.message || "Nao foi possivel carregar categorias.");
+            setError(loadError.message || "Não foi possível carregar categorias.");
         } finally {
             setLoading(false);
         }
@@ -134,7 +135,7 @@ export default function CategoriaChamadoManagement({ permissions }) {
             closeModal();
             await loadCategorias();
         } catch (saveError) {
-            applyFormError(saveError, "Nao foi possivel salvar a categoria.");
+            applyFormError(saveError, "Não foi possível salvar a categoria.");
         } finally {
             setSaving(false);
         }
@@ -169,7 +170,7 @@ export default function CategoriaChamadoManagement({ permissions }) {
             setSelectedIds([]);
             await loadCategorias();
         } catch (deleteError) {
-            setError(deleteError.message || "Nao foi possivel desativar a categoria.");
+            setError(deleteError.message || "Não foi possível desativar a categoria.");
         } finally {
             setGridBusy(false);
         }
@@ -199,15 +200,15 @@ export default function CategoriaChamadoManagement({ permissions }) {
 
     return (
         <>
-            {error && <div className="user-management-error" role="alert">{error}</div>}
+            {error && <FeedbackMessage type="error" compact>{error}</FeedbackMessage>}
             {loading ? (
-                <div className="user-management-loading">Carregando categorias...</div>
+                <LoadingState message="Carregando categorias..." />
             ) : (
                 <CrudGrid
                     title="Categorias de chamados"
                     columns={[
                         { key: "nome", label: "Nome", render: (categoria) => categoria.nome || "-" },
-                        { key: "descricao", label: "Descricao", render: (categoria) => categoria.descricao || "-" },
+                        { key: "descricao", label: "Descrição", render: (categoria) => categoria.descricao || "-" },
                         { key: "ativo", label: "Ativo", render: (categoria) => booleanLabel(categoria.ativo) }
                     ]}
                     rows={filteredCategorias}
@@ -258,7 +259,7 @@ export default function CategoriaChamadoManagement({ permissions }) {
                     </label>
 
                     <label>
-                        <span>Descricao</span>
+                        <span>Descrição</span>
                         <textarea name="descricao" value={form.descricao || ""} onChange={handleChange} disabled={readonly || saving} rows={4} />
                     </label>
 

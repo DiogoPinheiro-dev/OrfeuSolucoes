@@ -30,7 +30,7 @@ export const PROJETO_FEATURE_DEFINITIONS: ProjetoFeatureDefinition[] = [
     slug: 'cadastro-de-projetos',
     titulo: 'Cadastro de projetos',
     label: 'Projetos',
-    descricao: 'Cadastre projetos, responsaveis, participantes, metodologia e ciclo de vida.',
+    descricao: 'Cadastre projetos, responsáveis, participantes, metodologia e ciclo de vida.',
     ordem: 10,
     registryKey: 'projetos.cadastro-de-projetos',
     ativo: true,
@@ -56,7 +56,7 @@ export const PROJETO_FEATURE_DEFINITIONS: ProjetoFeatureDefinition[] = [
     slug: 'sprints',
     titulo: 'Sprints',
     label: 'Sprints',
-    descricao: 'Planeje e acompanhe periodos de execucao do projeto.',
+    descricao: 'Planeje e acompanhe períodos de execução do projeto.',
     ordem: 30,
     registryKey: 'projetos.sprints',
     ativo: true,
@@ -76,32 +76,32 @@ export const PROJETO_FEATURE_DEFINITIONS: ProjetoFeatureDefinition[] = [
     registryKey: 'projetos.marcos-e-entregas',
     ativo: true,
     acoes: [
-      action('aprovar', 'Aprovar entregas', 50, 'Permite aprovar compromissos de negocio.')
+      action('aprovar', 'Aprovar entregas', 50, 'Permite aprovar compromissos de negócio.')
     ]
   },
   {
     slug: 'cronograma-e-gantt',
     titulo: 'Cronograma e Gantt',
     label: 'Cronograma',
-    descricao: 'Consulte datas, dependencias e riscos do cronograma.',
+    descricao: 'Consulte datas, dependências e riscos do cronograma.',
     ordem: 50,
     registryKey: 'projetos.cronograma-e-gantt',
     ativo: true,
     acoes: [
-      action('editar_datas', 'Editar datas', 50, 'Permite confirmar alteracoes de datas no cronograma.')
+      action('editar_datas', 'Editar datas', 50, 'Permite confirmar alterações de datas no cronograma.')
     ]
   },
   {
     slug: 'comunicacao-do-projeto',
-    titulo: 'Comunicacao do projeto',
-    label: 'Comunicacao',
-    descricao: 'Centralize comunicados, decisoes e alinhamentos do projeto.',
+    titulo: 'Comunicação do projeto',
+    label: 'Comunicação',
+    descricao: 'Centralize comunicados, decisões e alinhamentos do projeto.',
     ordem: 60,
     registryKey: 'projetos.comunicacao-do-projeto',
     ativo: true,
     acoes: [
-      action('comentar', 'Comentar', 50, 'Permite publicar e editar comentarios proprios.'),
-      action('moderar', 'Moderar', 60, 'Permite moderar comentarios de outros autores.'),
+      action('comentar', 'Comentar', 50, 'Permite publicar e editar comentários próprios.'),
+      action('moderar', 'Moderar', 60, 'Permite moderar comentários de outros autores.'),
       action('gerenciar_anexos', 'Gerenciar anexos', 70, 'Permite gerenciar anexos autorizados.')
     ]
   },
@@ -109,23 +109,23 @@ export const PROJETO_FEATURE_DEFINITIONS: ProjetoFeatureDefinition[] = [
     slug: 'planejamento-de-recursos',
     titulo: 'Planejamento de recursos',
     label: 'Planejamento de recursos',
-    descricao: 'Gerencie os vinculos dos recursos com os projetos e suas tarefas.',
+    descricao: 'Gerencie os vínculos dos recursos com os projetos e suas tarefas.',
     ordem: 70,
     registryKey: 'projetos.planejamento-de-recursos',
     ativo: true
   },
   {
     slug: 'orcamento-do-projeto',
-    titulo: 'Orcamento do projeto',
-    label: 'Orcamento',
-    descricao: 'Planeje o orcamento, categorias e custos do projeto.',
+    titulo: 'Orçamento do projeto',
+    label: 'Orçamento',
+    descricao: 'Planeje o orçamento, categorias e custos do projeto.',
     ordem: 100,
     registryKey: 'projetos.orcamento-do-projeto',
     ativo: true,
     acoes: [
       action('visualizar_financeiro', 'Visualizar financeiro', 50, 'Permite consultar dados financeiros.'),
-      action('gerenciar_financeiro', 'Gerenciar financeiro', 60, 'Permite alterar orcamentos e custos.'),
-      action('aprovar_orcamento', 'Aprovar orcamento', 70, 'Permite aprovar a linha de base.')
+      action('gerenciar_financeiro', 'Gerenciar financeiro', 60, 'Permite alterar orçamentos e custos.'),
+      action('aprovar_orcamento', 'Aprovar orçamento', 70, 'Permite aprovar a linha de base.')
     ]
   },
   {
@@ -137,7 +137,7 @@ export const PROJETO_FEATURE_DEFINITIONS: ProjetoFeatureDefinition[] = [
     registryKey: 'projetos.horas-do-projeto',
     ativo: false,
     acoes: [
-      action('apontar', 'Apontar horas', 50, 'Permite registrar esforco.'),
+      action('apontar', 'Apontar horas', 50, 'Permite registrar esforço.'),
       action('aprovar_horas', 'Aprovar horas', 60, 'Permite aprovar apontamentos.'),
       action('reabrir_horas', 'Reabrir horas', 70, 'Permite reabrir apontamentos com auditoria.')
     ]
@@ -151,20 +151,20 @@ export const PROJETO_FEATURE_DEFINITIONS: ProjetoFeatureDefinition[] = [
     registryKey: 'projetos.templates-de-projeto',
     ativo: false,
     acoes: [
-      action('publicar', 'Publicar template', 50, 'Permite publicar uma versao imutavel.'),
+      action('publicar', 'Publicar template', 50, 'Permite publicar uma versão imutável.'),
       action('instanciar', 'Instanciar template', 60, 'Permite criar projeto a partir de template.')
     ]
   },
   {
     slug: 'portfolio-de-projetos',
-    titulo: 'Portfolio de projetos',
-    label: 'Portfolio',
-    descricao: 'Acompanhe indicadores agregados dos projetos acessiveis.',
+    titulo: 'Portfólio de projetos',
+    label: 'Portfólio',
+    descricao: 'Acompanhe indicadores agregados dos projetos acessíveis.',
     ordem: 130,
     registryKey: 'projetos.portfolio-de-projetos',
     ativo: false,
     acoes: [
-      action('visualizar_financeiro', 'Visualizar financeiro', 50, 'Permite consultar agregacoes financeiras.')
+      action('visualizar_financeiro', 'Visualizar financeiro', 50, 'Permite consultar agregações financeiras.')
     ]
   }
 ];

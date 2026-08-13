@@ -13,6 +13,8 @@ import {
 } from "../../services/Chamados/ChamadoService";
 import { canUseFeatureAction } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
+import { CrudModal } from "./CrudModal";
+import { FeedbackMessage, LoadingState } from "./CrudFeedback";
 
 import "../styles/chamados.css";
 
@@ -26,8 +28,8 @@ const initialForm = {
     funcionalidadeId: ""
 };
 
-const responsavelLabel = (responsavel) => responsavel?.nome || responsavel?.login || responsavel?.email || "Responsavel";
-const responsavelTipoLabel = (responsavel) => responsavel?.tipo === "GRUPO" ? "Grupo" : "Usuario";
+const responsavelLabel = (responsavel) => responsavel?.nome || responsavel?.login || responsavel?.email || "Responsável";
+const responsavelTipoLabel = (responsavel) => responsavel?.tipo === "GRUPO" ? "Grupo" : "Usuário";
 const MAX_ANEXO_FILES = 5;
 const MAX_ANEXO_SIZE_BYTES = 10 * 1024 * 1024;
 const ANEXO_ACCEPT = ".jpg,.jpeg,.png,.pdf,.docx,.txt";
@@ -79,7 +81,7 @@ export default function ChamadoCreate({ permissions }) {
                 }
             } catch (loadError) {
                 if (active) {
-                    setError(loadError.message || "Nao foi possivel carregar o formulario.");
+                    setError(loadError.message || "Não foi possível carregar o formulário.");
                 }
             } finally {
                 if (active) {
@@ -156,7 +158,7 @@ export default function ChamadoCreate({ permissions }) {
         setError("");
 
         if (!form.titulo.trim() || !form.descricao.trim()) {
-            setError("Preencha titulo e descricao para abrir o chamado.");
+            setError("Preencha título e descrição para abrir o chamado.");
             return;
         }
 
@@ -166,7 +168,7 @@ export default function ChamadoCreate({ permissions }) {
         }
 
         if (!form.solucaoId) {
-            setError("Selecione a solucao relacionada ao chamado.");
+            setError("Selecione a solução relacionada ao chamado.");
             return;
         }
 
@@ -184,7 +186,7 @@ export default function ChamadoCreate({ permissions }) {
             setSelectedResponsavelId(responsaveis[0]?.id || "");
             setResponsaveisModalOpen(true);
         } catch (lookupError) {
-            setError(lookupError.message || "Nao foi possivel buscar responsaveis para este chamado.");
+            setError(lookupError.message || "Não foi possível buscar responsáveis para este chamado.");
         } finally {
             setSaving(false);
         }
@@ -228,7 +230,7 @@ export default function ChamadoCreate({ permissions }) {
             closeResponsaveisModal();
             navigate(`/hub/controle-de-chamados/meus-chamados/${chamado.id}`);
         } catch (saveError) {
-            setError(saveError.message || "Nao foi possivel abrir o chamado.");
+            setError(saveError.message || "Não foi possível abrir o chamado.");
         } finally {
             setSaving(false);
         }
@@ -242,18 +244,18 @@ export default function ChamadoCreate({ permissions }) {
                 <div>
                     <span className="workspace-label">Controle de chamados</span>
                     <h2>Abrir chamado</h2>
-                    <p>Registre uma solicitacao para a empresa selecionada no Hub.</p>
+                    <p>Registre uma solicitação para a empresa selecionada no Hub.</p>
                 </div>
             </header>
 
-            {error && <div className="user-management-error" role="alert">{error}</div>}
+            {error && <FeedbackMessage type="error" compact>{error}</FeedbackMessage>}
 
             {loading ? (
-                <div className="user-management-loading">Carregando formulario...</div>
+                <LoadingState message="Carregando formulário..." />
             ) : (
                 <form className="chamado-form" onSubmit={handleSubmit}>
                     <label>
-                        <span>Titulo</span>
+                        <span>Título</span>
                         <input
                             name="titulo"
                             value={form.titulo}
@@ -265,7 +267,7 @@ export default function ChamadoCreate({ permissions }) {
                     </label>
 
                     <label>
-                        <span>Descricao</span>
+                        <span>Descrição</span>
                         <textarea
                             name="descricao"
                             value={form.descricao}
@@ -307,7 +309,7 @@ export default function ChamadoCreate({ permissions }) {
                         </label>
 
                         <label>
-                            <span>Solucao</span>
+                            <span>Solução</span>
                             <select name="solucaoId" value={form.solucaoId} onChange={handleChange} disabled={!canCreate || saving} required>
                                 <option value="">Selecione</option>
                                 {solucoes.map((solucao) => (
@@ -319,7 +321,7 @@ export default function ChamadoCreate({ permissions }) {
                         <label>
                             <span>Funcionalidade</span>
                             <select name="funcionalidadeId" value={form.funcionalidadeId} onChange={handleChange} disabled={!canCreate || saving || !form.solucaoId}>
-                                <option value="">Sem funcionalidade especifica</option>
+                                <option value="">Sem funcionalidade específica</option>
                                 {funcionalidades.map((funcionalidade) => (
                                     <option key={funcionalidade.id} value={funcionalidade.id}>{funcionalidade.label || funcionalidade.titulo}</option>
                                 ))}
@@ -329,7 +331,7 @@ export default function ChamadoCreate({ permissions }) {
 
                     <fieldset className="chamado-acompanhantes-fieldset">
                         <legend>Acompanhantes</legend>
-                        <small>Selecione usuarios da empresa que poderao acompanhar, responder e anexar arquivos neste chamado.</small>
+                        <small>Selecione usuários da empresa que poderão acompanhar, responder e anexar arquivos neste chamado.</small>
                         {acompanhantesElegiveis.length ? (
                             <div className="chamado-acompanhantes-grid">
                                 {acompanhantesElegiveis.map((acompanhante) => (
@@ -348,7 +350,7 @@ export default function ChamadoCreate({ permissions }) {
                                 ))}
                             </div>
                         ) : (
-                            <p className="chamado-muted">Nenhum usuario elegivel para acompanhar este chamado.</p>
+                            <p className="chamado-muted">Nenhum usuário elegível para acompanhar este chamado.</p>
                         )}
                     </fieldset>
 
@@ -361,7 +363,7 @@ export default function ChamadoCreate({ permissions }) {
                             onChange={handleAnexosChange}
                             disabled={!canCreate || saving}
                         />
-                        <small>JPG, JPEG, PNG, PDF, DOCX ou TXT. Maximo de 5 arquivos, 10 MB cada.</small>
+                        <small>JPG, JPEG, PNG, PDF, DOCX ou TXT. Máximo de 5 arquivos, 10 MB cada.</small>
                     </label>
 
                     {anexos.length ? (
@@ -379,63 +381,56 @@ export default function ChamadoCreate({ permissions }) {
 
                     <div className="chamado-actions">
                         <button type="submit" disabled={!canCreate || saving}>
-                            {saving ? "Buscando responsaveis..." : "Abrir chamado"}
+                            {saving ? "Buscando responsáveis..." : "Abrir chamado"}
                         </button>
                     </div>
 
                     {!canCreate && (
-                        <p className="chamado-muted">Seu grupo nao possui permissao para abrir chamados nesta funcionalidade.</p>
+                        <p className="chamado-muted">Seu grupo não possui permissão para abrir chamados nesta funcionalidade.</p>
                     )}
                 </form>
             )}
 
-            {responsaveisModalOpen && (
-                <div className="chamado-modal-backdrop" role="presentation">
-                    <div className="chamado-responsavel-modal" role="dialog" aria-modal="true" aria-label="Selecionar responsavel">
-                        <header>
-                            <span>Controle de chamados</span>
-                            <h3>Selecionar responsavel</h3>
-                            <p>Escolha o usuario ou grupo responsavel que sera vinculado a este chamado.</p>
-                        </header>
-
-                        {responsaveisCandidatos.length ? (
-                            <div className="chamado-responsavel-options">
-                                {responsaveisCandidatos.map((responsavel) => (
-                                    <label key={responsavel.id} className="chamado-responsavel-option">
-                                        <input
-                                            type="radio"
-                                            name="responsavelId"
-                                            value={responsavel.id}
-                                            checked={selectedResponsavelId === responsavel.id}
-                                            onChange={(event) => setSelectedResponsavelId(event.target.value)}
-                                            disabled={saving}
-                                        />
-                                        <span>
-                                            {responsavelLabel(responsavel)}
-                                            <small>{responsavelTipoLabel(responsavel)}{responsavel.email ? ` Ãƒâ€šÃ‚Â· ${responsavel.email}` : ""}</small>
-                                        </span>
-                                    </label>
-                                ))}
-                            </div>
-                        ) : (
-                            <p className="chamado-muted">Nenhum responsavel cadastrado para a solucao e funcionalidade selecionadas.</p>
-                        )}
-
-                        <div className="chamado-modal-actions">
-                            <button type="button" onClick={closeResponsaveisModal} disabled={saving}>Cancelar</button>
-                            {responsaveisCandidatos.length ? (
-                                <button type="button" onClick={() => submitChamado(responsaveisCandidatos.find((responsavel) => responsavel.id === selectedResponsavelId) || null)} disabled={saving || !selectedResponsavelId}>
-                                    {saving ? "Abrindo..." : "Abrir chamado"}
-                                </button>
-                            ) : (
-                                <button type="button" onClick={() => submitChamado(null)} disabled={saving}>
-                                    {saving ? "Abrindo..." : "Abrir sem responsavel"}
-                                </button>
-                            )}
-                        </div>
+            <CrudModal
+                open={responsaveisModalOpen}
+                mode="create"
+                title="Selecionar responsável"
+                onClose={closeResponsaveisModal}
+                onSubmit={(event) => {
+                    event.preventDefault();
+                    const responsavel = responsaveisCandidatos.find((item) => item.id === selectedResponsavelId) || null;
+                    if (responsaveisCandidatos.length && !responsavel) return;
+                    submitChamado(responsavel);
+                }}
+                processing={saving}
+                modalClassName="chamado-responsavel-modal"
+                formClassName="chamado-responsavel-form"
+                actions={<><button type="button" onClick={closeResponsaveisModal}>Cancelar</button><button type="submit" disabled={Boolean(responsaveisCandidatos.length && !selectedResponsavelId)}>{saving ? "Abrindo..." : responsaveisCandidatos.length ? "Abrir chamado" : "Abrir sem responsável"}</button></>}
+            >
+                <p className="chamado-muted">Escolha o usuário ou grupo responsável que será vinculado a este chamado.</p>
+                {responsaveisCandidatos.length ? (
+                    <div className="chamado-responsavel-options">
+                        {responsaveisCandidatos.map((responsavel) => (
+                            <label key={responsavel.id} className="chamado-responsavel-option">
+                                <input
+                                    type="radio"
+                                    name="responsavelId"
+                                    value={responsavel.id}
+                                    checked={selectedResponsavelId === responsavel.id}
+                                    onChange={(event) => setSelectedResponsavelId(event.target.value)}
+                                    disabled={saving}
+                                />
+                                <span>
+                                    {responsavelLabel(responsavel)}
+                                    <small>{responsavelTipoLabel(responsavel)}{responsavel.email ? ` · ${responsavel.email}` : ""}</small>
+                                </span>
+                            </label>
+                        ))}
                     </div>
-                </div>
-            )}
+                ) : (
+                    <p className="chamado-muted">Nenhum responsável cadastrado para a solução e funcionalidade selecionadas.</p>
+                )}
+            </CrudModal>
         </section>
     );
 }

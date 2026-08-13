@@ -97,7 +97,7 @@ describe("campos compartilhados", () => {
 describe("estrutura compartilhada", () => {
     it("mantém os contatos externos do rodapé seguros e acessíveis", () => {
         render(<Footer />);
-        expect(screen.getByText(new RegExp(String(new Date().getFullYear())))).toBeInTheDocument();
+        expect(screen.getByText(`© ${new Date().getFullYear()} Orfeu Sistemas`)).toBeInTheDocument();
         for (const link of screen.getAllByRole("link")) {
             expect(link).toHaveAttribute("target", "_blank");
             expect(link).toHaveAttribute("rel", "noopener noreferrer");

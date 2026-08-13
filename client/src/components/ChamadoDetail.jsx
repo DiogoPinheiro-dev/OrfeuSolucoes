@@ -26,6 +26,7 @@ import { canUseFeatureAction, getFeatureBySlug, getSolutionBySlug, isGroupAdmin,
 import { useAuth } from "../hooks/useAuth";
 import { useHubNavigation } from "../hooks/useHubNavigation";
 import ChamadoSlaIndicator from "./ChamadoSlaIndicator";
+import { FeedbackMessage, LoadingState } from "./CrudFeedback";
 import {
     editableStatusOptions,
     formatDateTime,
@@ -40,9 +41,9 @@ import {
 
 import "../styles/chamados.css";
 const usuarioDisplayName = (usuario) => usuario?.nome || usuario?.login || usuario?.email || null;
-const responsavelOptionLabel = (responsavel) => responsavel?.nome || responsavel?.login || responsavel?.email || "Responsavel";
+const responsavelOptionLabel = (responsavel) => responsavel?.nome || responsavel?.login || responsavel?.email || "Responsável";
 const chamadoResponsavelKey = (chamado) => chamado?.responsavelGrupoId ? `GRUPO:${chamado.responsavelGrupoId}` : chamado?.responsavelId ? `USUARIO:${chamado.responsavelId}` : "";
-const chamadoResponsavelLabel = (chamado) => chamado?.responsavelGrupoNome || chamado?.responsavelNome || "Sem responsavel";
+const chamadoResponsavelLabel = (chamado) => chamado?.responsavelGrupoNome || chamado?.responsavelNome || "Sem responsável";
 const MAX_ANEXO_FILES = 5;
 const MAX_ANEXO_SIZE_BYTES = 10 * 1024 * 1024;
 const ANEXO_ACCEPT = ".jpg,.jpeg,.png,.pdf,.docx,.txt";
@@ -52,10 +53,10 @@ const isTechnicalId = (value) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 
 const formatHistoricoCampo = (campo) => {
     const labels = {
-        responsavelId: "Responsavel",
-        responsavelGrupoId: "Grupo responsavel",
-        liderAtendimento: "Lider atendimento",
-        responsavel: "Responsavel",
+        responsavelId: "Responsável",
+        responsavelGrupoId: "Grupo responsável",
+        liderAtendimento: "Líder de atendimento",
+        responsavel: "Responsável",
         status: "Status",
         prioridade: "Prioridade"
     };
@@ -133,7 +134,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
             const atendente = atendentes.find((candidate) => candidate.id === value);
 
             if (atendente) {
-                return usuarioDisplayName(atendente) || "Responsavel";
+                return usuarioDisplayName(atendente) || "Responsável";
             }
 
             if (value === chamado?.responsavelId && chamado?.responsavelNome) {
@@ -144,7 +145,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
                 return usuarioDisplayName(user);
             }
 
-            return isTechnicalId(value) ? "Responsavel" : value;
+            return isTechnicalId(value) ? "Responsável" : value;
         }
 
         return value;
@@ -171,7 +172,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
             setCategoria(response?.categoriaId ? String(response.categoriaId) : "");
             setResponsavelId(chamadoResponsavelKey(response));
         } catch (loadError) {
-            setError(loadError.message || "Nao foi possivel carregar o chamado.");
+            setError(loadError.message || "Não foi possível carregar o chamado.");
         } finally {
             setLoading(false);
         }
@@ -273,7 +274,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
             setObservacao("");
             success?.(updated);
         } catch (actionError) {
-            setError(actionError.message || "Nao foi possivel executar a acao.");
+            setError(actionError.message || "Não foi possível executar a ação.");
         } finally {
             setSaving(false);
         }
@@ -351,7 +352,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
                 const mensagemId = updated?.mensagens?.[updated.mensagens.length - 1]?.id;
 
                 if (!mensagemId) {
-                    throw new Error("Nao foi possivel vincular os anexos a mensagem enviada.");
+                    throw new Error("Não foi possível vincular os anexos à mensagem enviada.");
                 }
 
                 await uploadChamadoAnexos(chamadoId, respostaAnexos, mensagemId);
@@ -366,7 +367,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
             setResposta("");
             clearRespostaAnexos();
         } catch (actionError) {
-            setError(actionError.message || "Nao foi possivel enviar a resposta.");
+            setError(actionError.message || "Não foi possível enviar a resposta.");
         } finally {
             setSaving(false);
         }
@@ -375,7 +376,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
     if (loading) {
         return (
             <section className="chamados-shell">
-                <div className="user-management-loading">Carregando chamado...</div>
+                <LoadingState message="Carregando chamado..." />
             </section>
         );
     }
@@ -383,7 +384,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
     if (!chamado) {
         return (
             <section className="chamados-shell">
-                {error && <div className="user-management-error" role="alert">{error}</div>}
+                {error && <FeedbackMessage type="error" compact>{error}</FeedbackMessage>}
                 <button type="button" className="chamado-secondary" onClick={onBack}>Voltar</button>
             </section>
         );
@@ -429,7 +430,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
                 previewWindow.close();
             }
 
-            setError(openError.message || "Nao foi possivel abrir o anexo.");
+            setError(openError.message || "Não foi possível abrir o anexo.");
         }
     };
 
@@ -479,7 +480,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
                 </div>
             </header>
 
-            {error && <div className="user-management-error" role="alert">{error}</div>}
+            {error && <FeedbackMessage type="error" compact>{error}</FeedbackMessage>}
 
             <div className="chamado-detail-grid">
                 <div className="chamado-detail-main">
@@ -491,12 +492,12 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
                             <dd>{chamado.solicitanteNome || "-"}</dd>
                         </div>
                         <div>
-                            <dt>Responsavel</dt>
+                            <dt>Responsável</dt>
                             <dd>{chamadoResponsavelLabel(chamado)}</dd>
                         </div>
                         <div>
                             <dt>Atendimento</dt>
-                            <dd>{chamado.liderAtendimentoNome || (chamado.responsavelGrupoId ? "Disponivel para assumir" : "-")}</dd>
+                            <dd>{chamado.liderAtendimentoNome || (chamado.responsavelGrupoId ? "Disponível para assumir" : "-")}</dd>
                         </div>
                         <div>
                             <dt>Categoria</dt>
@@ -508,7 +509,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
                         </div>
                         <div>
                             <dt>Funcionalidade</dt>
-                            <dd>{chamado.funcionalidadeNome || "Sem funcionalidade especifica"}</dd>
+                            <dd>{chamado.funcionalidadeNome || "Sem funcionalidade específica"}</dd>
                         </div>
                         <div>
                             <dt>Criado em</dt>
@@ -523,7 +524,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
                             <dd>{chamado.primeiraRespostaLimiteEm ? formatDateTime(chamado.primeiraRespostaLimiteEm) : "Sem SLA"}</dd>
                         </div>
                         <div>
-                            <dt>Resolucao limite</dt>
+                            <dt>Limite de resolução</dt>
                             <dd>{chamado.resolucaoLimiteEm ? formatDateTime(chamado.resolucaoLimiteEm) : "Sem SLA"}</dd>
                         </div>
                         <div>
@@ -532,7 +533,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
                         </div>
                     </dl>
                     <div className="chamado-observacao">
-                        <h4>Observacao</h4>
+                        <h4>Observação</h4>
                         <p>{chamado.descricao || "-"}</p>
                     </div>
                 </article>
@@ -573,21 +574,21 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
                                     ))}
                                 </div>
                             ) : (
-                                <p className="chamado-muted">Nenhum usuario elegivel para acompanhar este chamado.</p>
+                                <p className="chamado-muted">Nenhum usuário elegível para acompanhar este chamado.</p>
                             )}
                             <button type="button" onClick={salvarAcompanhantes} disabled={saving || isClosed}>
                                 Salvar acompanhantes
                             </button>
                         </fieldset>
                     ) : isPureAcompanhante ? (
-                        <p className="chamado-muted">Voce acompanha este chamado e pode responder ou anexar arquivos.</p>
+                        <p className="chamado-muted">Você acompanha este chamado e pode responder ou anexar arquivos.</p>
                     ) : null}
                 </article>
                 </div>
 
                 {showAtendimentoActions && (
                     <article className="chamado-panel chamado-atendimento-panel">
-                        <h3>Acoes do atendimento</h3>
+                        <h3>Ações do atendimento</h3>
                         <div className="chamado-action-stack">
                             <button
                                 type="button"
@@ -607,16 +608,16 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
                             )}
 
                             <label>
-                                <span>Responsavel</span>
+                                <span>Responsável</span>
                                 <select
                                     value={responsavelId}
                                     onChange={(event) => setResponsavelId(event.target.value)}
                                     disabled={!canManageResponsavel || saving || isResolved || isClosed}
                                 >
-                                    <option value="">Sem responsavel</option>
+                                    <option value="">Sem responsável</option>
                                     {atendentes.map((atendente) => (
                                         <option key={atendente.id} value={atendente.id}>
-                                            {atendente.tipo === "GRUPO" ? "Grupo: " : "Usuario: "}{responsavelOptionLabel(atendente)}
+                                            {atendente.tipo === "GRUPO" ? "Grupo: " : "Usuário: "}{responsavelOptionLabel(atendente)}
                                         </option>
                                     ))}
                                 </select>
@@ -628,7 +629,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
                                         onClick={() => runAction(() => atribuirChamado({ chamadoId: chamado.id, ...buildResponsavelPayload() }))}
                                         disabled={saving || isResolved || isClosed}
                                     >
-                                        Salvar responsavel
+                                        Salvar responsável
                                     </button>
                                 )}
                                 {canTransfer && (
@@ -685,7 +686,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
                             </button>
 
                             <label>
-                                <span>Observacao da acao</span>
+                                <span>Observação da ação</span>
                                 <textarea value={observacao} onChange={(event) => setObservacao(event.target.value)} rows={3} disabled={saving} />
                             </label>
 
@@ -708,7 +709,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
                     <article className="chamado-panel chamado-panel-action">
                         <h3>Arquivar chamado</h3>
                         <label>
-                            <span>Observacao da acao</span>
+                            <span>Observação da ação</span>
                             <textarea value={observacaoArquivamentoMeus} onChange={(event) => setObservacaoArquivamentoMeus(event.target.value)} rows={3} disabled={saving} />
                         </label>
                         <button
@@ -726,19 +727,19 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
                             Arquivar chamado
                         </button>
                         {!canArchive && (
-                            <p className="chamado-muted">Seu grupo nao possui permissao para arquivar chamados em Meus chamados.</p>
+                            <p className="chamado-muted">Seu grupo não possui permissão para arquivar chamados em Meus chamados.</p>
                         )}
                         {canArchive && !isCurrentUserResponsibleForChamado && (
-                            <p className="chamado-muted">Apenas o responsavel atual pelo chamado pode arquivar.</p>
+                            <p className="chamado-muted">Apenas o responsável atual pelo chamado pode arquivar.</p>
                         )}
                     </article>
                 )}
 
                 {isArquivados && (
                     <article className="chamado-panel chamado-panel-action">
-                        <h3>Acoes do arquivamento</h3>
+                        <h3>Ações do arquivamento</h3>
                         <label>
-                            <span>Observacao da acao</span>
+                            <span>Observação da ação</span>
                             <textarea value={observacao} onChange={(event) => setObservacao(event.target.value)} rows={3} disabled={saving} />
                         </label>
                         <button
@@ -749,7 +750,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
                             Desarquivar chamado
                         </button>
                         {!canReopen && (
-                            <p className="chamado-muted">Apenas o administrador ou usuarios do grupo Administradores podem desarquivar chamados.</p>
+                            <p className="chamado-muted">Apenas o administrador ou usuários do grupo Administradores podem desarquivar chamados.</p>
                         )}
                     </article>
                 )}
@@ -766,7 +767,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
                 <article className="chamado-panel chamado-panel-action">
                     <h3>Reabrir chamado</h3>
                     <label>
-                        <span>Observacao</span>
+                        <span>Observação</span>
                         <textarea value={observacao} onChange={(event) => setObservacao(event.target.value)} rows={3} disabled={saving} />
                     </label>
                     <button type="button" className="chamado-action-reopen" onClick={() => runAction(() => reabrirChamado(chamado.id, observacao || null))} disabled={saving}>
@@ -784,7 +785,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
                         rows={4}
                         maxLength={1000}
                         disabled={!canReply || saving || isClosed}
-                        placeholder={canReply ? "Digite uma resposta publica..." : "Seu grupo nao possui permissao para responder."}
+                        placeholder={canReply ? "Digite uma resposta pública..." : "Seu grupo não possui permissão para responder."}
                     />
                     <label className="chamado-anexo-picker">
                         <span>Anexos da resposta</span>
@@ -796,7 +797,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
                             onChange={handleRespostaAnexosChange}
                             disabled={!canReply || saving || isClosed}
                         />
-                        <small>JPG, JPEG, PNG, PDF, DOCX ou TXT. Maximo de 5 arquivos, 10 MB cada.</small>
+                        <small>JPG, JPEG, PNG, PDF, DOCX ou TXT. Máximo de 5 arquivos, 10 MB cada.</small>
                     </label>
 
                     {respostaAnexos.length ? (
@@ -824,7 +825,7 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
                     {chamado.mensagens?.length ? (
                         chamado.mensagens.map((mensagem) => (
                             <div key={mensagem.id} className="chamado-timeline-item">
-                                <strong>{mensagem.autorNome || "Usuario"}</strong>
+                                <strong>{mensagem.autorNome || "Usuário"}</strong>
                                 <small>{formatDateTime(mensagem.criadoEm)}</small>
                                 <p>{mensagem.conteudo}</p>
                                 {renderAnexos(mensagem.anexos)}
@@ -837,12 +838,12 @@ export default function ChamadoDetail({ chamadoId, mode, permissions, onBack }) 
             </article>
 
             <article className="chamado-panel">
-                <h3>Historico</h3>
+                <h3>Histórico</h3>
                 <div className="chamado-timeline">
                     {chamado.historico?.map((item) => (
                         <div key={item.id} className="chamado-timeline-item compacto">
                             <strong>{item.evento}</strong>
-                            <small>{formatDateTime(item.criadoEm)} Â· {item.usuarioNome || "Sistema"}</small>
+                            <small>{formatDateTime(item.criadoEm)} · {item.usuarioNome || "Sistema"}</small>
                             <p>
                                 {formatHistoricoLinha(item)}
                             </p>

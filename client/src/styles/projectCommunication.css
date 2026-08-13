@@ -6,7 +6,7 @@
 .project-communication-feedback, .project-communication-readonly { margin: 12px 18px 0; padding: 12px 16px; border: 1px solid var(--line); border-radius: 12px; }
 .project-communication-feedback.error { background: var(--danger-bg); color: var(--danger-text); }
 .project-communication-feedback.success { background: var(--success-soft); color: var(--success-text); }
-.project-communication-readonly { background: #fff4d6; color: #765400; }
+.project-communication-readonly { background: var(--warning-bg); color: var(--warning-text); }
 .project-communication-composer { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin: 16px 18px; padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface-white); box-shadow: var(--shadow-soft); }
 .project-communication-tabs { display: flex; grid-column: 1 / -1; gap: 8px; }
 .project-communication-tabs button, .project-communication-toolbar button, .project-feed-card footer button { display: inline-flex; align-items: center; gap: 7px; min-height: 38px; padding: 8px 12px; border: 1px solid var(--button-secondary-border); border-radius: 9px; background: var(--button-secondary-bg); color: var(--primary); cursor: pointer; font-weight: 700; }
@@ -32,7 +32,7 @@
 .project-feed-content > p { margin: 0; padding: 16px; color: var(--secondary); line-height: 1.55; white-space: pre-wrap; }
 .project-health { display: inline-flex; margin: 14px 16px 0; padding: 5px 9px; border-radius: 999px; font-size: .75rem; font-weight: 800; text-transform: uppercase; }
 .health-em_dia { background: var(--success-soft); color: var(--success-text); }
-.health-em_risco { background: #fff4d6; color: #765400; }
+.health-em_risco { background: var(--warning-bg); color: var(--warning-text); }
 .health-atrasado { background: var(--danger-bg); color: var(--danger-text); }
 .project-feed-attachments { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 16px 14px; }
 .project-feed-attachment { display: inline-flex; min-width: 0; }

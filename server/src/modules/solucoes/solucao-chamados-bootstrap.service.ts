@@ -114,29 +114,29 @@ export class SolucaoChamadosBootstrapService {
         slug: 'abrir-chamado',
         titulo: 'Abrir chamado',
         label: 'Novo chamado',
-        descricao: 'Registre uma nova solicitacao de atendimento para a empresa selecionada.',
+        descricao: 'Registre uma nova solicitação de atendimento para a empresa selecionada.',
         ordem: 10,
         registryKey: 'controle-de-chamados.abrir-chamado'
       },
       {
         slug: 'meus-chamados',
         titulo: 'Meus chamados',
-        label: 'Minhas solicitacoes',
-        descricao: 'Acompanhe chamados abertos por voce, responda e solicite reabertura quando necessario.',
+        label: 'Minhas solicitações',
+        descricao: 'Acompanhe chamados abertos por você, responda e solicite reabertura quando necessário.',
         ordem: 20,
         registryKey: 'controle-de-chamados.meus-chamados',
         acoes: [
           {
             chave: 'responder_proprio_chamado',
-            nome: 'Responder proprio chamado', configuracao: 'responder_proprio_chamado',
-            descricao: 'Permite adicionar respostas publicas nos proprios chamados.',
+            nome: 'Responder próprio chamado', configuracao: 'responder_proprio_chamado',
+            descricao: 'Permite adicionar respostas públicas nos próprios chamados.',
             ordem: 50,
             ativo: true
           },
           {
             chave: 'reabrir_proprio_chamado',
-            nome: 'Reabrir proprio chamado', configuracao: 'reabrir_proprio_chamado',
-            descricao: 'Permite reabrir chamados proprios que foram resolvidos.',
+            nome: 'Reabrir próprio chamado', configuracao: 'reabrir_proprio_chamado',
+            descricao: 'Permite reabrir chamados próprios que foram resolvidos.',
             ordem: 60,
             ativo: true
           }
@@ -179,15 +179,15 @@ export class SolucaoChamadosBootstrapService {
         slug: 'categorias',
         titulo: 'Categorias de chamados',
         label: 'Categorias',
-        descricao: 'Configure categorias de chamados especificas da empresa selecionada.',
+        descricao: 'Configure categorias de chamados específicas da empresa selecionada.',
         ordem: 50,
         registryKey: 'controle-de-chamados.categorias'
       },
       {
         slug: 'responsaveis',
-        titulo: 'Cadastro de responsaveis',
-        label: 'Responsaveis',
-        descricao: 'Cadastre supervisores e responsaveis por solucao ou funcionalidade.',
+        titulo: 'Cadastro de responsáveis',
+        label: 'Responsáveis',
+        descricao: 'Cadastre supervisores e responsáveis por solução ou funcionalidade.',
         ordem: 60,
         registryKey: 'controle-de-chamados.responsaveis'
       },
@@ -195,7 +195,7 @@ export class SolucaoChamadosBootstrapService {
         slug: 'tipos',
         titulo: 'Tipos de chamados',
         label: 'Tipos',
-        descricao: 'Configure os tipos usados na abertura e classificacao dos chamados.',
+        descricao: 'Configure os tipos usados na abertura e classificação dos chamados.',
         ordem: 70,
         registryKey: 'controle-de-chamados.tipos'
       },
@@ -211,7 +211,7 @@ export class SolucaoChamadosBootstrapService {
         slug: 'sla',
         titulo: 'Regras de SLA',
         label: 'SLA',
-        descricao: 'Configure prazos de primeira resposta e resolucao por prioridade.',
+        descricao: 'Configure prazos de primeira resposta e resolução por prioridade.',
         ordem: 90,
         registryKey: 'controle-de-chamados.sla'
       },
@@ -219,23 +219,23 @@ export class SolucaoChamadosBootstrapService {
         slug: 'dashboard',
         titulo: 'Dashboard de chamados',
         label: 'Dashboard',
-        descricao: 'Acompanhe volume, SLA e tempos medios da operacao de atendimento.',
+        descricao: 'Acompanhe volume, SLA e tempos médios da operação de atendimento.',
         ordem: 45,
         registryKey: 'controle-de-chamados.dashboard'
       },
       {
         slug: 'relatorios',
-        titulo: 'Relatorios de chamados',
-        label: 'Relatorios',
-        descricao: 'Consulte chamados por periodo e filtros operacionais, com exportacao CSV ou Excel.',
+        titulo: 'Relatórios de chamados',
+        label: 'Relatórios',
+        descricao: 'Consulte chamados por período e filtros operacionais, com exportação CSV ou Excel.',
         ordem: 110,
         registryKey: 'controle-de-chamados.relatorios'
       },
       {
         slug: 'emails-solucoes',
-        titulo: 'Configuracao de e-mail',
+        titulo: 'Configuração de e-mail',
         label: 'E-mail',
-        descricao: 'Conecte a conta Google principal usada nas notificacoes automaticas dos chamados.',
+        descricao: 'Conecte a conta Google principal usada nas notificações automáticas dos chamados.',
         ordem: 100,
         registryKey: 'controle-de-chamados.emails-solucoes'
       }

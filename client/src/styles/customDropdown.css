@@ -69,7 +69,7 @@
   border: 1px solid var(--line-strong);
   border-radius: 8px;
   background: var(--surface-white);
-  box-shadow: 0 12px 24px rgba(15, 41, 67, 0.12);
+  box-shadow: 0 12px 24px color-mix(in srgb, var(--primary) 12%, transparent);
 }
 
 .custom-dropdown__option {
@@ -110,9 +110,9 @@
 }
 
 .custom-dropdown--hub .custom-dropdown__button {
-  border-color: rgba(255, 255, 255, 0.22);
+  border-color: color-mix(in srgb, var(--surface-white) 22%, transparent);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.08);
+  background: color-mix(in srgb, var(--surface-white) 8%, transparent);
   color: var(--button-primary-text);
   padding: 6px 9px 6px 10px;
   font-size: 0.78rem;
@@ -122,9 +122,9 @@
 .custom-dropdown--hub .custom-dropdown__menu {
   top: auto;
   bottom: calc(100% + 6px);
-  border-color: rgba(255, 255, 255, 0.18);
-  background: rgba(23, 50, 77, 0.94);
-  box-shadow: 0 12px 24px rgba(15, 41, 67, 0.18);
+  border-color: color-mix(in srgb, var(--surface-white) 18%, transparent);
+  background: color-mix(in srgb, var(--button-primary-bg) 94%, transparent);
+  box-shadow: 0 12px 24px color-mix(in srgb, var(--primary) 18%, transparent);
 }
 
 .custom-dropdown--hub .custom-dropdown__option {
@@ -133,7 +133,7 @@
 
 .custom-dropdown--hub .custom-dropdown__option:hover,
 .custom-dropdown--hub .custom-dropdown__option:focus-visible {
-  background: rgba(255, 255, 255, 0.1);
+  background: color-mix(in srgb, var(--surface-white) 10%, transparent);
 }
 
 .custom-dropdown--hub .custom-dropdown__option--selected {
@@ -149,9 +149,9 @@
 }
 
 .custom-dropdown__menu--hub {
-  border-color: rgba(255, 255, 255, 0.18);
-  background: rgba(23, 50, 77, 0.97);
-  box-shadow: 0 12px 24px rgba(15, 41, 67, 0.22);
+  border-color: color-mix(in srgb, var(--surface-white) 18%, transparent);
+  background: color-mix(in srgb, var(--button-primary-bg) 97%, transparent);
+  box-shadow: 0 12px 24px color-mix(in srgb, var(--primary) 22%, transparent);
 }
 
 .custom-dropdown__menu--hub .custom-dropdown__option {
@@ -160,7 +160,7 @@
 
 .custom-dropdown__menu--hub .custom-dropdown__option:hover,
 .custom-dropdown__menu--hub .custom-dropdown__option:focus-visible {
-  background: rgba(255, 255, 255, 0.1);
+  background: color-mix(in srgb, var(--surface-white) 10%, transparent);
 }
 
 .custom-dropdown__menu--hub .custom-dropdown__option--selected {

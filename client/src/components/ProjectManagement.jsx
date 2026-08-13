@@ -13,6 +13,7 @@ import {
 import CrudGrid from "./CrudGrid";
 import { CrudModal } from "./CrudModal";
 import ProjectEditorModal from "./ProjectEditorModal";
+import { FeedbackMessage } from "./CrudFeedback";
 
 import "../styles/projectManagement.css";
 
@@ -162,8 +163,8 @@ export default function ProjectManagement({ permissions }) {
     ], []);
 
     return <div className="project-management">
-        {error && <div className="project-alert" role="alert">{error}<button type="button" onClick={loadProjects}>Tentar novamente</button></div>}
-        {notice && <div className="project-notice" role="status">{notice}<button type="button" onClick={() => setNotice("")}>Fechar</button></div>}
+        {error && <FeedbackMessage type="error" action={<button type="button" onClick={loadProjects}>Tentar novamente</button>}>{error}</FeedbackMessage>}
+        {notice && <FeedbackMessage type="success" onDismiss={() => setNotice("")}>{notice}</FeedbackMessage>}
         <CrudGrid title="Cadastro de projetos" kicker="Projetos" columns={columns} rows={rows} selectedId={selectedId} onSelect={setSelectedId} onCreate={() => loadEditorData()} onEdit={loadEditorData} onView={openDetail} toolbarActions={<>
             {selected?.permissoes?.podeAlterarStatus && !selected.arquivadoEm && <button className="project-toolbar-action" type="button" onClick={() => { setEditorError(""); setCycle({ id: selected.id, chave: selected.chave, situacaoOriginal: selected.situacao, situacao: selected.situacao, saude: selected.saude }); }}>Alterar ciclo</button>}
             {selected?.permissoes?.podeArquivar && !selected.arquivadoEm && <button className="project-toolbar-action" type="button" onClick={() => { setEditorError(""); setArchiveCandidate(selected); }}>Arquivar</button>}

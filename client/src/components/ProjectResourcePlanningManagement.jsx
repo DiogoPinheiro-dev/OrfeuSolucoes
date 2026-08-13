@@ -9,6 +9,7 @@ import { useCrudSelection } from "../hooks/useCrudSelection";
 import ConfirmDialog from "./ConfirmDialog";
 import CrudGrid from "./CrudGrid";
 import { CrudModal } from "./CrudModal";
+import { FeedbackMessage } from "./CrudFeedback";
 import ProjectResourceManagement from "./ProjectResourceManagement";
 import ProjectResourceExecutionManagement from "./ProjectResourceExecutionManagement";
 import "../styles/crudGrid.css";
@@ -194,8 +195,8 @@ export default function ProjectResourcePlanningManagement() {
       </div>
     </header>
 
-    {error && <div className="resource-planning-feedback error" role="alert">{error}</div>}
-    {success && <div className="resource-planning-feedback success" role="status">{success}</div>}
+    {error && <FeedbackMessage type="error" compact>{error}</FeedbackMessage>}
+    {success && <FeedbackMessage type="success" compact>{success}</FeedbackMessage>}
     <nav className="resource-planning-view-tabs" aria-label="Visões do planejamento">
       <button type="button" className={activeView === "cadastro" ? "active" : ""} aria-current={activeView === "cadastro" ? "page" : undefined} onClick={() => selectActiveView("cadastro")}>Cadastro de recursos</button>
       <button type="button" className={activeView === "tarefas" ? "active" : ""} aria-current={activeView === "tarefas" ? "page" : undefined} onClick={() => selectActiveView("tarefas")}>Cadastro de tarefas</button>

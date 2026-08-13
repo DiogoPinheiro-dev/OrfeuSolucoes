@@ -16,6 +16,7 @@ import {
 } from "../../services/Projetos/BacklogService";
 import "../styles/backlogManagement.css";
 import BacklogItemModal from "./BacklogItemModal";
+import { LoadingState } from "./CrudFeedback";
 import { useConfirmAction } from "../hooks/useConfirmAction";
 
 const TIPOS = { HISTORIA: "História", TAREFA: "Tarefa", BUG: "Bug", MELHORIA: "Melhoria" };
@@ -654,7 +655,7 @@ export default function BacklogManagement() {
                     onSubmit={saveItem}
                 />
             )}
-            {modal?.loading && <div className="backlog-overlay-state" role="status">Carregando demanda...</div>}
+            {modal?.loading && <LoadingState message="Carregando demanda..." overlay />}
             {confirmationDialog}
         </div>
     );

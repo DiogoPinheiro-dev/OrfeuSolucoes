@@ -8,15 +8,15 @@ export const DEFAULT_ACTIONS: FuncionalidadeAcaoInput[] = [
 ];
 
 export const DEFAULT_CHAMADO_TIPOS = [
-  { nome: 'Solicitacao', cor: '#ea580c', ordem: 10 },
+  { nome: 'Solicitação', cor: '#ea580c', ordem: 10 },
   { nome: 'Incidente', cor: '#dc2626', ordem: 20 },
-  { nome: 'Duvida', cor: '#16a34a', ordem: 30 },
+  { nome: 'Dúvida', cor: '#16a34a', ordem: 30 },
   { nome: 'Melhoria', cor: '#f59e0b', ordem: 40 }
 ] as const;
 
 export const DEFAULT_CHAMADO_PRIORIDADES = [
   { nome: 'Baixa', cor: '#16a34a', ordem: 10 },
-  { nome: 'Media', cor: '#f59e0b', ordem: 20 },
+  { nome: 'Média', cor: '#f59e0b', ordem: 20 },
   { nome: 'Alta', cor: '#ea580c', ordem: 30 },
   { nome: 'Urgente', cor: '#dc2626', ordem: 40 }
 ] as const;

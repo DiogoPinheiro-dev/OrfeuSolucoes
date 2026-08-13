@@ -2,8 +2,8 @@
 .project-resource select, .project-resource input { width: 100%; min-height: 44px; padding: 11px 13px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface-white); color: var(--primary); font: inherit; }
 .project-resource select:focus-visible, .project-resource input:focus-visible { border-color: var(--button-primary-border); outline: 0; box-shadow: 0 0 0 3px color-mix(in srgb, var(--button-primary-border) 14%, transparent); }
 .resource-feedback { margin: 0 0 14px; padding: 11px 14px; border-radius: 10px; }
-.resource-feedback.error { background: var(--danger-soft); color: var(--danger); }
-.resource-feedback.success { background: var(--success-soft); color: var(--success); }
+.resource-feedback.error { background: var(--danger-bg); color: var(--danger-text); }
+.resource-feedback.success { background: var(--success-soft); color: var(--success-text); }
 .resource-feedback.info { background: var(--surface-soft); color: var(--muted); }
 .resource-empty { padding: 20px; color: var(--muted); text-align: center; }
 .resource-form { display: grid; gap: 18px; padding: 20px 22px 22px; }
@@ -16,7 +16,7 @@
 .resource-project-picker legend { padding: 0 6px; color: var(--primary); font-size: .9rem; font-weight: 700; }
 .resource-project-picker > p { margin: 0; color: var(--muted); font-size: .82rem; line-height: 1.4; }
 .resource-project-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
-.resource-project-option { display: grid !important; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px !important; min-height: 58px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface-white); cursor: pointer; transition: border-color .2s ease, background-color .2s ease, box-shadow .2s ease; }
+.resource-form label.resource-project-option { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px; min-height: 58px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface-white); cursor: pointer; transition: border-color .2s ease, background-color .2s ease, box-shadow .2s ease; }
 .resource-project-option:hover { border-color: var(--button-primary-border); background: var(--surface-soft); }
 .resource-project-option.selected { border-color: var(--accent-green); background: color-mix(in srgb, var(--accent-green) 8%, var(--surface-white)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-green) 10%, transparent); }
 .resource-project-option.disabled { color: var(--muted); cursor: not-allowed; opacity: .68; }

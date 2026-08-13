@@ -1,4 +1,163 @@
-.chamado-report { display:grid; gap:1.2rem; }.chamado-report-heading { display:flex; justify-content:space-between; align-items:flex-end; gap:1rem; }.chamado-report-heading h2 { margin:.25rem 0; }.chamado-report-heading p { margin:0; color:#667085; }.chamado-report-heading>div:last-child,.report-filter-actions { display:flex; gap:.6rem; }.chamado-report-heading button,.report-filter-actions button { display:flex; align-items:center; justify-content:center; gap:.4rem; }
-.chamado-report-filters { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:.8rem; background:var(--surface,#fff); border:1px solid var(--border-color,#e4e7ec); border-radius:14px; padding:1rem; }.chamado-report-filters label { display:grid; gap:.35rem; color:#475467; font-size:.85rem; }.chamado-report-filters input,.chamado-report-filters select { min-width:0; padding:.7rem; border:1px solid #d0d5dd; border-radius:8px; background:#fff; }.report-filter-actions { align-self:end; }
-.chamado-report-table { background:var(--surface,#fff); border:1px solid var(--border-color,#e4e7ec); border-radius:14px; overflow:hidden; }.report-total { padding:1rem; border-bottom:1px solid #eaecf0; color:#667085; }.report-table-scroll { overflow:auto; }.chamado-report table { width:100%; border-collapse:collapse; min-width:1150px; }.chamado-report th,.chamado-report td { text-align:left; padding:.75rem; border-bottom:1px solid #eaecf0; font-size:.85rem; }.chamado-report th { background:#f9fafb; color:#475467; }.chamado-report td small { display:block; color:#667085; margin-top:.2rem; }.report-sla { display:inline-block; padding:.25rem .5rem; border-radius:999px; background:#eef2f6; white-space:nowrap; }.report-sla.sla-atrasado { background:#fee4e2; color:#b42318; }.report-sla.sla-perto_do_vencimento { background:#fef0c7; color:#b54708; }.report-sla.sla-no_prazo { background:#dcfae6; color:#067647; }.report-empty { text-align:center!important; color:#667085; padding:2rem!important; }.report-pagination { display:flex; justify-content:flex-end; align-items:center; gap:1rem; padding:1rem; }
-@media(max-width:700px){.chamado-report-heading{align-items:flex-start;flex-direction:column}.chamado-report-heading>div:last-child{width:100%}.chamado-report-heading button{flex:1}.report-filter-actions{grid-column:1/-1}.report-filter-actions button{flex:1}}
+.chamado-report {
+  display: grid;
+  gap: 1.2rem;
+}
+
+.chamado-report-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.chamado-report-heading h2 {
+  margin: 0.25rem 0;
+}
+
+.chamado-report-heading p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.chamado-report-heading > div:last-child,
+.report-filter-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.chamado-report-heading button,
+.report-filter-actions button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.chamado-report-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.8rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-white);
+}
+
+.chamado-report-filters label {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.chamado-report-filters input,
+.chamado-report-filters select {
+  min-width: 0;
+  padding: 0.7rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface-white);
+}
+
+.report-filter-actions {
+  align-self: end;
+}
+
+.chamado-report-table {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-white);
+}
+
+.report-total {
+  padding: 1rem;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.report-table-scroll {
+  overflow: auto;
+}
+
+.chamado-report table {
+  width: 100%;
+  min-width: 1150px;
+  border-collapse: collapse;
+}
+
+.chamado-report th,
+.chamado-report td {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.chamado-report th {
+  background: var(--surface-soft);
+  color: var(--muted);
+}
+
+.chamado-report td small {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--muted);
+}
+
+.report-sla {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  white-space: nowrap;
+}
+
+.report-sla.sla-atrasado {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+.report-sla.sla-perto_do_vencimento {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.report-sla.sla-no_prazo {
+  background: var(--success-soft);
+  color: var(--success-text);
+}
+
+.chamado-report td.report-empty {
+  padding: 2rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.report-pagination {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+@media (max-width: 700px) {
+  .chamado-report-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .chamado-report-heading > div:last-child {
+    width: 100%;
+  }
+
+  .chamado-report-heading button,
+  .report-filter-actions button {
+    flex: 1;
+  }
+
+  .report-filter-actions {
+    grid-column: 1 / -1;
+  }
+}

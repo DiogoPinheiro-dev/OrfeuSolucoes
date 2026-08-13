@@ -10,6 +10,7 @@ import {
 import { canUseFeatureAction } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
 import { useConfirmAction } from "../hooks/useConfirmAction";
+import { FeedbackMessage, LoadingState } from "./CrudFeedback";
 
 import "../styles/chamados.css";
 
@@ -41,7 +42,7 @@ export default function GoogleEmailManagement({ permissions }) {
     try {
       setAccounts(await getGoogleEmailContas());
     } catch (loadError) {
-      setError(loadError.message || "Nao foi possivel carregar a configuracao de e-mail.");
+      setError(loadError.message || "Não foi possível carregar a configuração de e-mail.");
     } finally {
       setLoading(false);
     }
@@ -111,19 +112,19 @@ export default function GoogleEmailManagement({ permissions }) {
   };
 
   if (loading) {
-    return <div className="user-management-loading">Carregando configuracao de e-mail...</div>;
+    return <LoadingState message="Carregando configuração de e-mail..." />;
   }
 
   return (
     <div className="email-solution-management">
-      {error && <div className="user-management-error" role="alert">{error}</div>}
+      {error && <FeedbackMessage type="error" compact>{error}</FeedbackMessage>}
 
       <section className="workspace-panel workspace-panel-wide">
         <span className="workspace-label">Controle de Chamados</span>
-        <h2>Configuracao de e-mail</h2>
+        <h2>Configuração de e-mail</h2>
         <p>
-          A conta principal e o remetente fixo das notificacoes. O sistema envia para o
-          solicitante, todos os responsaveis e os usuarios em copia, sem exigir configuracao por setor.
+          A conta principal e o remetente fixo das notificações. O sistema envia para o
+          solicitante, todos os responsáveis e os usuários em cópia, sem exigir configuração por setor.
         </p>
 
         {(canCreate || (editingAccount && canEdit)) && (

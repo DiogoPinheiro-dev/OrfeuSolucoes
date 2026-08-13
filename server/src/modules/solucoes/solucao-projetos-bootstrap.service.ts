@@ -24,8 +24,8 @@ export class SolucaoProjetosBootstrapService {
           where: { id: existingSolucao.id },
           data: {
             nome: 'Gerenciador de Projetos',
-            descricao: 'Espaco para organizar projetos, backlog, entregas, marcos e comunicacao entre as equipes.',
-            eyebrow: 'Operacao',
+            descricao: 'Espaço para organizar projetos, backlog, entregas, marcos e comunicação entre as equipes.',
+            eyebrow: 'Operação',
             ordem: 10,
             ativo: true,
             exibirNoHub: true,
@@ -38,8 +38,8 @@ export class SolucaoProjetosBootstrapService {
           data: {
             slug: 'projetos',
             nome: 'Gerenciador de Projetos',
-            descricao: 'Espaco para organizar projetos, backlog, entregas, marcos e comunicacao entre as equipes.',
-            eyebrow: 'Operacao',
+            descricao: 'Espaço para organizar projetos, backlog, entregas, marcos e comunicação entre as equipes.',
+            eyebrow: 'Operação',
             ordem: 10,
             ativo: true,
             exibirNoHub: true,

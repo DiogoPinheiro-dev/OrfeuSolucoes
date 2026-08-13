@@ -159,6 +159,12 @@
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .crud-grid-loading span {
+    animation: none;
+  }
+}
+
 .crud-table {
   width: 100%;
   min-width: 780px;
@@ -187,7 +193,7 @@
 }
 
 .crud-table th {
-  background: #eceff2;
+  background: var(--surface-muted);
   color: var(--primary);
   font-size: 0.82rem;
 }
@@ -197,13 +203,13 @@
 }
 
 .crud-table tbody tr:nth-child(even) {
-  background: #f3f4f5;
+  background: var(--surface-soft);
 }
 
 .crud-table tbody tr:hover,
 .crud-table tbody tr.selected {
-  background: #f24d4d;
-  color: var(--button-primary-text);
+  background: var(--detail-accent-bg);
+  color: var(--primary);
 }
 
 .crud-empty {

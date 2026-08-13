@@ -27,13 +27,13 @@
 }
 
 .resource-planning-feedback.error {
-  background: var(--danger-soft);
-  color: var(--danger);
+  background: var(--danger-bg);
+  color: var(--danger-text);
 }
 
 .resource-planning-feedback.success {
   background: var(--success-soft);
-  color: var(--success);
+  color: var(--success-text);
 }
 
 .resource-planning-pending {
@@ -262,12 +262,12 @@
   line-height: 1.35;
 }
 
-.resource-planning-check {
-  display: grid !important;
+.resource-planning-task-form label.resource-planning-check {
+  display: grid;
   grid-column: 1 / -1;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: start;
-  gap: 11px !important;
+  gap: 11px;
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -350,10 +350,10 @@
   font-weight: 700;
 }
 
-.resource-planning-description {
+.resource-planning-table .resource-planning-description {
   min-width: 260px;
   max-width: 440px;
-  white-space: normal !important;
+  white-space: normal;
 }
 
 

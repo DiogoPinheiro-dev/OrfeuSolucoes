@@ -8,6 +8,7 @@ import {
 } from "../../services/GruposUsuarios/GrupoUsuarioService";
 import { getSolucoes } from "../../services/Solucoes/SolucaoService";
 import ConfirmDialog from "./ConfirmDialog";
+import { FeedbackMessage } from "./CrudFeedback";
 import CrudGrid from "./CrudGrid";
 import FormFieldError from "./FormFieldError";
 import { CrudModal, CrudModalTabPanel, CrudModalTabs } from "./CrudModal";
@@ -242,7 +243,7 @@ export default function GroupManagement({ permissions }) {
             closeModal();
             await loadGroups();
         } catch (saveError) {
-            applyFormError(saveError, "Nao foi possivel salvar o grupo.");
+            applyFormError(saveError, "Não foi possível salvar o grupo.");
         } finally {
             setSaving(false);
         }
@@ -252,7 +253,7 @@ export default function GroupManagement({ permissions }) {
         const groupsToDelete = groups.filter((group) => ids.includes(group.id) && canDeleteGroup(group));
 
         if (!groupsToDelete.length) {
-            setError("O grupo Administradores padrao do sistema nao pode ser excluido.");
+            setError("O grupo Administradores padrão do sistema não pode ser excluído.");
             return;
         }
 
@@ -481,7 +482,7 @@ export default function GroupManagement({ permissions }) {
                                 ]}
                             />
 
-                            {formError && <div className="crud-error" role="alert">{formError}</div>}
+                            {formError && <FeedbackMessage type="error" compact>{formError}</FeedbackMessage>}
 
                             <CrudModalTabPanel active={activeTab === "main"}>
                             <div className="user-form-field">

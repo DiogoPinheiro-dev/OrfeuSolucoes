@@ -3,6 +3,7 @@ import { excluirRecurso, getRecursos, getRecursosProjetos, salvarRecurso } from 
 import { useCrudSelection } from "../hooks/useCrudSelection";
 import CrudGrid from "./CrudGrid";
 import { CrudModal } from "./CrudModal";
+import { FeedbackMessage } from "./CrudFeedback";
 import "../styles/crudGrid.css";
 import "../styles/projectResource.css";
 
@@ -136,9 +137,9 @@ export default function ProjectResourceManagement() {
   ], []);
 
   return <section className="project-resource">
-    {error && <div className="resource-feedback error" role="alert">{error}</div>}
-    {success && <div className="resource-feedback success">{success}</div>}
-    {!loading && activeProjects.length === 0 && <div className="resource-feedback info">Cadastre um projeto ativo antes de incluir recursos.</div>}
+    {error && <FeedbackMessage type="error" compact>{error}</FeedbackMessage>}
+    {success && <FeedbackMessage type="success" compact>{success}</FeedbackMessage>}
+    {!loading && activeProjects.length === 0 && <FeedbackMessage type="info" compact>Cadastre um projeto ativo antes de incluir recursos.</FeedbackMessage>}
     <CrudGrid
       title="Cadastro de recursos"
       kicker="Recursos"

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { CrudModal } from "./CrudModal";
+import { FeedbackMessage } from "./CrudFeedback";
 
 const TIPOS = {
     HISTORIA: "História",
@@ -98,7 +99,7 @@ export default function BacklogItemModal({
                 ? <button type="button" onClick={onClose}>Fechar</button>
                 : <><button type="button" className="secondary" onClick={onClose} disabled={saving}>Cancelar</button><button type="submit" disabled={saving || !form.titulo.trim()}>{saving ? "Salvando..." : "Salvar"}</button></>}
         >
-            {error && <p className="backlog-modal-error" role="alert">{error}</p>}
+            {error && <FeedbackMessage type="error" compact>{error}</FeedbackMessage>}
 
             <fieldset className="backlog-form-grid" disabled={saving || isView}>
                 <label>

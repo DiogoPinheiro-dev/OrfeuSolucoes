@@ -1,6 +1,7 @@
 import { createElement, useEffect, useState } from "react";
 import { AlertTriangle, Archive, CheckCircle2, Clock3, Headphones, Inbox, PauseCircle, Timer } from "lucide-react";
 import { getChamadoDashboard } from "../../services/Chamados/ChamadoService";
+import { FeedbackMessage, LoadingState } from "./CrudFeedback";
 import "../styles/chamadoDashboard.css";
 
 const duration = (minutes) => {
@@ -21,14 +22,14 @@ function Ranking({ title, items }) {
 
 export default function ChamadoDashboard() {
   const [data, setData] = useState(null); const [loading, setLoading] = useState(true); const [error, setError] = useState("");
-  const load = async () => { setLoading(true); setError(""); try { setData(await getChamadoDashboard()); } catch (e) { setError(e.message || "Nao foi possivel carregar o dashboard."); } finally { setLoading(false); } };
+  const load = async () => { setLoading(true); setError(""); try { setData(await getChamadoDashboard()); } catch (e) { setError(e.message || "Não foi possível carregar o dashboard."); } finally { setLoading(false); } };
   useEffect(() => { void load(); }, []);
-  if (loading) return <div className="user-management-loading">Carregando dashboard...</div>;
-  if (error) return <div className="user-management-error" role="alert">{error}<button className="button-standard" onClick={() => void load()}>Tentar novamente</button></div>;
+  if (loading) return <LoadingState message="Carregando dashboard..." />;
+  if (error) return <FeedbackMessage type="error" action={<button className="button-standard" onClick={() => void load()}>Tentar novamente</button>}>{error}</FeedbackMessage>;
   return <div className="chamado-dashboard">
-    <div className="chamado-dashboard-heading"><div><span className="workspace-label">Gestao operacional</span><h2>Dashboard de chamados</h2><p>Visao consolidada da empresa selecionada.</p></div><button className="button-standard" onClick={() => void load()}>Atualizar</button></div>
+    <div className="chamado-dashboard-heading"><div><span className="workspace-label">Gestão operacional</span><h2>Dashboard de chamados</h2><p>Visão consolidada da empresa selecionada.</p></div><button className="button-standard" onClick={() => void load()}>Atualizar</button></div>
     <section className="chamado-dashboard-metrics">
-      <Metric icon={Inbox} label="Total abertos" value={data.totalAbertos}/><Metric icon={Headphones} label="Em atendimento" value={data.emAtendimento}/><Metric icon={PauseCircle} label="Pendentes" value={data.pendentes} tone="warning"/><Metric icon={CheckCircle2} label="Resolvidos" value={data.resolvidos} tone="success"/><Metric icon={Archive} label="Arquivados" value={data.arquivados}/><Metric icon={AlertTriangle} label="SLA atrasado" value={data.atrasados} tone="danger"/><Metric icon={Clock3} label="Media primeira resposta" value={duration(data.tempoMedioPrimeiraRespostaMinutos)}/><Metric icon={Timer} label="Media de resolucao" value={duration(data.tempoMedioResolucaoMinutos)}/>
+      <Metric icon={Inbox} label="Total abertos" value={data.totalAbertos}/><Metric icon={Headphones} label="Em atendimento" value={data.emAtendimento}/><Metric icon={PauseCircle} label="Pendentes" value={data.pendentes} tone="warning"/><Metric icon={CheckCircle2} label="Resolvidos" value={data.resolvidos} tone="success"/><Metric icon={Archive} label="Arquivados" value={data.arquivados}/><Metric icon={AlertTriangle} label="SLA atrasado" value={data.atrasados} tone="danger"/><Metric icon={Clock3} label="Média da primeira resposta" value={duration(data.tempoMedioPrimeiraRespostaMinutos)}/><Metric icon={Timer} label="Média de resolução" value={duration(data.tempoMedioResolucaoMinutos)}/>
     </section>
     <section className="chamado-dashboard-rankings"><Ranking title="Chamados por prioridade" items={data.porPrioridade}/><Ranking title="Chamados por categoria" items={data.porCategoria}/><Ranking title="Chamados por atendente" items={data.porAtendente}/></section>
   </div>;

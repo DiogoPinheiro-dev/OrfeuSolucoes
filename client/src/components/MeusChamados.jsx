@@ -5,7 +5,7 @@ export default function MeusChamados({ permissions }) {
     return (
         <ChamadosList
             title="Meus chamados"
-            description="Acompanhe suas solicitacoes, responda e reabra chamados resolvidos quando necessario."
+            description="Acompanhe suas solicitações, responda e reabra chamados resolvidos quando necessário."
             areaSlug="meus-chamados"
             loadChamados={getMeusChamados}
             permissions={permissions}

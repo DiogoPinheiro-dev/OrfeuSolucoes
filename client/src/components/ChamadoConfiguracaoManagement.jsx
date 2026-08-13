@@ -14,6 +14,7 @@ import { canUseFeatureAction } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
 import { useFormFieldErrors } from "../hooks/useFormFieldErrors";
 import ConfirmDialog from "./ConfirmDialog";
+import { FeedbackMessage, LoadingState } from "./CrudFeedback";
 import FormFieldError from "./FormFieldError";
 import CrudGrid from "./CrudGrid";
 import { CrudModal } from "./CrudModal";
@@ -29,7 +30,7 @@ const initialForm = {
     ativo: true
 };
 
-const booleanLabel = (value) => (value ? "Sim" : "Nao");
+const booleanLabel = (value) => (value ? "Sim" : "Não");
 const colorLabel = (value) => value || "-";
 
 const config = {
@@ -39,7 +40,7 @@ const config = {
         loading: "Carregando tipos...",
         emptyDelete: "o tipo selecionado",
         deleteTitle: "Desativar tipo",
-        deleteMessage: "Deseja desativar {label}? Novos chamados nao poderao usar este cadastro.",
+        deleteMessage: "Deseja desativar {label}? Novos chamados não poderão usar este cadastro.",
         load: getTiposChamado,
         create: createChamadoTipo,
         update: updateChamadoTipo,
@@ -51,7 +52,7 @@ const config = {
         loading: "Carregando prioridades...",
         emptyDelete: "a prioridade selecionada",
         deleteTitle: "Desativar prioridade",
-        deleteMessage: "Deseja desativar {label}? Novos chamados nao poderao usar este cadastro.",
+        deleteMessage: "Deseja desativar {label}? Novos chamados não poderão usar este cadastro.",
         load: getPrioridadesChamado,
         create: createChamadoPrioridade,
         update: updateChamadoPrioridade,
@@ -90,7 +91,7 @@ export default function ChamadoConfiguracaoManagement({ permissions, kind }) {
         try {
             setItems(await settings.load(false));
         } catch (loadError) {
-            setError(loadError.message || `Nao foi possivel carregar ${settings.title.toLowerCase()}.`);
+            setError(loadError.message || `Não foi possível carregar ${settings.title.toLowerCase()}.`);
         } finally {
             setLoading(false);
         }
@@ -170,7 +171,7 @@ export default function ChamadoConfiguracaoManagement({ permissions, kind }) {
             closeModal();
             await loadItems();
         } catch (saveError) {
-            applyFormError(saveError, `Nao foi possivel salvar ${settings.singular.toLowerCase()}.`);
+            applyFormError(saveError, `Não foi possível salvar ${settings.singular.toLowerCase()}.`);
         } finally {
             setSaving(false);
         }
@@ -205,7 +206,7 @@ export default function ChamadoConfiguracaoManagement({ permissions, kind }) {
             setSelectedIds([]);
             await loadItems();
         } catch (deleteError) {
-            setError(deleteError.message || `Nao foi possivel desativar ${settings.singular.toLowerCase()}.`);
+            setError(deleteError.message || `Não foi possível desativar ${settings.singular.toLowerCase()}.`);
         } finally {
             setGridBusy(false);
         }
@@ -235,9 +236,9 @@ export default function ChamadoConfiguracaoManagement({ permissions, kind }) {
 
     return (
         <>
-            {error && <div className="user-management-error" role="alert">{error}</div>}
+            {error && <FeedbackMessage type="error" compact>{error}</FeedbackMessage>}
             {loading ? (
-                <div className="user-management-loading">{settings.loading}</div>
+                <LoadingState message={settings.loading} />
             ) : (
                 <CrudGrid
                     title={settings.title}
@@ -296,7 +297,7 @@ export default function ChamadoConfiguracaoManagement({ permissions, kind }) {
                     </label>
 
                     <label>
-                        <span>Descricao</span>
+                        <span>Descrição</span>
                         <textarea name="descricao" value={form.descricao || ""} onChange={handleChange} disabled={readonly || saving} rows={4} />
                     </label>
 

@@ -8,6 +8,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useFormFieldErrors } from "../hooks/useFormFieldErrors";
 import { useLatestRequest } from "../hooks/useLatestRequest";
 import ConfirmDialog from "./ConfirmDialog";
+import { FeedbackMessage } from "./CrudFeedback";
 import CrudGrid from "./CrudGrid";
 import FormFieldError from "./FormFieldError";
 import { CrudModal, CrudModalTabPanel, CrudModalTabs } from "./CrudModal";
@@ -237,7 +238,7 @@ export default function UserManagement({ permissions }) {
             closeModal();
             await loadUsers();
         } catch (saveError) {
-            applyFormError(saveError, "Nao foi possivel salvar o usuario.");
+            applyFormError(saveError, "Não foi possível salvar o usuário.");
         } finally {
             setSaving(false);
         }
@@ -248,7 +249,7 @@ export default function UserManagement({ permissions }) {
         const deleteUsers = users.filter((item) => idsToDelete.includes(item.id));
 
         if (deleteUsers.some(isProtectedAdminUser)) {
-            setError("O usuario administrador padrao do sistema nao pode ser excluido.");
+            setError("O usuário administrador padrão do sistema não pode ser excluído.");
             return;
         }
 
@@ -387,7 +388,7 @@ export default function UserManagement({ permissions }) {
                                 ]}
                             />
 
-                            {formError && <div className="user-management-error" role="alert">{formError}</div>}
+                            {formError && <FeedbackMessage type="error" compact>{formError}</FeedbackMessage>}
 
                             <CrudModalTabPanel active={activeTab === "main"}>
                             <div className="user-form-field">

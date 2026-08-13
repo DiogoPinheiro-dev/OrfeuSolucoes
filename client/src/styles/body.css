@@ -150,7 +150,11 @@
 .solutions-band .container {
   padding: 32px;
   border-radius: 32px;
-  background: linear-gradient(145deg, rgba(20, 58, 89, 0.94), rgba(38, 97, 138, 0.88));
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--primary) 94%, transparent),
+    color-mix(in srgb, var(--secondary) 88%, transparent)
+  );
   box-shadow: var(--shadow);
 }
 

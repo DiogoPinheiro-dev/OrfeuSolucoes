@@ -5,7 +5,7 @@
   display: grid;
   place-items: center;
   padding: 18px;
-  background: rgba(14, 32, 50, 0.35);
+  background: color-mix(in srgb, var(--primary) 35%, transparent);
   backdrop-filter: blur(4px);
 }
 .crud-modal {
@@ -18,7 +18,7 @@
   box-shadow: var(--shadow);
 }
 .crud-modal--warning {
-  border-color: color-mix(in srgb, #b7791f 42%, var(--line));
+  border-color: color-mix(in srgb, var(--warning-text) 42%, var(--line));
 }
 .crud-modal--destructive {
   border-color: color-mix(in srgb, var(--danger-text) 42%, var(--line));
@@ -198,8 +198,8 @@
   font-weight: 700;
   line-height: 1.25;
 }
-.crud-modal [aria-invalid="true"] {
-  border-color: var(--danger-text) !important;
+.crud-modal :where(input, select, textarea)[aria-invalid="true"] {
+  border-color: var(--danger-text);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger-text) 14%, transparent);
 }
 .crud-modal .user-form-field-label:has(.form-field-error) {

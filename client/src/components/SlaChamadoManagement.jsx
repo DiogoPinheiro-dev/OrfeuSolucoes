@@ -11,6 +11,7 @@ import { canUseFeatureAction } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
 import { useFormFieldErrors } from "../hooks/useFormFieldErrors";
 import ConfirmDialog from "./ConfirmDialog";
+import { FeedbackMessage, LoadingState } from "./CrudFeedback";
 import FormFieldError from "./FormFieldError";
 import CrudGrid from "./CrudGrid";
 import { CrudModal } from "./CrudModal";
@@ -26,7 +27,7 @@ const initialForm = {
     ativo: true
 };
 
-const booleanLabel = (value) => (value ? "Sim" : "Nao");
+const booleanLabel = (value) => (value ? "Sim" : "Não");
 
 const prazoLabel = (minutes) => {
     const value = Number(minutes || 0);
@@ -83,7 +84,7 @@ export default function SlaChamadoManagement({ permissions }) {
             setRegras(regrasData);
             setPrioridades(prioridadesData);
         } catch (loadError) {
-            setError(loadError.message || "Nao foi possivel carregar as regras de SLA.");
+            setError(loadError.message || "Não foi possível carregar as regras de SLA.");
         } finally {
             setLoading(false);
         }
@@ -168,7 +169,7 @@ export default function SlaChamadoManagement({ permissions }) {
             closeModal();
             await loadData();
         } catch (saveError) {
-            applyFormError(saveError, "Nao foi possivel salvar a regra de SLA.");
+            applyFormError(saveError, "Não foi possível salvar a regra de SLA.");
         } finally {
             setSaving(false);
         }
@@ -203,7 +204,7 @@ export default function SlaChamadoManagement({ permissions }) {
             setSelectedIds([]);
             await loadData();
         } catch (deleteError) {
-            setError(deleteError.message || "Nao foi possivel desativar a regra de SLA.");
+            setError(deleteError.message || "Não foi possível desativar a regra de SLA.");
         } finally {
             setGridBusy(false);
         }
@@ -228,17 +229,17 @@ export default function SlaChamadoManagement({ permissions }) {
 
     return (
         <>
-            {error && <div className="user-management-error" role="alert">{error}</div>}
+            {error && <FeedbackMessage type="error" compact>{error}</FeedbackMessage>}
             {loading ? (
-                <div className="user-management-loading">Carregando regras de SLA...</div>
+                <LoadingState message="Carregando regras de SLA..." />
             ) : (
                 <CrudGrid
                     title="Regras de SLA"
                     columns={[
                         { key: "prioridadeNome", label: "Prioridade", render: (regra) => regra.prioridadeNome || "-" },
                         { key: "primeiraRespostaPrazoMinutos", label: "Primeira resposta", render: (regra) => prazoLabel(regra.primeiraRespostaPrazoMinutos) },
-                        { key: "resolucaoPrazoMinutos", label: "Resolucao", render: (regra) => prazoLabel(regra.resolucaoPrazoMinutos) },
-                        { key: "modoContagem", label: "Contagem", render: (regra) => regra.modoContagem === "UTEIS" ? "Dias uteis" : "Tempo corrido" },
+                        { key: "resolucaoPrazoMinutos", label: "Resolução", render: (regra) => prazoLabel(regra.resolucaoPrazoMinutos) },
+                        { key: "modoContagem", label: "Contagem", render: (regra) => regra.modoContagem === "UTEIS" ? "Dias úteis" : "Tempo corrido" },
                         { key: "ativo", label: "Ativo", render: (regra) => booleanLabel(regra.ativo) }
                     ]}
                     rows={filteredRegras}
@@ -303,7 +304,7 @@ export default function SlaChamadoManagement({ permissions }) {
                         </label>
 
                         <label>
-                            <span>Prazo de resolucao (minutos) <FormFieldError formId={SLA_FORM_ID} field="resolucaoPrazoMinutos" errors={fieldErrors} /></span>
+                            <span>Prazo de resolução (minutos) <FormFieldError formId={SLA_FORM_ID} field="resolucaoPrazoMinutos" errors={fieldErrors} /></span>
                             <input type="number" name="resolucaoPrazoMinutos" min="1" value={form.resolucaoPrazoMinutos} onChange={handleChange} disabled={readonly || saving} {...fieldErrorProps("resolucaoPrazoMinutos")} />
                         </label>
                     </div>
@@ -312,7 +313,7 @@ export default function SlaChamadoManagement({ permissions }) {
                         <span>Modo de contagem</span>
                         <select name="modoContagem" value={form.modoContagem} onChange={handleChange} disabled={readonly || saving}>
                             <option value="CORRIDO">Tempo corrido</option>
-                            <option value="UTEIS">Dias uteis (ignora sabados e domingos)</option>
+                            <option value="UTEIS">Dias úteis (ignora sábados e domingos)</option>
                         </select>
                     </label>
 
@@ -326,7 +327,7 @@ export default function SlaChamadoManagement({ permissions }) {
             <ConfirmDialog
                 open={!!pendingDelete}
                 title="Desativar regra de SLA"
-                message={`Deseja desativar ${pendingDelete?.label || "a regra selecionada"}? Chamados ja abertos manterao os prazos calculados.`}
+                message={`Deseja desativar ${pendingDelete?.label || "a regra selecionada"}? Chamados já abertos manterão os prazos calculados.`}
                 onCancel={() => setPendingDelete(null)}
                 onConfirm={confirmDelete}
                 loading={false}

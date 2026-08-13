@@ -6,7 +6,7 @@
 .budget-feedback, .budget-readonly { margin: 12px 18px 0; padding: 12px 16px; border: 1px solid var(--line); border-radius: 12px; }
 .budget-feedback.error { background: var(--danger-bg); color: var(--danger-text); }
 .budget-feedback.success { background: var(--success-soft); color: var(--success-text); }
-.budget-readonly { background: #fff4d6; color: #765400; }
+.budget-readonly { background: var(--warning-bg); color: var(--warning-text); }
 .budget-tabs { display: flex; gap: 8px; padding: 12px 18px; border-block: 1px solid var(--line); background: var(--surface-soft); }
 .budget-tabs button, .budget-form-grid button, .budget-empty button, .budget-finance-heading button { display: inline-flex; align-items: center; gap: 7px; min-height: 40px; padding: 9px 13px; border: 1px solid var(--button-secondary-border); border-radius: 9px; background: var(--button-secondary-bg); color: var(--primary); cursor: pointer; font-weight: 400; }
 .budget-tabs button.active, .budget-form-grid button, .budget-empty button, .budget-finance-heading button { border-color: var(--button-primary-border); background: var(--button-primary-bg); color: var(--button-primary-text); }

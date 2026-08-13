@@ -159,7 +159,7 @@ describe("Notificacoes do Controle de Chamados", () => {
             </MemoryRouter>
         );
 
-        const trigger = await screen.findByRole("button", { name: "Notificacoes de chamados. 1 nao lidas" });
+        const trigger = await screen.findByRole("button", { name: "Notificações de chamados. 1 não lidas" });
         await user.click(trigger);
         await user.click(await screen.findByRole("button", { name: /Chamado atualizado/ }));
 
@@ -171,15 +171,15 @@ describe("Notificacoes do Controle de Chamados", () => {
         const user = userEvent.setup();
         const view = render(<MemoryRouter><ChamadoNotifications /></MemoryRouter>);
 
-        await user.click(await screen.findByRole("button", { name: "Notificacoes de chamados. 1 nao lidas" }));
+        await user.click(await screen.findByRole("button", { name: "Notificações de chamados. 1 não lidas" }));
         await user.click(screen.getByRole("button", { name: "Marcar todas como lidas" }));
         await waitFor(() => expect(marcarTodasChamadoNotificacoesComoLidas).toHaveBeenCalledTimes(1));
-        expect(screen.getByRole("button", { name: "Notificacoes de chamados. 0 nao lidas" })).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Notificações de chamados. 0 não lidas" })).toBeInTheDocument();
         view.unmount();
 
         getChamadoNotificacoes.mockRejectedValue(new Error("Notificacoes indisponiveis."));
         render(<MemoryRouter><ChamadoNotifications /></MemoryRouter>);
-        await user.click(await screen.findByRole("button", { name: "Notificacoes de chamados. 0 nao lidas" }));
-        expect(screen.getByText("Nenhuma notificacao.")).toBeInTheDocument();
+        await user.click(await screen.findByRole("button", { name: "Notificações de chamados. 0 não lidas" }));
+        expect(screen.getByText("Nenhuma notificação.")).toBeInTheDocument();
     });
 });

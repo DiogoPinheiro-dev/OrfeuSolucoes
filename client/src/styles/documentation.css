@@ -145,7 +145,7 @@
 
 .documentation-catalog-group a small {
   margin-top: 3px;
-  color: var(--text-muted);
+  color: var(--muted);
   font-size: 0.72rem;
 }
 

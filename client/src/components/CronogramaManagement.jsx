@@ -20,6 +20,7 @@ import {
 } from "../../services/Projetos/CronogramaService";
 import { getBacklogProjetos } from "../../services/Projetos/BacklogService";
 import { CrudModal } from "./CrudModal";
+import { EmptyState, FeedbackMessage, LoadingState } from "./CrudFeedback";
 import { useConfirmAction } from "../hooks/useConfirmAction";
 import "../styles/cronogramaManagement.css";
 
@@ -217,8 +218,8 @@ export default function CronogramaManagement() {
                 {selectedProject?.arquivadoEm && <span className="gantt-readonly">Projeto arquivado: somente leitura</span>}
             </div>
 
-            {error && <div className="gantt-feedback error" role="alert">{error}</div>}
-            {notice && <div className="gantt-feedback success" role="status">{notice}</div>}
+            {error && <FeedbackMessage type="error" compact>{error}</FeedbackMessage>}
+            {notice && <FeedbackMessage type="success" compact>{notice}</FeedbackMessage>}
 
             <div className="crud-toolbar gantt-toolbar">
                 <button type="button" disabled={!panel.permissoes.podeGerenciarDependencias || itemCandidates.length < 2} onClick={() => { setModalError(""); setModal({ type: "dependency" }); }} title="Incluir dependência" aria-label="Incluir dependência"><FaPlus /></button>
@@ -276,7 +277,7 @@ export default function CronogramaManagement() {
                                                     item.riscoAtraso ? "risk" : "",
                                                     item.arquivado ? "archived" : ""
                                                 ].filter(Boolean).join(" ")}
-                                                style={{ left, width: item.tipo === "MARCO" ? pixelsPerDay : width }}
+                                                style={item.tipo === "MARCO" ? { left } : { left, width }}
                                                 onClick={() => openElement(item)}
                                                 onDoubleClick={(event) => {
                                                     if (item.tipo === "ITEM" && panel.permissoes.podeEditarDatas && !item.arquivado) {
@@ -312,7 +313,7 @@ export default function CronogramaManagement() {
                         </div>
                     </div>
                 </div>
-                {loading && <div className="crud-grid-loading"><span /><p>Montando cronograma...</p></div>}
+                {loading && <LoadingState message="Montando cronograma..." overlay />}
             </div>
 
             <details className="gantt-accessible-table">
@@ -362,7 +363,7 @@ export default function CronogramaManagement() {
                             </button>
                         </article>
                     ))}
-                    {!panel.dependencias.length && <p className="gantt-empty">Nenhuma dependência cadastrada.</p>}
+                    {!panel.dependencias.length && <EmptyState title="Nenhuma dependência cadastrada" compact />}
                 </div>
             </section>
 

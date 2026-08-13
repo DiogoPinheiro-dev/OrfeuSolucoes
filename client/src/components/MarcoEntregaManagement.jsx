@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { FaArchive, FaBoxOpen, FaEdit, FaFlag, FaPlus, FaTimes, FaUndoAlt } from "react-icons/fa";
+import { FaArchive, FaBoxOpen, FaEdit, FaFlag, FaPlus, FaUndoAlt } from "react-icons/fa";
 import { Link } from "react-router-dom";
+
+import { CrudModal } from "./CrudModal";
+import { EmptyState, FeedbackMessage, LoadingState } from "./CrudFeedback";
 
 import { getBacklogProjetos } from "../../services/Projetos/BacklogService";
 import {
@@ -62,18 +65,18 @@ function Editor({ kind, item, panel, saving, error, onClose, onSubmit }) {
     );
 
     return (
-        <div className="crud-modal-backdrop" role="presentation">
-            <section className="crud-modal commitment-modal" role="dialog" aria-modal="true">
-                <header className="crud-modal-header">
-                    <div>
-                        <span>{isMarco ? "Acontecimento do projeto" : "Compromisso de negócio"}</span>
-                        <h3>{item ? "Alterar" : "Incluir"} {isMarco ? "marco" : "entrega"}</h3>
-                    </div>
-                    <button type="button" onClick={onClose} aria-label="Fechar"><FaTimes /></button>
-                </header>
-                <form onSubmit={(event) => { event.preventDefault(); onSubmit(form); }}>
-                    <div className="commitment-form">
-                        {error && <div className="commitment-feedback error">{error}</div>}
+        <CrudModal
+            mode={item ? "edit" : "create"}
+            title={isMarco ? "Marco" : "Entrega"}
+            onClose={onClose}
+            onSubmit={(event) => { event.preventDefault(); onSubmit(form); }}
+            processing={saving}
+            generalError={error}
+            modalClassName="commitment-modal"
+            formClassName=""
+            actions={<><button type="button" onClick={onClose}>Cancelar</button><button type="submit">{saving ? "Salvando..." : "Salvar"}</button></>}
+        >
+            <div className="commitment-form">
                         <label className="wide"><span>Nome *</span><input required maxLength={160} value={form.nome} onChange={(event) => change("nome", event.target.value)} /></label>
                         {isMarco ? (
                             <label className="wide"><span>Descrição</span><textarea rows={3} maxLength={1000} value={form.descricao} onChange={(event) => change("descricao", event.target.value)} /></label>
@@ -108,14 +111,8 @@ function Editor({ kind, item, panel, saving, error, onClose, onSubmit }) {
                             ))}
                             {!panel.itensDisponiveis.length && <p>Nenhum item disponível.</p>}
                         </fieldset>
-                    </div>
-                    <footer className="crud-modal-actions">
-                        <button type="button" onClick={onClose}>Cancelar</button>
-                        <button type="submit" disabled={saving}>{saving ? "Salvando..." : "Salvar"}</button>
-                    </footer>
-                </form>
-            </section>
-        </div>
+            </div>
+        </CrudModal>
     );
 }
 
@@ -231,8 +228,8 @@ export default function MarcoEntregaManagement() {
                 <label className="commitment-check"><input type="checkbox" checked={includeArchived} onChange={(event) => setIncludeArchived(event.target.checked)} />Arquivados</label>
                 {selectedProject?.arquivadoEm && <span className="commitment-readonly">Projeto arquivado: somente leitura</span>}
             </div>
-            {error && <div className="commitment-feedback error">{error}</div>}
-            {notice && <div className="commitment-feedback success">{notice}</div>}
+            {error && <FeedbackMessage type="error" compact>{error}</FeedbackMessage>}
+            {notice && <FeedbackMessage type="success" compact>{notice}</FeedbackMessage>}
             <nav className="commitment-tabs" aria-label="Visões de marcos e entregas">
                 <button className={tab === "MARCO" ? "active" : ""} onClick={() => setTab("MARCO")}><FaFlag /> Marcos <span>{panel.marcos.length}</span></button>
                 <button className={tab === "ENTREGA" ? "active" : ""} onClick={() => setTab("ENTREGA")}><FaBoxOpen /> Entregas <span>{panel.entregas.length}</span></button>
@@ -240,7 +237,7 @@ export default function MarcoEntregaManagement() {
             <div className="crud-toolbar">
                 <button type="button" disabled={!panel.permissoes.podeCriar} onClick={() => { setEditorError(""); setEditor({ kind: tab, item: null }); }} aria-label="Incluir" title="Incluir"><FaPlus /></button>
             </div>
-            {loading ? <div className="commitment-loading">Carregando...</div> : (
+            {loading ? <LoadingState message="Carregando marcos e entregas..." /> : (
                 <div className="commitment-grid">
                     {records.map((item) => (
                         <article key={item.id} className={`commitment-card ${item.arquivadoEm ? "archived" : ""}`}>
@@ -279,7 +276,7 @@ export default function MarcoEntregaManagement() {
                             </footer>
                         </article>
                     ))}
-                    {!records.length && <div className="commitment-empty">Nenhum {tab === "MARCO" ? "marco" : "entrega"} encontrado.</div>}
+                    {!records.length && <EmptyState title={`Nenhum ${tab === "MARCO" ? "marco" : "entrega"} encontrado`} compact />}
                 </div>
             )}
             {editor && <Editor kind={editor.kind} item={editor.item} panel={panel} saving={saving} error={editorError} onClose={() => setEditor(null)} onSubmit={submit} />}

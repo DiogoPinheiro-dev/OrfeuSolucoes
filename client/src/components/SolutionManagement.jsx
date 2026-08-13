@@ -5,6 +5,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useFormFieldErrors } from "../hooks/useFormFieldErrors";
 import { useLatestRequest } from "../hooks/useLatestRequest";
 import ConfirmDialog from "./ConfirmDialog";
+import { FeedbackMessage } from "./CrudFeedback";
 import FormFieldError from "./FormFieldError";
 import CrudGrid from "./CrudGrid";
 import { CrudModal } from "./CrudModal";
@@ -23,7 +24,7 @@ const initialForm = {
     somenteAdminSistema: false
 };
 
-const booleanLabel = (value) => (value ? "Sim" : "Nao");
+const booleanLabel = (value) => (value ? "Sim" : "Não");
 
 const normalizeForm = (solucao) => ({
     ...initialForm,
@@ -90,7 +91,7 @@ export default function SolutionManagement({ permissions }) {
 
         return solutionsRequest.run(getSolucoes, {
             onSuccess: setSolucoes,
-            onError: (loadError) => setError(loadError.message || "Nao foi possivel carregar solucoes."),
+            onError: (loadError) => setError(loadError.message || "Não foi possível carregar soluções."),
             onSettled: () => setLoading(false)
         });
     }, [solutionsRequest]);
@@ -168,7 +169,7 @@ export default function SolutionManagement({ permissions }) {
             closeModal();
             await loadSolucoes();
         } catch (saveError) {
-            applyFormError(saveError, "Nao foi possivel salvar a solucao.");
+            applyFormError(saveError, "Não foi possível salvar a solução.");
         } finally {
             setSaving(false);
         }
@@ -180,8 +181,8 @@ export default function SolutionManagement({ permissions }) {
         setPendingDelete({
             ids,
             label: solucoesToDelete.length === 1
-                ? solucoesToDelete[0].nome || "solucao selecionada"
-                : `${solucoesToDelete.length} solucoes selecionadas`
+                ? solucoesToDelete[0].nome || "solução selecionada"
+                : `${solucoesToDelete.length} soluções selecionadas`
         });
     };
 
@@ -203,7 +204,7 @@ export default function SolutionManagement({ permissions }) {
             setSelectedIds([]);
             await loadSolucoes();
         } catch (deleteError) {
-            setError(deleteError.message || "Nao foi possivel deletar a solucao.");
+            setError(deleteError.message || "Não foi possível excluir a solução.");
         } finally {
             setGridBusy(false);
         }
@@ -234,7 +235,7 @@ export default function SolutionManagement({ permissions }) {
     return (
         <>
             <CrudGrid
-                    title="Cadastro de solucoes"
+                    title="Cadastro de soluções"
                     columns={[
                         { key: "nome", label: "Nome", render: (solucao) => solucao.nome || "-" },
                         { key: "slug", label: "Identificador", render: (solucao) => solucao.slug || "-" },
@@ -262,7 +263,7 @@ export default function SolutionManagement({ permissions }) {
                     busy={gridBusy || loading}
                     error={error}
                     onRetry={loadSolucoes}
-                    emptyMessage="Nenhuma solucao encontrada."
+                    emptyMessage="Nenhuma solução encontrada."
                     canCreate={canUseFeatureAction(currentUser, permissions, "incluir")}
                     canEdit={canUseFeatureAction(currentUser, permissions, "alterar")}
                     canView={canUseFeatureAction(currentUser, permissions, "visualizar")}
@@ -274,8 +275,8 @@ export default function SolutionManagement({ permissions }) {
                     mode={modalMode}
                     formId={SOLUTION_FORM_ID}
                     noValidate
-                    title="Solucao"
-                    ariaLabel="Cadastro de solucao"
+                    title="Solução"
+                    ariaLabel="Cadastro de solução"
                     onClose={closeModal}
                     onSubmit={handleSubmit}
                     actions={(
@@ -290,7 +291,7 @@ export default function SolutionManagement({ permissions }) {
                     )}
 
                 >
-                    {formError && <div className="crud-error" role="alert">{formError}</div>}
+                    {formError && <FeedbackMessage type="error" compact>{formError}</FeedbackMessage>}
                     <div className="user-form-field">
                         <span className="user-form-field-label">
                             <label htmlFor="solucao-nome">Nome <FormFieldError formId={SOLUTION_FORM_ID} field="nome" errors={fieldErrors} /></label>
@@ -314,7 +315,7 @@ export default function SolutionManagement({ permissions }) {
 
                     <div className="user-form-field">
                         <span className="user-form-field-label">
-                            <label htmlFor="solucao-descricao">Descricao</label>
+                            <label htmlFor="solucao-descricao">Descrição</label>
                         </span>
                         <input id="solucao-descricao" name="descricao" value={form.descricao || ""} onChange={handleChange} disabled={readonly || saving} />
                     </div>
@@ -326,7 +327,7 @@ export default function SolutionManagement({ permissions }) {
                         <input id="solucao-ordem" name="ordem" type="number" value={form.ordem ?? 0} onChange={handleChange} disabled={readonly || saving} />
                     </div>
 
-                    <section className="user-company-section" aria-label="Status da solucao">
+                    <section className="user-company-section" aria-label="Status da solução">
                         <div className="user-permissions-grid">
                             <div className="user-permission-option">
                                 <input id="solucao-ativo" type="checkbox" name="ativo" checked={!!form.ativo} onChange={handleChange} disabled={readonly || saving} />
@@ -347,8 +348,8 @@ export default function SolutionManagement({ permissions }) {
 
             <ConfirmDialog
                 open={!!pendingDelete}
-                title="Confirmar exclusao"
-                message={`Tem certeza que deseja deletar ${pendingDelete?.label || "a solucao selecionada"}? As funcionalidades vinculadas tambem serao removidas.`}
+                title="Confirmar exclusão"
+                message={`Tem certeza de que deseja excluir ${pendingDelete?.label || "a solução selecionada"}? As funcionalidades vinculadas também serão removidas.`}
                 onCancel={() => setPendingDelete(null)}
                 onConfirm={confirmDelete}
                 loading={false}

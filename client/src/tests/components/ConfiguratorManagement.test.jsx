@@ -98,7 +98,7 @@ const screens = [
     ["usuários", UserManagement, "Cadastro de usuários"],
     ["grupos", GroupManagement, "Cadastro de grupos"],
     ["empresas", CompanyManagement, "Cadastro de empresas"],
-    ["soluções", SolutionManagement, "Cadastro de solucoes"],
+    ["soluções", SolutionManagement, "Cadastro de soluções"],
     ["funcionalidades", FeatureManagement, "Cadastro de funcionalidades"]
 ];
 
@@ -106,7 +106,7 @@ const readonlyScreens = [
     ["usuários", UserManagement, "usuario@teste.local", "Cadastro de usuário"],
     ["grupos", GroupManagement, "Equipe", "Cadastro de grupo"],
     ["empresas", CompanyManagement, "Empresa teste", "Cadastro de empresa"],
-    ["soluções", SolutionManagement, "Configurador", "Cadastro de solucao"],
+    ["soluções", SolutionManagement, "Configurador", "Cadastro de solução"],
     ["funcionalidades", FeatureManagement, "Rotina customizada", "Cadastro de funcionalidade"]
 ];
 
@@ -206,7 +206,7 @@ describe("CRUDs do Configurador", () => {
 
         await user.click(screen.getByRole("cell", { name: "Configurador" }));
         await user.click(screen.getByRole("button", { name: "Visualizar" }));
-        const viewDialog = screen.getByRole("dialog", { name: "Cadastro de solucao" });
+        const viewDialog = screen.getByRole("dialog", { name: "Cadastro de solução" });
         expect(viewDialog).toBeInTheDocument();
         await user.click(within(viewDialog).getAllByRole("button", { name: "Fechar" }).at(-1));
 
@@ -231,7 +231,7 @@ describe("CRUDs do Configurador", () => {
         expect(screen.getByRole("checkbox", { name: /Selecionar Documentação\. Indisponível:/ })).toBeDisabled();
         await user.click(screen.getByRole("cell", { name: "Documentação" }));
         await user.click(screen.getByRole("button", { name: "Alterar" }));
-        const dialog = screen.getByRole("dialog", { name: "Cadastro de solucao" });
+        const dialog = screen.getByRole("dialog", { name: "Cadastro de solução" });
         expect(within(dialog).getByRole("textbox", { name: "Nome" })).toBeDisabled();
         expect(within(dialog).queryByRole("button", { name: "Salvar" })).not.toBeInTheDocument();
     });

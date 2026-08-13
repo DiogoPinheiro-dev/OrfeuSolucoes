@@ -18,10 +18,10 @@
 .chamados-header,
 .chamado-detail-header,
 .chamado-panel {
-    background: rgba(255, 255, 255, 0.96);
-    border: 1px solid rgba(15, 23, 42, 0.08);
+    background: var(--surface-white);
+    border: 1px solid var(--line);
     border-radius: 18px;
-    box-shadow: 0 14px 40px rgba(15, 23, 42, 0.08);
+    box-shadow: var(--shadow-soft);
     padding: 1.25rem;
 }
 
@@ -36,14 +36,14 @@
 .chamado-detail-header h2,
 .chamado-panel h3 {
     margin: 0.25rem 0;
-    color: #102033;
+    color: var(--primary);
 }
 
 .chamados-header p,
 .chamado-detail-header p,
 .chamado-muted {
     margin: 0;
-    color: #64748b;
+    color: var(--muted);
 }
 
 .chamado-panel-action {
@@ -72,8 +72,8 @@
 }
 
 .chamado-form {
-    background: rgba(255, 255, 255, 0.96);
-    border: 1px solid rgba(15, 23, 42, 0.08);
+    background: var(--surface-white);
+    border: 1px solid var(--line);
     border-radius: 18px;
     padding: 1.25rem;
 }
@@ -86,7 +86,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.4rem;
-    color: #334155;
+    color: var(--secondary);
     font-weight: 400;
 }
 
@@ -100,9 +100,9 @@
 .chamado-response-form textarea,
 .chamado-panel input,
 .chamado-panel textarea {
-    border: 1px solid rgba(15, 23, 42, 0.16);
+    border: 1px solid var(--line-strong);
     border-radius: 12px;
-    color: #102033;
+    color: var(--primary);
     font: inherit;
     padding: 0.7rem 0.8rem;
 }
@@ -121,8 +121,8 @@
 }
 
 .chamados-filters {
-    background: rgba(255, 255, 255, 0.94);
-    border: 1px solid rgba(15, 23, 42, 0.08);
+    background: var(--card-bg);
+    border: 1px solid var(--line);
     border-radius: 18px;
     padding: 1rem;
 }
@@ -148,7 +148,7 @@
     width: 100%;
 }
 .chamados-pagination {
-    color: #64748b;
+    color: var(--muted);
 }
 
 .chamados-pagination div,
@@ -205,42 +205,42 @@
 }
 
 .chamados-shell button.chamado-action-archive {
-    background: #dc2626;
-    border-color: #b91c1c;
-    color: #ffffff;
+    background: var(--action-danger-bg);
+    border-color: var(--status-danger-text);
+    color: var(--surface-white);
 }
 
 .chamados-shell button.chamado-action-archive:hover:not(:disabled),
 .chamados-shell button.chamado-action-archive:focus-visible {
-    background: #b91c1c;
-    border-color: #991b1b;
-    color: #ffffff;
+    background: var(--action-danger-hover-bg);
+    border-color: var(--action-danger-border);
+    color: var(--surface-white);
 }
 
 .chamados-shell button.chamado-action-reopen {
-    background: #facc15;
-    border-color: #eab308;
-    color: #422006;
+    background: var(--action-warning-bg);
+    border-color: var(--action-warning-hover-bg);
+    color: var(--action-warning-text);
 }
 
 .chamados-shell button.chamado-action-reopen:hover:not(:disabled),
 .chamados-shell button.chamado-action-reopen:focus-visible {
-    background: #eab308;
-    border-color: #ca8a04;
-    color: #422006;
+    background: var(--action-warning-hover-bg);
+    border-color: var(--action-warning-border);
+    color: var(--action-warning-text);
 }
 
 .chamados-shell button.chamado-action-resolve {
-    background: #16a34a;
-    border-color: #15803d;
-    color: #ffffff;
+    background: var(--action-success-bg);
+    border-color: var(--action-success-hover-bg);
+    color: var(--surface-white);
 }
 
 .chamados-shell button.chamado-action-resolve:hover:not(:disabled),
 .chamados-shell button.chamado-action-resolve:focus-visible {
-    background: #15803d;
-    border-color: #166534;
-    color: #ffffff;
+    background: var(--action-success-hover-bg);
+    border-color: var(--action-success-border);
+    color: var(--surface-white);
 }
 
 .chamados-shell button.chamado-action-archive:focus-visible,
@@ -268,11 +268,11 @@
 
 
 .chamado-card {
-    background: rgba(255, 255, 255, 0.96);
-    border: 1px solid rgba(15, 23, 42, 0.08);
+    background: var(--surface-white);
+    border: 1px solid var(--line);
     border-radius: 18px;
-    box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
-    color: #102033;
+    box-shadow: var(--shadow-soft);
+    color: var(--primary);
     cursor: pointer;
     display: flex;
     flex-direction: column;
@@ -283,7 +283,7 @@
 
 
 .chamado-card-compact {
-    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+    box-shadow: 0 8px 18px color-mix(in srgb, var(--primary) 5%, transparent);
     padding: 0.85rem;
 }
 
@@ -299,7 +299,7 @@
     overflow-x: auto;
     overflow-y: hidden;
     height: 14px;
-    scrollbar-color: rgba(23, 78, 166, 0.48) rgba(226, 232, 240, 0.75);
+    scrollbar-color: color-mix(in srgb, var(--secondary) 48%, transparent) color-mix(in srgb, var(--surface-muted) 75%, transparent);
     scrollbar-width: thin;
 }
 
@@ -312,12 +312,12 @@
 }
 
 .chamado-kanban-top-scroll::-webkit-scrollbar-track {
-    background: rgba(226, 232, 240, 0.75);
+    background: color-mix(in srgb, var(--surface-muted) 75%, transparent);
     border-radius: 999px;
 }
 
 .chamado-kanban-top-scroll::-webkit-scrollbar-thumb {
-    background: rgba(23, 78, 166, 0.48);
+    background: color-mix(in srgb, var(--secondary) 48%, transparent);
     border-radius: 999px;
 }
 
@@ -330,11 +330,11 @@
     justify-content: center;
     width: 42px;
     height: 42px;
-    border: 1px solid rgba(23, 78, 166, 0.22);
+    border: 1px solid color-mix(in srgb, var(--secondary) 22%, transparent);
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.94);
-    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.14);
-    color: #174ea6;
+    background: var(--card-bg);
+    box-shadow: 0 14px 30px color-mix(in srgb, var(--primary) 14%, transparent);
+    color: var(--secondary);
     cursor: pointer;
     font-size: 1.8rem;
     line-height: 1;
@@ -372,8 +372,8 @@
 }
 
 .chamado-kanban-column {
-    background: rgba(248, 250, 252, 0.9);
-    border: 1px solid rgba(15, 23, 42, 0.08);
+    background: color-mix(in srgb, var(--surface-soft) 90%, transparent);
+    border: 1px solid var(--line);
     border-radius: 18px;
     display: flex;
     flex-direction: column;
@@ -384,9 +384,9 @@
 
 
 .chamado-kanban-column-over {
-    background: rgba(239, 246, 255, 0.96);
-    border-color: rgba(23, 78, 166, 0.42);
-    box-shadow: inset 0 0 0 2px rgba(23, 78, 166, 0.12);
+    background: color-mix(in srgb, var(--info-bg) 96%, transparent);
+    border-color: color-mix(in srgb, var(--secondary) 42%, transparent);
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--secondary) 12%, transparent);
 }
 .chamado-kanban-column > header {
     align-items: center;
@@ -397,10 +397,10 @@
 
 .chamado-kanban-column > header small {
     align-items: center;
-    background: #ffffff;
-    border: 1px solid rgba(15, 23, 42, 0.08);
+    background: var(--surface-white);
+    border: 1px solid var(--line);
     border-radius: 999px;
-    color: #64748b;
+    color: var(--muted);
     display: inline-flex;
     height: 1.75rem;
     justify-content: center;
@@ -416,9 +416,9 @@
 }
 
 .chamado-kanban-empty {
-    border: 1px dashed rgba(15, 23, 42, 0.16);
+    border: 1px dashed var(--line-strong);
     border-radius: 14px;
-    color: #94a3b8;
+    color: var(--muted);
     margin: 0;
     padding: 1rem;
     text-align: center;
@@ -438,13 +438,13 @@
 }
 .chamado-card:hover,
 .chamado-card:focus-visible {
-    border-color: rgba(23, 78, 166, 0.35);
+    border-color: color-mix(in srgb, var(--secondary) 35%, transparent);
     outline: none;
     transform: translateY(-1px);
 }
 
 .chamado-card small {
-    color: #64748b;
+    color: var(--muted);
 }
 
 .chamado-card strong {
@@ -465,10 +465,10 @@
 
 .chamado-card-archive {
     align-items: center;
-    background: #fff1f2;
-    border: 1px solid #fecdd3;
+    background: var(--danger-bg);
+    border: 1px solid var(--status-danger-border);
     border-radius: 999px;
-    color: #be123c;
+    color: var(--danger-text);
     cursor: pointer;
     display: inline-flex;
     flex: 0 0 auto;
@@ -487,9 +487,9 @@
 
 .chamado-card-archive:hover,
 .chamado-card-archive:focus-visible {
-    background: #ffe4e6;
-    border-color: #fb7185;
-    color: #9f1239;
+    background: var(--status-danger-bg);
+    border-color: var(--action-danger-bg);
+    color: var(--status-danger-text);
     outline: none;
     transform: scale(1.04);
 }
@@ -504,11 +504,11 @@
     align-items: center;
     flex-wrap: wrap;
     gap: 0.45rem;
-    color: #334155;
+    color: var(--secondary);
 }
 
 .chamado-number {
-    color: #174ea6;
+    color: var(--secondary);
     font-size: 0.82rem;
     font-weight: 400;
     letter-spacing: 0.05em;
@@ -516,10 +516,10 @@
 }
 
 .chamado-empty {
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px dashed rgba(15, 23, 42, 0.18);
+    background: color-mix(in srgb, var(--surface-white) 90%, transparent);
+    border: 1px dashed var(--line-strong);
     border-radius: 18px;
-    color: #64748b;
+    color: var(--muted);
     padding: 2rem;
     text-align: center;
 }
@@ -543,9 +543,9 @@
 }
 
 .chamado-badges span {
-    background: #eef4ff;
+    background: var(--status-info-bg);
     border-radius: 999px;
-    color: #174ea6;
+    color: var(--status-info-text);
     font-weight: 400;
     padding: 0.35rem 0.65rem;
 }
@@ -562,33 +562,33 @@
 }
 
 .chamado-prioridade.chamado-prioridade-baixa {
-    background: #ecfdf3;
-    border-color: #bbf7d0;
-    color: #166534;
+    background: var(--status-success-bg);
+    border-color: var(--status-success-border);
+    color: var(--status-success-text);
 }
 
 .chamado-prioridade.chamado-prioridade-media {
-    background: #fffbeb;
-    border-color: #fde68a;
-    color: #92400e;
+    background: var(--status-warning-bg);
+    border-color: var(--status-warning-border);
+    color: var(--status-warning-text);
 }
 
 .chamado-prioridade.chamado-prioridade-alta {
-    background: #fff7ed;
-    border-color: #fdba74;
-    color: #c2410c;
+    background: var(--status-attention-bg);
+    border-color: var(--status-attention-border);
+    color: var(--status-attention-text);
 }
 
 .chamado-prioridade.chamado-prioridade-urgente {
-    background: #fef2f2;
-    border-color: #fecaca;
-    color: #b91c1c;
+    background: var(--status-danger-bg);
+    border-color: var(--status-danger-border);
+    color: var(--status-danger-text);
 }
 
 .chamado-prioridade.chamado-prioridade-sem-prioridade {
-    background: #f8fafc;
-    border-color: #cbd5e1;
-    color: #475569;
+    background: var(--status-neutral-bg);
+    border-color: var(--status-neutral-border);
+    color: var(--status-neutral-text);
 }
 
 .chamado-tipo {
@@ -603,33 +603,33 @@
 }
 
 .chamado-tipo.chamado-tipo-duvida {
-    background: #ecfdf3;
-    border-color: #bbf7d0;
-    color: #166534;
+    background: var(--status-success-bg);
+    border-color: var(--status-success-border);
+    color: var(--status-success-text);
 }
 
 .chamado-tipo.chamado-tipo-melhoria {
-    background: #fffbeb;
-    border-color: #fde68a;
-    color: #92400e;
+    background: var(--status-warning-bg);
+    border-color: var(--status-warning-border);
+    color: var(--status-warning-text);
 }
 
 .chamado-tipo.chamado-tipo-solicitacao {
-    background: #fff7ed;
-    border-color: #fdba74;
-    color: #c2410c;
+    background: var(--status-attention-bg);
+    border-color: var(--status-attention-border);
+    color: var(--status-attention-text);
 }
 
 .chamado-tipo.chamado-tipo-incidente {
-    background: #fef2f2;
-    border-color: #fecaca;
-    color: #b91c1c;
+    background: var(--status-danger-bg);
+    border-color: var(--status-danger-border);
+    color: var(--status-danger-text);
 }
 
 .chamado-tipo.chamado-tipo-sem-tipo {
-    background: #f8fafc;
-    border-color: #cbd5e1;
-    color: #475569;
+    background: var(--status-neutral-bg);
+    border-color: var(--status-neutral-border);
+    color: var(--status-neutral-text);
 }
 
 .chamado-status {
@@ -644,40 +644,40 @@
 }
 
 .chamado-status.chamado-status-resolvido {
-    background: #ecfdf3;
-    border-color: #bbf7d0;
-    color: #166534;
+    background: var(--status-success-bg);
+    border-color: var(--status-success-border);
+    color: var(--status-success-text);
 }
 
 .chamado-status.chamado-status-arquivado {
-    background: #f8fafc;
-    border-color: #cbd5e1;
-    color: #475569;
+    background: var(--status-neutral-bg);
+    border-color: var(--status-neutral-border);
+    color: var(--status-neutral-text);
 }
 
 .chamado-status.chamado-status-em_atendimento {
-    background: #fffbeb;
-    border-color: #fde68a;
-    color: #92400e;
+    background: var(--status-warning-bg);
+    border-color: var(--status-warning-border);
+    color: var(--status-warning-text);
 }
 
 .chamado-status.chamado-status-em_triagem {
-    background: #fff7ed;
-    border-color: #fdba74;
-    color: #c2410c;
+    background: var(--status-attention-bg);
+    border-color: var(--status-attention-border);
+    color: var(--status-attention-text);
 }
 
 .chamado-status.chamado-status-pendente,
 .chamado-status.chamado-status-aberto {
-    background: #fef2f2;
-    border-color: #fecaca;
-    color: #b91c1c;
+    background: var(--status-danger-bg);
+    border-color: var(--status-danger-border);
+    color: var(--status-danger-text);
 }
 
 .chamado-status.chamado-status-sem-status {
-    background: #f8fafc;
-    border-color: #cbd5e1;
-    color: #475569;
+    background: var(--status-neutral-bg);
+    border-color: var(--status-neutral-border);
+    color: var(--status-neutral-text);
 }
 
 .chamado-detail-grid {
@@ -705,32 +705,32 @@
 }
 
 .chamado-meta div {
-    background: #f8fafc;
+    background: var(--surface-soft);
     border-radius: 12px;
     padding: 0.75rem;
 }
 
 .chamado-meta dt {
-    color: #64748b;
+    color: var(--muted);
     font-size: 0.8rem;
     font-weight: 400;
     text-transform: uppercase;
 }
 
 .chamado-meta dd {
-    color: #102033;
+    color: var(--primary);
     margin: 0.25rem 0 0;
 }
 
 .chamado-observacao {
-    background: #f8fafc;
+    background: var(--surface-soft);
     border-radius: 12px;
     margin-top: 1rem;
     padding: 0.85rem;
 }
 
 .chamado-observacao h4 {
-    color: #64748b;
+    color: var(--muted);
     font-size: 0.8rem;
     font-weight: 400;
     margin: 0 0 0.4rem;
@@ -738,7 +738,7 @@
 }
 
 .chamado-observacao p {
-    color: #102033;
+    color: var(--primary);
     margin: 0;
     white-space: pre-wrap;
 }
@@ -750,14 +750,14 @@
 }
 
 .chamado-timeline-item {
-    background: #f8fafc;
-    border-left: 4px solid #174ea6;
+    background: var(--surface-soft);
+    border-left: 4px solid var(--secondary);
     border-radius: 12px;
     padding: 0.85rem;
 }
 
 .chamado-timeline-item.compacto {
-    border-left-color: #94a3b8;
+    border-left-color: var(--muted);
 }
 
 .chamado-timeline-item strong,
@@ -766,19 +766,19 @@
 }
 
 .chamado-timeline-item small {
-    color: #64748b;
+    color: var(--muted);
     margin-top: 0.15rem;
 }
 
 .chamado-timeline-item p {
-    color: #334155;
+    color: var(--secondary);
     margin: 0.55rem 0 0;
     white-space: pre-wrap;
 }
 
-.chamado-checkbox {
+.chamados-shell label.chamado-checkbox {
     align-items: center;
-    flex-direction: row !important;
+    flex-direction: row;
 }
 
 .user-form .chamado-checkbox {
@@ -800,7 +800,7 @@
 }
 
 .chamado-acompanhantes-fieldset {
-    border: 1px solid rgba(15, 23, 42, 0.12);
+    border: 1px solid var(--line-strong);
     border-radius: 16px;
     display: flex;
     flex-direction: column;
@@ -810,13 +810,13 @@
 }
 
 .chamado-acompanhantes-fieldset legend {
-    color: #102033;
+    color: var(--primary);
     padding: 0 0.35rem;
 }
 
 .chamado-acompanhantes-fieldset small,
 .chamado-acompanhante-option small {
-    color: #64748b;
+    color: var(--muted);
 }
 
 .chamado-acompanhantes-grid {
@@ -825,15 +825,15 @@
     gap: 0.75rem;
 }
 
-.chamado-acompanhante-option {
-    align-items: center !important;
-    background: rgba(248, 250, 252, 0.95);
-    border: 1px solid rgba(15, 23, 42, 0.08);
+.chamados-shell label.chamado-acompanhante-option {
+    align-items: center;
+    background: var(--surface-soft);
+    border: 1px solid var(--line);
     border-radius: 14px;
     cursor: pointer;
-    display: grid !important;
+    display: grid;
     grid-template-columns: auto 1fr;
-    gap: 0.75rem !important;
+    gap: 0.75rem;
     padding: 0.85rem;
 }
 
@@ -850,10 +850,10 @@
 }
 
 .chamado-badge-acompanhando {
-    background: rgba(224, 242, 254, 0.88);
-    border: 1px solid rgba(14, 165, 233, 0.24);
+    background: var(--info-bg);
+    border: 1px solid color-mix(in srgb, var(--status-info-text) 24%, transparent);
     border-radius: 999px;
-    color: #0369a1;
+    color: var(--status-info-text);
     padding: 0.3rem 0.55rem;
 }
 .chamado-acompanhante-tags {
@@ -863,10 +863,10 @@
 }
 
 .chamado-acompanhante-tag {
-    background: rgba(219, 234, 254, 0.72);
-    border: 1px solid rgba(59, 130, 246, 0.18);
+    background: var(--status-info-bg);
+    border: 1px solid color-mix(in srgb, var(--status-info-text) 18%, transparent);
     border-radius: 999px;
-    color: #1e3a8a;
+    color: var(--status-info-text);
     padding: 0.4rem 0.7rem;
 }
 
@@ -883,79 +883,7 @@
     .chamado-detail-header {
         flex-direction: column;
     }
-
-    
-.chamado-kanban-shell {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
-.chamado-kanban-top-scroll {
-    overflow-x: auto;
-    overflow-y: hidden;
-    height: 14px;
-    scrollbar-color: rgba(23, 78, 166, 0.48) rgba(226, 232, 240, 0.75);
-    scrollbar-width: thin;
-}
-
-.chamado-kanban-top-scroll > div {
-    height: 1px;
-}
-
-.chamado-kanban-top-scroll::-webkit-scrollbar {
-    height: 10px;
-}
-
-.chamado-kanban-top-scroll::-webkit-scrollbar-track {
-    background: rgba(226, 232, 240, 0.75);
-    border-radius: 999px;
-}
-
-.chamado-kanban-top-scroll::-webkit-scrollbar-thumb {
-    background: rgba(23, 78, 166, 0.48);
-    border-radius: 999px;
-}
-
-.chamado-kanban-arrow {
-    position: absolute;
-    top: calc(50% + 7px);
-    z-index: 3;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 42px;
-    height: 42px;
-    border: 1px solid rgba(23, 78, 166, 0.22);
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.94);
-    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.14);
-    color: #174ea6;
-    cursor: pointer;
-    font-size: 1.8rem;
-    line-height: 1;
-    transform: translateY(-50%);
-    transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, transform 0.16s ease;
-}
-
-.chamado-kanban-arrow:hover,
-.chamado-kanban-arrow:focus-visible {
-    background: var(--button-primary-bg);
-    border-color: var(--button-primary-border);
-    color: var(--button-primary-text);
-    outline: none;
-    transform: translateY(-50%) scale(1.04);
-}
-
-.chamado-kanban-arrow-left {
-    left: 0.75rem;
-}
-
-.chamado-kanban-arrow-right {
-    right: 0.75rem;
-}
-.chamado-kanban {
+    .chamado-kanban {
         grid-template-columns: repeat(6, minmax(220px, 82vw));
     }
 
@@ -963,43 +891,14 @@
         justify-content: flex-start;
     }
 }
-.chamado-modal-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 2200;
-    display: grid;
-    place-items: center;
-    padding: 1rem;
-    background: rgba(15, 23, 42, 0.38);
-    backdrop-filter: blur(4px);
-}
-
 .chamado-responsavel-modal {
     width: min(100%, 520px);
+}
+
+.chamado-responsavel-form {
     display: grid;
     gap: 1rem;
-    padding: 1.25rem;
-    border: 1px solid var(--line);
-    border-radius: 1.25rem;
-    background: var(--surface-white);
-    box-shadow: var(--shadow);
-}
-
-.chamado-responsavel-modal header {
-    display: grid;
-    gap: 0.35rem;
-}
-
-.chamado-responsavel-modal header span {
-    color: var(--detail-accent-text);
-    font-size: 0.78rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-
-.chamado-responsavel-modal header h3,
-.chamado-responsavel-modal header p {
-    margin: 0;
+    padding: 20px 22px;
 }
 
 .chamado-responsavel-options {
@@ -1036,42 +935,14 @@
     color: var(--muted);
 }
 
-.chamado-modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.65rem;
-    flex-wrap: wrap;
-}
-
-.chamado-modal-actions button {
-    min-height: 42px;
-    padding: 0.7rem 1rem;
-    border-radius: var(--button-radius);
-    border: 1px solid var(--button-secondary-border);
-    background: var(--surface-soft);
-    color: var(--primary);
-    cursor: pointer;
-}
-
-.chamado-modal-actions button:last-child {
-    border-color: var(--button-primary-border);
-    background: var(--button-primary-bg);
-    color: var(--button-primary-text);
-}
-
-.chamado-modal-actions button:disabled {
-    cursor: not-allowed;
-    opacity: 0.55;
-}
-
 .chamado-anexo-picker input[type="file"] {
-    background: #fff;
+    background: var(--surface-white);
 }
 
 .chamado-anexo-picker small,
 .chamado-anexo-item small,
 .chamado-anexo-link small {
-    color: #64748b;
+    color: var(--muted);
     font-size: 0.78rem;
 }
 
@@ -1088,10 +959,10 @@
 .chamado-anexo-item,
 .chamado-anexo-link {
     align-items: center;
-    background: #f8fafc;
-    border: 1px solid rgba(15, 23, 42, 0.1);
+    background: var(--surface-soft);
+    border: 1px solid var(--line);
     border-radius: 999px;
-    color: #102033;
+    color: var(--primary);
     display: inline-flex;
     gap: 0.45rem;
     padding: 0.45rem 0.7rem;
@@ -1100,27 +971,27 @@
 
 .chamado-anexo-link:hover,
 .chamado-anexo-link:focus-visible {
-    border-color: rgba(23, 78, 166, 0.35);
-    color: #174ea6;
+    border-color: color-mix(in srgb, var(--secondary) 35%, transparent);
+    color: var(--secondary);
     outline: none;
 }
 
-.chamado-link-button {
-    background: transparent !important;
-    border-color: rgba(23, 78, 166, 0.2) !important;
-    color: #174ea6 !important;
-    padding: 0.45rem 0.7rem !important;
+.chamados-shell button.chamado-link-button {
+    background: transparent;
+    border-color: color-mix(in srgb, var(--secondary) 20%, transparent);
+    color: var(--secondary);
+    padding: 0.45rem 0.7rem;
 }
 
 
 .chamado-card-sla-atrasado {
-    border-color: rgba(220, 38, 38, 0.55);
-    box-shadow: 0 10px 28px rgba(220, 38, 38, 0.14);
+    border-color: color-mix(in srgb, var(--action-danger-bg) 55%, transparent);
+    box-shadow: 0 10px 28px color-mix(in srgb, var(--action-danger-bg) 14%, transparent);
 }
 
 .chamado-card-sla-atrasado:hover,
 .chamado-card-sla-atrasado:focus-visible {
-    border-color: #dc2626;
+    border-color: var(--action-danger-bg);
 }
 
 .chamado-sla {
@@ -1154,45 +1025,94 @@
 }
 
 .chamado-sla-no_prazo {
-    background: #ecfdf5;
-    border-color: #a7f3d0;
-    color: #047857;
+    background: var(--status-success-bg);
+    border-color: var(--status-success-border);
+    color: var(--status-success-text);
 }
 
 .chamado-sla-perto_do_vencimento {
-    background: #fffbeb;
-    border-color: #fde68a;
-    color: #b45309;
+    background: var(--status-warning-bg);
+    border-color: var(--status-warning-border);
+    color: var(--status-warning-text);
 }
 
 .chamado-sla-atrasado {
-    background: #fef2f2;
-    border-color: #fecaca;
-    color: #b91c1c;
+    background: var(--status-danger-bg);
+    border-color: var(--status-danger-border);
+    color: var(--status-danger-text);
 }
 
 .chamado-sla-pausado {
-    background: #eff6ff;
-    border-color: #bfdbfe;
-    color: #1d4ed8;
+    background: var(--status-info-bg);
+    border-color: var(--status-info-border);
+    color: var(--status-info-text);
 }
 
 .chamado-sla-sem_sla {
-    background: #f8fafc;
-    border-color: #e2e8f0;
-    color: #64748b;
+    background: var(--status-neutral-bg);
+    border-color: var(--status-neutral-border);
+    color: var(--status-neutral-text);
 }
 
 .chamado-sla-detail {
     margin: 0.25rem 0 1rem;
 }
-.email-solution-management { display: grid; gap: 1.25rem; }
-.chamado-email-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: .75rem; align-items: center; margin: 1rem 0 1.25rem; }
-.chamado-email-form input, .chamado-email-form select { width: 100%; padding: .72rem; border: 1px solid var(--border-color, #d7dde5); border-radius: 8px; background: var(--surface, #fff); }
-.chamado-email-form label { display: flex; gap: .5rem; align-items: center; }
-.chamado-email-form label input { width: auto; }
-.chamado-email-list { display: grid; gap: .65rem; }
-.chamado-email-list article { display: flex; justify-content: space-between; gap: 1rem; align-items: center; padding: .85rem 0; border-top: 1px solid var(--border-color, #e5e7eb); }
-.chamado-email-list article > div { display: flex; gap: .5rem; flex-wrap: wrap; }
-.chamado-email-list article > div:first-child { flex-direction: column; }
-.chamado-email-list span { color: var(--text-muted, #667085); }
+.email-solution-management {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.chamado-email-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    align-items: center;
+    gap: 0.75rem;
+    margin: 1rem 0 1.25rem;
+}
+
+.chamado-email-form input,
+.chamado-email-form select {
+    width: 100%;
+    padding: 0.72rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    background: var(--surface-white);
+}
+
+.chamado-email-form label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.chamado-email-form label input {
+    width: auto;
+}
+
+.chamado-email-list {
+    display: grid;
+    gap: 0.65rem;
+}
+
+.chamado-email-list article {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.85rem 0;
+    border-top: 1px solid var(--line);
+}
+
+.chamado-email-list article > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.chamado-email-list article > div:first-child {
+    flex-direction: column;
+}
+
+.chamado-email-list span {
+    color: var(--muted);
+}

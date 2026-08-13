@@ -222,10 +222,10 @@ describe("Configurações do Controle de Chamados", () => {
 
         await user.click(screen.getByRole("button", { name: "Incluir" }));
         await user.click(screen.getByRole("button", { name: "Salvar" }));
-        expect(await screen.findByText("Selecione o usuario responsavel.")).toBeInTheDocument();
-        await user.selectOptions(screen.getByRole("combobox", { name: /Usuario responsavel/ }), "u1");
+        expect(await screen.findByText("Selecione o usuário responsável.")).toBeInTheDocument();
+        await user.selectOptions(screen.getByRole("combobox", { name: /Usuário responsável/ }), "u1");
         await user.click(screen.getByRole("checkbox", { name: "Controle de Chamados" }));
-        await user.click(screen.getByRole("checkbox", { name: "Responsavel geral?" }));
+        await user.click(screen.getByRole("checkbox", { name: "Responsável geral?" }));
         await user.click(screen.getByRole("button", { name: "Salvar" }));
         await waitFor(() => expect(createChamadoResponsavel).toHaveBeenCalledWith(expect.objectContaining({
             tipo: "USUARIO", usuarioId: "u1", solucoes: [{ solucaoId: 10, responsavelGeral: true, funcionalidadeIds: [] }]
@@ -233,8 +233,8 @@ describe("Configurações do Controle de Chamados", () => {
 
         await user.click(screen.getByRole("cell", { name: "Atendente" }));
         await user.click(screen.getByRole("button", { name: "Visualizar" }));
-        const dialog = screen.getByRole("dialog", { name: "Responsavel por atendimento" });
-        expect(within(dialog).getByRole("combobox", { name: /Usuario responsavel/ })).toBeDisabled();
+        const dialog = screen.getByRole("dialog", { name: "Responsável por atendimento" });
+        expect(within(dialog).getByRole("combobox", { name: /Usuário responsável/ })).toBeDisabled();
         expect(within(dialog).queryByRole("button", { name: "Salvar" })).not.toBeInTheDocument();
         await user.click(within(dialog).getAllByRole("button", { name: "Fechar" }).at(-1));
 
