@@ -89,12 +89,11 @@ const renderJourney = (initialEntry) => {
 describe("jornadas críticas do frontend", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    localStorage.clear();
+    getCurrentUser.mockResolvedValue(null);
   });
 
   afterEach(() => {
     cleanup();
-    localStorage.clear();
   });
 
   it("autentica na empresa escolhida e navega do Hub até a funcionalidade", async () => {
@@ -125,22 +124,17 @@ describe("jornadas críticas do frontend", () => {
     expect(router.state.location.pathname).toBe("/hub/configurador/cadastro-de-usuarios");
   });
 
-  it("remove a sessão expirada e impede acesso direto a uma rota protegida", async () => {
-    localStorage.setItem("orfeu_token", "token-expirado");
-    localStorage.setItem("orfeu_auth", "true");
-    localStorage.setItem("orfeu_user", JSON.stringify(authenticatedUser));
+  it("rejeita o cookie expirado e impede acesso direto a uma rota protegida", async () => {
     getCurrentUser.mockRejectedValue(new Error("Sessão expirada"));
     const router = renderJourney("/hub/configurador");
 
     expect(await screen.findByRole("heading", { name: "Página inicial" })).toBeInTheDocument();
     await waitFor(() => expect(router.state.location.pathname).toBe("/"));
-    expect(localStorage.getItem("orfeu_token")).toBeNull();
+    expect(getCurrentUser).toHaveBeenCalled();
     expect(getMyHubNavigation).not.toHaveBeenCalled();
   });
 
   it("encerra o carregamento do Hub com uma mensagem quando as soluções falham", async () => {
-    localStorage.setItem("orfeu_token", "token-valido");
-    localStorage.setItem("orfeu_user", JSON.stringify(authenticatedUser));
     getCurrentUser.mockResolvedValue(authenticatedUser);
     getMyHubNavigation.mockRejectedValue(new Error("Não foi possível carregar as soluções."));
     renderJourney("/hub");
@@ -151,8 +145,6 @@ describe("jornadas críticas do frontend", () => {
   });
 
   it("redireciona uma solução desconhecida para o Hub autorizado", async () => {
-    localStorage.setItem("orfeu_token", "token-valido");
-    localStorage.setItem("orfeu_user", JSON.stringify(authenticatedUser));
     getCurrentUser.mockResolvedValue(authenticatedUser);
     getMyHubNavigation.mockResolvedValue(hubNavigation);
     const router = renderJourney("/hub/solucao-inexistente");
@@ -162,8 +154,6 @@ describe("jornadas críticas do frontend", () => {
   });
 
   it("redireciona uma funcionalidade desconhecida para a solução correta", async () => {
-    localStorage.setItem("orfeu_token", "token-valido");
-    localStorage.setItem("orfeu_user", JSON.stringify(authenticatedUser));
     getCurrentUser.mockResolvedValue(authenticatedUser);
     getMyHubNavigation.mockResolvedValue(hubNavigation);
     const router = renderJourney("/hub/configurador/funcionalidade-inexistente");

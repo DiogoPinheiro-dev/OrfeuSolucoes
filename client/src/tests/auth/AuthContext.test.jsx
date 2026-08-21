@@ -10,7 +10,7 @@ import {
     logout as logoutRequest,
     switchCompany as switchCompanyRequest
 } from "../../../services/Auth/AuthService";
-import { clearSession, getSessionUser, getToken, setSession } from "../../../services/Auth/session";
+import { clearLegacySessionStorage } from "../../../services/Auth/legacySession";
 import { AuthProvider } from "../../context/AuthContext";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -22,12 +22,7 @@ vi.mock("../../../services/Auth/AuthService", () => ({
     switchCompany: vi.fn()
 }));
 
-vi.mock("../../../services/Auth/session", () => ({
-    clearSession: vi.fn(),
-    getSessionUser: vi.fn(),
-    getToken: vi.fn(),
-    setSession: vi.fn()
-}));
+vi.mock("../../../services/Auth/legacySession", () => ({ clearLegacySessionStorage: vi.fn() }));
 
 let auth;
 function AuthProbe() {
@@ -41,20 +36,19 @@ describe("AuthProvider", () => {
     beforeEach(() => {
         auth = undefined;
         vi.clearAllMocks();
-        getSessionUser.mockReturnValue(null);
-        getToken.mockReturnValue(null);
+        getCurrentUser.mockResolvedValue(null);
     });
 
-    it("encerra a inicialização sem consultar o servidor quando não existe token", async () => {
+    it("sempre valida a sessão no servidor, mesmo sem estado local", async () => {
         render(<AuthProvider><AuthProbe /></AuthProvider>);
 
         await screen.findByText("anônimo");
-        expect(getCurrentUser).not.toHaveBeenCalled();
+        expect(getCurrentUser).toHaveBeenCalled();
+        expect(clearLegacySessionStorage).toHaveBeenCalled();
         expect(auth.isAuthenticated).toBe(false);
     });
 
-    it("restaura e atualiza a sessão válida sob StrictMode", async () => {
-        getToken.mockReturnValue("token-atual");
+    it("restaura a sessão válida exclusivamente a partir do servidor", async () => {
         getCurrentUser.mockResolvedValue({ id: 1, nome: "Administrador", grupo: { nome: "Administradores" } });
 
         render(<AuthProvider><AuthProbe /></AuthProvider>);
@@ -62,25 +56,20 @@ describe("AuthProvider", () => {
         await screen.findByText("Administrador");
         expect(auth.isAuthenticated).toBe(true);
         expect(auth.role).toBe("Administradores");
-        expect(setSession).toHaveBeenCalledWith("token-atual", expect.objectContaining({ id: 1 }));
     });
 
-    it("limpa a sessão inválida e sempre encerra o bootstrap", async () => {
-        getSessionUser.mockReturnValue({ id: 1, nome: "Sessão antiga" });
-        getToken.mockReturnValue("expirado");
+    it("rejeita a sessão inválida e sempre encerra o bootstrap", async () => {
         getCurrentUser.mockRejectedValue(new Error("Expirada"));
 
         render(<AuthProvider><AuthProbe /></AuthProvider>);
 
         await screen.findByText("anônimo");
-        expect(clearSession).toHaveBeenCalled();
         expect(auth.bootstrapping).toBe(false);
     });
 
     it("atualiza o usuário em login, senha, refresh e logout", async () => {
         loginRequest.mockResolvedValue({ id: 2, nome: "Login" });
         changePasswordRequest.mockResolvedValue({ id: 2, nome: "Senha alterada" });
-        getCurrentUser.mockResolvedValue({ id: 2, nome: "Atualizado" });
         logoutRequest.mockResolvedValue(undefined);
         render(<AuthProvider><AuthProbe /></AuthProvider>);
         await screen.findByText("anônimo");
@@ -89,9 +78,9 @@ describe("AuthProvider", () => {
         expect(screen.getByText("Login")).toBeInTheDocument();
         await act(() => auth.changePassword("nova"));
         expect(screen.getByText("Senha alterada")).toBeInTheDocument();
+        getCurrentUser.mockResolvedValue({ id: 2, nome: "Atualizado" });
         await act(() => auth.refreshUser());
         expect(screen.getByText("Atualizado")).toBeInTheDocument();
-        expect(setSession).toHaveBeenCalledWith(null, expect.objectContaining({ nome: "Atualizado" }));
         await act(() => auth.signOut());
         expect(screen.getByText("anônimo")).toBeInTheDocument();
     });
@@ -107,5 +96,19 @@ describe("AuthProvider", () => {
         await expect(request).rejects.toThrow("Empresa negada");
         await waitFor(() => expect(auth.switchingCompany).toBe(false));
         expect(switchCompanyRequest).toHaveBeenCalledWith({ empresaId: 9 });
+    });
+
+    it("remove o estado autenticado mesmo quando o logout remoto falha", async () => {
+        getCurrentUser.mockResolvedValue({ id: 2, nome: "Usuária autenticada" });
+        logoutRequest.mockRejectedValue(new Error("Servidor indisponível"));
+        render(<AuthProvider><AuthProbe /></AuthProvider>);
+        await screen.findByText("Usuária autenticada");
+
+        await act(async () => {
+            await expect(auth.signOut()).rejects.toThrow("Servidor indisponível");
+        });
+
+        await waitFor(() => expect(screen.getByText("anônimo")).toBeInTheDocument());
+        expect(auth.isAuthenticated).toBe(false);
     });
 });

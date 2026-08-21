@@ -1,11 +1,12 @@
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'node:crypto';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { extname, join } from 'node:path';
 import { AuthCookieService } from '../src/modules/auth/auth-cookie.service';
 import { AuthCredentialsService } from '../src/modules/auth/auth-credentials.service';
+import { AuthRateLimitService } from '../src/modules/auth/auth-rate-limit.service';
 import { AuthService } from '../src/modules/auth/auth.service';
 import { AuthSessionService } from '../src/modules/auth/auth-session.service';
 import { JwtPayload } from '../src/modules/auth/strategies/jwt-payload.type';
@@ -116,6 +117,8 @@ import { UserPasswordService } from '../src/modules/users/user-password.service'
 import { UsersService } from '../src/modules/users/users.service';
 import { UserType } from '../src/modules/users/dto/user.type';
 import { PrismaService } from '../src/prisma/prisma.service';
+
+const INITIAL_ADMIN_PASSWORD = 'Admin@Teste2026!';
 
 type AnyRecord = Record<string, any>;
 
@@ -335,6 +338,25 @@ class InMemoryDelegate {
     }
 
     return { count: rows.length };
+  }
+
+  async aggregate(args: AnyRecord = {}): Promise<AnyRecord> {
+    const rows = this.db.filterRows(this.model, args.where);
+    const result: AnyRecord = {};
+
+    if (args._sum) {
+      result._sum = Object.fromEntries(
+        Object.keys(args._sum).map((field) => {
+          const values = rows
+            .map((row) => row[field])
+            .filter((value) => typeof value === 'number') as number[];
+
+          return [field, values.length ? values.reduce((total, value) => total + value, 0) : null];
+        })
+      );
+    }
+
+    return result;
   }
 
   async update(args: AnyRecord): Promise<AnyRecord> {
@@ -1241,6 +1263,7 @@ class InMemoryPrismaService {
         row.login = row.login ?? null;
         row.grupoId = row.grupoId ?? null;
         row.deveAlterarSenha = row.deveAlterarSenha ?? false;
+        row.sessaoVersao = row.sessaoVersao ?? 0;
         row.padraoSistema = row.padraoSistema ?? false;
         break;
       case 'grupoUsuario':
@@ -1573,6 +1596,16 @@ class TestChamadoAnexoStorage {
   resolve(caminho: string): string {
     return caminho;
   }
+
+  async remove(caminho: string): Promise<void> {
+    try {
+      unlinkSync(caminho);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        throw error;
+      }
+    }
+  }
 }
 
 type TestWorld = {
@@ -1619,6 +1652,18 @@ const asPrisma = (prisma: InMemoryPrismaService): PrismaService => prisma as unk
 function createWorld(): TestWorld {
   const prisma = new InMemoryPrismaService();
   const prismaService = asPrisma(prisma);
+  const configService = {
+    get: (key: string) => ({
+      NODE_ENV: 'test',
+      JWT_EXPIRES_IN: 3600,
+      INITIAL_ADMIN_PASSWORD,
+      AUTH_RATE_LIMIT_MAX_ATTEMPTS: 100,
+      AUTH_RATE_LIMIT_WINDOW_SECONDS: 60,
+      AUTH_RATE_LIMIT_BLOCK_SECONDS: 60,
+      AUTH_REGISTRATION_MAX_ATTEMPTS: 100,
+      AUTH_REGISTRATION_WINDOW_SECONDS: 3600
+    } as Record<string, unknown>)[key]
+  } as ConfigService;
   const funcionalidadeAcaoService = new FuncionalidadeAcaoService(prismaService);
   const solucaoAcessoService = new SolucaoAcessoService(prismaService, funcionalidadeAcaoService);
   const solucaoChamadosBootstrapService = new SolucaoChamadosBootstrapService(prismaService, funcionalidadeAcaoService, solucaoAcessoService);
@@ -1632,7 +1677,7 @@ function createWorld(): TestWorld {
   const documentacaoAuthorizationService = new DocumentacaoAuthorizationService(hubNavigationService);
   const documentacaoSearchService = new DocumentacaoSearchService();
   const documentacaoService = new DocumentacaoService(documentacaoCatalogService, documentacaoAuthorizationService, documentacaoSearchService);
-  const grupoUsuarioBootstrapService = new GrupoUsuarioBootstrapService(prismaService, solucoesService);
+  const grupoUsuarioBootstrapService = new GrupoUsuarioBootstrapService(prismaService, solucoesService, configService);
   const grupoUsuarioPermissaoService = new GrupoUsuarioPermissaoService();
   const grupoUsuarioCatalogService = new GrupoUsuarioCatalogService(prismaService, solucoesService, grupoUsuarioPermissaoService);
   const gruposService = new GruposUsuariosService(grupoUsuarioBootstrapService, grupoUsuarioCatalogService);
@@ -1645,7 +1690,8 @@ function createWorld(): TestWorld {
   const userLookupService = new UserLookupService(prismaService);
   const userDependencyService = new UserDependencyService();
   const userCatalogService = new UserCatalogService(prismaService, userEmpresaService, userPasswordService, userDependencyService);
-  const usersService = new UsersService(userCatalogService, userLookupService, userPasswordService);
+  const registrationRateLimitService = new AuthRateLimitService(configService);
+  const usersService = new UsersService(userCatalogService, userLookupService, userPasswordService, registrationRateLimitService);
   const servicoCatalogService = new ServicoCatalogService(prismaService);
   const servicosService = new ServicosService(servicoCatalogService);
   const anexoStorage = new TestChamadoAnexoStorage();
@@ -1779,13 +1825,18 @@ function createWorld(): TestWorld {
   const chamadoAberturaService = new ChamadoAberturaService(prismaService, chamadoAuthorizationService, chamadoConfiguracaoService, chamadoResponsavelService, chamadoAcompanhanteService, chamadoSlaService, chamadoNotificacaoService);
   const chamadosService = new ChamadosService(chamadoAberturaService, chamadoDashboardService, chamadoRelatorioService, chamadoAnexoService, chamadoAtendimentoService, chamadoQueryService, chamadoAuthorizationService, chamadoConfiguracaoService, chamadoCategoriaService, chamadoMensagemService, chamadoPrioridadeService, chamadoResponsavelService, chamadoSlaConfigService, chamadoNotificacaoService, chamadoGoogleEmailService, chamadoStatusService, chamadoAcompanhanteService);
   const jwtService = new JwtService({ secret: 'integration-test-secret' });
-  const configService = {
-    get: (key: string) => ({ NODE_ENV: 'test', JWT_EXPIRES_IN: 3600 } as Record<string, unknown>)[key]
-  } as ConfigService;
   const authCookieService = new AuthCookieService(configService);
   const authCredentialsService = new AuthCredentialsService(usersService);
   const authSessionService = new AuthSessionService(usersService, empresasService, solucoesService, jwtService);
-  const authService = new AuthService(usersService, empresasService, authCookieService, authCredentialsService, authSessionService);
+  const authRateLimitService = new AuthRateLimitService(configService);
+  const authService = new AuthService(
+    usersService,
+    empresasService,
+    authCookieService,
+    authCredentialsService,
+    authSessionService,
+    authRateLimitService
+  );
 
   return {
     prisma,
@@ -1844,6 +1895,7 @@ function toJwtPayload(user: UserType, empresaId?: number | null): JwtPayload {
     email: user.email,
     login: user.login ?? null,
     nome: user.nome ?? null,
+    padraoSistema: user.padraoSistema,
     grupo: user.grupo
       ? {
           id: user.grupo.id,
@@ -1913,7 +1965,7 @@ async function bootstrapBaseWorld(): Promise<{
   await seedConfigurador(world);
   await world.gruposService.ensureInitialSetup();
   const empresaInicial = expectDefined(world.prisma.data.empresa[0]);
-  const login = await world.authService.login('admin', 'admin123', empresaInicial.id);
+  const login = await world.authService.login('admin', INITIAL_ADMIN_PASSWORD, empresaInicial.id);
 
   return {
     world,
@@ -1956,6 +2008,74 @@ async function seedChamadoConfiguracoes(world: TestWorld, empresaId: number) {
   return { tipos, prioridades };
 }
 describe('Fluxos integrados do backend', () => {
+  it('forca a troca inicial, exige senha atual depois e revoga todas as sessoes', async () => {
+    const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
+    const adminRecord = expectDefined(world.prisma.data.usuario.find((user) => user.id === admin.sub));
+    expect(adminRecord.deveAlterarSenha).toBe(true);
+    expect(adminRecord.sessaoVersao).toBe(0);
+
+    await world.authService.changePassword(
+      admin.sub,
+      undefined,
+      'Admin@Definitiva2026!',
+      empresaInicialId
+    );
+    expect(adminRecord.deveAlterarSenha).toBe(false);
+    expect(adminRecord.sessaoVersao).toBe(1);
+
+    await expect(world.authService.changePassword(
+      admin.sub,
+      undefined,
+      'Admin@Nova2026!',
+      empresaInicialId
+    )).rejects.toThrow('Informe a senha atual');
+    await expect(world.authService.changePassword(
+      admin.sub,
+      'Senha@Incorreta1',
+      'Admin@Nova2026!',
+      empresaInicialId
+    )).rejects.toThrow('Senha atual invalida');
+
+    await world.authService.changePassword(
+      admin.sub,
+      'Admin@Definitiva2026!',
+      'Admin@Nova2026!',
+      empresaInicialId
+    );
+    expect(adminRecord.sessaoVersao).toBe(2);
+
+    const response = { clearCookie: jest.fn() };
+    await world.authService.logout(admin.sub, response as never);
+    expect(adminRecord.sessaoVersao).toBe(3);
+    expect(response.clearCookie).toHaveBeenCalledWith('access_token');
+  });
+
+  it('preserva autocadastro publico sem grupo, empresa ou troca obrigatoria', async () => {
+    const { world } = await bootstrapBaseWorld();
+    const input = {
+      nome: 'Usuario Autocadastro',
+      login: 'usuario.autocadastro',
+      email: 'usuario.autocadastro@orfeu.test',
+      senha: 'Senha@Autocadastro2026!'
+    };
+
+    const registered = await world.usersService.register(input, '127.0.0.10');
+    const stored = expectDefined(world.prisma.data.usuario.find((user) => user.id === registered.id));
+
+    expect(registered.grupo).toBeNull();
+    expect(registered.empresas).toEqual([]);
+    expect(stored.grupoId).toBeNull();
+    expect(stored.deveAlterarSenha).toBe(false);
+    expect(stored.senhaHash).not.toBe(input.senha);
+
+    await expect(world.usersService.register({
+      ...input,
+      login: 'outro.login'
+    }, '127.0.0.10')).rejects.toThrow(
+      'Nao foi possivel concluir o cadastro com os dados informados.'
+    );
+  });
+
   it('representa projetos, participantes, relacoes e unicidade no Prisma em memoria', async () => {
     const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
     const membro = await world.prisma.usuario.create({
@@ -3232,6 +3352,7 @@ describe('Fluxos integrados do backend', () => {
     });
     expect(grupoAdminAlterado.nome).toBe('Grupo Administradores Padrao Integracao');
     expect(grupoAdminAlterado.padraoSistema).toBe(true);
+    expect(world.prisma.data.usuario.find((user) => user.id === admin.sub)?.sessaoVersao).toBe(1);
     await expect(world.gruposService.remove(grupoAdminInicial.id)).rejects.toThrow('O grupo Administradores padrao do sistema nao pode ser excluido.');
 
     const usuarioAdminAlterado = await world.usersService.update({
@@ -3240,6 +3361,7 @@ describe('Fluxos integrados do backend', () => {
     });
     expect(usuarioAdminAlterado.nome).toBe('Administrador Padrao Integracao');
     expect(usuarioAdminAlterado.padraoSistema).toBe(true);
+    expect(world.prisma.data.usuario.find((user) => user.id === admin.sub)?.sessaoVersao).toBe(2);
     await expect(world.usersService.remove(admin.sub)).rejects.toThrow('O usuario administrador padrao do sistema nao pode ser excluido.');
     expect(funcionalidadesControle.map((funcionalidade) => funcionalidade.slug).sort()).toEqual([
       'abrir-chamado',
@@ -3364,6 +3486,15 @@ describe('Fluxos integrados do backend', () => {
 
     expect(acessoGrupo.funcionalidadeIds).toContain(funcionalidadeExtra.id);
     expect(acessoEmpresa.funcionalidadeIds).toContain(funcionalidadeExtra.id);
+
+    await world.usersService.update({
+      id: usuario.id,
+      empresaIds: [empresaInicialId]
+    });
+    expect(world.prisma.data.usuario.find((item) => item.id === usuario.id)?.sessaoVersao).toBe(1);
+    expect(world.prisma.data.empresaUsuario.some((item) =>
+      item.usuarioId === usuario.id && item.empresaId === empresa.id
+    )).toBe(false);
   });
 
   it('executa o ciclo do controle de chamados com permissao, historico, mensagens e mudancas de status', async () => {
@@ -3981,7 +4112,7 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
       conteudo: 'Analise iniciada com documento tecnico.'
     }, atendentePayload);
     const mensagemId = expectDefined(respondido.mensagens[0]?.id);
-    const parecer = Buffer.from('%PDF parecer tecnico');
+    const parecer = Buffer.from('%PDF- parecer tecnico');
 
     await world.chamadosService.adicionarAnexos(chamado.id, [{
       originalname: 'parecer.pdf',

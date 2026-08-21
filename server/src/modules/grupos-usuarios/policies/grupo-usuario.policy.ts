@@ -9,7 +9,7 @@ export function assertCanRemoveGrupo(grupo: GrupoUsuarioRecord): void {
 }
 
 export function assertSystemAdmin(user: JwtPayload): void {
-  if (user.login?.toLowerCase() !== 'admin') {
+  if (!user.padraoSistema) {
     throw new ForbiddenException('Apenas o usuario administrador inicial pode acessar o configurador.');
   }
 }

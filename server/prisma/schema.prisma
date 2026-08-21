@@ -10,11 +10,12 @@ datasource db {
 model Usuario {
   id               String  @id @default(uuid()) @map("Id") @db.UniqueIdentifier
   nome             String? @map("Nome")
-  login            String? @map("Login")
+  login            String? @map("Login") @db.NVarChar(100)
   email            String  @unique(map: "UX_Usuarios_Email") @map("Email")
   senhaHash        String  @map("Senha")
   grupoId          Int?    @map("GrupoId")
   deveAlterarSenha Boolean @default(false) @map("DeveAlterarSenha")
+  sessaoVersao     Int     @default(0) @map("SessaoVersao")
   padraoSistema    Boolean @default(false) @map("PadraoSistema")
 
   empresas                         EmpresaUsuario[]

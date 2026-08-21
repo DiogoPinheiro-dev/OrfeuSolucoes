@@ -13,25 +13,27 @@ import {
   UseInterceptors
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { AuthGuard } from '@nestjs/passport';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
-import { extname } from 'node:path';
+import { isDeclaredUploadTypeAllowed } from '../../common/files/safe-upload.util';
+import { RestAuthGuard } from '../auth/guards/rest-auth.guard';
 import { JwtPayload } from '../auth/strategies/jwt-payload.type';
 import { ChamadosService, ChamadoUploadFile } from './chamados.service';
+import { MAX_ANEXO_FILES, MAX_ANEXO_SIZE_BYTES } from './constants/chamado.constants';
 
-const MAX_ANEXO_FILES = 5;
-const MAX_ANEXO_SIZE_BYTES = 10 * 1024 * 1024;
-const ALLOWED_ANEXO_MIME_TYPES = new Set([
-  'image/jpeg',
-  'image/png',
-  'application/pdf',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'text/plain'
-]);
-const ALLOWED_ANEXO_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.pdf', '.docx', '.txt']);
+const ANEXO_MULTIPART_LIMITS = {
+  fileSize: MAX_ANEXO_SIZE_BYTES,
+  files: MAX_ANEXO_FILES,
+  fields: 1,
+  parts: MAX_ANEXO_FILES + 1,
+  fieldNameSize: 100,
+  fieldSize: 256,
+  headerPairs: 50,
+  fieldNestingDepth: 0
+};
 
 @Controller('chamados')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(RestAuthGuard, ThrottlerGuard)
 export class ChamadosController {
   constructor(private readonly chamadosService: ChamadosService) {}
 
@@ -53,18 +55,12 @@ export class ChamadosController {
     response.send(arquivo.buffer);
   }
   @Post(':id/anexos')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @UseInterceptors(
     FilesInterceptor('files', MAX_ANEXO_FILES, {
-      limits: {
-        fileSize: MAX_ANEXO_SIZE_BYTES,
-        files: MAX_ANEXO_FILES
-      },
+      limits: ANEXO_MULTIPART_LIMITS,
       fileFilter: (_request, file, callback) => {
-        const extension = extname(file.originalname || '').toLowerCase();
-        const isAllowed =
-          ALLOWED_ANEXO_MIME_TYPES.has(file.mimetype) && ALLOWED_ANEXO_EXTENSIONS.has(extension);
-
-        if (!isAllowed) {
+        if (!isDeclaredUploadTypeAllowed(file.originalname, file.mimetype)) {
           callback(new BadRequestException('Tipo de arquivo não permitido para anexo.'), false);
           return;
         }

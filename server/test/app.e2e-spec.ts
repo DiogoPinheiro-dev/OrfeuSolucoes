@@ -5,6 +5,7 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { JwtService } from '@nestjs/jwt';
 import { PassportModule, PassportStrategy } from '@nestjs/passport';
 import { Test, TestingModule } from '@nestjs/testing';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -173,6 +174,7 @@ describe('Chamados GraphQL e HTTP e2e', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
         PassportModule.register({ defaultStrategy: 'jwt' }),
+        ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),
         GraphQLModule.forRoot<ApolloDriverConfig>({
           driver: ApolloDriver,
           autoSchemaFile: true,
@@ -580,5 +582,32 @@ describe('Chamados GraphQL e HTTP e2e', () => {
     expect(downloadResponse.headers['content-type']).toContain('text/plain');
     expect(downloadResponse.headers['content-disposition']).toContain('attachment');
     expect(downloadResponse.text).toBe('conteudo do anexo');
+  });
+
+  it('rejeita extensao e MIME divergentes antes de encaminhar o anexo', async () => {
+    await request(app.getHttpServer())
+      .post('/chamados/22222222-2222-4222-8222-222222222222/anexos')
+      .set('Authorization', `Bearer ${authToken}`)
+      .attach('files', Buffer.from('%PDF- arquivo disfarçado'), {
+        filename: 'evidencia.txt',
+        contentType: 'application/pdf'
+      })
+      .expect(400);
+
+    expect(chamadosServiceMock.adicionarAnexos).not.toHaveBeenCalled();
+  });
+
+  it('rejeita campos multipart aninhados', async () => {
+    await request(app.getHttpServer())
+      .post('/chamados/22222222-2222-4222-8222-222222222222/anexos')
+      .set('Authorization', `Bearer ${authToken}`)
+      .field('mensagem[id]', '44444444-4444-4444-8444-444444444444')
+      .attach('files', Buffer.from('conteudo do anexo'), {
+        filename: 'evidencia.txt',
+        contentType: 'text/plain'
+      })
+      .expect(400);
+
+    expect(chamadosServiceMock.adicionarAnexos).not.toHaveBeenCalled();
   });
 });

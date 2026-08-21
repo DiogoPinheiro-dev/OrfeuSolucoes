@@ -1,24 +1,36 @@
 import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Req, Res, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { AuthGuard } from '@nestjs/passport';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
-import { extname } from 'node:path';
+import { isDeclaredUploadTypeAllowed } from '../../common/files/safe-upload.util';
+import { RestAuthGuard } from '../auth/guards/rest-auth.guard';
 import { JwtPayload } from '../auth/strategies/jwt-payload.type';
-import { ALLOWED_PROJETO_ANEXO_EXTENSIONS, ALLOWED_PROJETO_ANEXO_MIME_TYPES, MAX_PROJETO_ANEXO_FILES, MAX_PROJETO_ANEXO_SIZE_BYTES } from './policies/projeto-anexo.policy';
+import { MAX_PROJETO_ANEXO_FILES, MAX_PROJETO_ANEXO_SIZE_BYTES } from './policies/projeto-anexo.policy';
 import { ProjetoComunicacaoService } from './projeto-comunicacao.service';
 import { ProjetoUploadFile } from './types/projeto-comunicacao.types';
 
+const PROJETO_ANEXO_MULTIPART_LIMITS = {
+  fileSize: MAX_PROJETO_ANEXO_SIZE_BYTES,
+  files: MAX_PROJETO_ANEXO_FILES,
+  fields: 2,
+  parts: MAX_PROJETO_ANEXO_FILES + 2,
+  fieldNameSize: 100,
+  fieldSize: 256,
+  headerPairs: 50,
+  fieldNestingDepth: 0
+};
+
 @Controller('projetos')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(RestAuthGuard, ThrottlerGuard)
 export class ProjetoComunicacaoController {
   constructor(private readonly comunicacao: ProjetoComunicacaoService) {}
 
   @Post(':id/anexos')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @UseInterceptors(FilesInterceptor('files', MAX_PROJETO_ANEXO_FILES, {
-    limits: { fileSize: MAX_PROJETO_ANEXO_SIZE_BYTES, files: MAX_PROJETO_ANEXO_FILES },
+    limits: PROJETO_ANEXO_MULTIPART_LIMITS,
     fileFilter: (_request, file, callback) => {
-      const extension = extname(file.originalname || '').toLowerCase();
-      if (!ALLOWED_PROJETO_ANEXO_MIME_TYPES.has(file.mimetype) || !ALLOWED_PROJETO_ANEXO_EXTENSIONS.has(extension)) {
+      if (!isDeclaredUploadTypeAllowed(file.originalname, file.mimetype)) {
         callback(new BadRequestException('Tipo de arquivo nao permitido para anexo.'), false); return;
       }
       callback(null, true);

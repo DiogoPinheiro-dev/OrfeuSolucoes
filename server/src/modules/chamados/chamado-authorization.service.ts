@@ -202,8 +202,8 @@ export class ChamadoAuthorizationService {
     );
   }
 
-  isSystemAdmin(user?: { login?: string | null } | null): boolean {
-    return user?.login?.toLowerCase() === 'admin';
+  isSystemAdmin(user?: { padraoSistema?: boolean | null } | null): boolean {
+    return this.funcionalidadeAuthorization.isSystemAdmin(user);
   }
 
   hasFullAccessGroup(grupo?: FullAccessGroup | null): boolean {

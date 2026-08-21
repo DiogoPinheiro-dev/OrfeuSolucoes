@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { PrismaService } from '../../prisma/prisma.service';
 import { JwtPayload } from '../auth/strategies/jwt-payload.type';
 import { CreateFuncionalidadeInput } from './dto/create-funcionalidade.input';
 import { CreateSolucaoInput } from './dto/create-solucao.input';
@@ -12,6 +14,7 @@ import { SolucaoBootstrapService } from './solucao-bootstrap.service';
 import { SolucaoCatalogService } from './solucao-catalog.service';
 import { SolucaoQueryService } from './solucao-query.service';
 import { FuncionalidadePermissao } from './types/permissao.types';
+import { assertSystemAdmin } from './policies/solucao-access.policy';
 export type { FuncionalidadeAcaoPermissao, FuncionalidadePermissao } from './types/permissao.types';
 
 @Injectable()
@@ -48,8 +51,43 @@ export class SolucoesService {
     return this.hubNavigationService.myHubNavigation(user);
   }
 
-  async resolveAvailableSolutionSlugs(user: { login?: string | null; grupo?: { id?: number | null } | null }, empresaId?: number | null): Promise<string[]> {
+  async resolveAvailableSolutionSlugs(user: { padraoSistema?: boolean | null; grupo?: { id?: number | null } | null }, empresaId?: number | null): Promise<string[]> {
     return this.hubNavigationService.resolveAvailableSolutionSlugs(user, empresaId);
+  }
+
+  async findAllAsAdmin(admin: JwtPayload): Promise<SolucaoType[]> {
+    assertSystemAdmin(admin);
+    return this.findAll();
+  }
+
+  async createAsAdmin(input: CreateSolucaoInput, admin: JwtPayload): Promise<SolucaoType> {
+    assertSystemAdmin(admin);
+    return this.create(input);
+  }
+
+  async updateAsAdmin(input: UpdateSolucaoInput, admin: JwtPayload): Promise<SolucaoType> {
+    assertSystemAdmin(admin);
+    return this.update(input);
+  }
+
+  async removeAsAdmin(id: number, admin: JwtPayload): Promise<boolean> {
+    assertSystemAdmin(admin);
+    return this.remove(id);
+  }
+
+  async createFuncionalidadeAsAdmin(input: CreateFuncionalidadeInput, admin: JwtPayload): Promise<FuncionalidadeType> {
+    assertSystemAdmin(admin);
+    return this.createFuncionalidade(input);
+  }
+
+  async updateFuncionalidadeAsAdmin(input: UpdateFuncionalidadeInput, admin: JwtPayload): Promise<FuncionalidadeType> {
+    assertSystemAdmin(admin);
+    return this.updateFuncionalidade(input);
+  }
+
+  async removeFuncionalidadeAsAdmin(id: number, admin: JwtPayload): Promise<boolean> {
+    assertSystemAdmin(admin);
+    return this.removeFuncionalidade(id);
   }
 
   async findAll(): Promise<SolucaoType[]> {
@@ -84,9 +122,16 @@ export class SolucoesService {
     grupoId: number,
     solucaoIds: number[] = [],
     funcionalidadeIds: number[] = [],
-    funcionalidadePermissoes: FuncionalidadePermissao[] = []
+    funcionalidadePermissoes: FuncionalidadePermissao[] = [],
+    database?: PrismaService | Prisma.TransactionClient
   ): Promise<void> {
-    return this.solucaoAcessoService.syncGroupAccess(grupoId, solucaoIds, funcionalidadeIds, funcionalidadePermissoes);
+    return this.solucaoAcessoService.syncGroupAccess(
+      grupoId,
+      solucaoIds,
+      funcionalidadeIds,
+      funcionalidadePermissoes,
+      database
+    );
   }
 
   async syncCompanyAccess(empresaId: number, solucaoIds: number[] = [], funcionalidadeIds: number[] = []): Promise<void> {

@@ -51,7 +51,12 @@ describe('DocumentacaoAuthorizationService', () => {
   });
 
   it('reserva toda a documentacao ao administrador do sistema', async () => {
-    const permitidos = await service.filtrarAutorizados(artigos, { sub: '3', email: 'admin@orfeu.test', login: 'admin' });
+    const permitidos = await service.filtrarAutorizados(artigos, {
+      sub: '3',
+      email: 'admin@orfeu.test',
+      login: 'admin',
+      padraoSistema: true
+    });
     expect(permitidos).toEqual(artigos);
     expect(myHubNavigation).not.toHaveBeenCalled();
   });

@@ -71,9 +71,6 @@ const renderJourney = () => {
 describe("troca de empresa pelo cabeçalho", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    localStorage.clear();
-    localStorage.setItem("orfeu_token", "token-valido");
-    localStorage.setItem("orfeu_user", JSON.stringify(companyAUser));
     getCurrentUser.mockResolvedValue(companyAUser);
     getMyHubNavigation.mockImplementation(() => (
       switchCompany.mock.calls.length ? Promise.resolve(projetosNavigation) : Promise.resolve(configuradorNavigation)
@@ -82,7 +79,6 @@ describe("troca de empresa pelo cabeçalho", () => {
 
   afterEach(() => {
     cleanup();
-    localStorage.clear();
     document.body.classList.remove("hub-sidebar-collapsed");
   });
 

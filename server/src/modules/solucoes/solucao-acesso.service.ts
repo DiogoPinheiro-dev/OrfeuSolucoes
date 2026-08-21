@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FuncionalidadeAcaoService } from './funcionalidade-acao.service';
 import { FuncionalidadeAcaoPermissao, FuncionalidadePermissao, GrupoAccessDefaults } from './types/permissao.types';
@@ -16,23 +17,24 @@ export class SolucaoAcessoService {
     grupoId: number,
     solucaoIds: number[] = [],
     funcionalidadeIds: number[] = [],
-    funcionalidadePermissoes: FuncionalidadePermissao[] = []
+    funcionalidadePermissoes: FuncionalidadePermissao[] = [],
+    database: PrismaService | Prisma.TransactionClient = this.prisma
   ): Promise<void> {
-    await (this.prisma as never as { grupoFuncionalidadeAcao: { deleteMany: Function } }).grupoFuncionalidadeAcao.deleteMany({ where: { grupoId } });
-    await (this.prisma as never as { grupoSolucao: { deleteMany: Function; createMany: Function }; grupoFuncionalidade: { deleteMany: Function; createMany: Function } }).grupoSolucao.deleteMany({ where: { grupoId } });
-    await (this.prisma as never as { grupoFuncionalidade: { deleteMany: Function; createMany: Function } }).grupoFuncionalidade.deleteMany({ where: { grupoId } });
+    await (database as never as { grupoFuncionalidadeAcao: { deleteMany: Function } }).grupoFuncionalidadeAcao.deleteMany({ where: { grupoId } });
+    await (database as never as { grupoSolucao: { deleteMany: Function; createMany: Function }; grupoFuncionalidade: { deleteMany: Function; createMany: Function } }).grupoSolucao.deleteMany({ where: { grupoId } });
+    await (database as never as { grupoFuncionalidade: { deleteMany: Function; createMany: Function } }).grupoFuncionalidade.deleteMany({ where: { grupoId } });
     const permissoesByFuncionalidadeId = new Map(
       funcionalidadePermissoes.map((permissao) => [permissao.funcionalidadeId, permissao])
     );
 
     if (solucaoIds.length) {
-      await (this.prisma as never as { grupoSolucao: { createMany: Function } }).grupoSolucao.createMany({
+      await (database as never as { grupoSolucao: { createMany: Function } }).grupoSolucao.createMany({
         data: [...new Set(solucaoIds)].map((solucaoId) => ({ grupoId, solucaoId }))
       });
     }
 
     if (funcionalidadeIds.length) {
-      await (this.prisma as never as { grupoFuncionalidade: { createMany: Function } }).grupoFuncionalidade.createMany({
+      await (database as never as { grupoFuncionalidade: { createMany: Function } }).grupoFuncionalidade.createMany({
         data: [...new Set(funcionalidadeIds)].map((funcionalidadeId) => {
           const permissao = withLegacyPermissions(permissoesByFuncionalidadeId.get(funcionalidadeId));
 
@@ -47,7 +49,12 @@ export class SolucaoAcessoService {
         })
       });
 
-      await this.funcionalidadeAcaoService.syncGroupActionPermissions(grupoId, [...new Set(funcionalidadeIds)], funcionalidadePermissoes);
+      await this.funcionalidadeAcaoService.syncGroupActionPermissions(
+        grupoId,
+        [...new Set(funcionalidadeIds)],
+        funcionalidadePermissoes,
+        database
+      );
     }
   }
 

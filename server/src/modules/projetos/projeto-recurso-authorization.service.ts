@@ -35,7 +35,7 @@ export class ProjetoRecursoAuthorizationService {
     return { podeIncluir: incluir, podeAlterar: alterar, podeExcluir: excluir };
   }
 
-  isSystemAdmin(user: { login?: string | null }) { return this.authorization.isSystemAdmin(user); }
+  isSystemAdmin(user: { padraoSistema?: boolean | null }) { return this.authorization.isSystemAdmin(user); }
   groupHasProjectAccess(group: Parameters<ProjetoAuthorizationService['groupHasProjectAccess']>[0]) { return this.authorization.groupHasProjectAccess(group); }
 
   private async can(operation: () => Promise<void>): Promise<boolean> {

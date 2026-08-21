@@ -12,10 +12,6 @@ import {
 
 const graphqlUrl = import.meta.env.VITE_GRAPHQL_URL ?? "http://localhost:3001/graphql";
 const apiBaseUrl = (import.meta.env.VITE_API_URL ?? graphqlUrl.replace(/\/graphql\/?$/, "")).replace(/\/$/, "");
-const authHeaders = () => {
-    const token = localStorage.getItem("orfeu_token");
-    return token ? { Authorization: `Bearer ${token}` } : {};
-};
 const restError = async (response) => {
     try {
         const payload = await response.json();
@@ -44,18 +40,18 @@ export const uploadProjetoAnexos = async (projetoId, files, target = {}) => {
     files.forEach((file) => form.append("files", file));
     if (target.atualizacaoId) form.append("atualizacaoId", target.atualizacaoId);
     if (target.comentarioId) form.append("comentarioId", target.comentarioId);
-    const response = await fetch(`${apiBaseUrl}/projetos/${projetoId}/anexos`, { method: "POST", headers: authHeaders(), body: form });
+    const response = await fetch(`${apiBaseUrl}/projetos/${projetoId}/anexos`, { method: "POST", credentials: "include", body: form });
     if (!response.ok) throw new Error(await restError(response));
     return response.json();
 };
 export const abrirProjetoAnexo = async (downloadUrl, nomeOriginal) => {
-    const response = await fetch(`${apiBaseUrl}${downloadUrl}`, { headers: authHeaders() });
+    const response = await fetch(`${apiBaseUrl}${downloadUrl}`, { credentials: "include" });
     if (!response.ok) throw new Error(await restError(response));
     const blob = await response.blob();
     return { objectUrl: URL.createObjectURL(blob), nomeArquivo: nomeOriginal };
 };
 export const excluirProjetoAnexo = async (projetoId, anexoId) => {
-    const response = await fetch(`${apiBaseUrl}/projetos/${projetoId}/anexos/${anexoId}`, { method: "DELETE", headers: authHeaders() });
+    const response = await fetch(`${apiBaseUrl}/projetos/${projetoId}/anexos/${anexoId}`, { method: "DELETE", credentials: "include" });
     if (!response.ok) throw new Error(await restError(response));
     return response.json();
 };

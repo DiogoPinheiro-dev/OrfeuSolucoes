@@ -38,6 +38,7 @@ export type ProjetoUsuarioRecord = {
   nome?: string | null;
   login?: string | null;
   email: string;
+  padraoSistema?: boolean | null;
   grupo?: { id: number; nome: string } | null;
 };
 

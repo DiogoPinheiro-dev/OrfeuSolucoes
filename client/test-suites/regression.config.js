@@ -10,7 +10,7 @@ export default mergeConfig(baseConfig, defineConfig({
       "src/tests/contracts/**/*.{test,spec}.{js,jsx}",
       "src/tests/hooks/**/*.{test,spec}.{js,jsx}",
       "src/tests/services/**/*.{test,spec}.{js,jsx}",
-      "src/tests/components/{ConfirmAction,CrudFeedback,CrudGrid,DocumentationCenter,DocumentationMarkdown,ModalDialogs,RouteLoadingFallback,SharedFields}.{test,spec}.{js,jsx}"
+      "src/tests/components/{ConfirmAction,CrudFeedback,CrudGrid,DocumentationCenter,DocumentationMarkdown,ForcePasswordChangeModal,LoginModal,ModalDialogs,RouteLoadingFallback,SharedFields}.{test,spec}.{js,jsx}"
     ]
   }
 }));

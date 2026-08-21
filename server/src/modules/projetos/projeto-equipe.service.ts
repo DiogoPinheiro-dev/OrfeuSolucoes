@@ -13,6 +13,7 @@ import { ProjetoPapel, ProjetoRecord } from './types/projeto.types';
 type EligibleUser = {
   id: string;
   login?: string | null;
+  padraoSistema?: boolean | null;
   grupo?: Parameters<ProjetoAuthorizationService['groupHasProjectAccess']>[0];
 };
 

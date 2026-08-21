@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { FormFieldConflictException } from '../../common/exceptions/form-field.exception';
 import { CreateUserInput } from './dto/create-user.input';
+import { RegisterUserInput } from './dto/register-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
 import { UserType } from './dto/user.type';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -39,8 +40,47 @@ export class UserCatalogService {
       }
     }
 
-    const senhaHash = await this.userPasswordService.hashPassword(input.senha);
     const empresaIds = normalizeEmpresaIds(input.empresaIds);
+
+    return this.createRecord(input, login, email, true, input.grupoId ?? null, empresaIds);
+  }
+
+  async register(input: RegisterUserInput): Promise<UserType> {
+    const email = input.email.toLowerCase();
+    const login = normalizeLogin(input.login);
+    const [emailOwner, loginOwner, senhaHash] = await Promise.all([
+      this.prisma.usuario.findUnique({ where: { email } }),
+      login
+        ? this.prisma.usuario.findFirst({ where: { login } as never })
+        : Promise.resolve(null),
+      this.userPasswordService.hashPassword(input.senha)
+    ]);
+
+    if (emailOwner || loginOwner) {
+      throw this.registrationConflict();
+    }
+
+    try {
+      return await this.createRecord(input, login, email, false, null, [], senhaHash);
+    } catch (error) {
+      if (this.isUniqueConstraintViolation(error)) {
+        throw this.registrationConflict();
+      }
+
+      throw error;
+    }
+  }
+
+  private async createRecord(
+    input: RegisterUserInput,
+    login: string | null,
+    email: string,
+    deveAlterarSenha: boolean,
+    grupoId: number | null,
+    empresaIds: number[],
+    precomputedPasswordHash?: string
+  ): Promise<UserType> {
+    const senhaHash = precomputedPasswordHash ?? await this.userPasswordService.hashPassword(input.senha);
 
     const user = (await this.prisma.usuario.create({
       data: {
@@ -48,7 +88,8 @@ export class UserCatalogService {
         login,
         email,
         senhaHash,
-        grupoId: input.grupoId ?? null,
+        grupoId,
+        deveAlterarSenha,
         ...(empresaIds.length
           ? {
               empresas: {
@@ -60,6 +101,14 @@ export class UserCatalogService {
     })) as UsuarioWithRole;
 
     return toUserType(await this.userEmpresaService.attachEmpresas(user));
+  }
+
+  private registrationConflict(): ConflictException {
+    return new ConflictException('Nao foi possivel concluir o cadastro com os dados informados.');
+  }
+
+  private isUniqueConstraintViolation(error: unknown): boolean {
+    return typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002';
   }
 
   async findAll(currentUser?: JwtPayload): Promise<UserType[]> {
@@ -122,33 +171,40 @@ export class UserCatalogService {
 
     if (input.senha) {
       data.senhaHash = await this.userPasswordService.hashPassword(input.senha);
+      data.deveAlterarSenha = true;
     }
 
     if (input.grupoId !== undefined) {
       data.grupoId = input.grupoId || null;
     }
 
-    const user = (await this.prisma.usuario.update({
-      where: { id: input.id },
-      data: data as never
-    })) as UsuarioWithRole;
+    data.sessaoVersao = { increment: 1 };
 
-    if (input.empresaIds !== undefined) {
-      const empresaIds = normalizeEmpresaIds(input.empresaIds);
+    const user = await this.prisma.$transaction(async (tx) => {
+      const updated = (await tx.usuario.update({
+        where: { id: input.id },
+        data: data as never
+      })) as UsuarioWithRole;
 
-      await this.prisma.empresaUsuario.deleteMany({
-        where: { usuarioId: input.id }
-      });
+      if (input.empresaIds !== undefined) {
+        const empresaIds = normalizeEmpresaIds(input.empresaIds);
 
-      if (empresaIds.length) {
-        await this.prisma.empresaUsuario.createMany({
-          data: empresaIds.map((empresaId) => ({
-            usuarioId: input.id,
-            empresaId
-          }))
+        await tx.empresaUsuario.deleteMany({
+          where: { usuarioId: input.id }
         });
+
+        if (empresaIds.length) {
+          await tx.empresaUsuario.createMany({
+            data: empresaIds.map((empresaId) => ({
+              usuarioId: input.id,
+              empresaId
+            }))
+          });
+        }
       }
-    }
+
+      return updated;
+    });
 
     return toUserType(await this.userEmpresaService.attachEmpresas(user));
   }

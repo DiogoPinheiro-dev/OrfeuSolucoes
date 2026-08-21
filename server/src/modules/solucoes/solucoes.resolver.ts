@@ -26,7 +26,7 @@ export class SolucoesResolver {
   @Query(() => [SolucaoType])
   solucoes(@CurrentUser() user: JwtPayload): Promise<SolucaoType[]> {
     assertSystemAdmin(user);
-    return this.solucoesService.findAll();
+    return this.solucoesService.findAllAsAdmin(user);
   }
 
   @UseGuards(GqlAuthGuard)
@@ -36,7 +36,7 @@ export class SolucoesResolver {
     @CurrentUser() user: JwtPayload
   ): Promise<SolucaoType> {
     assertSystemAdmin(user);
-    return this.solucoesService.create(input);
+    return this.solucoesService.createAsAdmin(input, user);
   }
 
   @UseGuards(GqlAuthGuard)
@@ -46,7 +46,7 @@ export class SolucoesResolver {
     @CurrentUser() user: JwtPayload
   ): Promise<SolucaoType> {
     assertSystemAdmin(user);
-    return this.solucoesService.update(input);
+    return this.solucoesService.updateAsAdmin(input, user);
   }
 
   @UseGuards(GqlAuthGuard)
@@ -56,7 +56,7 @@ export class SolucoesResolver {
     @CurrentUser() user: JwtPayload
   ): Promise<boolean> {
     assertSystemAdmin(user);
-    return this.solucoesService.remove(id);
+    return this.solucoesService.removeAsAdmin(id, user);
   }
 
   @UseGuards(GqlAuthGuard)
@@ -66,7 +66,7 @@ export class SolucoesResolver {
     @CurrentUser() user: JwtPayload
   ): Promise<FuncionalidadeType> {
     assertSystemAdmin(user);
-    return this.solucoesService.createFuncionalidade(input);
+    return this.solucoesService.createFuncionalidadeAsAdmin(input, user);
   }
 
   @UseGuards(GqlAuthGuard)
@@ -76,7 +76,7 @@ export class SolucoesResolver {
     @CurrentUser() user: JwtPayload
   ): Promise<FuncionalidadeType> {
     assertSystemAdmin(user);
-    return this.solucoesService.updateFuncionalidade(input);
+    return this.solucoesService.updateFuncionalidadeAsAdmin(input, user);
   }
 
   @UseGuards(GqlAuthGuard)
@@ -86,7 +86,7 @@ export class SolucoesResolver {
     @CurrentUser() user: JwtPayload
   ): Promise<boolean> {
     assertSystemAdmin(user);
-    return this.solucoesService.removeFuncionalidade(id);
+    return this.solucoesService.removeFuncionalidadeAsAdmin(id, user);
   }
 
 }

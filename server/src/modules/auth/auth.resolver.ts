@@ -5,6 +5,7 @@ import { UserType } from '../users/dto/user.type';
 import { EmpresaType } from '../empresas/dto/empresa.type';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './decorators/current-user.decorator';
+import { AllowPasswordChangeSession } from './decorators/allow-password-change-session.decorator';
 import { AuthPayloadType } from './dto/auth-payload.type';
 import { ChangePasswordInput } from './dto/change-password.input';
 import { LoginCompaniesInput } from './dto/login-companies.input';
@@ -22,22 +23,40 @@ export class AuthResolver {
     @Args('input') input: LoginInput,
     @Context() context: GraphQLContext
   ): Promise<AuthPayloadType> {
-    const result = await this.authService.login(input.loginOrEmail, input.senha, input.empresaId);
+    const result = await this.authService.login(
+      input.loginOrEmail,
+      input.senha,
+      input.empresaId,
+      context.req.ip || context.req.socket?.remoteAddress
+    );
     this.authService.attachAuthCookie(context.res, result.accessToken);
-    return result;
+    return { user: result.user };
   }
 
   @Mutation(() => [EmpresaType])
-  loginCompanies(@Args('input') input: LoginCompaniesInput): Promise<EmpresaType[]> {
-    return this.authService.findLoginCompanies(input.loginOrEmail, input.senha);
+  loginCompanies(
+    @Args('input') input: LoginCompaniesInput,
+    @Context() context: GraphQLContext
+  ): Promise<EmpresaType[]> {
+    return this.authService.findLoginCompanies(
+      input.loginOrEmail,
+      input.senha,
+      context.req.ip || context.req.socket?.remoteAddress
+    );
   }
 
+  @AllowPasswordChangeSession()
+  @UseGuards(GqlAuthGuard)
   @Mutation(() => Boolean)
-  logout(@Context() context: GraphQLContext): boolean {
-    this.authService.clearAuthCookie(context.res);
+  async logout(
+    @CurrentUser() user: JwtPayload,
+    @Context() context: GraphQLContext
+  ): Promise<boolean> {
+    await this.authService.logout(user.sub, context.res);
     return true;
   }
 
+  @AllowPasswordChangeSession()
   @UseGuards(GqlAuthGuard)
   @Mutation(() => AuthPayloadType)
   changePassword(
@@ -45,9 +64,9 @@ export class AuthResolver {
     @CurrentUser() user: JwtPayload,
     @Context() context: GraphQLContext
   ): Promise<AuthPayloadType> {
-    return this.authService.changePassword(user.sub, input.novaSenha, user.empresaId).then((result) => {
+    return this.authService.changePassword(user.sub, input.senhaAtual, input.novaSenha, user.empresaId).then((result) => {
       this.authService.attachAuthCookie(context.res, result.accessToken);
-      return result;
+      return { user: result.user };
     });
   }
 
@@ -60,10 +79,11 @@ export class AuthResolver {
   ): Promise<AuthPayloadType> {
     return this.authService.switchCompany(user.sub, input.empresaId).then((result) => {
       this.authService.attachAuthCookie(context.res, result.accessToken);
-      return result;
+      return { user: result.user };
     });
   }
 
+  @AllowPasswordChangeSession()
   @UseGuards(GqlAuthGuard)
   @Query(() => UserType)
   me(@CurrentUser() user: JwtPayload): Promise<UserType> {

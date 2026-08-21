@@ -1,22 +1,14 @@
 import { useState } from "react";
 
 import { useAuth } from "../hooks/useAuth";
+import {
+    formatPasswordPolicyIssues,
+    getPasswordPolicyIssues,
+    PASSWORD_MAX_LENGTH,
+    PASSWORD_MIN_LENGTH,
+    PASSWORD_REQUIREMENTS_TEXT
+} from "../utils/passwordPolicy";
 import PasswordInput from "./PasswordInput";
-
-const getPasswordPolicyIssues = (password) => {
-    const issues = [];
-    const normalizedPassword = password.trim();
-
-    if (normalizedPassword.length < 8) {
-        issues.push("ter pelo menos 8 caracteres");
-    }
-
-    if (normalizedPassword.toLowerCase() === "admin123" || normalizedPassword.toLowerCase() === "admin") {
-        issues.push("ser diferente da senha temporária");
-    }
-
-    return issues;
-};
 
 export default function ForcePasswordChangeModal() {
     const { changePassword, user } = useAuth();
@@ -50,7 +42,7 @@ export default function ForcePasswordChangeModal() {
         const policyIssues = getPasswordPolicyIssues(form.password);
 
         if (policyIssues.length) {
-            setError(`Para ser aceita, a senha precisa ${policyIssues.join(" e ")}.`);
+            setError(`Para ser aceita, a senha precisa ${formatPasswordPolicyIssues(policyIssues)}.`);
             return;
         }
 
@@ -72,8 +64,7 @@ export default function ForcePasswordChangeModal() {
                 <span>Primeiro acesso</span>
                 <h2>Troque sua senha temporária</h2>
                 <p>
-                    O usuário administrador inicial foi criado com uma senha temporária.
-                    Para continuar usando o sistema, defina uma senha mais segura.
+                    Você está usando uma senha temporária. Para continuar, defina uma senha com {PASSWORD_REQUIREMENTS_TEXT}.
                 </p>
 
                 <label>
@@ -82,7 +73,8 @@ export default function ForcePasswordChangeModal() {
                         name="password"
                         value={form.password}
                         onChange={handleChange}
-                        minLength={8}
+                        minLength={PASSWORD_MIN_LENGTH}
+                        maxLength={PASSWORD_MAX_LENGTH}
                         autoComplete="new-password"
                         disabled={saving}
                         required
@@ -95,7 +87,8 @@ export default function ForcePasswordChangeModal() {
                         name="confirmPassword"
                         value={form.confirmPassword}
                         onChange={handleChange}
-                        minLength={8}
+                        minLength={PASSWORD_MIN_LENGTH}
+                        maxLength={PASSWORD_MAX_LENGTH}
                         autoComplete="new-password"
                         disabled={saving}
                         required

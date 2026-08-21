@@ -367,7 +367,7 @@ export class ChamadoGoogleEmailService {
 
   private encryptionKey(): Buffer {
     return createHash('sha256')
-      .update(this.config.get<string>('GOOGLE_TOKEN_ENCRYPTION_KEY') || this.secret())
+      .update(this.requiredConfig('GOOGLE_TOKEN_ENCRYPTION_KEY'))
       .digest();
   }
   private secret(): string {

@@ -21,4 +21,4 @@ Para desenvolver e depurar os testes interativamente, use `npm.cmd run test:e2e:
 
 ## Limite atual
 
-Os testes cobrem o bundle, o navegador, o roteamento, a sessão no `localStorage`, os formulários e a renderização. A comunicação com NestJS e SQL Server permanece coberta pelas suítes backend; um E2E com banco real exigirá banco exclusivo e seed idempotente.
+Os testes cobrem o bundle, o navegador, o roteamento, a validação da sessão por cookie HttpOnly, os formulários e a renderização. As respostas GraphQL interceptadas não comprovam os atributos do cookie emitido pelo NestJS. A comunicação com NestJS e SQL Server permanece coberta pelas suítes backend; um E2E com banco real exigirá banco exclusivo e seed idempotente.

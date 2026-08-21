@@ -1,9 +1,11 @@
 import { UseGuards } from '@nestjs/common';
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Args, Context, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { GraphQLContext } from '../../common/types/graphql-context.type';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
 import { JwtPayload } from '../auth/strategies/jwt-payload.type';
 import { CreateUserInput } from './dto/create-user.input';
+import { RegisterUserInput } from './dto/register-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
 import { UserType } from './dto/user.type';
 import { assertSystemAdmin } from './policies/user.policy';
@@ -13,9 +15,25 @@ import { UsersService } from './users.service';
 export class UsersResolver {
   constructor(private readonly usersService: UsersService) {}
 
+  @UseGuards(GqlAuthGuard)
   @Mutation(() => UserType)
-  createUser(@Args('input') input: CreateUserInput): Promise<UserType> {
-    return this.usersService.create(input);
+  createUser(
+    @Args('input') input: CreateUserInput,
+    @CurrentUser() user: JwtPayload
+  ): Promise<UserType> {
+    assertSystemAdmin(user);
+    return this.usersService.createAsAdmin(input, user);
+  }
+
+  @Mutation(() => UserType)
+  registerUser(
+    @Args('input') input: RegisterUserInput,
+    @Context() context: GraphQLContext
+  ): Promise<UserType> {
+    return this.usersService.register(
+      input,
+      context.req.ip || context.req.socket?.remoteAddress
+    );
   }
 
   @UseGuards(GqlAuthGuard)

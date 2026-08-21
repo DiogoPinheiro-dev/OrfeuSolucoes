@@ -7,6 +7,10 @@ import { UserType } from '../users/dto/user.type';
 import { UsersService } from '../users/users.service';
 import { AuthPayloadType } from './dto/auth-payload.type';
 
+export type AuthSessionResult = AuthPayloadType & {
+  accessToken: string;
+};
+
 @Injectable()
 export class AuthSessionService {
   constructor(
@@ -18,10 +22,12 @@ export class AuthSessionService {
 
   async buildAuthPayload(
     userId: string,
-    empresaId?: number | null,
-    deveAlterarSenha?: boolean
-  ): Promise<AuthPayloadType> {
-    const userType = await this.usersService.findTypeById(userId);
+    empresaId?: number | null
+  ): Promise<AuthSessionResult> {
+    const [userType, sessionUser] = await Promise.all([
+      this.usersService.findTypeById(userId),
+      this.usersService.findById(userId)
+    ]);
     const empresa = await this.resolveCompanyForUser(userId, empresaId ?? null);
     const availableSolutions = await this.solucoesService.resolveAvailableSolutionSlugs(userType, empresa?.id ?? null);
     const payload = {
@@ -29,12 +35,14 @@ export class AuthSessionService {
       email: userType.email,
       login: userType.login ?? null,
       nome: userType.nome,
+      padraoSistema: userType.padraoSistema,
+      sessaoVersao: sessionUser.sessaoVersao,
       grupo: userType.grupo ?? null,
       podeVisualizar: userType.podeVisualizar,
       podeIncluir: userType.podeIncluir,
       podeAlterar: userType.podeAlterar,
       podeExcluir: userType.podeExcluir,
-      deveAlterarSenha: deveAlterarSenha ?? userType.deveAlterarSenha,
+      deveAlterarSenha: userType.deveAlterarSenha,
       empresaId: empresa?.id ?? null,
       empresaNome: empresa?.nome ?? null,
       availableSolutions
@@ -47,7 +55,7 @@ export class AuthSessionService {
         ...userType,
         empresa,
         availableSolutions,
-        deveAlterarSenha: deveAlterarSenha ?? userType.deveAlterarSenha
+        deveAlterarSenha: userType.deveAlterarSenha
       }
     };
   }

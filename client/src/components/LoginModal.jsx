@@ -3,6 +3,13 @@ import { useNavigate } from "react-router-dom";
 
 import { register } from "../../services/Auth/AuthService";
 import { useAuth } from "../hooks/useAuth";
+import {
+    formatPasswordPolicyIssues,
+    getPasswordPolicyIssues,
+    PASSWORD_MAX_LENGTH,
+    PASSWORD_MIN_LENGTH,
+    PASSWORD_REQUIREMENTS_TEXT
+} from "../utils/passwordPolicy";
 import PasswordInput from "./PasswordInput";
 
 import "../styles/loginModal.css";
@@ -58,13 +65,22 @@ export default function LoginModal({ open, onClose }) {
 
     const validate = () => {
         if (!form.email || !form.password) {
-            setError("Preencha login ou e-mail e senha.");
+            setError(mode === "register" ? "Preencha e-mail e senha." : "Preencha login ou e-mail e senha.");
             return false;
         }
 
         if (mode === "register" && (!form.fullName.trim() || !form.login.trim())) {
             setError("Preencha nome completo e login para cadastro.");
             return false;
+        }
+
+        if (mode === "register") {
+            const policyIssues = getPasswordPolicyIssues(form.password);
+
+            if (policyIssues.length) {
+                setError(`Para criar a conta, a senha precisa ${formatPasswordPolicyIssues(policyIssues)}.`);
+                return false;
+            }
         }
 
         return true;
@@ -125,11 +141,12 @@ export default function LoginModal({ open, onClose }) {
             >
                 <header className="lm-header">
                     <h3>{mode === "login" ? "Entrar" : "Criar conta"}</h3>
-                    <button className="lm-close" onClick={() => onClose?.()}>X</button>
+                    <button type="button" className="lm-close" onClick={() => onClose?.()}>X</button>
                 </header>
 
                 <nav className="lm-tabs" aria-label="Modo">
                     <button
+                        type="button"
                         className={mode === "login" ? "active" : ""}
                         onClick={() => {
                             setMode("login");
@@ -140,6 +157,7 @@ export default function LoginModal({ open, onClose }) {
                         Login
                     </button>
                     <button
+                        type="button"
                         className={mode === "register" ? "active" : ""}
                         onClick={() => {
                             setMode("register");
@@ -196,13 +214,16 @@ export default function LoginModal({ open, onClose }) {
                             name="password"
                             value={form.password}
                             onChange={handleChange}
+                            minLength={mode === "register" ? PASSWORD_MIN_LENGTH : undefined}
+                            maxLength={mode === "register" ? PASSWORD_MAX_LENGTH : undefined}
+                            autoComplete={mode === "register" ? "new-password" : "current-password"}
                             required
                         />
                     </label>
 
                     {mode === "register" && (
                         <p className="lm-helper">
-                            Novos cadastros entram como usuário comum, com acesso apenas ao e-commerce.
+                            Use {PASSWORD_REQUIREMENTS_TEXT}. O acesso às soluções internas depende de vínculo liberado por um administrador.
                         </p>
                     )}
 

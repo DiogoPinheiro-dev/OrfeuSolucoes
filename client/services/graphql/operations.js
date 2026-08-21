@@ -29,7 +29,6 @@ export const CREATE_SERVICO_MUTATION = gql`
 export const LOGIN_MUTATION = gql`
   mutation Login($input: LoginInput!) {
     login(input: $input) {
-      accessToken
       user {
         id
         nome
@@ -99,7 +98,6 @@ export const LOGOUT_MUTATION = gql`
 export const CHANGE_PASSWORD_MUTATION = gql`
   mutation ChangePassword($input: ChangePasswordInput!) {
     changePassword(input: $input) {
-      accessToken
       user {
         id
         nome
@@ -147,7 +145,6 @@ export const CHANGE_PASSWORD_MUTATION = gql`
 export const SWITCH_COMPANY_MUTATION = gql`
   mutation SwitchCompany($input: SwitchCompanyInput!) {
     switchCompany(input: $input) {
-      accessToken
       user {
         id
         nome
@@ -226,6 +223,19 @@ export const CREATE_USER_MUTATION = gql`
         acessoProjetos
         acessoHoras
       }
+    }
+  }
+`;
+
+export const REGISTER_USER_MUTATION = gql`
+  mutation RegisterUser($input: RegisterUserInput!) {
+    registerUser(input: $input) {
+      id
+      nome
+      login
+      email
+      deveAlterarSenha
+      padraoSistema
     }
   }
 `;

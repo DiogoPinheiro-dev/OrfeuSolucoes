@@ -22,6 +22,7 @@ import { ProjetoPapel, ProjetoRecord, ProjetoSaude, ProjetoSituacao } from './ty
 type EligibleUser = {
   id: string;
   login?: string | null;
+  padraoSistema?: boolean | null;
   grupo?: Parameters<ProjetoAuthorizationService['groupHasProjectAccess']>[0];
 };
 

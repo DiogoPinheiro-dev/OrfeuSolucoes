@@ -57,12 +57,6 @@ import {
 const graphqlUrl = import.meta.env.VITE_GRAPHQL_URL ?? "http://localhost:3001/graphql";
 const apiBaseUrl = (import.meta.env.VITE_API_URL ?? graphqlUrl.replace(/\/graphql\/?$/, "")).replace(/\/$/, "");
 
-const getAuthHeaders = () => {
-    const token = localStorage.getItem("orfeu_token");
-
-    return token ? { Authorization: `Bearer ${token}` } : {};
-};
-
 const extractRestErrorMessage = async (response) => {
     try {
         const payload = await response.json();
@@ -224,7 +218,6 @@ export const uploadChamadoAnexos = async (chamadoId, files, mensagemId = null) =
     const response = await fetch(`${apiBaseUrl}/chamados/${chamadoId}/anexos`, {
         method: "POST",
         credentials: "include",
-        headers: getAuthHeaders(),
         body: formData
     });
 
@@ -276,8 +269,7 @@ export const abrirChamadoAnexo = async (downloadUrl, fallbackName = "anexo") => 
 
     const response = await fetch(url, {
         method: "GET",
-        credentials: "include",
-        headers: getAuthHeaders()
+        credentials: "include"
     });
 
     if (!response.ok) {
@@ -547,7 +539,7 @@ export const getChamadoRelatorio = (filtro) => query({ query: CHAMADO_RELATORIO_
 export const downloadChamadoRelatorio = async (filtro, formato) => {
     const params = new URLSearchParams({ formato });
     Object.entries(filtro || {}).forEach(([key, value]) => { if (value !== "" && value != null && key !== "page" && key !== "pageSize") params.set(key, value); });
-    const response = await fetch(`${apiBaseUrl}/chamados/relatorios/exportar?${params}`, { headers: getAuthHeaders() });
+    const response = await fetch(`${apiBaseUrl}/chamados/relatorios/exportar?${params}`, { credentials: "include" });
     if (!response.ok) throw new Error(await extractRestErrorMessage(response));
     const blob = await response.blob();
     const disposition = response.headers.get("content-disposition") || "";

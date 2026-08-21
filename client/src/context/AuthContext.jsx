@@ -7,11 +7,11 @@ import {
     logout as logoutRequest,
     switchCompany as switchCompanyRequest
 } from "../../services/Auth/AuthService";
-import { clearSession, getSessionUser, getToken, setSession } from "../../services/Auth/session";
+import { clearLegacySessionStorage } from "../../services/Auth/legacySession";
 import { AuthContext } from "./auth-context";
 
 export function AuthProvider({ children }) {
-    const [user, setUser] = useState(getSessionUser());
+    const [user, setUser] = useState(null);
     const [bootstrapping, setBootstrapping] = useState(true);
     const [switchingCompany, setSwitchingCompany] = useState(false);
 
@@ -19,24 +19,17 @@ export function AuthProvider({ children }) {
         let active = true;
 
         const restoreSession = async () => {
-            const token = getToken();
-
-            if (!token) {
-                setBootstrapping(false);
-                return;
-            }
+            clearLegacySessionStorage();
 
             try {
                 const currentUser = await getCurrentUser();
 
-                if (!active || !currentUser) {
+                if (!active) {
                     return;
                 }
 
                 setUser(currentUser);
-                setSession(token, currentUser);
             } catch {
-                clearSession();
                 if (active) {
                     setUser(null);
                 }
@@ -61,18 +54,16 @@ export function AuthProvider({ children }) {
     };
 
     const signOut = async () => {
-        await logoutRequest();
-        setUser(null);
+        try {
+            await logoutRequest();
+        } finally {
+            setUser(null);
+        }
     };
 
     const refreshUser = async () => {
         const currentUser = await getCurrentUser();
         setUser(currentUser);
-
-        if (currentUser) {
-            setSession(getToken(), currentUser);
-        }
-
         return currentUser;
     };
 

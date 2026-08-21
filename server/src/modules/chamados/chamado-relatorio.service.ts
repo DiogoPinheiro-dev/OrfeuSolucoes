@@ -8,6 +8,21 @@ import { ChamadoRelatorioFiltroInput } from './dto/chamado-relatorio.input';
 import { ChamadoRelatorioItemType, ChamadoRelatorioPageType } from './dto/chamado-relatorio.type';
 
 type ReportRow = any;
+
+const SPREADSHEET_FORMULA_PREFIX = /^[\u0000-\u0020]*[=+\-@]/;
+
+function sanitizeSpreadsheetValue(value: unknown): unknown {
+  if (typeof value !== 'string' || !SPREADSHEET_FORMULA_PREFIX.test(value)) {
+    return value;
+  }
+
+  return `'${value}`;
+}
+
+function escapeCsvCell(value: unknown): string {
+  return `"${String(sanitizeSpreadsheetValue(value) ?? '').replace(/"/g, '""')}"`;
+}
+
 @Injectable()
 export class ChamadoRelatorioService {
   constructor(private readonly prisma: PrismaService, private readonly authorization: ChamadoAuthorizationService) {}
@@ -39,8 +54,49 @@ export class ChamadoRelatorioService {
   }
   private queryArgs() { return { include: { prioridadeConfiguracao: true, categoria: true, solicitante: true, responsavel: true, liderAtendimento: true }, orderBy: [{ criadoEm: 'desc' as const }, { numero: 'desc' as const }] }; }
   private map(row: ReportRow): ChamadoRelatorioItemType { const label = (u: any) => u?.nome || u?.login || u?.email || 'Nao informado'; return { id: row.id, numero: row.numero, titulo: row.titulo, status: row.status, slaStatus: row.slaStatus, prioridade: row.prioridadeConfiguracao?.nome || '-', categoria: row.categoria?.nome || 'Sem categoria', solicitante: label(row.solicitante), atendente: row.responsavel || row.liderAtendimento ? label(row.responsavel || row.liderAtendimento) : 'Sem atendente', criadoEm: row.criadoEm, primeiraRespostaEm: row.primeiraRespostaEm, resolvidoEm: row.resolvidoEm, tempoPrimeiraRespostaMinutos: row.primeiraRespostaEm ? this.minutes(row.criadoEm, row.primeiraRespostaEm) : null, tempoResolucaoMinutos: row.resolvidoEm ? this.minutes(row.criadoEm, row.resolvidoEm) : null }; }
-  private csv(items: ChamadoRelatorioItemType[]): Buffer { const headers = ['Numero','Titulo','Status','SLA','Prioridade','Categoria','Solicitante','Atendente','Criado em','Primeira resposta','Resolvido em','Tempo primeira resposta (min)','Tempo resolucao (min)']; const esc = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`; const lines = [headers.map(esc).join(';'), ...items.map((i) => [i.numero,i.titulo,i.status,i.slaStatus,i.prioridade,i.categoria,i.solicitante,i.atendente,i.criadoEm.toISOString(),i.primeiraRespostaEm?.toISOString() || '',i.resolvidoEm?.toISOString() || '',i.tempoPrimeiraRespostaMinutos ?? '',i.tempoResolucaoMinutos ?? ''].map(esc).join(';'))]; return Buffer.from('\ufeff' + lines.join('\r\n'), 'utf8'); }
-  private async xlsx(items: ChamadoRelatorioItemType[]): Promise<Buffer> { const workbook = new Workbook(); const sheet = workbook.addWorksheet('Chamados', { views: [{ state: 'frozen', ySplit: 1 }] }); sheet.columns = [{header:'Numero',key:'numero',width:12},{header:'Titulo',key:'titulo',width:40},{header:'Status',key:'status',width:18},{header:'SLA',key:'slaStatus',width:22},{header:'Prioridade',key:'prioridade',width:18},{header:'Categoria',key:'categoria',width:24},{header:'Solicitante',key:'solicitante',width:28},{header:'Atendente',key:'atendente',width:28},{header:'Criado em',key:'criadoEm',width:20},{header:'Primeira resposta',key:'primeiraRespostaEm',width:20},{header:'Resolvido em',key:'resolvidoEm',width:20},{header:'Primeira resposta (min)',key:'tempoPrimeiraRespostaMinutos',width:23},{header:'Resolucao (min)',key:'tempoResolucaoMinutos',width:18}]; items.forEach((item) => sheet.addRow(item)); sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } }; sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3448C5' } }; ['I','J','K'].forEach((column) => { sheet.getColumn(column).numFmt = 'dd/mm/yyyy hh:mm'; }); sheet.autoFilter = { from: 'A1', to: 'M1' }; const data = await workbook.xlsx.writeBuffer(); return Buffer.from(data); }
+  private csv(items: ChamadoRelatorioItemType[]): Buffer {
+    const headers = ['Numero','Titulo','Status','SLA','Prioridade','Categoria','Solicitante','Atendente','Criado em','Primeira resposta','Resolvido em','Tempo primeira resposta (min)','Tempo resolucao (min)'];
+    const lines = [
+      headers.map(escapeCsvCell).join(';'),
+      ...items.map((item) => [
+        item.numero,
+        item.titulo,
+        item.status,
+        item.slaStatus,
+        item.prioridade,
+        item.categoria,
+        item.solicitante,
+        item.atendente,
+        item.criadoEm.toISOString(),
+        item.primeiraRespostaEm?.toISOString() || '',
+        item.resolvidoEm?.toISOString() || '',
+        item.tempoPrimeiraRespostaMinutos ?? '',
+        item.tempoResolucaoMinutos ?? ''
+      ].map(escapeCsvCell).join(';'))
+    ];
+
+    return Buffer.from('\ufeff' + lines.join('\r\n'), 'utf8');
+  }
+
+  private async xlsx(items: ChamadoRelatorioItemType[]): Promise<Buffer> {
+    const workbook = new Workbook();
+    const sheet = workbook.addWorksheet('Chamados', { views: [{ state: 'frozen', ySplit: 1 }] });
+    sheet.columns = [{header:'Numero',key:'numero',width:12},{header:'Titulo',key:'titulo',width:40},{header:'Status',key:'status',width:18},{header:'SLA',key:'slaStatus',width:22},{header:'Prioridade',key:'prioridade',width:18},{header:'Categoria',key:'categoria',width:24},{header:'Solicitante',key:'solicitante',width:28},{header:'Atendente',key:'atendente',width:28},{header:'Criado em',key:'criadoEm',width:20},{header:'Primeira resposta',key:'primeiraRespostaEm',width:20},{header:'Resolvido em',key:'resolvidoEm',width:20},{header:'Tempo primeira resposta (min)',key:'tempoPrimeiraRespostaMinutos',width:23},{header:'Resolucao (min)',key:'tempoResolucaoMinutos',width:18}];
+    items.forEach((item) => sheet.addRow({
+      ...item,
+      titulo: sanitizeSpreadsheetValue(item.titulo),
+      prioridade: sanitizeSpreadsheetValue(item.prioridade),
+      categoria: sanitizeSpreadsheetValue(item.categoria),
+      solicitante: sanitizeSpreadsheetValue(item.solicitante),
+      atendente: sanitizeSpreadsheetValue(item.atendente)
+    }));
+    sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3448C5' } };
+    ['I','J','K'].forEach((column) => { sheet.getColumn(column).numFmt = 'dd/mm/yyyy hh:mm'; });
+    sheet.autoFilter = { from: 'A1', to: 'M1' };
+    const data = await workbook.xlsx.writeBuffer();
+    return Buffer.from(data);
+  }
   private minutes(a: Date, b: Date) { return Math.round(Math.max(0, b.getTime() - a.getTime()) / 6000) / 10; }
   private endOfDay(value: string) { const date = new Date(value); date.setHours(23,59,59,999); return date; }
 }

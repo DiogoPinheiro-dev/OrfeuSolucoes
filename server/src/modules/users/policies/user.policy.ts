@@ -18,11 +18,11 @@ export function hasFullGroupAccess(
   );
 }
 
-export function isSystemAdmin(user?: { login?: string | null } | null): boolean {
-  return user?.login?.toLowerCase() === 'admin';
+export function isSystemAdmin(user?: { padraoSistema?: boolean | null } | null): boolean {
+  return user?.padraoSistema === true;
 }
 
-export function assertSystemAdmin(user?: { login?: string | null } | null): void {
+export function assertSystemAdmin(user?: { padraoSistema?: boolean | null } | null): void {
   if (!isSystemAdmin(user)) {
     throw new ForbiddenException('Apenas o usuario administrador inicial pode acessar o configurador.');
   }

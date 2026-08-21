@@ -62,8 +62,8 @@ export class UserEmpresaService {
   async ensureAdminLinkedToAllCompanies(): Promise<void> {
     const admins = (await this.prisma.usuario.findMany({
       where: {
-        login: 'admin'
-      } as never,
+        padraoSistema: true
+      },
       select: { id: true }
     })) as { id: string }[];
 

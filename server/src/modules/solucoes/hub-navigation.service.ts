@@ -66,11 +66,11 @@ export class HubNavigationService {
       }));
   }
 
-  async resolveAvailableSolutionSlugs(user: { login?: string | null; grupo?: { id?: number | null } | null }, empresaId?: number | null): Promise<string[]> {
+  async resolveAvailableSolutionSlugs(user: { padraoSistema?: boolean | null; grupo?: { id?: number | null } | null }, empresaId?: number | null): Promise<string[]> {
     const navigation = await this.myHubNavigation({
       sub: '',
       email: '',
-      login: user.login ?? null,
+      padraoSistema: user.padraoSistema ?? false,
       grupo: user.grupo?.id ? { id: user.grupo.id, nome: '', acessoEcommerce: false, acessoProjetos: false, acessoHoras: false, acessoConfigurador: false } : null,
       empresaId: empresaId ?? null
     });

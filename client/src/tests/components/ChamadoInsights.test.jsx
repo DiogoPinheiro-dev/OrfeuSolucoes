@@ -164,7 +164,10 @@ describe("Notificacoes do Controle de Chamados", () => {
         await user.click(await screen.findByRole("button", { name: /Chamado atualizado/ }));
 
         await waitFor(() => expect(marcarChamadoNotificacaoComoLida).toHaveBeenCalledWith("n1"));
-        expect(screen.getByRole("status", { name: "Rota atual" })).toHaveTextContent("/hub/controle-de-chamados/painel-atendimento/ch-1");
+        await waitFor(() => {
+            expect(screen.getByRole("status", { name: "Rota atual" }))
+                .toHaveTextContent("/hub/controle-de-chamados/painel-atendimento/ch-1");
+        });
     });
 
     it("marca todas como lidas e trata falha de carregamento como estado vazio", async () => {

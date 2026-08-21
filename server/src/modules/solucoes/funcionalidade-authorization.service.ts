@@ -65,8 +65,8 @@ export class FuncionalidadeAuthorizationService {
     }
   }
 
-  isSystemAdmin(user?: { login?: string | null } | null): boolean {
-    return user?.login?.toLowerCase() === 'admin';
+  isSystemAdmin(user?: { padraoSistema?: boolean | null } | null): boolean {
+    return user?.padraoSistema === true;
   }
 
   hasFullAccessGroup(grupo?: FullAccessGroup | null): boolean {

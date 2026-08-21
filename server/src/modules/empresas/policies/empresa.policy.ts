@@ -9,7 +9,7 @@ export function assertCanRemoveEmpresa(empresa: EmpresaRecord): void {
 }
 
 export function assertAdmin(user: JwtPayload, action: string): void {
-  if (user.login?.toLowerCase() !== 'admin') {
+  if (!user.padraoSistema) {
     throw new ForbiddenException(`Apenas o usuario administrador inicial pode ${action}.`);
   }
 }

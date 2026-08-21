@@ -7,9 +7,13 @@ import { SolucoesModule } from '../solucoes/solucoes.module';
 import { UsersModule } from '../users/users.module';
 import { AuthCookieService } from './auth-cookie.service';
 import { AuthCredentialsService } from './auth-credentials.service';
+import { AuthRateLimitService } from './auth-rate-limit.service';
 import { AuthResolver } from './auth.resolver';
 import { AuthSessionService } from './auth-session.service';
 import { AuthService } from './auth.service';
+import { AuthTokenValidationService } from './auth-token-validation.service';
+import { GqlAuthGuard } from './guards/gql-auth.guard';
+import { RestAuthGuard } from './guards/rest-auth.guard';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
@@ -21,15 +25,20 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
         const secret = configService.get<string>('JWT_SECRET');
+        const issuer = configService.get<string>('JWT_ISSUER');
+        const audience = configService.get<string>('JWT_AUDIENCE');
 
-        if (!secret) {
-          throw new Error('JWT_SECRET was not provided.');
+        if (!secret || !issuer || !audience) {
+          throw new Error('JWT_SECRET, JWT_ISSUER and JWT_AUDIENCE are required.');
         }
 
         return {
           secret,
           signOptions: {
-            expiresIn: configService.get<number>('JWT_EXPIRES_IN') ?? 8 * 60 * 60
+            expiresIn: configService.get<number>('JWT_EXPIRES_IN') ?? 8 * 60 * 60,
+            issuer,
+            audience,
+            algorithm: 'HS256'
           }
         };
       }
@@ -38,7 +47,18 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     EmpresasModule,
     SolucoesModule
   ],
-  providers: [AuthService, AuthCookieService, AuthCredentialsService, AuthSessionService, AuthResolver, JwtStrategy],
-  exports: [AuthService]
+  providers: [
+    AuthService,
+    AuthCookieService,
+    AuthCredentialsService,
+    AuthRateLimitService,
+    AuthSessionService,
+    AuthTokenValidationService,
+    AuthResolver,
+    GqlAuthGuard,
+    RestAuthGuard,
+    JwtStrategy
+  ],
+  exports: [AuthService, GqlAuthGuard, RestAuthGuard]
 })
 export class AuthModule {}

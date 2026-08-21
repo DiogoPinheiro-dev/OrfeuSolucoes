@@ -64,7 +64,6 @@ input AtualizarCicloProjetoInput {
 }
 
 type AuthPayloadType {
-  accessToken: String!
   user: UserType!
 }
 
@@ -379,6 +378,7 @@ type ChamadoType {
 
 input ChangePasswordInput {
   novaSenha: String!
+  senhaAtual: String
 }
 
 input ConcluirProjetoSprintInput {
@@ -887,6 +887,7 @@ type Mutation {
   reativarProjetoItem(input: VersionarProjetoItemInput!): ProjetoItemType!
   reativarProjetoItemDependencia(input: VersionarProjetoItemDependenciaInput!): ProjetoItemDependenciaType!
   reativarProjetoMarco(input: VersionarProjetoCompromissoInput!): ProjetoMarcoType!
+  registerUser(input: RegisterUserInput!): UserType!
   removerItemProjetoSprint(input: AlterarEscopoProjetoSprintInput!): ProjetoSprintType!
   resolverChamado(id: String!, observacao: String): ChamadoType!
   responderChamado(input: ResponderChamadoInput!): ChamadoType!
@@ -1771,6 +1772,13 @@ type Query {
   sugerirChaveProjeto(nome: String!): String!
   tiposChamado(ativas: Boolean = true): [ChamadoTipoType!]!
   users: [UserType!]!
+}
+
+input RegisterUserInput {
+  email: String!
+  login: String
+  nome: String
+  senha: String!
 }
 
 input ResponderChamadoInput {

@@ -32,13 +32,3 @@ export const GENERAL_STATUS_TRANSITIONS: Record<string, string[]> = {
 
 export const MAX_ANEXO_FILES = 5;
 export const MAX_ANEXO_SIZE_BYTES = 10 * 1024 * 1024;
-
-export const ALLOWED_ANEXO_MIME_TYPES = new Set([
-  'image/jpeg',
-  'image/png',
-  'application/pdf',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'text/plain'
-]);
-
-export const ALLOWED_ANEXO_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.pdf', '.docx', '.txt']);

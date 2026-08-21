@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { mkdir, unlink, writeFile } from 'node:fs/promises';
-import { extname, isAbsolute, join, normalize, relative } from 'node:path';
+import { extname, isAbsolute, join, normalize, relative, sep } from 'node:path';
 import { ProjetoUploadFile } from './types/projeto-comunicacao.types';
 
 @Injectable()
@@ -22,7 +22,7 @@ export class ProjetoAnexoStorageService {
     if (!caminho || isAbsolute(caminho)) throw new BadRequestException('Caminho de anexo invalido.');
     const resolved = normalize(join(this.uploadRoot, caminho));
     const pathFromRoot = relative(this.uploadRoot, resolved);
-    if (!pathFromRoot || pathFromRoot.startsWith('..') || isAbsolute(pathFromRoot)) {
+    if (!pathFromRoot || pathFromRoot === '..' || pathFromRoot.startsWith(`..${sep}`) || isAbsolute(pathFromRoot)) {
       throw new BadRequestException('Caminho de anexo invalido.');
     }
     return resolved;

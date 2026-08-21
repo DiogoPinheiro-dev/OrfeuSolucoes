@@ -189,7 +189,7 @@ export class ProjetoAuthorizationService {
       action
     );
   }
-  isSystemAdmin(user?: { login?: string | null } | null): boolean {
+  isSystemAdmin(user?: { padraoSistema?: boolean | null } | null): boolean {
     return this.funcionalidadeAuthorization.isSystemAdmin(user);
   }
 

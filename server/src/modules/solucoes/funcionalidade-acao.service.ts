@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { FormFieldBadRequestException, FormFieldConflictException } from '../../common/exceptions/form-field.exception';
 import { PrismaService } from '../../prisma/prisma.service';
 import { DEFAULT_ACTIONS } from './constants/solucao.constants';
@@ -174,9 +175,10 @@ export class FuncionalidadeAcaoService {
   async syncGroupActionPermissions(
     grupoId: number,
     funcionalidadeIds: number[],
-    funcionalidadePermissoes: FuncionalidadePermissao[]
+    funcionalidadePermissoes: FuncionalidadePermissao[],
+    database: PrismaService | Prisma.TransactionClient = this.prisma
   ): Promise<void> {
-    const acoes = (await (this.prisma as never as { funcionalidadeAcao: { findMany: Function } }).funcionalidadeAcao.findMany({
+    const acoes = (await (database as never as { funcionalidadeAcao: { findMany: Function } }).funcionalidadeAcao.findMany({
       where: { funcionalidadeId: { in: funcionalidadeIds }, ativo: true },
       select: { id: true, funcionalidadeId: true, chave: true }
     })) as Pick<FuncionalidadeAcaoRecord, 'id' | 'funcionalidadeId' | 'chave'>[];
@@ -194,7 +196,7 @@ export class FuncionalidadeAcaoService {
         .map((acao) => [acao.acaoId, !!acao.permitido])
     );
 
-    await (this.prisma as never as { grupoFuncionalidadeAcao: { createMany: Function } }).grupoFuncionalidadeAcao.createMany({
+    await (database as never as { grupoFuncionalidadeAcao: { createMany: Function } }).grupoFuncionalidadeAcao.createMany({
       data: acoes.map((acao) => {
         const permissao = permissoesByFuncionalidadeId.get(acao.funcionalidadeId);
 

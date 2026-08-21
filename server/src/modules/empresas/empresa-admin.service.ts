@@ -8,8 +8,8 @@ export class EmpresaAdminService {
   async findSystemAdminIds(): Promise<string[]> {
     const admins = await this.prisma.usuario.findMany({
       where: {
-        login: 'admin'
-      } as never,
+        padraoSistema: true
+      },
       select: { id: true }
     });
 

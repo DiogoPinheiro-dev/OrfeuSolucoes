@@ -2,6 +2,7 @@ import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { GraphQLModule } from '@nestjs/graphql';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { Request, Response } from 'express';
 import { join, resolve } from 'node:path';
 import { validateEnv } from './config/env.validation';
@@ -25,6 +26,12 @@ import { PrismaModule } from './prisma/prisma.module';
       envFilePath: [resolve(process.cwd(), '.env')],
       validate: validateEnv
     }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60_000,
+        limit: 60
+      }
+    ]),
     GraphQLModule.forRootAsync<ApolloDriverConfig>({
       driver: ApolloDriver,
       inject: [ConfigService],

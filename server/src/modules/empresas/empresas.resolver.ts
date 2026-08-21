@@ -12,9 +12,10 @@ import { EmpresasService } from './empresas.service';
 export class EmpresasResolver {
   constructor(private readonly empresasService: EmpresasService) {}
 
+  @UseGuards(GqlAuthGuard)
   @Query(() => [EmpresaType])
-  empresas(): Promise<EmpresaType[]> {
-    return this.empresasService.findAll();
+  empresas(@CurrentUser() user: JwtPayload): Promise<EmpresaType[]> {
+    return this.empresasService.findAll(user);
   }
 
   @UseGuards(GqlAuthGuard)

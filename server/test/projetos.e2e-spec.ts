@@ -15,6 +15,7 @@ import { ProjetosService } from '../src/modules/projetos/projetos.service';
 const admin = {
   sub: '11111111-1111-4111-8111-111111111111',
   login: 'admin',
+  padraoSistema: true,
   nome: 'Administrador',
   email: 'admin@orfeu.local',
   empresaId: 10
@@ -22,6 +23,7 @@ const admin = {
 const member = {
   sub: '22222222-2222-4222-8222-222222222222',
   login: 'membro',
+  padraoSistema: false,
   nome: 'Membro',
   email: 'membro@orfeu.local',
   empresaId: 10

@@ -3,6 +3,8 @@ export type JwtPayload = {
   email: string;
   login?: string | null;
   nome?: string | null;
+  padraoSistema?: boolean;
+  sessaoVersao?: number;
   grupo?: {
     id: number;
     nome: string;

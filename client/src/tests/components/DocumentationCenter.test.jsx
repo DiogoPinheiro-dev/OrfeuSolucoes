@@ -85,7 +85,9 @@ describe("Central de Documentação", () => {
         expect(screen.getByRole("link", { name: "Pré-requisitos" })).toHaveAttribute("href", "#user-content-pré-requisitos");
         expect(screen.getByText("Validado em 10/08/2026")).toBeInTheDocument();
         expect(screen.getByText("Nível: Usuário")).toBeInTheDocument();
-        expect(document.title).toBe("Backlog de demandas | Documentação | Orfeu Soluções");
+        await waitFor(() => {
+            expect(document.title).toBe("Backlog de demandas | Documentação | Orfeu Soluções");
+        });
     });
 
     it("pesquisa no backend e navega para o resultado escolhido", async () => {

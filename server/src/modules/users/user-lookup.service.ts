@@ -27,13 +27,12 @@ export class UserLookupService {
   async findByLoginOrEmail(loginOrEmail: string): Promise<UsuarioWithRole | null> {
     const identifier = loginOrEmail.toLowerCase().trim();
 
+    if (identifier.includes('@')) {
+      return this.findByEmail(identifier);
+    }
+
     return (await this.prisma.usuario.findFirst({
-      where: {
-        OR: [
-          { email: identifier },
-          { login: identifier } as never
-        ]
-      },
+      where: { login: identifier } as never,
       include: { grupo: true } as never
     })) as UsuarioWithRole | null;
   }

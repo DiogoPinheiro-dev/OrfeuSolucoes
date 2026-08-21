@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { compare, hash } from 'bcrypt';
+import { normalizeAndValidatePassword } from '../../common/security/password.policy';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SolucoesService } from '../solucoes/solucoes.service';
 import { GrupoUsuarioRecord } from './types/grupo-usuario-record.types';
@@ -8,7 +10,8 @@ import { GrupoUsuarioRecord } from './types/grupo-usuario-record.types';
 export class GrupoUsuarioBootstrapService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly solucoesService: SolucoesService
+    private readonly solucoesService: SolucoesService,
+    private readonly configService: ConfigService
   ) {}
 
   async ensureInitialSetup(): Promise<void> {
@@ -17,6 +20,10 @@ export class GrupoUsuarioBootstrapService {
       this.prisma.usuario.count(),
       this.prisma.empresa.count()
     ]);
+    const shouldCreateInitialAdmin = gruposCount === 0 && usuariosCount === 0;
+    const initialAdminPassword = shouldCreateInitialAdmin
+      ? this.requireInitialAdminPassword()
+      : null;
 
     await this.prisma.$transaction(async (tx) => {
       let empresaId: number | null = null;
@@ -35,7 +42,7 @@ export class GrupoUsuarioBootstrapService {
         empresaId = empresa.id;
       }
 
-      if (gruposCount === 0 && usuariosCount === 0) {
+      if (shouldCreateInitialAdmin) {
         const grupo = (await (tx as never as { grupoUsuario: { create: Function } }).grupoUsuario.create({
           data: {
             nome: 'Administradores',
@@ -51,7 +58,7 @@ export class GrupoUsuarioBootstrapService {
             padraoSistema: true
           }
         })) as GrupoUsuarioRecord;
-        const senhaHash = await hash('admin123', 10);
+        const senhaHash = await hash(initialAdminPassword as string, 10);
         const usuario = await tx.usuario.create({
           data: {
             nome: 'Administrador',
@@ -86,8 +93,8 @@ export class GrupoUsuarioBootstrapService {
       } else if (empresaId) {
         const usuariosComAcessoGeral = await tx.usuario.findMany({
           where: {
-            login: 'admin'
-          } as never,
+            padraoSistema: true
+          },
           select: { id: true }
         });
 
@@ -113,14 +120,7 @@ export class GrupoUsuarioBootstrapService {
   private async ensureInitialAdminPasswordPolicy(): Promise<void> {
     const admin = await this.prisma.usuario.findFirst({
       where: {
-        login: 'admin',
-        email: 'admin@admin.com',
-        grupo: {
-          acessoEcommerce: true,
-          acessoProjetos: true,
-          acessoHoras: true,
-          acessoConfigurador: true
-        }
+        padraoSistema: true
       } as never,
       select: {
         id: true,
@@ -140,26 +140,36 @@ export class GrupoUsuarioBootstrapService {
       return;
     }
 
-    if (hasTemporaryPassword && admin.deveAlterarSenha) {
-      return;
-    }
+    const initialAdminPassword = this.requireInitialAdminPassword();
 
     await this.prisma.usuario.update({
       where: { id: admin.id },
       data: {
-        senhaHash: await hash('admin123', 10),
-        deveAlterarSenha: true
-      } as never
+        senhaHash: await hash(initialAdminPassword, 10),
+        deveAlterarSenha: true,
+        sessaoVersao: { increment: 1 }
+      }
     });
+  }
+
+  private requireInitialAdminPassword(): string {
+    const configuredPassword = this.configService.get<string>('INITIAL_ADMIN_PASSWORD');
+
+    if (!configuredPassword) {
+      throw new Error(
+        'INITIAL_ADMIN_PASSWORD is required to create or secure the initial administrator.'
+      );
+    }
+
+    return normalizeAndValidatePassword(configuredPassword);
   }
 
   private async ensureInitialAdminSolutionAccess(): Promise<void> {
     const admin = await this.prisma.usuario.findFirst({
       where: {
-        login: 'admin',
-        email: 'admin@admin.com',
+        padraoSistema: true,
         grupoId: { not: null }
-      } as never,
+      },
       select: {
         grupoId: true
       } as never

@@ -23,8 +23,6 @@ const response = ({ ok = true, json = {}, blob = new Blob(["arquivo"], { type: "
 
 describe("serviços de arquivos", () => {
     beforeEach(() => {
-        localStorage.clear();
-        localStorage.setItem("orfeu_token", "token");
         vi.stubGlobal("fetch", vi.fn());
         URL.createObjectURL = vi.fn(() => "blob:arquivo");
         URL.revokeObjectURL = vi.fn();
@@ -37,7 +35,7 @@ describe("serviços de arquivos", () => {
         expect(fetch).not.toHaveBeenCalled();
     });
 
-    it("envia e abre anexos de chamado com autenticação e nome do servidor", async () => {
+    it("envia e abre anexos de chamado com cookie e nome do servidor", async () => {
         fetch
             .mockResolvedValueOnce(response({ json: [{ id: 1 }] }))
             .mockResolvedValueOnce(response({ headers: { "content-disposition": "attachment; filename*=UTF-8''relat%C3%B3rio.txt" } }));
@@ -47,9 +45,9 @@ describe("serviços de arquivos", () => {
         expect(fetch).toHaveBeenNthCalledWith(1, expect.stringContaining("/chamados/chamado-1/anexos"), expect.objectContaining({
             method: "POST",
             credentials: "include",
-            headers: { Authorization: "Bearer token" },
             body: expect.any(FormData)
         }));
+        expect(fetch.mock.calls[0][1].headers).toBeUndefined();
         await expect(abrirChamadoAnexo("/chamados/anexos/1")).resolves.toEqual({
             objectUrl: "blob:arquivo",
             nomeArquivo: "relatório.txt",
@@ -70,6 +68,7 @@ describe("serviços de arquivos", () => {
         await downloadChamadoRelatorio({ status: "ABERTO", page: 2, pageSize: 20 }, "csv");
         expect(fetch.mock.calls[0][0]).toContain("status=ABERTO");
         expect(fetch.mock.calls[0][0]).not.toContain("page=");
+        expect(fetch.mock.calls[0][1]).toEqual({ credentials: "include" });
         expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledOnce();
         expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:arquivo");
     });
@@ -85,6 +84,7 @@ describe("serviços de arquivos", () => {
         await expect(abrirProjetoAnexo("/projetos/anexos/a1", "projeto.txt")).resolves.toEqual({ objectUrl: "blob:arquivo", nomeArquivo: "projeto.txt" });
         await expect(excluirProjetoAnexo("p1", "a1")).resolves.toEqual({ removido: true });
         expect(fetch).toHaveBeenLastCalledWith(expect.stringContaining("/projetos/p1/anexos/a1"), expect.objectContaining({ method: "DELETE" }));
+        expect(fetch.mock.calls.every(([, options]) => options.credentials === "include" && options.headers === undefined)).toBe(true);
     });
 
     it("propaga falhas REST em todas as operações de arquivo restantes", async () => {

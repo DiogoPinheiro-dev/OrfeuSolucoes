@@ -6,6 +6,7 @@ import { UpdateEmpresaInput } from './dto/update-empresa.input';
 import { EmpresaAcessoService } from './empresa-acesso.service';
 import { EmpresaCatalogService } from './empresa-catalog.service';
 import { EmpresaRecord } from './types/empresa-record.types';
+import { assertAdmin } from './policies/empresa.policy';
 
 @Injectable()
 export class EmpresasService {
@@ -18,7 +19,8 @@ export class EmpresasService {
     return this.empresaCatalog.create(input, admin);
   }
 
-  findAll(): Promise<EmpresaType[]> {
+  findAll(admin: JwtPayload): Promise<EmpresaType[]> {
+    assertAdmin(admin, 'consultar empresas');
     return this.empresaCatalog.findAll();
   }
 

@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { existsSync } from 'node:fs';
+import { assertStorageQuotaAvailable, readStorageQuotaBytes } from '../../common/files/storage-quota.util';
 import { PrismaService } from '../../prisma/prisma.service';
 import { JwtPayload } from '../auth/strategies/jwt-payload.type';
 import { ChamadoAnexoStorageService } from './chamado-anexo-storage.service';
@@ -14,6 +15,10 @@ import { ChamadoAnexoRecord, ChamadoUploadFile } from './types/chamado-record.ty
 
 @Injectable()
 export class ChamadoAnexoService {
+  private readonly companyStorageQuotaBytes = readStorageQuotaBytes(
+    'CHAMADOS_STORAGE_QUOTA_BYTES_PER_COMPANY'
+  );
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly anexoStorage: ChamadoAnexoStorageService,
@@ -38,6 +43,7 @@ export class ChamadoAnexoService {
 
     assertAnexoFilesSelected(files);
     assertAnexoBatchLimit(files);
+    files.forEach(validateAnexoFile);
 
     const normalizedMensagemId = mensagemId?.trim() || null;
 
@@ -52,27 +58,34 @@ export class ChamadoAnexoService {
       }
     }
 
+    await this.assertCompanyStorageQuota(empresaId, files);
+
     const created: ChamadoAnexoRecord[] = [];
 
     for (const file of files) {
-      validateAnexoFile(file);
       const saved = await this.anexoStorage.save(chamado.id, file);
-      const anexo = await (this.prisma as never as { chamadoAnexo: { create: Function } }).chamadoAnexo.create({
-        data: {
-          chamadoId: chamado.id,
-          empresaId,
-          autorId: user.sub,
-          mensagemId: normalizedMensagemId,
-          nomeOriginal: saved.nomeOriginal,
-          nomeArquivo: saved.nomeArquivo,
-          caminho: saved.caminho,
-          mimeType: saved.mimeType,
-          tamanho: saved.tamanho
-        },
-        include: { autor: { select: usuarioResumoSelect } }
-      });
 
-      created.push(anexo as ChamadoAnexoRecord);
+      try {
+        const anexo = await (this.prisma as never as { chamadoAnexo: { create: Function } }).chamadoAnexo.create({
+          data: {
+            chamadoId: chamado.id,
+            empresaId,
+            autorId: user.sub,
+            mensagemId: normalizedMensagemId,
+            nomeOriginal: saved.nomeOriginal,
+            nomeArquivo: saved.nomeArquivo,
+            caminho: saved.caminho,
+            mimeType: saved.mimeType,
+            tamanho: saved.tamanho
+          },
+          include: { autor: { select: usuarioResumoSelect } }
+        });
+
+        created.push(anexo as ChamadoAnexoRecord);
+      } catch (error) {
+        await this.anexoStorage.remove(saved.caminho);
+        throw error;
+      }
     }
 
     await this.prisma.chamado.update({
@@ -91,6 +104,24 @@ export class ChamadoAnexoService {
     });
 
     return created.map((anexo) => toAnexoType(anexo));
+  }
+
+  private async assertCompanyStorageQuota(empresaId: number, files: ChamadoUploadFile[]): Promise<void> {
+    const usage = await (this.prisma as never as {
+      chamadoAnexo: {
+        aggregate: (args: unknown) => Promise<{ _sum: { tamanho: number | null } }>;
+      };
+    }).chamadoAnexo.aggregate({
+      where: { empresaId },
+      _sum: { tamanho: true }
+    });
+    const incomingBytes = files.reduce((total, file) => total + file.size, 0);
+
+    assertStorageQuotaAvailable(
+      usage._sum.tamanho ?? 0,
+      incomingBytes,
+      this.companyStorageQuotaBytes
+    );
   }
 
   async prepararDownloadAnexo(chamadoId: string, anexoId: string, user: JwtPayload): Promise<{

@@ -28,6 +28,7 @@ Cypress.Commands.add("mockGraphql", (overrides = {}) => {
   const responses = { ...defaultResponses, ...overrides };
   cy.intercept("POST", graphqlUrl, (request) => {
     const operationName = request.body?.operationName;
+    request.alias = operationName;
     const response = responses[operationName];
     if (!response) return request.reply({ statusCode: 500, body: { errors: [{ message: `Operação GraphQL sem mock: ${operationName}` }] } });
     request.reply({ statusCode: 200, body: response.errors ? response : { data: response } });
@@ -36,9 +37,5 @@ Cypress.Commands.add("mockGraphql", (overrides = {}) => {
 
 Cypress.Commands.add("visitAuthenticated", (path, overrides = {}) => {
   cy.mockGraphql(overrides);
-  cy.visit(path, { onBeforeLoad(window) {
-    window.localStorage.setItem("orfeu_token", "token-cypress");
-    window.localStorage.setItem("orfeu_auth", "true");
-    window.localStorage.setItem("orfeu_user", JSON.stringify(usuarioAutenticado));
-  } });
+  cy.visit(path);
 });

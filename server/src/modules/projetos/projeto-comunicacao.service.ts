@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { existsSync } from 'node:fs';
+import { assertStorageQuotaAvailable, readStorageQuotaBytes } from '../../common/files/storage-quota.util';
 import { PrismaService } from '../../prisma/prisma.service';
 import { JwtPayload } from '../auth/strategies/jwt-payload.type';
 import { CreateProjetoAtualizacaoInput, CreateProjetoComentarioInput, ExcluirProjetoComentarioInput, ProjetoComunicacaoFeedFiltroInput, UpdateProjetoAtualizacaoInput, UpdateProjetoComentarioInput } from './dto/projeto-comunicacao.input';
@@ -29,6 +30,10 @@ type AnyRecord = Record<string, any>;
 
 @Injectable()
 export class ProjetoComunicacaoService {
+  private readonly companyStorageQuotaBytes = readStorageQuotaBytes(
+    'PROJETOS_STORAGE_QUOTA_BYTES_PER_COMPANY'
+  );
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly authorization: ProjetoComunicacaoAuthorizationService,
@@ -234,6 +239,7 @@ export class ProjetoComunicacaoService {
     if (files.length > MAX_PROJETO_ANEXO_FILES) throw new BadRequestException(`Informe no maximo ${MAX_PROJETO_ANEXO_FILES} anexos por envio.`);
     files.forEach(validateProjetoAnexoFile);
     await this.assertAttachmentTarget(contexto, atualizacaoId, comentarioId);
+    await this.assertCompanyStorageQuota(contexto.empresaId, files);
     const created: ProjetoAnexoType[] = [];
     for (const file of files) {
       const saved = await this.storage.save(projetoId, file);
@@ -293,6 +299,20 @@ export class ProjetoComunicacaoService {
       const target = await this.prisma.projetoComentario.findFirst({ where: { id: comentarioId, projetoId: contexto.projeto.id, empresaId: contexto.empresaId, excluidoEm: null } });
       if (!target) throw new BadRequestException('Comentario nao encontrado neste projeto.');
     }
+  }
+
+  private async assertCompanyStorageQuota(empresaId: number, files: ProjetoUploadFile[]): Promise<void> {
+    const usage = await this.prisma.projetoAnexo.aggregate({
+      where: { empresaId, excluidoEm: null },
+      _sum: { tamanho: true }
+    });
+    const incomingBytes = files.reduce((total, file) => total + file.size, 0);
+
+    assertStorageQuotaAvailable(
+      usage._sum.tamanho ?? 0,
+      incomingBytes,
+      this.companyStorageQuotaBytes
+    );
   }
 
   private toAtualizacao(item: AnyRecord, user: JwtPayload, permissions: any): ProjetoAtualizacaoType {

@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { JwtPayload } from '../auth/strategies/jwt-payload.type';
+import { assertSystemAdmin } from '../users/policies/user.policy';
 import { CreateServicoInput } from './dto/create-servico.input';
 import { ServicoType } from './dto/servico.type';
 import { UpdateServicoInput } from './dto/update-servico.input';
@@ -12,7 +14,17 @@ export class ServicosService {
     return this.servicoCatalog.create(input);
   }
 
+  createAsAdmin(input: CreateServicoInput, admin: JwtPayload): Promise<ServicoType> {
+    assertSystemAdmin(admin);
+    return this.servicoCatalog.create(input);
+  }
+
   findAll(): Promise<ServicoType[]> {
+    return this.servicoCatalog.findAll();
+  }
+
+  findAllAsAdmin(admin: JwtPayload): Promise<ServicoType[]> {
+    assertSystemAdmin(admin);
     return this.servicoCatalog.findAll();
   }
 
@@ -20,7 +32,17 @@ export class ServicosService {
     return this.servicoCatalog.update(input);
   }
 
+  updateAsAdmin(input: UpdateServicoInput, admin: JwtPayload): Promise<ServicoType> {
+    assertSystemAdmin(admin);
+    return this.servicoCatalog.update(input);
+  }
+
   remove(id: number): Promise<boolean> {
+    return this.servicoCatalog.remove(id);
+  }
+
+  removeAsAdmin(id: number, admin: JwtPayload): Promise<boolean> {
+    assertSystemAdmin(admin);
     return this.servicoCatalog.remove(id);
   }
 }
