@@ -8,6 +8,7 @@ import { CreateChamadoSlaRegraInput, UpdateChamadoSlaRegraInput } from './dto/ch
 import { ChamadoSlaRegraType } from './dto/chamado-sla-regra.type';
 import { toChamadoSlaRegraType } from './mappers/chamado.mapper';
 import { ChamadoConfiguracaoRecord, ChamadoSlaRegraRecord } from './types/chamado-record.types';
+import { assertRegistroAtivoParaDesativacao } from './utils/chamado-desativacao.util';
 
 @Injectable()
 export class ChamadoSlaConfigService {
@@ -71,7 +72,8 @@ export class ChamadoSlaConfigService {
   async deleteRegra(id: number, user: JwtPayload): Promise<boolean> {
     const empresaId = this.authorization.assertCompanyContext(user);
     await this.authorization.assertFeatureAction(user, FEATURES.sla, 'excluir');
-    await this.ensureRegraRecord(id, empresaId);
+    const regra = await this.ensureRegraRecord(id, empresaId);
+    assertRegistroAtivoParaDesativacao(regra);
 
     await (this.prisma as never as { chamadoSlaRegra: { update: Function } }).chamadoSlaRegra.update({
       where: { id },

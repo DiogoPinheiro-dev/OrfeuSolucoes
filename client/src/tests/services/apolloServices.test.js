@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { apolloClient } from "../../lib/apolloClient";
+import { HUB_NAVIGATION_CHANGED_EVENT } from "../../auth/hubNavigationEvents";
 import { ServiceError } from "../../../services/graphql/serviceError";
 import * as BacklogService from "../../../services/Projetos/BacklogService";
 import * as ChamadoService from "../../../services/Chamados/ChamadoService";
@@ -116,5 +117,17 @@ describe("serviços Apollo", () => {
 
         const rejection = await method(...argsFor(methodName)).then(() => null, (error) => error);
         expect(rejection, `${moduleName}.${methodName}`).toBeInstanceOf(ServiceError);
+    });
+
+    it("notifica o Hub ao incluir, alterar e excluir funcionalidade", async () => {
+        const listener = vi.fn();
+        window.addEventListener(HUB_NAVIGATION_CHANGED_EVENT, listener);
+
+        await SolucaoService.createFuncionalidade(input);
+        await SolucaoService.updateFuncionalidade(input);
+        await SolucaoService.deleteFuncionalidade(input.id);
+
+        expect(listener).toHaveBeenCalledTimes(3);
+        window.removeEventListener(HUB_NAVIGATION_CHANGED_EVENT, listener);
     });
 });

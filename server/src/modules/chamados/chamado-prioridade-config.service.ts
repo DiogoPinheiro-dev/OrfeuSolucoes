@@ -7,6 +7,7 @@ import { CreateChamadoPrioridadeInput, UpdateChamadoPrioridadeInput } from './dt
 import { ChamadoPrioridadeType } from './dto/chamado-prioridade.type';
 import { toPrioridadeType } from './mappers/chamado.mapper';
 import { ChamadoConfiguracaoRecord } from './types/chamado-record.types';
+import { assertRegistroAtivoParaDesativacao } from './utils/chamado-desativacao.util';
 
 @Injectable()
 export class ChamadoPrioridadeConfigService {
@@ -57,7 +58,8 @@ export class ChamadoPrioridadeConfigService {
   async deletePrioridade(id: number, user: JwtPayload): Promise<boolean> {
     const empresaId = this.authorization.assertCompanyContext(user);
     await this.authorization.assertFeatureAction(user, FEATURES.prioridades, 'excluir');
-    await this.ensurePrioridadeRecord(id, empresaId);
+    const prioridade = await this.ensurePrioridadeRecord(id, empresaId);
+    assertRegistroAtivoParaDesativacao(prioridade);
 
     await (this.prisma as never as { chamadoPrioridade: { update: Function } }).chamadoPrioridade.update({
       where: { id },

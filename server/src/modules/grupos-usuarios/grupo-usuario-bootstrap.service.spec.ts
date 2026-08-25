@@ -8,6 +8,7 @@ describe('GrupoUsuarioBootstrapService security', () => {
     ensureDefaultConfiguradorFeatures: jest.fn().mockResolvedValue(undefined),
     ensureControleChamadosSolution: jest.fn().mockResolvedValue(undefined),
     ensureProjetosSolution: jest.fn().mockResolvedValue(undefined),
+    ensureHorasSolutionUnavailable: jest.fn().mockResolvedValue(undefined),
     findAll: jest.fn().mockResolvedValue([]),
     syncGroupAccess: jest.fn().mockResolvedValue(undefined)
   };
@@ -38,11 +39,49 @@ describe('GrupoUsuarioBootstrapService security', () => {
     expect(transaction).not.toHaveBeenCalled();
   });
 
+  it('cria a descricao inicial do grupo com a acentuacao correta', async () => {
+    const createGroup = jest.fn().mockResolvedValue({ id: 1 });
+    const prisma: Record<string, any> = {
+      grupoUsuario: {
+        count: jest.fn().mockResolvedValue(0),
+        create: createGroup,
+        findFirst: jest.fn().mockResolvedValue({ id: 1 }),
+        update: jest.fn().mockResolvedValue(undefined)
+      },
+      usuario: {
+        count: jest.fn().mockResolvedValue(0),
+        create: jest.fn().mockResolvedValue({ id: '11111111-1111-4111-8111-111111111111' }),
+        findFirst: jest.fn()
+          .mockResolvedValueOnce(null)
+          .mockResolvedValueOnce({ grupoId: 1 })
+      },
+      empresa: {
+        count: jest.fn().mockResolvedValue(0),
+        create: jest.fn().mockResolvedValue({ id: 1 })
+      },
+      empresaUsuario: { create: jest.fn().mockResolvedValue(undefined) },
+      $transaction: jest.fn(async (callback: (tx: unknown) => Promise<void>) => callback(prisma))
+    };
+
+    await new GrupoUsuarioBootstrapService(prisma as never, solutionService as never, config('Admin@Seguro2026!'))
+      .ensureInitialSetup();
+
+    expect(createGroup).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        descricao: 'Grupo inicial com acesso a todas as soluções.'
+      })
+    }));
+  });
+
   it('substitui uma senha legada por segredo configurado e revoga sessoes', async () => {
     const legacyHash = await hash('admin123', 10);
     const update = jest.fn().mockResolvedValue(undefined);
     const prisma: Record<string, any> = {
-      grupoUsuario: { count: jest.fn().mockResolvedValue(1) },
+      grupoUsuario: {
+        count: jest.fn().mockResolvedValue(1),
+        findFirst: jest.fn().mockResolvedValue({ id: 1 }),
+        update: jest.fn().mockResolvedValue(undefined)
+      },
       usuario: {
         count: jest.fn().mockResolvedValue(1),
         findFirst: jest.fn()
@@ -76,5 +115,64 @@ describe('GrupoUsuarioBootstrapService security', () => {
     expect(prisma.usuario.findFirst).toHaveBeenNthCalledWith(1, expect.objectContaining({
       where: { padraoSistema: true }
     }));
+  });
+
+  it('continua o bootstrap quando outra instancia vence a criacao inicial', async () => {
+    const prisma: Record<string, any> = {
+      grupoUsuario: {
+        count: jest.fn().mockResolvedValue(1),
+        findFirst: jest.fn().mockResolvedValue(null),
+        update: jest.fn().mockResolvedValue(undefined)
+      },
+      usuario: {
+        count: jest.fn().mockResolvedValue(1),
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
+      empresa: { count: jest.fn().mockResolvedValue(1) },
+      $transaction: jest.fn().mockRejectedValue({ code: 'P2002' })
+    };
+    const service = new GrupoUsuarioBootstrapService(prisma as never, solutionService as never, config());
+
+    await expect(service.ensureInitialSetup()).resolves.toBeUndefined();
+    expect(solutionService.ensureControleChamadosSolution).toHaveBeenCalled();
+    expect(solutionService.ensureProjetosSolution).toHaveBeenCalled();
+    expect(solutionService.ensureHorasSolutionUnavailable).toHaveBeenCalled();
+  });
+
+  it('repete a sincronizacao dos acessos do administrador apos conflito concorrente', async () => {
+    const prisma: Record<string, any> = {
+      grupoUsuario: {
+        count: jest.fn().mockResolvedValue(1),
+        findFirst: jest.fn().mockResolvedValue({ id: 1 }),
+        update: jest.fn().mockResolvedValue(undefined)
+      },
+      usuario: {
+        count: jest.fn().mockResolvedValue(1),
+        findFirst: jest.fn()
+          .mockResolvedValueOnce(null)
+          .mockResolvedValue({ grupoId: 1 })
+      },
+      empresa: { count: jest.fn().mockResolvedValue(1) },
+      $transaction: jest.fn(async (callback: (tx: unknown) => Promise<void>) => callback(prisma))
+    };
+    const concurrentSolutionService = {
+      ...solutionService,
+      findAll: jest.fn().mockResolvedValue([{
+        id: 10,
+        slug: 'projetos',
+        ativo: true,
+        somenteAdminSistema: false,
+        funcionalidades: [{ id: 11, ativo: true }]
+      }]),
+      syncGroupAccess: jest.fn()
+        .mockRejectedValueOnce({ code: 'P2002' })
+        .mockRejectedValueOnce({ code: 'P2002' })
+        .mockResolvedValueOnce(undefined)
+    };
+
+    await expect(new GrupoUsuarioBootstrapService(prisma as never, concurrentSolutionService as never, config())
+      .ensureInitialSetup()).resolves.toBeUndefined();
+
+    expect(concurrentSolutionService.syncGroupAccess).toHaveBeenCalledTimes(3);
   });
 });

@@ -15,6 +15,9 @@ vi.mock("../../hooks/useHubNavigation", () => ({ useHubNavigation: vi.fn() }));
 vi.mock("../../components/Header", () => ({ default: () => <header>Header</header> }));
 vi.mock("../../components/Footer", () => ({ default: () => <footer>Footer</footer> }));
 vi.mock("../../components/UserManagement", () => ({ default: ({ permissions }) => <div>Usuários:{permissions.title}</div> }));
+vi.mock("../../components/ChamadoCreate", () => ({
+    default: ({ contractUnavailable }) => <div>Formulário de chamado:{contractUnavailable ? "indisponível" : "disponível"}</div>
+}));
 
 const solution = {
     id: 1,
@@ -77,6 +80,13 @@ describe("páginas do Hub", () => {
         expect(await screen.findByText("/hub")).toBeInTheDocument();
     });
 
+    it("não oferece placeholder por URL direta para Controle de Horas indisponível", async () => {
+        renderAt("/hub/horas/registro-de-horas");
+
+        expect(await screen.findByText("/hub")).toBeInTheDocument();
+        expect(screen.queryByText(/Registro de horas/i)).not.toBeInTheDocument();
+    });
+
     it("resolve a funcionalidade pelo registry key e repassa permissões", async () => {
         renderAt("/hub/configurador/cadastro-de-usuarios");
         expect(screen.getByRole("heading", { name: "Carregando funcionalidade..." })).toBeInTheDocument();
@@ -86,5 +96,14 @@ describe("páginas do Hub", () => {
     it("redireciona funcionalidade desconhecida para a solução correta", async () => {
         renderAt("/hub/configurador/inexistente");
         expect(await screen.findByText("/hub/configurador")).toBeInTheDocument();
+    });
+
+    it("mantém a abertura de chamados explicativa e indisponível sem contrato", async () => {
+        useHubNavigation.mockReturnValue({ loading: false, error: "", solutions: [] });
+
+        renderAt("/hub/controle-de-chamados/abrir-chamado");
+
+        expect(await screen.findByText("Formulário de chamado:indisponível")).toBeInTheDocument();
+        expect(screen.getByText("/hub/controle-de-chamados/abrir-chamado")).toBeInTheDocument();
     });
 });

@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
+import { retryBootstrapAfterUniqueConflict } from '../../common/persistence/bootstrap-concurrency.util';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FuncionalidadeAcaoInput } from './dto/funcionalidade-acao.input';
 import { FuncionalidadeAcaoService } from './funcionalidade-acao.service';
 import { SolucaoAcessoService } from './solucao-acesso.service';
 import { SolucaoChamadosBootstrapService } from './solucao-chamados-bootstrap.service';
+import { SolucaoHorasBootstrapService } from './solucao-horas-bootstrap.service';
 import { FuncionalidadeRecord } from './types/solucao-record.types';
 import { SolucaoProjetosBootstrapService } from './solucao-projetos-bootstrap.service';
 
@@ -14,7 +16,8 @@ export class SolucaoBootstrapService {
     private readonly funcionalidadeAcaoService: FuncionalidadeAcaoService,
     private readonly solucaoAcessoService: SolucaoAcessoService,
     private readonly solucaoChamadosBootstrap: SolucaoChamadosBootstrapService,
-    private readonly solucaoProjetosBootstrap: SolucaoProjetosBootstrapService
+    private readonly solucaoProjetosBootstrap: SolucaoProjetosBootstrapService,
+    private readonly solucaoHorasBootstrap: SolucaoHorasBootstrapService
   ) {}
 
   async ensureDefaultChamadoConfiguracoesForEmpresa(empresaId: number, force = false): Promise<void> {
@@ -22,6 +25,10 @@ export class SolucaoBootstrapService {
   }
 
   async ensureDefaultConfiguradorFeatures(): Promise<void> {
+    await retryBootstrapAfterUniqueConflict(() => this.ensureDefaultConfiguradorFeaturesOnce());
+  }
+
+  private async ensureDefaultConfiguradorFeaturesOnce(): Promise<void> {
     const configurador = (await (this.prisma as never as { solucao: { findUnique: Function } }).solucao.findUnique({
       where: { slug: 'configurador' },
       select: { id: true }
@@ -30,6 +37,19 @@ export class SolucaoBootstrapService {
     if (!configurador) {
       return;
     }
+
+    await (this.prisma as never as { solucao: { update: Function } }).solucao.update({
+      where: { id: configurador.id },
+      data: {
+        nome: 'Configurador',
+        descricao: 'Central administrativa para cadastrar usuários, empresas, grupos e acessos.',
+        eyebrow: 'Administração',
+        ativo: true,
+        exibirNoHub: true,
+        somenteAdminSistema: true,
+        padraoSistema: true
+      }
+    });
 
     await this.mergeDuplicateConfiguradorFeature(
       configurador.id,
@@ -64,7 +84,6 @@ export class SolucaoBootstrapService {
               titulo: feature.titulo,
               label: feature.label,
               descricao: feature.descricao,
-              ordem: feature.ordem,
               ativo: true,
               registryKey: feature.registryKey,
               somenteAdminSistema: true,
@@ -95,6 +114,10 @@ export class SolucaoBootstrapService {
   }
 
   async ensureDocumentationSolution(): Promise<void> {
+    await retryBootstrapAfterUniqueConflict(() => this.ensureDocumentationSolutionOnce());
+  }
+
+  private async ensureDocumentationSolutionOnce(): Promise<void> {
     await (this.prisma as never as { solucao: { upsert: Function } }).solucao.upsert({
       where: { slug: 'documentacao' },
       create: {
@@ -112,7 +135,6 @@ export class SolucaoBootstrapService {
         nome: 'Documentação',
         descricao: 'Manuais de uso e referências do sistema conforme seu nível de acesso.',
         eyebrow: 'Central de conhecimento',
-        ordem: 900,
         ativo: true,
         exibirNoHub: true,
         somenteAdminSistema: false,
@@ -127,6 +149,10 @@ export class SolucaoBootstrapService {
 
   async ensureProjetosSolution(): Promise<void> {
     return this.solucaoProjetosBootstrap.ensureProjetosSolution();
+  }
+
+  async ensureHorasSolutionUnavailable(): Promise<void> {
+    return this.solucaoHorasBootstrap.ensureHorasSolutionUnavailable();
   }
 
   async mergeDuplicateConfiguradorFeature(solucaoId: number, duplicateSlug: string, targetSlug: string): Promise<void> {

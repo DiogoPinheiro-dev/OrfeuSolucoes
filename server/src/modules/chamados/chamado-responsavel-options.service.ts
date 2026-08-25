@@ -83,7 +83,7 @@ export class ChamadoResponsavelOptionsService {
       throw new ForbiddenException('Usuario sem permissao para selecionar responsaveis de chamado.');
     }
 
-    const contexto = await this.resolveChamadoContext(solucaoId, funcionalidadeId ?? null);
+    const contexto = await this.resolveChamadoContext(empresaId, solucaoId, funcionalidadeId ?? null);
 
     return this.findResponsaveisParaContexto(empresaId, contexto.solucaoId, contexto.funcionalidadeId);
   }
@@ -120,7 +120,7 @@ export class ChamadoResponsavelOptionsService {
     }));
   }
 
-  async resolveChamadoContext(solucaoIdInput: number, funcionalidadeIdInput?: number | null): Promise<{ solucaoId: number; funcionalidadeId: number | null }> {
+  async resolveChamadoContext(empresaId: number, solucaoIdInput: number, funcionalidadeIdInput?: number | null): Promise<{ solucaoId: number; funcionalidadeId: number | null }> {
     const solucaoId = Number(solucaoIdInput);
     const funcionalidadeId = funcionalidadeIdInput ? Number(funcionalidadeIdInput) : null;
 
@@ -128,13 +128,19 @@ export class ChamadoResponsavelOptionsService {
       throw new BadRequestException('Selecione uma solucao valida para o chamado.');
     }
 
-    const solucao = await this.prisma.solucao.findFirst({
-      where: { id: solucaoId, ativo: true },
-      select: { id: true }
-    });
+    const [solucao, empresaSolucao] = await Promise.all([
+      this.prisma.solucao.findFirst({
+        where: { id: solucaoId, ativo: true },
+        select: { id: true }
+      }),
+      (this.prisma as never as { empresaSolucao: { findFirst: Function } }).empresaSolucao.findFirst({
+        where: { empresaId, solucaoId },
+        select: { id: true }
+      }) as Promise<{ id: number } | null>
+    ]);
 
-    if (!solucao) {
-      throw new BadRequestException('Solucao selecionada nao existe ou esta inativa.');
+    if (!solucao || !empresaSolucao) {
+      throw new BadRequestException('A solucao selecionada nao esta contratada pela empresa ativa ou esta inativa.');
     }
 
     if (!funcionalidadeId) {

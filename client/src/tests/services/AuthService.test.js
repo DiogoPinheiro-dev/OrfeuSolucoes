@@ -95,6 +95,23 @@ describe("AuthService", () => {
     });
 
     it.each([
+        ["login", () => login({ loginOrEmail: "admin", password: "incorreta" })],
+        ["listagem de empresas", () => getLoginCompanies({ loginOrEmail: "admin", password: "incorreta" })]
+    ])("informa credenciais incorretas no %s sem confundir com sessão expirada", async (_name, invoke) => {
+        apolloClient.mutate.mockRejectedValue({
+            graphQLErrors: [{
+                message: "Unauthorized Exception",
+                extensions: { code: "UNAUTHENTICATED", originalError: { statusCode: 401 } }
+            }]
+        });
+
+        await expect(invoke()).rejects.toMatchObject({
+            type: "credentials",
+            message: "Usuário ou senha incorretos."
+        });
+    });
+
+    it.each([
         ["loginCompanies", () => getLoginCompanies({ loginOrEmail: "admin", password: "senha" })],
         ["empresas", () => getEmpresas()],
         ["register", () => register({ nome: "Ana", login: "ana", email: "ana@example.com", password: "senha" })],

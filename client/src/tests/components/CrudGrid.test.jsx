@@ -103,4 +103,16 @@ describe("CrudGrid", () => {
         expect(screen.getByRole("button", { name: /Alterar\. Indisponível: Selecione um registro/ })).toBeDisabled();
         expect(container.querySelector(".crud-shell--compact")).toBeInTheDocument();
     });
+
+    it("supports a custom destructive label, reason and icon without changing the default contract", () => {
+        render(<CrudGrid
+            {...baseProps}
+            deleteLabel="Desativar selecionados"
+            deleteSelectionReason="Marque ao menos um registro ativo para desativação."
+            deleteIcon={<span data-testid="deactivate-icon" aria-hidden="true">!</span>}
+        />);
+
+        expect(screen.getByRole("button", { name: "Desativar selecionados. Indisponível: Marque ao menos um registro ativo para desativação." })).toBeDisabled();
+        expect(screen.getByTestId("deactivate-icon")).toBeInTheDocument();
+    });
 });

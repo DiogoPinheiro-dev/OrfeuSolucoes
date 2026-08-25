@@ -69,7 +69,7 @@ const solution = {
         label: "Rotina customizada",
         registryKey: "configurador.rotina-customizada",
         ordem: 2,
-        ativo: true,
+        ativo: false,
         padraoSistema: false,
         acoes: []
     }]
@@ -85,6 +85,48 @@ const standardSolution = {
     somenteAdminSistema: false,
     padraoSistema: true,
     funcionalidades: []
+};
+const inactiveHoursSolution = {
+    id: 91,
+    slug: "horas",
+    nome: "Controle de Horas",
+    descricao: "Módulo indisponível",
+    ordem: 20,
+    ativo: false,
+    exibirNoHub: false,
+    somenteAdminSistema: false,
+    padraoSistema: true,
+    funcionalidades: []
+};
+const projectSolution = {
+    id: 92,
+    slug: "projetos",
+    nome: "Gerenciador de Projetos",
+    descricao: "Gestão de projetos",
+    ordem: 30,
+    ativo: true,
+    exibirNoHub: true,
+    somenteAdminSistema: false,
+    padraoSistema: true,
+    funcionalidades: [{
+        id: 921,
+        slug: "cadastro-de-projetos",
+        titulo: "Cadastro de projetos",
+        label: "Projetos",
+        registryKey: "projetos.cadastro-de-projetos",
+        ordem: 1,
+        ativo: true,
+        padraoSistema: true,
+        acoes: [
+            { id: 1, chave: "visualizar", nome: "Visualizar", ativo: true },
+            { id: 2, chave: "incluir", nome: "Incluir", ativo: true },
+            { id: 3, chave: "alterar", nome: "Alterar", ativo: true },
+            { id: 4, chave: "excluir", nome: "Excluir", ativo: true },
+            { id: 5, chave: "gerenciar_membros", nome: "Gerenciar membros", ativo: true },
+            { id: 6, chave: "alterar_status", nome: "Alterar status", ativo: true },
+            { id: 7, chave: "reativar_projeto", nome: "Reativar projeto", ativo: true }
+        ]
+    }]
 };
 const company = { id: 1, nome: "Empresa teste", padraoSistema: false, solucaoIds: [1], funcionalidadeIds: [11] };
 const systemCompany = { id: 2, nome: "Empresa padrão", padraoSistema: true, solucaoIds: [1], funcionalidadeIds: [11] };
@@ -149,6 +191,13 @@ describe("CRUDs do Configurador", () => {
         expect(screen.getByRole("searchbox", { name: "Pesquisar" })).toBeInTheDocument();
     });
 
+    it("explica a quantidade de funcionalidades ativas e cadastradas", async () => {
+        render(<SolutionManagement permissions={permissions} />);
+
+        expect(await screen.findByRole("cell", { name: "1 ativa / 2 cadastradas" })).toBeInTheDocument();
+        expect(screen.getAllByRole("cell", { name: "0 ativas / 0 cadastradas" })).toHaveLength(1);
+    });
+
     it.each(readonlyScreens)("mantém %s realmente somente leitura ao visualizar", async (_name, Component, rowText, dialogName) => {
         const user = userEvent.setup();
         render(<Component permissions={permissions} />);
@@ -182,6 +231,24 @@ describe("CRUDs do Configurador", () => {
         });
         expect(checkbox).toBeDisabled();
         expect(checkbox).toHaveAttribute("title", "Grupos padrão do sistema não podem ser excluídos.");
+    });
+
+    it.each([
+        ["empresa", CompanyManagement, "Cadastro de empresa"],
+        ["grupo", GroupManagement, "Cadastro de grupo"]
+    ])("não oferece soluções sistêmicas ou inativas como vínculo de %s", async (_name, Component, dialogName) => {
+        const user = userEvent.setup();
+        getSolucoes.mockResolvedValue([solution, standardSolution, inactiveHoursSolution]);
+        render(<Component permissions={permissions} />);
+
+        await waitFor(() => expect(screen.queryByText("Processando...")).not.toBeInTheDocument());
+        await user.click(screen.getByRole("button", { name: "Incluir" }));
+        const dialog = screen.getByRole("dialog", { name: dialogName });
+
+        expect(within(dialog).queryByRole("checkbox", { name: "Documentação" })).not.toBeInTheDocument();
+        expect(within(dialog).queryByRole("checkbox", { name: "Controle de Horas" })).not.toBeInTheDocument();
+        expect(screen.queryByRole("columnheader", { name: "Documentação" })).not.toBeInTheDocument();
+        expect(screen.queryByRole("columnheader", { name: "Controle de Horas" })).not.toBeInTheDocument();
     });
 
     it("mantém as ações bloqueadas quando a funcionalidade não concede permissão", async () => {
@@ -223,7 +290,7 @@ describe("CRUDs do Configurador", () => {
         await waitFor(() => expect(deleteSolucao).toHaveBeenCalledWith(1));
     }, 15000);
 
-    it("mantém solução padrão somente para consulta", async () => {
+    it("permite alterar somente a ordem de uma solução padrão", async () => {
         const user = userEvent.setup();
         render(<SolutionManagement permissions={permissions} />);
 
@@ -233,7 +300,29 @@ describe("CRUDs do Configurador", () => {
         await user.click(screen.getByRole("button", { name: "Alterar" }));
         const dialog = screen.getByRole("dialog", { name: "Cadastro de solução" });
         expect(within(dialog).getByRole("textbox", { name: "Nome" })).toBeDisabled();
-        expect(within(dialog).queryByRole("button", { name: "Salvar" })).not.toBeInTheDocument();
+        const orderInput = within(dialog).getByRole("spinbutton", { name: "Ordem" });
+        expect(orderInput).toBeEnabled();
+        await user.clear(orderInput);
+        await user.type(orderInput, "850");
+        await user.click(within(dialog).getByRole("button", { name: "Salvar" }));
+        await waitFor(() => expect(updateSolucao).toHaveBeenCalledWith({ id: 90, ordem: 850 }));
+    });
+
+    it("permite alterar a ordem de uma funcionalidade padrão", async () => {
+        const user = userEvent.setup();
+        render(<FeatureManagement permissions={permissions} />);
+
+        await user.click(await screen.findByRole("button", { name: /Mostrar funcionalidades padrão/ }));
+        await user.click(await screen.findByRole("cell", { name: "Usuários" }));
+        await user.click(screen.getByRole("button", { name: "Alterar" }));
+        const dialog = screen.getByRole("dialog", { name: "Cadastro de funcionalidade" });
+        expect(within(dialog).getByRole("textbox", { name: /T.tulo/ })).toBeDisabled();
+        const orderInput = within(dialog).getByRole("spinbutton", { name: "Ordem" });
+        expect(orderInput).toBeEnabled();
+        await user.clear(orderInput);
+        await user.type(orderInput, "15");
+        await user.click(within(dialog).getByRole("button", { name: "Salvar" }));
+        await waitFor(() => expect(updateFuncionalidade).toHaveBeenCalledWith(expect.objectContaining({ id: 11, ordem: 15 })));
     });
 
     it("executa inclusão, alteração e exclusão de usuário", async () => {
@@ -287,6 +376,72 @@ describe("CRUDs do Configurador", () => {
         await waitFor(() => expect(deleteGrupoUsuario).toHaveBeenCalledWith(2));
     }, 15000);
 
+    it("identifica cada permissão pelo nome da ação e da rotina", async () => {
+        const user = userEvent.setup();
+        render(<GroupManagement permissions={permissions} />);
+        await user.click(await screen.findByRole("cell", { name: "Equipe" }));
+        await user.click(screen.getByRole("button", { name: "Alterar" }));
+        await user.click(screen.getByRole("tab", { name: "Soluções" }));
+        await user.click(screen.getByRole("checkbox", { name: "Configurador" }));
+        await user.click(screen.getByRole("tab", { name: "Permissões por rotina" }));
+
+        const contextualNames = [
+            "Visualizar — Usuários",
+            "Incluir — Usuários",
+            "Alterar — Usuários",
+            "Excluir — Usuários",
+            "Visualizar — Rotina customizada",
+            "Incluir — Rotina customizada",
+            "Alterar — Rotina customizada",
+            "Excluir — Rotina customizada"
+        ];
+
+        contextualNames.forEach((name) => expect(screen.getByRole("checkbox", { name })).toBeInTheDocument());
+        expect(new Set(contextualNames).size).toBe(contextualNames.length);
+    });
+
+    it("marca todas as permissões básicas e dinâmicas de uma funcionalidade", async () => {
+        const user = userEvent.setup();
+        getSolucoes.mockResolvedValue([projectSolution]);
+        render(<GroupManagement permissions={permissions} />);
+
+        await waitFor(() => expect(screen.queryByText("Processando...")).not.toBeInTheDocument());
+        await user.click(screen.getByRole("button", { name: "Incluir" }));
+        await user.type(screen.getByRole("textbox", { name: /Nome/ }), "Gestores de projetos");
+        await user.click(screen.getByRole("tab", { name: "Soluções" }));
+        await user.click(screen.getByRole("checkbox", { name: "Gerenciador de Projetos" }));
+        await user.click(screen.getByRole("tab", { name: "Permissões por rotina" }));
+
+        const selectAllButton = screen.getByRole("button", {
+            name: "Marcar todas as permissões — Cadastro de projetos"
+        });
+        expect(screen.getByRole("checkbox", { name: "Incluir — Cadastro de projetos" })).not.toBeChecked();
+        await user.click(selectAllButton);
+
+        projectSolution.funcionalidades[0].acoes.forEach((acao) => {
+            expect(screen.getByRole("checkbox", { name: `${acao.nome} — Cadastro de projetos` })).toBeChecked();
+        });
+        expect(screen.getByRole("checkbox", { name: /Cadastro de projetos\s*Gerenciador de Projetos/ })).toBeChecked();
+        expect(selectAllButton).toBeDisabled();
+
+        await user.click(screen.getByRole("button", { name: "Salvar" }));
+        await waitFor(() => expect(createGrupoUsuario).toHaveBeenCalledWith(expect.objectContaining({
+            nome: "Gestores de projetos",
+            solucaoIds: [projectSolution.id],
+            funcionalidadeIds: [projectSolution.funcionalidades[0].id],
+            funcionalidadePermissoes: [expect.objectContaining({
+                podeVisualizar: true,
+                podeIncluir: true,
+                podeAlterar: true,
+                podeExcluir: true,
+                acoes: projectSolution.funcionalidades[0].acoes.map((acao) => expect.objectContaining({
+                    acaoId: acao.id,
+                    permitido: true
+                }))
+            })]
+        })));
+    });
+
     it("executa inclusão e alteração de empresa e preserva a mensagem de dependência", async () => {
         const user = userEvent.setup();
         render(<CompanyManagement permissions={permissions} />);
@@ -316,6 +471,7 @@ describe("CRUDs do Configurador", () => {
         const user = userEvent.setup();
         render(<FeatureManagement permissions={permissions} />);
         await screen.findByRole("cell", { name: "Rotina customizada" });
+        const initialLoadCount = getSolucoes.mock.calls.length;
 
         await user.click(screen.getByRole("button", { name: "Incluir" }));
         await user.click(screen.getByRole("button", { name: /Selecionar solu/ }));
@@ -324,6 +480,7 @@ describe("CRUDs do Configurador", () => {
         await user.type(screen.getByRole("textbox", { name: "Identificador" }), "nova-rotina");
         await user.click(screen.getByRole("button", { name: "Salvar" }));
         await waitFor(() => expect(createFuncionalidade).toHaveBeenCalledWith(expect.objectContaining({ titulo: "Nova rotina", slug: "nova-rotina" })));
+        await waitFor(() => expect(getSolucoes).toHaveBeenCalledTimes(initialLoadCount + 1));
 
         await user.click(screen.getByRole("cell", { name: "Rotina customizada" }));
         await user.click(screen.getByRole("button", { name: "Alterar" }));
@@ -332,11 +489,13 @@ describe("CRUDs do Configurador", () => {
         await user.type(title, "Rotina atualizada");
         await user.click(screen.getByRole("button", { name: "Salvar" }));
         await waitFor(() => expect(updateFuncionalidade).toHaveBeenCalledWith(expect.objectContaining({ id: 12, titulo: "Rotina atualizada" })));
+        await waitFor(() => expect(getSolucoes).toHaveBeenCalledTimes(initialLoadCount + 2));
 
         await user.click(screen.getByRole("checkbox", { name: "Selecionar Rotina customizada" }));
         await user.click(screen.getByRole("button", { name: "Excluir selecionados" }));
         await user.click(screen.getByRole("button", { name: "OK" }));
         await waitFor(() => expect(deleteFuncionalidade).toHaveBeenCalledWith(12));
+        await waitFor(() => expect(getSolucoes).toHaveBeenCalledTimes(initialLoadCount + 3));
     }, 15000);
 
     it("mantém erro de campo no modal e explica todas as proteções padrão", async () => {

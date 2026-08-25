@@ -34,7 +34,7 @@ export class ChamadoAberturaService {
     const prioridade = await this.chamadoConfiguracao.ensurePrioridadeChamado(empresaId, input.prioridadeId);
     const titulo = this.requiredText(input.titulo, 'titulo');
     const descricao = this.requiredText(input.descricao, 'descricao');
-    const contexto = await this.chamadoResponsavel.resolveChamadoContext(input.solucaoId, input.funcionalidadeId ?? null);
+    const contexto = await this.chamadoResponsavel.resolveChamadoContext(empresaId, input.solucaoId, input.funcionalidadeId ?? null);
     const responsavelAbertura = await this.chamadoResponsavel.resolveResponsavelAbertura(
       empresaId,
       contexto.solucaoId,

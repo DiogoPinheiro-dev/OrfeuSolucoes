@@ -15,7 +15,7 @@ import { CrudModal, CrudModalTabPanel, CrudModalTabs } from "./CrudModal";
 import { useAuth } from "../hooks/useAuth";
 import { useFormFieldErrors } from "../hooks/useFormFieldErrors";
 import { useLatestRequest } from "../hooks/useLatestRequest";
-import { canUseFeatureAction } from "../auth/hubConfig";
+import { canUseFeatureAction, isAssignableSolution } from "../auth/hubConfig";
 
 import "../styles/userManagement.css";
 
@@ -76,6 +76,13 @@ const defaultPermission = (funcionalidade) => ({
         permitido: acao.chave === "visualizar"
     }))
 });
+
+const isActionPermitted = (permissao, acao) => {
+    const acaoPermissao = permissao.acoes?.find((item) => acao.id ? item.acaoId === acao.id : item.chave === acao.chave);
+    const legacyField = legacyActionFields[acao.chave];
+
+    return acaoPermissao ? !!acaoPermissao.permitido : legacyField ? !!permissao[legacyField] : false;
+};
 
 const normalizePermissionPayload = (permissao) => ({
     funcionalidadeId: Number(permissao.funcionalidadeId),
@@ -152,7 +159,7 @@ export default function GroupManagement({ permissions }) {
                 onSuccess: ([groupsResponse, solucoesResponse]) => {
                     setGroups(groupsResponse);
                     setSelectedIds((current) => current.filter((id) => groupsResponse.some((group) => group.id === id && canDeleteGroup(group))));
-                    setSolucoes(solucoesResponse.filter((solucao) => !solucao.somenteAdminSistema));
+                    setSolucoes(solucoesResponse.filter(isAssignableSolution));
                 },
                 onError: (loadError) => setError(loadError.message || "Não foi possível carregar grupos."),
                 onSettled: () => setLoading(false)
@@ -347,6 +354,56 @@ export default function GroupManagement({ permissions }) {
         }));
     };
 
+    const selectAllFuncionalidadePermissions = (funcionalidade) => {
+        clearFieldError("funcionalidadeIds");
+        const actions = getFeatureActions(funcionalidade);
+
+        setForm((current) => {
+            const existingPermission = current.funcionalidadePermissoes.find(
+                (permissao) => permissao.funcionalidadeId === funcionalidade.id
+            ) ?? defaultPermission(funcionalidade);
+            const existingActions = existingPermission.acoes ?? [];
+            const selectedActions = actions.map((acao) => {
+                const existingAction = existingActions.find((item) => acao.id ? item.acaoId === acao.id : item.chave === acao.chave);
+
+                return {
+                    ...existingAction,
+                    funcionalidadeId: funcionalidade.id,
+                    acaoId: acao.id,
+                    chave: acao.chave,
+                    permitido: true
+                };
+            });
+            const actionIds = new Set(actions.map((acao) => acao.id).filter(Boolean));
+            const actionKeys = new Set(actions.map((acao) => acao.chave));
+            const preservedActions = existingActions.filter((acao) =>
+                acao.acaoId ? !actionIds.has(acao.acaoId) : !actionKeys.has(acao.chave)
+            );
+            const selectedPermission = {
+                ...existingPermission,
+                podeVisualizar: true,
+                podeIncluir: true,
+                podeAlterar: true,
+                podeExcluir: true,
+                acoes: [...preservedActions, ...selectedActions]
+            };
+
+            return {
+                ...current,
+                funcionalidadeIds: current.funcionalidadeIds.includes(funcionalidade.id)
+                    ? current.funcionalidadeIds
+                    : [...current.funcionalidadeIds, funcionalidade.id],
+                funcionalidadePermissoes: current.funcionalidadePermissoes.some(
+                    (permissao) => permissao.funcionalidadeId === funcionalidade.id
+                )
+                    ? current.funcionalidadePermissoes.map((permissao) =>
+                        permissao.funcionalidadeId === funcionalidade.id ? selectedPermission : permissao
+                    )
+                    : [...current.funcionalidadePermissoes, selectedPermission]
+            };
+        });
+    };
+
     const getFuncionalidadePermissao = (funcionalidadeId) =>
         form.funcionalidadePermissoes.find((permissao) => permissao.funcionalidadeId === funcionalidadeId) ?? defaultPermission(funcionalidadeId);
 
@@ -539,9 +596,12 @@ export default function GroupManagement({ permissions }) {
                                             const selected = form.funcionalidadeIds.includes(funcionalidade.id);
                                             const permissao = getFuncionalidadePermissao(funcionalidade.id);
                                             const disabled = readonly || saving;
+                                            const actions = getFeatureActions(funcionalidade);
+                                            const allPermissionsSelected = selected && actions.every((acao) => isActionPermitted(permissao, acao));
 
                                             return (
                                                 <div key={funcionalidade.id} className="user-feature-permission-row">
+                                                    <div className="user-feature-permission-heading">
                                                     <label className="user-permission-option">
                                                         <input
                                                             type="checkbox"
@@ -556,17 +616,28 @@ export default function GroupManagement({ permissions }) {
                                                             <small>{solucao.nome}</small>
                                                         </span>
                                                     </label>
+                                                    {!readonly && (
+                                                        <button
+                                                            type="button"
+                                                            className="user-feature-select-all"
+                                                            onClick={() => selectAllFuncionalidadePermissions(funcionalidade)}
+                                                            disabled={disabled || allPermissionsSelected}
+                                                            aria-label={`Marcar todas as permissões — ${funcionalidade.titulo}`}
+                                                        >
+                                                            Marcar todas
+                                                        </button>
+                                                    )}
+                                                    </div>
 
                                                     <div className="user-feature-crud-options">
-                                                        {getFeatureActions(funcionalidade).map((acao) => {
-                                                            const acaoPermissao = permissao.acoes?.find((item) => acao.id ? item.acaoId === acao.id : item.chave === acao.chave);
-                                                            const legacyField = legacyActionFields[acao.chave];
-                                                            const checked = acaoPermissao ? !!acaoPermissao.permitido : legacyField ? !!permissao[legacyField] : false;
+                                                        {actions.map((acao) => {
+                                                            const checked = isActionPermitted(permissao, acao);
 
                                                             return (
                                                             <label key={acao.id || acao.chave} className="user-permission-option">
                                                                 <input
                                                                     type="checkbox"
+                                                                    aria-label={`${acao.nome} — ${funcionalidade.titulo}`}
                                                                     checked={checked}
                                                                     onChange={() => toggleFuncionalidadePermissao(funcionalidade, acao)}
                                                                     disabled={disabled || !selected}

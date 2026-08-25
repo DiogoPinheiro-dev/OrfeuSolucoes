@@ -55,7 +55,9 @@ export function CrudModalTabs({ tabs, activeTab, onChange, ariaLabel = "Seções
         onChange(tabs[next].id);
         buttonRefs.current[next]?.focus();
     };
-    return <div className="crud-modal-tabs" role="tablist" aria-label={ariaLabel}>{tabs.map((tab, index) => <button key={tab.id} ref={(element) => { buttonRefs.current[index] = element; }} type="button" role="tab" aria-selected={activeTab === tab.id} tabIndex={activeTab === tab.id ? 0 : -1} className={activeTab === tab.id ? "active" : ""} onClick={() => onChange(tab.id)} onKeyDown={(event) => changeByKeyboard(event, index)}>{tab.label}</button>)}</div>;
+    const compactClass = tabs.length <= 2 ? " crud-modal-tabs--compact" : "";
+
+    return <div className={`crud-modal-tabs${compactClass}`} role="tablist" aria-label={ariaLabel}>{tabs.map((tab, index) => <button key={tab.id} ref={(element) => { buttonRefs.current[index] = element; }} type="button" role="tab" aria-selected={activeTab === tab.id} tabIndex={activeTab === tab.id ? 0 : -1} className={activeTab === tab.id ? "active" : ""} onClick={() => onChange(tab.id)} onKeyDown={(event) => changeByKeyboard(event, index)}>{tab.label}</button>)}</div>;
 }
 
 export function CrudModalTabPanel({ active, children, className = "", ariaLabel }) {

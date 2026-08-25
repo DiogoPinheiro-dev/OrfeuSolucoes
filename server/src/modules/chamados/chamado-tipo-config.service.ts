@@ -7,6 +7,7 @@ import { CreateChamadoTipoInput, UpdateChamadoTipoInput } from './dto/chamado-ti
 import { ChamadoTipoType } from './dto/chamado-tipo.type';
 import { toTipoType } from './mappers/chamado.mapper';
 import { ChamadoConfiguracaoRecord } from './types/chamado-record.types';
+import { assertRegistroAtivoParaDesativacao } from './utils/chamado-desativacao.util';
 
 @Injectable()
 export class ChamadoTipoConfigService {
@@ -57,7 +58,8 @@ export class ChamadoTipoConfigService {
   async deleteTipo(id: number, user: JwtPayload): Promise<boolean> {
     const empresaId = this.authorization.assertCompanyContext(user);
     await this.authorization.assertFeatureAction(user, FEATURES.tipos, 'excluir');
-    await this.ensureTipoRecord(id, empresaId);
+    const tipo = await this.ensureTipoRecord(id, empresaId);
+    assertRegistroAtivoParaDesativacao(tipo);
 
     await (this.prisma as never as { chamadoTipo: { update: Function } }).chamadoTipo.update({
       where: { id },

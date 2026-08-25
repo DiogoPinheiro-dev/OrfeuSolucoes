@@ -74,6 +74,9 @@ export default function SolutionFeaturePage() {
     const { slug, areaSlug } = useParams();
     const { loading, solutions } = useHubNavigation();
     const solution = getSolutionBySlug(solutions, slug);
+    const unavailableChamadoOpening = !solution
+        && slug === "controle-de-chamados"
+        && areaSlug === "abrir-chamado";
 
     if (loading) {
         return (
@@ -87,6 +90,37 @@ export default function SolutionFeaturePage() {
                         </section>
                     </div>
                 </main>
+                <Footer />
+            </div>
+        );
+    }
+
+    if (unavailableChamadoOpening) {
+        return (
+            <div className="page-wrapper workspace-page">
+                <Header />
+
+                <main className="workspace-main">
+                    <div className="container workspace-shell">
+                        <div className="workspace-breadcrumb">
+                            <Link to="/hub">Hub</Link>
+                            <span>/</span>
+                            <strong>Controle de chamados</strong>
+                            <span>/</span>
+                            <strong>Abrir chamado</strong>
+                        </div>
+
+                        <section className="workspace-feature-crud">
+                            <Suspense fallback={<FeatureLoadingFallback />}>
+                                <ChamadoCreate
+                                    permissions={{ podeVisualizar: false, podeIncluir: false, podeAlterar: false, podeExcluir: false }}
+                                    contractUnavailable
+                                />
+                            </Suspense>
+                        </section>
+                    </div>
+                </main>
+
                 <Footer />
             </div>
         );

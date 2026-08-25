@@ -26,6 +26,14 @@ const initialForm = {
 
 const booleanLabel = (value) => (value ? "Sim" : "Não");
 
+const functionalityCountLabel = (funcionalidades = []) => {
+    const activeCount = funcionalidades.filter((funcionalidade) => funcionalidade.ativo).length;
+    const activeLabel = activeCount === 1 ? "ativa" : "ativas";
+    const registeredLabel = funcionalidades.length === 1 ? "cadastrada" : "cadastradas";
+
+    return `${activeCount} ${activeLabel} / ${funcionalidades.length} ${registeredLabel}`;
+};
+
 const normalizeForm = (solucao) => ({
     ...initialForm,
     ...solucao,
@@ -163,7 +171,9 @@ export default function SolutionManagement({ permissions }) {
             }
 
             if (modalMode === "edit") {
-                await updateSolucao({ id: form.id, ...payload });
+                await updateSolucao(form.padraoSistema
+                    ? { id: form.id, ordem: payload.ordem }
+                    : { id: form.id, ...payload });
             }
 
             closeModal();
@@ -230,7 +240,8 @@ export default function SolutionManagement({ permissions }) {
         });
     };
 
-    const readonly = modalMode === "view" || (modalMode === "edit" && !!form.padraoSistema);
+    const readonly = modalMode === "view";
+    const standardSolutionLocked = modalMode === "edit" && !!form.padraoSistema;
 
     return (
         <>
@@ -244,7 +255,7 @@ export default function SolutionManagement({ permissions }) {
                         { key: "exibirNoHub", label: "Hub", render: (solucao) => booleanLabel(solucao.exibirNoHub) },
                         { key: "somenteAdminSistema", label: "Admin", render: (solucao) => booleanLabel(solucao.somenteAdminSistema) },
                         { key: "padraoSistema", label: "Padrão", render: (solucao) => booleanLabel(solucao.padraoSistema) },
-                        { key: "funcionalidades", label: "Funcionalidades", render: (solucao) => solucao.funcionalidades?.length ?? 0 }
+                        { key: "funcionalidades", label: "Funcionalidades", render: (solucao) => functionalityCountLabel(solucao.funcionalidades) }
                     ]}
                     rows={loading ? [] : filteredSolucoes}
                     selectedId={selectedId}
@@ -296,28 +307,28 @@ export default function SolutionManagement({ permissions }) {
                         <span className="user-form-field-label">
                             <label htmlFor="solucao-nome">Nome <FormFieldError formId={SOLUTION_FORM_ID} field="nome" errors={fieldErrors} /></label>
                         </span>
-                        <input id="solucao-nome" name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || saving} {...fieldErrorProps("nome")} />
+                        <input id="solucao-nome" name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || standardSolutionLocked || saving} {...fieldErrorProps("nome")} />
                     </div>
 
                     <div className="user-form-field">
                         <span className="user-form-field-label">
                             <label htmlFor="solucao-slug">Identificador <FormFieldError formId={SOLUTION_FORM_ID} field="slug" errors={fieldErrors} /></label>
                         </span>
-                        <input id="solucao-slug" name="slug" value={form.slug || ""} onChange={handleChange} disabled={readonly || saving} {...fieldErrorProps("slug")} />
+                        <input id="solucao-slug" name="slug" value={form.slug || ""} onChange={handleChange} disabled={readonly || standardSolutionLocked || saving} {...fieldErrorProps("slug")} />
                     </div>
 
                     <div className="user-form-field">
                         <span className="user-form-field-label">
                             <label htmlFor="solucao-eyebrow">Categoria</label>
                         </span>
-                        <input id="solucao-eyebrow" name="eyebrow" value={form.eyebrow || ""} onChange={handleChange} disabled={readonly || saving} />
+                        <input id="solucao-eyebrow" name="eyebrow" value={form.eyebrow || ""} onChange={handleChange} disabled={readonly || standardSolutionLocked || saving} />
                     </div>
 
                     <div className="user-form-field">
                         <span className="user-form-field-label">
                             <label htmlFor="solucao-descricao">Descrição</label>
                         </span>
-                        <input id="solucao-descricao" name="descricao" value={form.descricao || ""} onChange={handleChange} disabled={readonly || saving} />
+                        <input id="solucao-descricao" name="descricao" value={form.descricao || ""} onChange={handleChange} disabled={readonly || standardSolutionLocked || saving} />
                     </div>
 
                     <div className="user-form-field">
@@ -330,15 +341,15 @@ export default function SolutionManagement({ permissions }) {
                     <section className="user-company-section" aria-label="Status da solução">
                         <div className="user-permissions-grid">
                             <div className="user-permission-option">
-                                <input id="solucao-ativo" type="checkbox" name="ativo" checked={!!form.ativo} onChange={handleChange} disabled={readonly || saving} />
+                                <input id="solucao-ativo" type="checkbox" name="ativo" checked={!!form.ativo} onChange={handleChange} disabled={readonly || standardSolutionLocked || saving} />
                                 <label htmlFor="solucao-ativo">Ativo</label>
                             </div>
                             <div className="user-permission-option">
-                                <input id="solucao-exibir-hub" type="checkbox" name="exibirNoHub" checked={!!form.exibirNoHub} onChange={handleChange} disabled={readonly || saving} />
+                                <input id="solucao-exibir-hub" type="checkbox" name="exibirNoHub" checked={!!form.exibirNoHub} onChange={handleChange} disabled={readonly || standardSolutionLocked || saving} />
                                 <label htmlFor="solucao-exibir-hub">Exibir no hub</label>
                             </div>
                             <div className="user-permission-option">
-                                <input id="solucao-somente-admin" type="checkbox" name="somenteAdminSistema" checked={!!form.somenteAdminSistema} onChange={handleChange} disabled={readonly || saving} />
+                                <input id="solucao-somente-admin" type="checkbox" name="somenteAdminSistema" checked={!!form.somenteAdminSistema} onChange={handleChange} disabled={readonly || standardSolutionLocked || saving} />
                                 <label htmlFor="solucao-somente-admin">Somente admin</label>
                             </div>
                         </div>

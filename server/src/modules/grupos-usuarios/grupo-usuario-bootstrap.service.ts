@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { compare, hash } from 'bcrypt';
+import { isPrismaUniqueConstraintViolation, retryBootstrapAfterUniqueConflict } from '../../common/persistence/bootstrap-concurrency.util';
 import { normalizeAndValidatePassword } from '../../common/security/password.policy';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SolucoesService } from '../solucoes/solucoes.service';
@@ -25,7 +26,8 @@ export class GrupoUsuarioBootstrapService {
       ? this.requireInitialAdminPassword()
       : null;
 
-    await this.prisma.$transaction(async (tx) => {
+    try {
+      await this.prisma.$transaction(async (tx) => {
       let empresaId: number | null = null;
 
       if (empresasCount === 0) {
@@ -46,7 +48,7 @@ export class GrupoUsuarioBootstrapService {
         const grupo = (await (tx as never as { grupoUsuario: { create: Function } }).grupoUsuario.create({
           data: {
             nome: 'Administradores',
-            descricao: 'Grupo inicial com acesso a todas as solucoes.',
+            descricao: 'Grupo inicial com acesso a todas as soluções.',
             acessoEcommerce: true,
             acessoProjetos: true,
             acessoHoras: true,
@@ -107,14 +109,40 @@ export class GrupoUsuarioBootstrapService {
           });
         }
       }
-    });
+      });
+    } catch (error) {
+      if (!isPrismaUniqueConstraintViolation(error)) {
+        throw error;
+      }
+    }
 
     await this.ensureInitialAdminPasswordPolicy();
+    await this.ensureInitialAdminGroupMetadata();
     await this.solucoesService.ensureDocumentationSolution();
     await this.solucoesService.ensureDefaultConfiguradorFeatures();
     await this.solucoesService.ensureControleChamadosSolution();
     await this.solucoesService.ensureProjetosSolution();
-    await this.ensureInitialAdminSolutionAccess();
+    await this.solucoesService.ensureHorasSolutionUnavailable();
+    await retryBootstrapAfterUniqueConflict(() => this.ensureInitialAdminSolutionAccess());
+  }
+
+  private async ensureInitialAdminGroupMetadata(): Promise<void> {
+    const grupo = await (this.prisma as never as { grupoUsuario: { findFirst: Function } }).grupoUsuario.findFirst({
+      where: { padraoSistema: true },
+      select: { id: true }
+    }) as { id: number } | null;
+
+    if (!grupo) {
+      return;
+    }
+
+    await (this.prisma as never as { grupoUsuario: { update: Function } }).grupoUsuario.update({
+      where: { id: grupo.id },
+      data: {
+        nome: 'Administradores',
+        descricao: 'Grupo inicial com acesso a todas as soluções.'
+      }
+    });
   }
 
   private async ensureInitialAdminPasswordPolicy(): Promise<void> {
@@ -180,8 +208,8 @@ export class GrupoUsuarioBootstrapService {
     }
 
     const solucoes = await this.solucoesService.findAll();
-    const adminSolucoes = solucoes.filter((solucao) => solucao.slug === 'configurador' || !solucao.somenteAdminSistema);
-    const adminFuncionalidades = adminSolucoes.flatMap((solucao) => solucao.funcionalidades);
+    const adminSolucoes = solucoes.filter((solucao) => solucao.ativo && (solucao.slug === 'configurador' || !solucao.somenteAdminSistema));
+    const adminFuncionalidades = adminSolucoes.flatMap((solucao) => solucao.funcionalidades.filter((funcionalidade) => funcionalidade.ativo));
 
     await this.solucoesService.syncGroupAccess(
       admin.grupoId,

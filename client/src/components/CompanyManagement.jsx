@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { createEmpresa, deleteEmpresa, getEmpresas, updateEmpresa } from "../../services/Empresas/EmpresaService";
 import { getSolucoes } from "../../services/Solucoes/SolucaoService";
 import { getUsers } from "../../services/Users/UserService";
-import { canUseFeatureAction, isGroupAdmin } from "../auth/hubConfig";
+import { canUseFeatureAction, isAssignableSolution, isGroupAdmin } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
 import { useFormFieldErrors } from "../hooks/useFormFieldErrors";
 import { useLatestRequest } from "../hooks/useLatestRequest";
@@ -77,7 +77,7 @@ export default function CompanyManagement({ permissions }) {
                     setEmpresas(empresasResponse);
                     setSelectedIds((current) => current.filter((id) => empresasResponse.some((empresa) => empresa.id === id && canDeleteEmpresa(empresa))));
                     setUsers(usersResponse);
-                    setSolucoes(solucoesResponse.filter((solucao) => !solucao.somenteAdminSistema));
+                    setSolucoes(solucoesResponse.filter(isAssignableSolution));
                 },
                 onError: (loadError) => setError(loadError.message || "Não foi possível carregar empresas."),
                 onSettled: () => setLoading(false)

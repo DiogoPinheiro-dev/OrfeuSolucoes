@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { JwtPayload } from '../auth/strategies/jwt-payload.type';
 import { withAllPermissions, withPermissions } from './mappers/funcionalidade.mapper';
-import { hasFullAccessGroup, isSystemAdmin } from './policies/solucao-access.policy';
+import { canAccessFeature, canAccessSolution, hasFullAccessGroup, isSystemAdmin } from './policies/solucao-access.policy';
 import { SolucaoAcessoService } from './solucao-acesso.service';
 import { SolucaoQueryService } from './solucao-query.service';
 import { SolucaoType } from './dto/solucao.type';
@@ -20,44 +20,31 @@ export class HubNavigationService {
     const companySolutionIds = await this.solucaoAcessoService.findCompanySolutionIds(user.empresaId);
     const companyFeatureIds = await this.solucaoAcessoService.findCompanyFeatureIds(user.empresaId);
     const systemAdmin = isSystemAdmin(user);
-    const canBypassAccessRules = systemAdmin || hasFullAccessGroup(user.grupo);
+    const fullAccessGroup = hasFullAccessGroup(user.grupo);
 
     return solucoes
       .filter((solucao) => solucao.ativo && solucao.exibirNoHub)
-      .filter((solucao) => {
-        if (solucao.padraoSistema && solucao.slug === 'documentacao') {
-          return true;
-        }
-
-        if (solucao.somenteAdminSistema) {
-          return systemAdmin;
-        }
-
-        if (canBypassAccessRules) {
-          return true;
-        }
-
-        return groupSolutionIds.has(solucao.id) && companySolutionIds.has(solucao.id);
-      })
+      .filter((solucao) => canAccessSolution({
+        solutionSlug: solucao.slug,
+        systemAdminOnly: solucao.somenteAdminSistema,
+        systemAdmin,
+        fullAccessGroup,
+        groupHasSolution: groupSolutionIds.has(solucao.id),
+        companyHasSolution: companySolutionIds.has(solucao.id)
+      }))
       .map((solucao) => ({
         ...solucao,
         funcionalidades: solucao.funcionalidades
           .filter((funcionalidade) => funcionalidade.ativo)
-          .filter((funcionalidade) => {
-            if (solucao.somenteAdminSistema || funcionalidade.somenteAdminSistema) {
-              return systemAdmin;
-            }
-
-            if (canBypassAccessRules) {
-              return true;
-            }
-
-            const permissao = groupFeaturePermissions.get(funcionalidade.id);
-
-            return !!permissao?.podeVisualizar && companyFeatureIds.has(funcionalidade.id);
-          })
+          .filter((funcionalidade) => canAccessFeature({
+            systemAdminOnly: solucao.somenteAdminSistema || funcionalidade.somenteAdminSistema,
+            systemAdmin,
+            fullAccessGroup,
+            groupCanView: !!groupFeaturePermissions.get(funcionalidade.id)?.podeVisualizar,
+            companyHasFeature: companyFeatureIds.has(funcionalidade.id)
+          }))
           .map((funcionalidade) => {
-            if (canBypassAccessRules) {
+            if (systemAdmin || fullAccessGroup) {
               return withAllPermissions(funcionalidade);
             }
 

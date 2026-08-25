@@ -105,6 +105,7 @@ import { HubNavigationService } from '../src/modules/solucoes/hub-navigation.ser
 import { SolucaoAcessoService } from '../src/modules/solucoes/solucao-acesso.service';
 import { SolucaoBootstrapService } from '../src/modules/solucoes/solucao-bootstrap.service';
 import { SolucaoChamadosBootstrapService } from '../src/modules/solucoes/solucao-chamados-bootstrap.service';
+import { SolucaoHorasBootstrapService } from '../src/modules/solucoes/solucao-horas-bootstrap.service';
 import { SolucaoProjetosBootstrapService } from '../src/modules/solucoes/solucao-projetos-bootstrap.service';
 import { SolucaoCatalogService } from '../src/modules/solucoes/solucao-catalog.service';
 import { SolucaoQueryService } from '../src/modules/solucoes/solucao-query.service';
@@ -1668,7 +1669,8 @@ function createWorld(): TestWorld {
   const solucaoAcessoService = new SolucaoAcessoService(prismaService, funcionalidadeAcaoService);
   const solucaoChamadosBootstrapService = new SolucaoChamadosBootstrapService(prismaService, funcionalidadeAcaoService, solucaoAcessoService);
   const solucaoProjetosBootstrapService = new SolucaoProjetosBootstrapService(prismaService, funcionalidadeAcaoService, solucaoAcessoService);
-  const solucaoBootstrapService = new SolucaoBootstrapService(prismaService, funcionalidadeAcaoService, solucaoAcessoService, solucaoChamadosBootstrapService, solucaoProjetosBootstrapService);
+  const solucaoHorasBootstrapService = new SolucaoHorasBootstrapService(prismaService, funcionalidadeAcaoService);
+  const solucaoBootstrapService = new SolucaoBootstrapService(prismaService, funcionalidadeAcaoService, solucaoAcessoService, solucaoChamadosBootstrapService, solucaoProjetosBootstrapService, solucaoHorasBootstrapService);
   const solucaoQueryService = new SolucaoQueryService(prismaService);
   const solucaoCatalogService = new SolucaoCatalogService(prismaService, funcionalidadeAcaoService, solucaoAcessoService);
   const hubNavigationService = new HubNavigationService(solucaoAcessoService, solucaoQueryService);
@@ -1965,6 +1967,13 @@ async function bootstrapBaseWorld(): Promise<{
   await seedConfigurador(world);
   await world.gruposService.ensureInitialSetup();
   const empresaInicial = expectDefined(world.prisma.data.empresa[0]);
+  const solucoesOperacionais = (await world.solucoesService.findAll())
+    .filter((solucao) => solucao.ativo && !solucao.somenteAdminSistema && solucao.slug !== 'documentacao');
+  await world.solucoesService.syncCompanyAccess(
+    empresaInicial.id,
+    solucoesOperacionais.map((solucao) => solucao.id),
+    solucoesOperacionais.flatMap((solucao) => solucao.funcionalidades.filter((funcionalidade) => funcionalidade.ativo).map((funcionalidade) => funcionalidade.id))
+  );
   const login = await world.authService.login('admin', INITIAL_ADMIN_PASSWORD, empresaInicial.id);
 
   return {
@@ -2146,6 +2155,8 @@ describe('Fluxos integrados do backend', () => {
     expect(documentacao.padraoSistema).toBe(true);
     expect(documentacao.ativo).toBe(true);
     expect(documentacao.exibirNoHub).toBe(true);
+    const documentacaoReordenada = await world.solucoesService.update({ id: documentacao.id, ordem: 850 });
+    expect(documentacaoReordenada.ordem).toBe(850);
     await expect(world.solucoesService.update({ id: documentacao.id, nome: 'Documentacao alterada' }))
       .rejects.toThrow('Os dados cadastrais de uma solucao padrao do sistema nao podem ser alterados.');
     await expect(world.solucoesService.remove(documentacao.id))
@@ -2155,6 +2166,20 @@ describe('Fluxos integrados do backend', () => {
     expect(projetosSolucao.funcionalidades.find((item) => item.slug === 'comunicacao-do-projeto'))
       .toMatchObject({ titulo: 'Comunicação do projeto', label: 'Comunicação' });
     const cadastroProjetos = expectDefined(projetosSolucao.funcionalidades.find((item) => item.slug === 'cadastro-de-projetos'));
+    const horasSolucao = expectDefined(solucoes.find((item) => item.slug === 'horas'));
+    expect(horasSolucao).toMatchObject({
+      nome: 'Controle de Horas',
+      eyebrow: 'Operação',
+      ativo: false,
+      exibirNoHub: false,
+      padraoSistema: true
+    });
+    expect(horasSolucao.funcionalidades).toHaveLength(3);
+    expect(horasSolucao.funcionalidades.every((funcionalidade) => !funcionalidade.ativo && funcionalidade.padraoSistema)).toBe(true);
+    await expect(world.solucoesService.syncCompanyAccess(empresaInicialId, [horasSolucao.id], []))
+      .rejects.toThrow('Solucoes inativas nao podem ser vinculadas a empresas ou grupos.');
+    await expect(world.solucoesService.syncGroupAccess(1, [horasSolucao.id], [], []))
+      .rejects.toThrow('Solucoes inativas nao podem ser vinculadas a empresas ou grupos.');
     const chamadosSolucao = expectDefined(solucoes.find((item) => item.slug === 'controle-de-chamados'));
     expect(chamadosSolucao.funcionalidades.find((item) => item.slug === 'responsaveis'))
       .toMatchObject({ titulo: 'Cadastro de responsáveis', label: 'Responsáveis' });
@@ -2287,7 +2312,8 @@ describe('Fluxos integrados do backend', () => {
     expect(projetoObservador.permissoes.podeAlterar).toBe(false);
     expect(paginaExterno.total).toBe(0);
     await expect(world.projetosService.projeto(projetoAdmin.id, externo.payload)).rejects.toThrow('Projeto nao encontrado.');
-    await expect(world.projetosService.projeto(projetoAdmin.id, { ...admin, empresaId: empresaExterna.id })).rejects.toThrow('Projeto nao encontrado.');
+    await expect(world.projetosService.projeto(projetoAdmin.id, { ...admin, empresaId: empresaExterna.id }))
+      .rejects.toThrow('Usuario sem permissao para acessar esta funcionalidade.');
 
     const participantes = await world.projetosService.participantesDisponiveis(admin);
     expect(participantes.map((item) => item.id)).toEqual(expect.arrayContaining([
@@ -3177,7 +3203,8 @@ describe('Fluxos integrados do backend', () => {
     expect(reativado.situacao).toBe('PLANEJADO');
 
     const empresaExterna = await world.prisma.empresa.create({ data: { nome: 'Empresa Isolada Ciclo' } });
-    await expect(world.projetosService.arquivar(projeto.id, { ...admin, empresaId: empresaExterna.id })).rejects.toThrow('Projeto nao encontrado.');
+    await expect(world.projetosService.arquivar(projeto.id, { ...admin, empresaId: empresaExterna.id }))
+      .rejects.toThrow('Usuario sem permissao para acessar esta funcionalidade.');
     const cicloAdmin = await world.projetosService.atualizarCiclo({
       projetoId: projeto.id,
       situacao: 'PAUSADO' as any
@@ -3241,6 +3268,28 @@ describe('Fluxos integrados do backend', () => {
     expect(await world.documentacaoService.indice({ ...payload, empresaId: empresaSemAcesso.id })).toEqual([]);
   });
 
+  it('mantem o contrato da empresa obrigatorio para o administrador no Hub e nos servicos operacionais', async () => {
+    const { world, admin } = await bootstrapBaseWorld();
+    const empresaSemContrato = await world.empresasService.create({
+      nome: 'Empresa sem contrato operacional',
+      solucaoIds: [],
+      funcionalidadeIds: []
+    }, admin);
+    const adminSemContrato = {
+      ...admin,
+      empresaId: empresaSemContrato.id,
+      empresaNome: empresaSemContrato.nome
+    };
+
+    const navigation = await world.solucoesService.myHubNavigation(adminSemContrato);
+
+    expect(navigation.map((solucao) => solucao.slug)).toEqual(['configurador', 'documentacao']);
+    await expect(world.projetosService.projetos(adminSemContrato))
+      .rejects.toThrow('Usuario sem permissao para acessar esta funcionalidade.');
+    await expect(world.chamadosService.opcoesAberturaChamado(adminSemContrato))
+      .rejects.toThrow('Usuario sem permissao para acessar esta funcionalidade.');
+  });
+
   it('cadastra grupo, usuario e empresa, vincula acesso a solucoes/funcionalidades e valida o hub', async () => {
     const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
     const solucoes = await world.solucoesService.findAll();
@@ -3279,6 +3328,11 @@ describe('Fluxos integrados do backend', () => {
     ]));
     expect(projetos.funcionalidades.every((funcionalidade) => funcionalidade.padraoSistema)).toBe(true);
     expect(funcionalidadesControle.every((funcionalidade) => funcionalidade.padraoSistema)).toBe(true);
+    const cadastroProjetosReordenado = await world.solucoesService.updateFuncionalidade({
+      id: cadastroProjetos.id,
+      ordem: 15
+    });
+    expect(cadastroProjetosReordenado.ordem).toBe(15);
     await expect(world.solucoesService.updateFuncionalidade({
       id: cadastroProjetos.id,
       titulo: 'Cadastro de projetos alterado indevidamente'
@@ -4240,6 +4294,8 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
     ).resolves.toMatchObject({ prioridadeId: chamadoConfigs.prioridades.BAIXA.id });
 
     await expect(world.chamadosService.deleteTipo(tipoCustomizado.id, payload)).resolves.toBe(true);
+    await expect(world.chamadosService.deleteTipo(tipoCustomizado.id, payload)).rejects.toThrow('Este registro já está inativo.');
+    expect((await world.chamadosService.chamado(chamado.id, payload)).tipoId).toBe(tipoCustomizado.id);
     await expect(world.chamadosService.criarChamado({
       titulo: 'Tipo inativo',
       descricao: 'Nao deve aceitar configuracao inativa.',
@@ -4250,6 +4306,7 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
     }, payload)).rejects.toThrow('Tipo de chamado invalido ou inativo.');
 
     await expect(world.chamadosService.deletePrioridade(prioridadeCustomizada.id, payload)).resolves.toBe(true);
+    await expect(world.chamadosService.deletePrioridade(prioridadeCustomizada.id, payload)).rejects.toThrow('Este registro já está inativo.');
     await expect(world.chamadosService.alterarPrioridadeChamado({ chamadoId: chamado.id, prioridadeId: prioridadeCustomizada.id }, payload)
     ).rejects.toThrow('Prioridade de chamado invalida ou inativa.');
 
@@ -4257,6 +4314,11 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
     const todasPrioridades = await world.chamadosService.prioridadesChamado(payload, false);
     expect(todosTipos.find((tipo) => tipo.id === tipoCustomizado.id)?.ativo).toBe(false);
     expect(todasPrioridades.find((prioridade) => prioridade.id === prioridadeCustomizada.id)?.ativo).toBe(false);
+
+    await world.chamadosService.updateTipo({ id: tipoCustomizado.id, ativo: true }, payload);
+    await world.chamadosService.updatePrioridade({ id: prioridadeCustomizada.id, ativo: true }, payload);
+    expect((await world.chamadosService.tiposChamado(payload, true)).map((tipo) => tipo.id)).toContain(tipoCustomizado.id);
+    expect((await world.chamadosService.prioridadesChamado(payload, true)).map((prioridade) => prioridade.id)).toContain(prioridadeCustomizada.id);
   });
 
   it('filtra chamados por periodo, categoria, solicitante e responsaveis', async () => {
@@ -4490,6 +4552,12 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
     }, operadorPayload);
     expect(chamado.categoriaNome).toBe('Infraestrutura ativa');
 
+    await expect(world.chamadosService.deleteCategoria(categoriaAtiva.id, operadorPayload)).resolves.toBe(true);
+    await expect(world.chamadosService.deleteCategoria(categoriaAtiva.id, operadorPayload)).rejects.toThrow('Este registro já está inativo.');
+    expect((await world.chamadosService.chamado(chamado.id, operadorPayload)).categoriaId).toBe(categoriaAtiva.id);
+    await world.chamadosService.updateCategoria({ id: categoriaAtiva.id, ativo: true }, operadorPayload);
+    expect((await world.chamadosService.categoriasChamado(operadorPayload, true)).map((item) => item.id)).toContain(categoriaAtiva.id);
+
     await expect(world.chamadosService.criarChamado({
       titulo: 'Sem tipo',
       descricao: 'Tipo deve ser obrigatorio.',
@@ -4506,6 +4574,14 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
       solucaoId: controleChamados.id,
       funcionalidadeId: funcionalidadeDeOutraSolucao.id
     }, operadorPayload)).rejects.toThrow('Funcionalidade selecionada nao pertence a solucao informada ou esta inativa.');
+    await expect(world.chamadosService.criarChamado({
+      titulo: 'Solucao fora do contrato',
+      descricao: 'A empresa ativa nao contratou a solucao informada.',
+      tipoId: chamadoConfigs.tipos.SOLICITACAO.id,
+      prioridadeId: chamadoConfigs.prioridades.MEDIA.id,
+      solucaoId: configurador.id,
+      funcionalidadeId: funcionalidadeDeOutraSolucao.id
+    }, operadorPayload)).rejects.toThrow('A solucao selecionada nao esta contratada pela empresa ativa ou esta inativa.');
     await expect(world.chamadosService.criarChamado({
       titulo: 'Sem permissao de inclusao',
       descricao: 'Usuario nao pode abrir chamado.',
@@ -4608,8 +4684,13 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
     expect((await world.chamadosService.regrasSlaChamado(adminEmpresa, true)).map((item) => item.id)).toEqual([regra.id]);
 
     await expect(world.chamadosService.deleteRegraSla(regra.id, adminEmpresa)).resolves.toBe(true);
+    await expect(world.chamadosService.deleteRegraSla(regra.id, adminEmpresa)).rejects.toThrow('Este registro já está inativo.');
     expect(await world.chamadosService.regrasSlaChamado(adminEmpresa, true)).toEqual([]);
     expect((await world.chamadosService.regrasSlaChamado(adminEmpresa, false))[0]?.ativo).toBe(false);
+    expect((await world.chamadosService.chamado(chamadoComSla.id, adminEmpresa)).slaRegraId).toBe(regra.id);
+
+    await world.chamadosService.updateRegraSla({ id: regra.id, ativo: true }, adminEmpresa);
+    expect((await world.chamadosService.regrasSlaChamado(adminEmpresa, true)).map((item) => item.id)).toContain(regra.id);
   });
   it('bloqueia alteracao de status, atribuicao e acesso entre empresas sem permissao', async () => {
     const { world, admin } = await bootstrapBaseWorld();
@@ -4808,6 +4889,7 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
     expect((await world.chamadosService.responsaveisParaAberturaChamado(solicitantePayload, controleChamados.id, abrir.id)).map((item) => item.usuarioId)).toEqual([liderBackup.id]);
 
     await expect(world.chamadosService.deleteResponsavel(responsavel.id, adminEmpresa)).resolves.toBe(true);
+    await expect(world.chamadosService.deleteResponsavel(responsavel.id, adminEmpresa)).rejects.toThrow('Este registro já está inativo.');
     expect((await world.chamadosService.responsaveisParaAberturaChamado(solicitantePayload, controleChamados.id, abrir.id)).map((item) => item.usuarioId)).not.toContain(liderBackup.id);
     await expect(world.chamadosService.criarChamado({
       titulo: 'Responsavel desativado',
@@ -4818,6 +4900,16 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
       funcionalidadeId: abrir.id,
       responsavelId: liderBackup.id
     }, solicitantePayload)).rejects.toThrow('Responsavel selecionado nao esta cadastrado para a solucao ou funcionalidade do chamado.');
+
+    await world.chamadosService.updateResponsavel({
+      id: responsavel.id,
+      tipo: 'USUARIO',
+      usuarioId: liderBackup.id,
+      grupoId: null,
+      ativo: true,
+      solucoes: [{ solucaoId: controleChamados.id, responsavelGeral: true, funcionalidadeIds: [] }]
+    }, adminEmpresa);
+    expect((await world.chamadosService.responsaveisParaAberturaChamado(solicitantePayload, controleChamados.id, abrir.id)).map((item) => item.usuarioId)).toContain(liderBackup.id);
   });
 
   it('bloqueia casos negativos de acompanhantes e anexos', async () => {
@@ -6409,9 +6501,11 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
       tarefaId: tarefa.id,
       inicioEm: '2026-11-10',
       fimEm: '2026-11-11'
-    }, usuarioExterno)).rejects.toThrow('Projeto nao encontrado');
-    expect((await world.projetoPlanejamentoRecursoService.painel(usuarioExterno)).linhas).toEqual([]);
-    await expect(world.projetoOrcamentoService.painel(projeto.id, usuarioExterno)).rejects.toThrow('Projeto nao encontrado');
+    }, usuarioExterno)).rejects.toThrow('Usuario sem permissao para acessar esta funcionalidade.');
+    await expect(world.projetoPlanejamentoRecursoService.painel(usuarioExterno))
+      .rejects.toThrow('Usuario sem permissao para acessar esta funcionalidade.');
+    await expect(world.projetoOrcamentoService.painel(projeto.id, usuarioExterno))
+      .rejects.toThrow('Usuario sem permissao para acessar esta funcionalidade.');
 
     await world.projetosService.arquivar(projeto.id, admin);
     await expect(world.projetoPlanejamentoRecursoService.salvarExecucao({

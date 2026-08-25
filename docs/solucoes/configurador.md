@@ -16,7 +16,7 @@ As telas são resolvidas pelo `RegistryKey` recebido do backend. Alterar somente
 
 ## Padrão das telas
 
-Os cinco cadastros usam `CrudGrid`, `CrudModal`, `ConfirmDialog` e seleção compartilhada. A linha ativa alimenta alteração e visualização; checkboxes marcam registros para exclusão. Pesquisa, carregamento, erro, estado vazio, processamento e mensagens de sucesso são apresentados na própria tela.
+Os cinco cadastros usam `CrudGrid`, `CrudModal`, `ConfirmDialog` e seleção compartilhada. A linha ativa alimenta alteração e visualização; checkboxes marcam registros para exclusão ou desativação, conforme a persistência real do domínio. Pesquisa, carregamento, erro, estado vazio, processamento e mensagens de sucesso são apresentados na própria tela.
 
 Os botões incluir, alterar, visualizar e excluir respeitam as permissões da funcionalidade ativa. O backend repete a autorização e é a fonte de verdade para permitir a operação.
 
@@ -37,11 +37,11 @@ O grupo reúne:
 - permissões de visualizar, incluir, alterar e excluir por funcionalidade;
 - permissões de ações dinâmicas vinculadas à funcionalidade.
 
-Soluções exclusivas do administrador do sistema não são oferecidas para grupos comuns. Um grupo marcado como padrão do sistema não pode ser excluído. Vínculos e permissões são sincronizados pelo backend quando o grupo é salvo.
+Soluções inativas, exclusivas do administrador do sistema ou sistêmicas de acesso universal não são oferecidas para vínculo com grupos. Por isso, Documentação não aparece como checkbox: qualquer usuário autenticado recebe acesso à Central sem depender do grupo. Cada checkbox de ação possui um nome acessível contextual, composto pela ação e pela funcionalidade, mesmo quando o texto visual da opção permanece curto. Em cada rotina, a ação **Marcar todas** seleciona a funcionalidade, as permissões básicas e todas as ações dinâmicas exibidas; depois de concluir a seleção, o botão permanece desabilitado até que alguma permissão seja desmarcada. Um grupo marcado como padrão do sistema não pode ser excluído. Vínculos e permissões são sincronizados pelo backend quando o grupo é salvo.
 
 ## Empresas
 
-O cadastro associa cada empresa às soluções e funcionalidades disponíveis no Hub. A empresa também mantém os acessos gerais ainda presentes no contrato do sistema.
+O cadastro associa cada empresa às soluções e funcionalidades contratáveis disponíveis no Hub. Soluções inativas não podem ser contratadas por esse cadastro. Documentação é uma solução sistêmica de acesso universal e, portanto, não aparece como opção de contrato da empresa. A empresa também mantém os acessos gerais ainda presentes no contrato do sistema.
 
 Criar, alterar ou remover empresas exige o administrador inicial do sistema. Ao criar uma empresa, o backend vincula os administradores do sistema, sincroniza os acessos selecionados e prepara as configurações padrão necessárias ao Controle de Chamados.
 
@@ -49,7 +49,9 @@ A empresa padrão do sistema não pode ser excluída. Ao remover outra empresa, 
 
 ## Soluções
 
-Uma solução define slug, nome, descrição, identificação visual, ordem, estado ativo, exibição no Hub e restrição ao administrador do sistema. O slug é único e identifica a solução nas rotas.
+Uma solução define slug, nome, descrição, identificação visual, ordem, estado ativo, exibição no Hub e restrição ao administrador do sistema. O slug é único e identifica a solução nas rotas. A coluna de funcionalidades distingue quantas estão ativas e quantas estão cadastradas.
+
+Soluções padrão preservam seus dados cadastrais e permitem alterar somente a ordem. O Controle de Horas permanece registrado como solução padrão inativa, fora do Hub e indisponível para empresas e grupos até existir implementação funcional própria.
 
 As operações cadastrais de solução são restritas ao administrador do sistema. A exclusão é confirmada antes do envio e falhas de dependência retornadas pelo backend permanecem visíveis ao usuário.
 
@@ -57,7 +59,9 @@ As operações cadastrais de solução são restritas ao administrador do sistem
 
 Uma funcionalidade pertence a uma solução e define slug, título, rótulo, descrição, ordem, estado ativo, `RegistryKey` e eventual restrição ao administrador do sistema. Também pode possuir ações específicas além das quatro permissões CRUD.
 
-Funcionalidades marcadas como padrão do sistema são protegidas contra alteração cadastral e exclusão. Elas continuam visíveis para consulta, mas não podem ser marcadas nos checkboxes de exclusão. Funcionalidades personalizadas seguem as permissões recebidas para inclusão, alteração e exclusão.
+Funcionalidades marcadas como padrão do sistema são protegidas contra alteração cadastral e exclusão; somente sua ordem pode ser alterada. Elas continuam visíveis para consulta, mas não podem ser marcadas nos checkboxes de exclusão. Funcionalidades personalizadas seguem as permissões recebidas para inclusão, alteração e exclusão.
+
+As consultas e mutações de soluções reutilizam o mesmo fragmento GraphQL completo. Assim, uma atualização cadastral não substitui no cache as funcionalidades e ações já carregadas por objetos parciais.
 
 ## Composição do acesso ao Hub
 
@@ -69,7 +73,7 @@ Para uma funcionalidade aparecer ao usuário, o backend considera em conjunto:
 4. soluções, funcionalidades e ações liberadas ao grupo;
 5. flags de atividade, exibição no Hub e restrição administrativa.
 
-O frontend normaliza o resultado para `podeVisualizar`, `podeIncluir`, `podeAlterar`, `podeExcluir` e `acoes`. O administrador inicial possui acesso administrativo integral.
+O frontend normaliza o resultado para `podeVisualizar`, `podeIncluir`, `podeAlterar`, `podeExcluir` e `acoes`. O administrador inicial pode ignorar as permissões do grupo, mas continua limitado às soluções contratadas pela empresa ativa. Configurador permanece reservado ao administrador inicial. Documentação fica disponível para qualquer usuário autenticado, independentemente de empresa, contrato ou grupo; a audiência declarada em cada artigo continua determinando quais conteúdos aparecem no catálogo.
 
 ## Integrações
 
@@ -106,4 +110,4 @@ A cobertura automatizada inclui:
 - inclusão, alteração e exclusão dos registros personalizados;
 - persistência de erro de campo dentro do modal;
 - contratos dos serviços Apollo;
-- autenticação, rotas protegidas, Hub e troca de empresa nas suites de regressão e E2E.
+- autenticação, rotas protegidas, Hub e troca de empresa nas suítes de regressão e E2E.

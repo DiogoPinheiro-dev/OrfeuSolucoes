@@ -35,7 +35,7 @@ const MAX_ANEXO_SIZE_BYTES = 10 * 1024 * 1024;
 const ANEXO_ACCEPT = ".jpg,.jpeg,.png,.pdf,.docx,.txt";
 const formatAnexoSize = (size) => `${(size / 1024 / 1024).toFixed(2)} MB`;
 
-export default function ChamadoCreate({ permissions }) {
+export default function ChamadoCreate({ permissions, contractUnavailable = false }) {
     const navigate = useNavigate();
     const { user } = useAuth();
     const [form, setForm] = useState(initialForm);
@@ -46,6 +46,7 @@ export default function ChamadoCreate({ permissions }) {
     const [acompanhantesElegiveis, setAcompanhantesElegiveis] = useState([]);
     const [selectedAcompanhanteIds, setSelectedAcompanhanteIds] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [optionsLoaded, setOptionsLoaded] = useState(false);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
     const [responsaveisModalOpen, setResponsaveisModalOpen] = useState(false);
@@ -56,8 +57,21 @@ export default function ChamadoCreate({ permissions }) {
 
     useEffect(() => {
         let active = true;
+        const companyHasNoContractedSolutions = contractUnavailable || (Array.isArray(user?.empresa?.solucaoIds)
+            && user.empresa.solucaoIds.length === 0);
+
+        setLoading(true);
+        setOptionsLoaded(false);
+        setSolucoes([]);
 
         const load = async () => {
+            if (companyHasNoContractedSolutions) {
+                setSolucoes([]);
+                setOptionsLoaded(true);
+                setLoading(false);
+                return;
+            }
+
             try {
                 const [categoriasResponse, tiposResponse, prioridadesResponse, opcoesResponse, acompanhantesResponse] = await Promise.all([
                     getCategoriasChamado(true),
@@ -77,6 +91,7 @@ export default function ChamadoCreate({ permissions }) {
                         prioridadeId: prioridadesResponse.some((prioridade) => String(prioridade.id) === String(current.prioridadeId)) ? current.prioridadeId : prioridadesResponse[0]?.id ? String(prioridadesResponse[0].id) : ""
                     }));
                     setSolucoes(opcoesResponse.solucoes || []);
+                    setOptionsLoaded(true);
                     setAcompanhantesElegiveis(acompanhantesResponse);
                 }
             } catch (loadError) {
@@ -95,7 +110,7 @@ export default function ChamadoCreate({ permissions }) {
         return () => {
             active = false;
         };
-    }, []);
+    }, [contractUnavailable, user?.empresa?.id, user?.empresa?.solucaoIds]);
 
     const selectedSolucao = useMemo(
         () => solucoes.find((solucao) => String(solucao.id) === String(form.solucaoId)),
@@ -236,7 +251,9 @@ export default function ChamadoCreate({ permissions }) {
         }
     };
 
+    const noContractedSolutions = optionsLoaded && solucoes.length === 0;
     const canCreate = canUseFeatureAction(user, permissions, "incluir");
+    const canOpenChamado = canCreate && !noContractedSolutions;
 
     return (
         <section className="chamados-shell">
@@ -261,7 +278,7 @@ export default function ChamadoCreate({ permissions }) {
                             value={form.titulo}
                             onChange={handleChange}
                             maxLength={140}
-                            disabled={!canCreate || saving}
+                            disabled={!canOpenChamado || saving}
                             required
                         />
                     </label>
@@ -274,7 +291,7 @@ export default function ChamadoCreate({ permissions }) {
                             onChange={handleChange}
                             rows={7}
                             maxLength={1000}
-                            disabled={!canCreate || saving}
+                            disabled={!canOpenChamado || saving}
                             required
                         />
                     </label>
@@ -282,7 +299,7 @@ export default function ChamadoCreate({ permissions }) {
                     <div className="chamado-form-grid">
                         <label>
                             <span>Tipo</span>
-                            <select name="tipoId" value={form.tipoId} onChange={handleChange} disabled={!canCreate || saving}>
+                            <select name="tipoId" value={form.tipoId} onChange={handleChange} disabled={!canOpenChamado || saving}>
                                 {tipos.map((option) => (
                                     <option key={option.id} value={option.id}>{option.nome}</option>
                                 ))}
@@ -291,7 +308,7 @@ export default function ChamadoCreate({ permissions }) {
 
                         <label>
                             <span>Prioridade</span>
-                            <select name="prioridadeId" value={form.prioridadeId} onChange={handleChange} disabled={!canCreate || saving}>
+                            <select name="prioridadeId" value={form.prioridadeId} onChange={handleChange} disabled={!canOpenChamado || saving}>
                                 {prioridades.map((option) => (
                                     <option key={option.id} value={option.id}>{option.nome}</option>
                                 ))}
@@ -300,7 +317,7 @@ export default function ChamadoCreate({ permissions }) {
 
                         <label>
                             <span>Categoria</span>
-                            <select name="categoriaId" value={form.categoriaId} onChange={handleChange} disabled={!canCreate || saving}>
+                            <select name="categoriaId" value={form.categoriaId} onChange={handleChange} disabled={!canOpenChamado || saving}>
                                 <option value="">Sem categoria</option>
                                 {categorias.map((categoria) => (
                                     <option key={categoria.id} value={categoria.id}>{categoria.nome}</option>
@@ -310,7 +327,7 @@ export default function ChamadoCreate({ permissions }) {
 
                         <label>
                             <span>Solução</span>
-                            <select name="solucaoId" value={form.solucaoId} onChange={handleChange} disabled={!canCreate || saving} required>
+                            <select name="solucaoId" value={form.solucaoId} onChange={handleChange} disabled={!canOpenChamado || saving} required>
                                 <option value="">Selecione</option>
                                 {solucoes.map((solucao) => (
                                     <option key={solucao.id} value={solucao.id}>{solucao.nome}</option>
@@ -320,7 +337,7 @@ export default function ChamadoCreate({ permissions }) {
 
                         <label>
                             <span>Funcionalidade</span>
-                            <select name="funcionalidadeId" value={form.funcionalidadeId} onChange={handleChange} disabled={!canCreate || saving || !form.solucaoId}>
+                            <select name="funcionalidadeId" value={form.funcionalidadeId} onChange={handleChange} disabled={!canOpenChamado || saving || !form.solucaoId}>
                                 <option value="">Sem funcionalidade específica</option>
                                 {funcionalidades.map((funcionalidade) => (
                                     <option key={funcionalidade.id} value={funcionalidade.id}>{funcionalidade.label || funcionalidade.titulo}</option>
@@ -340,7 +357,7 @@ export default function ChamadoCreate({ permissions }) {
                                             type="checkbox"
                                             checked={selectedAcompanhanteIds.includes(acompanhante.id)}
                                             onChange={() => toggleAcompanhante(acompanhante.id)}
-                                            disabled={!canCreate || saving}
+                                            disabled={!canOpenChamado || saving}
                                         />
                                         <span>
                                             {acompanhante.nome || acompanhante.login || acompanhante.email}
@@ -361,7 +378,7 @@ export default function ChamadoCreate({ permissions }) {
                             multiple
                             accept={ANEXO_ACCEPT}
                             onChange={handleAnexosChange}
-                            disabled={!canCreate || saving}
+                            disabled={!canOpenChamado || saving}
                         />
                         <small>JPG, JPEG, PNG, PDF, DOCX ou TXT. Máximo de 5 arquivos, 10 MB cada.</small>
                     </label>
@@ -380,12 +397,14 @@ export default function ChamadoCreate({ permissions }) {
                     ) : null}
 
                     <div className="chamado-actions">
-                        <button type="submit" disabled={!canCreate || saving}>
+                        <button type="submit" disabled={!canOpenChamado || saving}>
                             {saving ? "Buscando responsáveis..." : "Abrir chamado"}
                         </button>
                     </div>
 
-                    {!canCreate && (
+                    {noContractedSolutions ? (
+                        <p className="chamado-muted">A empresa ativa não possui soluções contratadas. A abertura de chamados permanecerá indisponível até que uma solução seja contratada.</p>
+                    ) : !canCreate && (
                         <p className="chamado-muted">Seu grupo não possui permissão para abrir chamados nesta funcionalidade.</p>
                     )}
                 </form>

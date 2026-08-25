@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { FaBan } from "react-icons/fa";
 
 import {
     createChamadoSlaRegra,
@@ -243,12 +244,17 @@ export default function SlaChamadoManagement({ permissions }) {
                         { key: "ativo", label: "Ativo", render: (regra) => booleanLabel(regra.ativo) }
                     ]}
                     rows={filteredRegras}
+                    getRowLabel={(regra) => regra.prioridadeNome || "regra de SLA"}
                     selectedId={selectedId}
                     onSelect={setSelectedId}
                     selectedIds={selectedIds}
                     onToggleSelect={toggleSelected}
                     onToggleSelectAll={toggleVisible}
-                    isRowSelectable={() => true}
+                    isRowSelectable={(regra) => regra.ativo}
+                    getRowSelectionDisabledReason={() => "Este registro já está inativo."}
+                    deleteLabel="Desativar selecionados"
+                    deleteSelectionReason="Marque ao menos um registro ativo para desativação."
+                    deleteIcon={<FaBan aria-hidden="true" />}
                     onCreate={() => openModal("create")}
                     onView={(regra) => openModal("view", regra)}
                     onEdit={(regra) => openModal("edit", regra)}

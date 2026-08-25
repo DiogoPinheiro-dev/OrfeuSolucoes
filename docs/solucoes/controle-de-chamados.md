@@ -36,7 +36,9 @@ Resolver, arquivar e reabrir são ações próprias, submetidas às permissões 
 
 ## Abertura
 
-A abertura solicita assunto, descrição, categoria, tipo e prioridade de acordo com as opções ativas da empresa. A solução e a funcionalidade selecionadas determinam os responsáveis elegíveis. O solicitante pode selecionar um usuário ou grupo responsável, quando houver opções, ou abrir sem responsável quando a configuração permitir.
+A abertura solicita assunto, descrição, categoria, tipo e prioridade de acordo com as opções ativas da empresa. A solução selecionada precisa estar ativa e contratada pela empresa; a funcionalidade precisa pertencer a essa solução e também estar contratada. A solução e a funcionalidade selecionadas determinam os responsáveis elegíveis. O solicitante pode selecionar um usuário ou grupo responsável, quando houver opções, ou abrir sem responsável quando a configuração permitir.
+
+Quando a empresa ativa não possui soluções contratadas, o formulário apresenta um estado explicativo e mantém o envio indisponível. A mesma restrição é aplicada no backend, inclusive para administradores e chamadas GraphQL diretas.
 
 Também é possível incluir acompanhantes e anexos. Antes do envio, o frontend valida os campos obrigatórios; o backend repete as validações, confirma a elegibilidade dos vínculos e cria o histórico inicial do chamado.
 
@@ -83,9 +85,9 @@ Os relatórios permitem filtrar por período, atendente, categoria, prioridade, 
 
 ## Cadastros administrativos
 
-Categorias, tipos, prioridades e regras de SLA seguem o padrão compartilhado de grade, modal e confirmação. As operações respeitam as permissões de visualizar, incluir, alterar e excluir da funcionalidade ativa. Quando o domínio exige preservação de histórico, a exclusão é representada por desativação.
+Categorias, tipos, prioridades e regras de SLA seguem o padrão compartilhado de grade, modal e confirmação. As operações respeitam as permissões de visualizar, incluir, alterar e excluir da funcionalidade ativa. Como esses cadastros preservam o histórico, a interface usa “Desativar selecionados”, impede uma nova desativação do registro inativo e permite reativá-lo pela alteração do campo “Ativo”.
 
-O cadastro de responsáveis associa um usuário ou grupo às soluções e funcionalidades que ele atende. Essas associações alimentam as opções da abertura, da atribuição e da transferência. Registros vinculados ao histórico operacional são desativados em vez de removidos fisicamente.
+O cadastro de responsáveis associa um usuário ou grupo às soluções e funcionalidades que ele atende. Essas associações alimentam as opções da abertura, da atribuição e da transferência. Responsáveis inativos também não podem ser desativados novamente e podem ser reativados pela alteração do cadastro.
 
 ## E-mails e notificações
 
@@ -129,4 +131,4 @@ A cobertura automatizada inclui:
 - contas Google, confirmação de ações destrutivas e regras de responsável;
 - bloqueio de ações quando a permissão necessária não está disponível.
 
-Os fluxos de autenticação, rota protegida, seleção da empresa e composição do Hub permanecem cobertos pelas suites gerais de regressão e E2E.
+Os fluxos de autenticação, rota protegida, seleção da empresa e composição do Hub permanecem cobertos pelas suítes gerais de regressão e E2E.

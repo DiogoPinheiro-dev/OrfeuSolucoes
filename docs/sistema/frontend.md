@@ -10,7 +10,7 @@ Os componentes React coordenam estado e apresentação. Operações Apollo, mont
 
 ## Navegação e autorização
 
-O Hub recebe do backend somente as soluções e funcionalidades disponíveis para a empresa e o usuário ativos. Cada funcionalidade normalizada expõe as permissões:
+O Hub recebe do backend somente as soluções e funcionalidades disponíveis para a empresa e o usuário ativos. Documentação é a exceção sistêmica de acesso universal: aparece para qualquer usuário autenticado e não depende de vínculo com empresa ou grupo. A audiência de cada artigo continua sendo aplicada pelo catálogo da Central. Cada funcionalidade normalizada expõe as permissões:
 
 - `podeVisualizar`;
 - `podeIncluir`;
@@ -46,6 +46,8 @@ Na toolbar, a ordem padrão é incluir, alterar, visualizar e excluir. A linha a
 
 Os modos destrutivos e de atenção possuem variantes visuais próprias e mantêm mensagens acessíveis.
 
+As abas compartilhadas do `CrudModal` preservam navegação pelas setas, Home e End. Conjuntos de até duas abas ocupam integralmente a largura disponível; conjuntos com três ou mais itens mantêm rolagem horizontal perceptível. Esse contrato é compartilhado pelos consumidores e não depende de CSS exclusivo de uma funcionalidade.
+
 ## Telas operacionais especializadas
 
 Uma tela operacional mantém estrutura própria quando o `CrudGrid` não representa o fluxo sem perda de comportamento. Essas telas continuam reutilizando tokens, feedbacks, confirmações e diálogos compartilhados.
@@ -62,4 +64,4 @@ Capacidade não faz parte do sistema e não deve ser apresentada como módulo, i
 
 ## Estados e acessibilidade
 
-As telas tratam explicitamente carregamento, erro, vazio, sucesso, processamento e somente leitura. Ações indisponíveis expõem o motivo no título e no nome acessível. Tabelas compartilhadas oferecem navegação de linha por teclado, e componentes interativos preservam foco visível e rótulos acessíveis.
+As telas tratam explicitamente carregamento, erro, vazio, sucesso, processamento e somente leitura. Ações indisponíveis expõem o motivo no título e no nome acessível. Permissões por funcionalidade anunciam a ação e o contexto no nome acessível, evitando checkboxes homônimos. Tabelas compartilhadas oferecem navegação de linha por teclado, e componentes interativos preservam foco visível e rótulos acessíveis.

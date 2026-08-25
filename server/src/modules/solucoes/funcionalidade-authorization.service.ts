@@ -14,10 +14,6 @@ export class FuncionalidadeAuthorizationService {
   constructor(private readonly solucoesService: SolucoesService) {}
 
   async assertFeatureAction(user: JwtPayload, solutionSlug: string, featureSlug: string, action: string): Promise<void> {
-    if (this.isSystemAdmin(user) || this.hasFullAccessGroup(user.grupo)) {
-      return;
-    }
-
     const navigation = await this.solucoesService.myHubNavigation(user);
     const solution = navigation.find((item) => item.slug === solutionSlug);
     const feature = solution?.funcionalidades.find((item) => item.slug === featureSlug);

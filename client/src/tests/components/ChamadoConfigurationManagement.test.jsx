@@ -141,7 +141,7 @@ describe("Configurações do Controle de Chamados", () => {
         await waitFor(() => expect(updateChamadoTipo).toHaveBeenCalledWith(expect.objectContaining({ id: 1, nome: "Incidente crítico" })));
 
         await user.click(screen.getByRole("checkbox", { name: "Selecionar Incidente" }));
-        await user.click(screen.getByRole("button", { name: "Excluir selecionados" }));
+        await user.click(screen.getByRole("button", { name: "Desativar selecionados" }));
         await user.click(screen.getByRole("button", { name: "OK" }));
         await waitFor(() => expect(deleteChamadoTipo).toHaveBeenCalledWith(1));
     }, 15000);
@@ -178,7 +178,7 @@ describe("Configurações do Controle de Chamados", () => {
         await user.click(within(dialog).getAllByRole("button", { name: "Fechar" }).at(-1));
 
         await user.click(screen.getByRole("checkbox", { name: /Selecionar/ }));
-        await user.click(screen.getByRole("button", { name: "Excluir selecionados" }));
+        await user.click(screen.getByRole("button", { name: "Desativar selecionados" }));
         await user.click(screen.getByRole("button", { name: "OK" }));
         await waitFor(() => expect(deleteChamadoSlaRegra).toHaveBeenCalledWith(4));
     });
@@ -189,7 +189,7 @@ describe("Configurações do Controle de Chamados", () => {
         await screen.findByRole("cell", { name: "Alta" });
 
         expect(screen.getByRole("button", { name: /Incluir\. Indisponível/ })).toBeDisabled();
-        expect(screen.getByRole("button", { name: /Excluir selecionados\. Indisponível/ })).toBeDisabled();
+        expect(screen.getByRole("button", { name: /Desativar selecionados\. Indisponível/ })).toBeDisabled();
     });
 
     it("preserva inclusão, alteração e confirmação destrutiva da conta Google", async () => {
@@ -239,8 +239,71 @@ describe("Configurações do Controle de Chamados", () => {
         await user.click(within(dialog).getAllByRole("button", { name: "Fechar" }).at(-1));
 
         await user.click(screen.getByRole("checkbox", { name: "Selecionar Atendente" }));
-        await user.click(screen.getByRole("button", { name: "Excluir selecionados" }));
+        await user.click(screen.getByRole("button", { name: "Desativar selecionados" }));
         await user.click(screen.getByRole("button", { name: "OK" }));
         await waitFor(() => expect(deleteChamadoResponsavel).toHaveBeenCalledWith(6));
     }, 15000);
+
+    it.each([
+        ["tipos", "Tipo legado", "Incidente", () => {
+            getTiposChamado.mockResolvedValue([tipo, { ...tipo, id: 11, nome: "Tipo legado", ativo: false }]);
+            return <ChamadoConfiguracaoManagement kind="tipos" permissions={permissions} />;
+        }],
+        ["prioridades", "Prioridade legada", "Alta", () => {
+            getPrioridadesChamado.mockResolvedValue([prioridade, { ...prioridade, id: 12, nome: "Prioridade legada", ativo: false }]);
+            return <ChamadoConfiguracaoManagement kind="prioridades" permissions={permissions} />;
+        }],
+        ["categorias", "Categoria legada", "Financeiro", () => {
+            getCategoriasChamado.mockResolvedValue([categoria, { ...categoria, id: 13, nome: "Categoria legada", ativo: false }]);
+            return <CategoriaChamadoManagement permissions={permissions} />;
+        }],
+        ["SLA", "Prioridade legada", "Alta", () => {
+            getRegrasSlaChamado.mockResolvedValue([regra, { ...regra, id: 14, prioridadeNome: "Prioridade legada", ativo: false }]);
+            return <SlaChamadoManagement permissions={permissions} />;
+        }],
+        ["responsáveis", "Atendente legado", "Atendente", () => {
+            getResponsaveisChamado.mockResolvedValue([responsavel, { ...responsavel, id: 15, responsavelNome: "Atendente legado", ativo: false }]);
+            return <ResponsavelChamadoManagement permissions={permissions} />;
+        }]
+    ])("impede nova desativação de registros inativos em %s", async (_kind, inactiveName, activeName, renderComponent) => {
+        const user = userEvent.setup();
+        render(renderComponent());
+
+        await screen.findByRole("cell", { name: inactiveName });
+        expect(screen.getByRole("checkbox", { name: `Selecionar ${inactiveName}. Indisponível: Este registro já está inativo.` })).toBeDisabled();
+        expect(screen.getByRole("button", { name: "Desativar selecionados. Indisponível: Marque ao menos um registro ativo para desativação." })).toBeDisabled();
+
+        await user.click(screen.getByRole("checkbox", { name: `Selecionar ${activeName}` }));
+        expect(screen.getByRole("button", { name: "Desativar selecionados" })).toBeEnabled();
+    });
+
+    it("reativa um cadastro inativo pela alteração do campo Ativo", async () => {
+        const user = userEvent.setup();
+        getTiposChamado.mockResolvedValue([{ ...tipo, ativo: false }]);
+        render(<ChamadoConfiguracaoManagement kind="tipos" permissions={permissions} />);
+
+        await user.click(await screen.findByRole("cell", { name: "Incidente" }));
+        await user.click(screen.getByRole("button", { name: "Alterar" }));
+        const activeField = screen.getByRole("checkbox", { name: "Ativo" });
+        expect(activeField).not.toBeChecked();
+        await user.click(activeField);
+        await user.click(screen.getByRole("button", { name: "Salvar" }));
+
+        await waitFor(() => expect(updateChamadoTipo).toHaveBeenCalledWith(expect.objectContaining({ id: 1, ativo: true })));
+    });
+
+    it("reativa um responsável pela alteração do campo Ativo", async () => {
+        const user = userEvent.setup();
+        getResponsaveisChamado.mockResolvedValue([{ ...responsavel, ativo: false }]);
+        render(<ResponsavelChamadoManagement permissions={permissions} />);
+
+        await user.click(await screen.findByRole("cell", { name: "Atendente" }));
+        await user.click(screen.getByRole("button", { name: "Alterar" }));
+        const activeField = screen.getByRole("checkbox", { name: "Ativo" });
+        expect(activeField).not.toBeChecked();
+        await user.click(activeField);
+        await user.click(screen.getByRole("button", { name: "Salvar" }));
+
+        await waitFor(() => expect(updateChamadoResponsavel).toHaveBeenCalledWith(expect.objectContaining({ id: 6, ativo: true })));
+    });
 });

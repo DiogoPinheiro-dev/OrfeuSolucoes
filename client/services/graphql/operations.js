@@ -526,49 +526,56 @@ export const DELETE_GRUPO_USUARIO_MUTATION = gql`
   }
 `;
 
-export const MY_HUB_NAVIGATION_QUERY = gql`
-  query MyHubNavigation {
-    myHubNavigation {
+export const SOLUCAO_FIELDS = gql`
+  fragment SolucaoFields on SolucaoType {
+    id
+    slug
+    nome
+    descricao
+    eyebrow
+    ordem
+    ativo
+    exibirNoHub
+    somenteAdminSistema
+    padraoSistema
+    funcionalidades {
       id
       slug
-      nome
+      titulo
+      label
       descricao
-      eyebrow
       ordem
       ativo
-      exibirNoHub
+      registryKey
       somenteAdminSistema
       padraoSistema
-      funcionalidades {
+      podeVisualizar
+      podeIncluir
+      podeAlterar
+      podeExcluir
+      acoes {
         id
-        slug
-        titulo
-        label
+        funcionalidadeId
+        chave
+        nome
         descricao
         ordem
         ativo
-        registryKey
-        somenteAdminSistema
-        padraoSistema
-        podeVisualizar
-        podeIncluir
-        podeAlterar
-        podeExcluir
-        acoes {
-          id
-          funcionalidadeId
-          chave
-          nome
-          descricao
-          ordem
-          ativo
-          acaoPadrao
-          configuracao
-          permitido
-        }
+        acaoPadrao
+        configuracao
+        permitido
       }
     }
   }
+`;
+
+export const MY_HUB_NAVIGATION_QUERY = gql`
+  query MyHubNavigation {
+    myHubNavigation {
+      ...SolucaoFields
+    }
+  }
+  ${SOLUCAO_FIELDS}
 `;
 
 export const DOCUMENTACAO_INDICE_QUERY = gql`
@@ -633,104 +640,28 @@ export const BUSCAR_DOCUMENTACAO_QUERY = gql`
 export const SOLUCOES_QUERY = gql`
   query Solucoes {
     solucoes {
-      id
-      slug
-      nome
-      descricao
-      eyebrow
-      ordem
-      ativo
-      exibirNoHub
-      somenteAdminSistema
-      padraoSistema
-      funcionalidades {
-        id
-        slug
-        titulo
-        label
-        descricao
-        ordem
-        ativo
-        registryKey
-        somenteAdminSistema
-        padraoSistema
-        podeVisualizar
-        podeIncluir
-        podeAlterar
-        podeExcluir
-        acoes {
-          id
-          funcionalidadeId
-          chave
-          nome
-          descricao
-          ordem
-          ativo
-          acaoPadrao
-          configuracao
-          permitido
-        }
-      }
+      ...SolucaoFields
     }
   }
+  ${SOLUCAO_FIELDS}
 `;
 
 export const CREATE_SOLUCAO_MUTATION = gql`
   mutation CreateSolucao($input: CreateSolucaoInput!) {
     createSolucao(input: $input) {
-      id
-      slug
-      nome
-      descricao
-      eyebrow
-      ordem
-      ativo
-      exibirNoHub
-      somenteAdminSistema
-      padraoSistema
-      funcionalidades {
-        id
-        slug
-        titulo
-        label
-        descricao
-        ordem
-        ativo
-        registryKey
-        somenteAdminSistema
-        padraoSistema
-      }
+      ...SolucaoFields
     }
   }
+  ${SOLUCAO_FIELDS}
 `;
 
 export const UPDATE_SOLUCAO_MUTATION = gql`
   mutation UpdateSolucao($input: UpdateSolucaoInput!) {
     updateSolucao(input: $input) {
-      id
-      slug
-      nome
-      descricao
-      eyebrow
-      ordem
-      ativo
-      exibirNoHub
-      somenteAdminSistema
-      padraoSistema
-      funcionalidades {
-        id
-        slug
-        titulo
-        label
-        descricao
-        ordem
-        ativo
-        registryKey
-        somenteAdminSistema
-        padraoSistema
-      }
+      ...SolucaoFields
     }
   }
+  ${SOLUCAO_FIELDS}
 `;
 
 export const DELETE_SOLUCAO_MUTATION = gql`

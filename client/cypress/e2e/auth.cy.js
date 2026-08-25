@@ -27,12 +27,19 @@ describe("autenticação no navegador", () => {
   });
 
   it("apresenta a mensagem devolvida para credenciais inválidas", () => {
-    cy.mockGraphql({ LoginCompanies: { errors: [{ message: "Credenciais inválidas." }] } });
+    cy.mockGraphql({
+      LoginCompanies: {
+        errors: [{
+          message: "Unauthorized Exception",
+          extensions: { code: "UNAUTHENTICATED", originalError: { statusCode: 401 } },
+        }],
+      },
+    });
     cy.visit("/login");
     cy.get('input[name="loginOrEmail"]').type("usuario.invalido");
     cy.get('input[name="password"]').type("senha-invalida");
     cy.contains("button", "Continuar").click();
-    cy.get('[role="alert"]').should("contain.text", "Credenciais inválidas.");
+    cy.get('[role="alert"]').should("have.text", "Usuário ou senha incorretos.");
     cy.location("pathname").should("eq", "/login");
   });
 

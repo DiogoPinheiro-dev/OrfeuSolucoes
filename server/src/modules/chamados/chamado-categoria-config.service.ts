@@ -7,6 +7,7 @@ import { CreateChamadoCategoriaInput, UpdateChamadoCategoriaInput } from './dto/
 import { ChamadoCategoriaType } from './dto/chamado-categoria.type';
 import { toCategoriaType } from './mappers/chamado.mapper';
 import { ChamadoCategoriaRecord } from './types/chamado-record.types';
+import { assertRegistroAtivoParaDesativacao } from './utils/chamado-desativacao.util';
 
 @Injectable()
 export class ChamadoCategoriaConfigService {
@@ -69,7 +70,8 @@ export class ChamadoCategoriaConfigService {
   async deleteCategoria(id: number, user: JwtPayload): Promise<boolean> {
     const empresaId = this.authorization.assertCompanyContext(user);
     await this.authorization.assertFeatureAction(user, FEATURES.categorias, 'excluir');
-    await this.ensureCategoria(id, empresaId, false);
+    const categoria = await this.ensureCategoria(id, empresaId, false);
+    assertRegistroAtivoParaDesativacao(categoria);
 
     await (this.prisma as never as { chamadoCategoria: { update: Function } }).chamadoCategoria.update({
       where: { id },

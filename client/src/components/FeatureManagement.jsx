@@ -266,6 +266,7 @@ export default function FeatureManagement({ permissions }) {
                 if (form.padraoSistema) {
                     await updateFuncionalidade({
                         id: form.id,
+                        ordem: payload.ordem,
                         acoes: payload.acoes.filter((acao) => !acao.id)
                     });
                 } else {
@@ -360,8 +361,6 @@ export default function FeatureManagement({ permissions }) {
     const readonly = modalMode === "view";
     const standardFeatureLocked = modalMode === "edit" && !!form.padraoSistema;
     const cadastralReadonly = readonly || standardFeatureLocked;
-    const newStandardActionsCount = standardFeatureLocked ? form.acoes.filter((acao) => !acao.id).length : 0;
-
     return (
         <>
             <CrudGrid
@@ -424,7 +423,7 @@ export default function FeatureManagement({ permissions }) {
                         <>
                             <button type="button" onClick={closeModal}>Fechar</button>
                             {!readonly && (
-                                <button type="submit" disabled={saving || !form.solucaoId || (standardFeatureLocked && newStandardActionsCount === 0)}>
+                                <button type="submit" disabled={saving || !form.solucaoId}>
                                     {saving ? "Salvando..." : "Salvar"}
                                 </button>
                             )}
@@ -445,7 +444,7 @@ export default function FeatureManagement({ permissions }) {
 
                             <CrudModalTabPanel active={activeTab === "main"}>
                                     {standardFeatureLocked && (
-                                        <small>Esta funcionalidade é padrão do sistema. Os dados cadastrais são somente leitura; utilize a aba de ações para adicionar uma nova ação.</small>
+                                        <small>Esta funcionalidade é padrão do sistema. Apenas a ordem pode ser alterada; utilize a aba de ações para adicionar uma nova ação.</small>
                                     )}
                                     <div className="user-form-field">
                                         <span className="user-form-field-label">
@@ -514,7 +513,7 @@ export default function FeatureManagement({ permissions }) {
                                         <span className="user-form-field-label">
                                             <label htmlFor="funcionalidade-ordem">Ordem</label>
                                         </span>
-                                        <input id="funcionalidade-ordem" name="ordem" type="number" value={form.ordem ?? 0} onChange={handleChange} disabled={cadastralReadonly || saving} />
+                                        <input id="funcionalidade-ordem" name="ordem" type="number" value={form.ordem ?? 0} onChange={handleChange} disabled={readonly || saving} />
                                     </div>
                                     <section className="user-company-section" aria-label="Status da funcionalidade">
                                         <div className="user-permissions-grid">

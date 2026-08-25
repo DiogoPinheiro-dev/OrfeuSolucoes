@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { isPrismaUniqueConstraintViolation, retryBootstrapAfterUniqueConflict } from '../../common/persistence/bootstrap-concurrency.util';
 import { PrismaService } from '../../prisma/prisma.service';
 import { DEFAULT_CHAMADO_PRIORIDADES, DEFAULT_CHAMADO_TIPOS } from './constants/solucao.constants';
 import { FuncionalidadeAcaoInput } from './dto/funcionalidade-acao.input';
@@ -24,48 +25,59 @@ export class SolucaoChamadosBootstrapService {
     }
 
     for (const tipo of DEFAULT_CHAMADO_TIPOS) {
-      const existing = await (this.prisma as never as { chamadoTipo: { findFirst: Function } }).chamadoTipo.findFirst({
-        where: { empresaId, nome: tipo.nome },
-        select: { id: true }
-      }) as { id: number } | null;
-
-      if (!existing) {
-        await (this.prisma as never as { chamadoTipo: { create: Function } }).chamadoTipo.create({
-          data: {
-            empresaId,
-            nome: tipo.nome,
-            descricao: null,
-            cor: tipo.cor,
-            ordem: tipo.ordem,
-            ativo: true
-          }
-        });
-      }
+      await this.ensureDefaultConfiguracao(
+        (this.prisma as never as { chamadoTipo: ChamadoConfiguracaoDelegate }).chamadoTipo,
+        empresaId,
+        tipo
+      );
     }
 
     for (const prioridade of DEFAULT_CHAMADO_PRIORIDADES) {
-      const existing = await (this.prisma as never as { chamadoPrioridade: { findFirst: Function } }).chamadoPrioridade.findFirst({
-        where: { empresaId, nome: prioridade.nome },
-        select: { id: true }
-      }) as { id: number } | null;
+      await this.ensureDefaultConfiguracao(
+        (this.prisma as never as { chamadoPrioridade: ChamadoConfiguracaoDelegate }).chamadoPrioridade,
+        empresaId,
+        prioridade
+      );
+    }
+  }
 
-      if (!existing) {
-        await (this.prisma as never as { chamadoPrioridade: { create: Function } }).chamadoPrioridade.create({
-          data: {
-            empresaId,
-            nome: prioridade.nome,
-            descricao: null,
-            cor: prioridade.cor,
-            ordem: prioridade.ordem,
-            ativo: true
-          }
-        });
+  private async ensureDefaultConfiguracao(
+    delegate: ChamadoConfiguracaoDelegate,
+    empresaId: number,
+    configuracao: DefaultChamadoConfiguracao
+  ): Promise<void> {
+    const existing = await delegate.findFirst({
+      where: { empresaId, nome: configuracao.nome },
+      select: { id: true }
+    }) as { id: number } | null;
+
+    if (existing) {
+      return;
+    }
+
+    try {
+      await delegate.create({
+        data: {
+          empresaId,
+          nome: configuracao.nome,
+          descricao: null,
+          cor: configuracao.cor,
+          ordem: configuracao.ordem,
+          ativo: true
+        }
+      });
+    } catch (error) {
+      if (!isPrismaUniqueConstraintViolation(error)) {
+        throw error;
       }
     }
   }
 
-
   async ensureControleChamadosSolution(): Promise<void> {
+    await retryBootstrapAfterUniqueConflict(() => this.ensureControleChamadosSolutionOnce());
+  }
+
+  private async ensureControleChamadosSolutionOnce(): Promise<void> {
     const existingSolucao = (await (this.prisma as never as { solucao: { findUnique: Function } }).solucao.findUnique({
       where: { slug: 'controle-de-chamados' },
       select: { id: true }
@@ -78,7 +90,6 @@ export class SolucaoChamadosBootstrapService {
             nome: 'Controle de Chamados',
             descricao: 'Abertura, acompanhamento e atendimento de chamados por empresa.',
             eyebrow: 'Atendimento',
-            ordem: 40,
             ativo: true,
             exibirNoHub: true,
             somenteAdminSistema: false,
@@ -258,7 +269,6 @@ export class SolucaoChamadosBootstrapService {
               titulo: feature.titulo,
               label: feature.label,
               descricao: feature.descricao,
-              ordem: feature.ordem,
               ativo: true,
               registryKey: feature.registryKey,
               somenteAdminSistema: false,
@@ -311,3 +321,14 @@ export class SolucaoChamadosBootstrapService {
     }) as { id: number } | null;
   }
 }
+
+type ChamadoConfiguracaoDelegate = {
+  findFirst: Function;
+  create: Function;
+};
+
+type DefaultChamadoConfiguracao = {
+  nome: string;
+  cor: string;
+  ordem: number;
+};

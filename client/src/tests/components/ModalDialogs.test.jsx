@@ -69,11 +69,18 @@ describe("CrudModal", () => {
     it("provides keyboard navigation for modal tabs", () => {
         const onChange = vi.fn();
         render(<><CrudModalTabs tabs={[{ id: "main", label: "Geral" }, { id: "access", label: "Acessos" }]} activeTab="main" onChange={onChange} /><CrudModalTabPanel active ariaLabel="Conteúdo geral">Conteúdo</CrudModalTabPanel></>);
+        expect(screen.getByRole("tablist")).toHaveClass("crud-modal-tabs--compact");
         const general = screen.getByRole("tab", { name: "Geral" });
         fireEvent.keyDown(general, { key: "ArrowRight" });
         expect(onChange).toHaveBeenCalledWith("access");
         expect(screen.getByRole("tab", { name: "Acessos" })).toHaveFocus();
         expect(screen.getByRole("tabpanel", { name: "Conteúdo geral" })).toBeInTheDocument();
+    });
+
+    it("keeps three or more tabs in the scrollable layout", () => {
+        render(<CrudModalTabs tabs={[{ id: "main", label: "Dados" }, { id: "access", label: "Soluções" }, { id: "features", label: "Permissões" }]} activeTab="main" onChange={vi.fn()} />);
+
+        expect(screen.getByRole("tablist")).not.toHaveClass("crud-modal-tabs--compact");
     });
 });
 

@@ -40,6 +40,9 @@ export default function CrudGrid({
     showEdit = true,
     showView = true,
     showDelete = true,
+    deleteLabel = "Excluir selecionados",
+    deleteSelectionReason = "Marque ao menos um registro para exclusão.",
+    deleteIcon = null,
     selectable = true,
     disabledReasons = {},
     isRowSelectable = () => true,
@@ -69,7 +72,7 @@ export default function CrudGrid({
     const actionReason = (action, allowed, needsSelection = false) => {
         if (busy) return "Aguarde o processamento atual.";
         if (needsSelection && !selectedRow) return "Selecione um registro.";
-        if (action === "delete" && selectedIds.length === 0) return "Marque ao menos um registro para exclusão.";
+        if (action === "delete" && selectedIds.length === 0) return deleteSelectionReason;
         if (!allowed) return disabledReasons[action] || "Você não possui permissão para esta ação.";
         return "";
     };
@@ -136,7 +139,7 @@ export default function CrudGrid({
                     {showCreate && <button type="button" onClick={onCreate} {...actionProps("Incluir", actionReason("create", canCreate))}><FaPlus aria-hidden="true" /></button>}
                     {showEdit && <button type="button" onClick={() => selectedRow && onEdit(selectedRow)} {...actionProps("Alterar", actionReason("edit", canEdit, true))}><FaEdit aria-hidden="true" /></button>}
                     {showView && <button type="button" onClick={() => selectedRow && onView(selectedRow)} {...actionProps("Visualizar", actionReason("view", canView, true))}><FaEye aria-hidden="true" /></button>}
-                    {showDelete && <button type="button" onClick={() => onDelete(selectedIds)} {...actionProps("Excluir selecionados", actionReason("delete", canDelete))}><FaTrashAlt aria-hidden="true" /></button>}
+                    {showDelete && <button type="button" onClick={() => onDelete(selectedIds)} {...actionProps(deleteLabel, actionReason("delete", canDelete))}>{deleteIcon || <FaTrashAlt aria-hidden="true" />}</button>}
                     {toolbarActions}
                 </div>
             )}

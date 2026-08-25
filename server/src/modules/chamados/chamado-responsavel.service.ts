@@ -22,6 +22,7 @@ import {
   ResponsavelSolucaoPayload,
   UsuarioResumoRecord
 } from './types/chamado-record.types';
+import { assertRegistroAtivoParaDesativacao } from './utils/chamado-desativacao.util';
 
 @Injectable()
 export class ChamadoResponsavelService {
@@ -230,7 +231,8 @@ export class ChamadoResponsavelService {
   async deleteResponsavel(id: number, user: JwtPayload): Promise<boolean> {
     const empresaId = this.authorization.assertCompanyContext(user);
     await this.authorization.assertFeatureAction(user, FEATURES.responsaveis, 'excluir');
-    await this.ensureResponsavel(id, empresaId);
+    const responsavel = await this.ensureResponsavel(id, empresaId);
+    assertRegistroAtivoParaDesativacao(responsavel);
 
     await this.prisma.$transaction(async (tx) => {
       await tx.chamadoResponsavel.update({
@@ -275,8 +277,8 @@ export class ChamadoResponsavelService {
     return this.responsavelOptions.findSolucoesChamadoOptions(empresaId);
   }
 
-  async resolveChamadoContext(solucaoIdInput: number, funcionalidadeIdInput?: number | null): Promise<{ solucaoId: number; funcionalidadeId: number | null }> {
-    return this.responsavelOptions.resolveChamadoContext(solucaoIdInput, funcionalidadeIdInput);
+  async resolveChamadoContext(empresaId: number, solucaoIdInput: number, funcionalidadeIdInput?: number | null): Promise<{ solucaoId: number; funcionalidadeId: number | null }> {
+    return this.responsavelOptions.resolveChamadoContext(empresaId, solucaoIdInput, funcionalidadeIdInput);
   }
 
   async findResponsaveisParaContexto(empresaId: number, solucaoId: number, funcionalidadeId: number | null): Promise<AtendenteChamadoType[]> {

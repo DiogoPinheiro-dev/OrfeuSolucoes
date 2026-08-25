@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { ServiceError, toServiceError } from "../../../services/graphql/serviceError";
+import {
+    ServiceError,
+    toAuthenticationServiceError,
+    toServiceError
+} from "../../../services/graphql/serviceError";
 
 describe("toServiceError", () => {
     it.each([
@@ -28,6 +32,27 @@ describe("toServiceError", () => {
         expect(error.type).toBe("validation");
         expect(error.fieldErrors).toEqual({ nome: "Informe o nome." });
         expect(error.message).not.toContain("Exception");
+    });
+
+    it("distingue credenciais incorretas de uma sessão expirada", () => {
+        const failure = {
+            graphQLErrors: [{
+                message: "Unauthorized Exception",
+                extensions: { code: "UNAUTHENTICATED", originalError: { statusCode: 401 } }
+            }]
+        };
+
+        const credentialsError = toAuthenticationServiceError(failure);
+        const sessionError = toServiceError(failure);
+
+        expect(credentialsError).toMatchObject({
+            type: "credentials",
+            message: "Usuário ou senha incorretos."
+        });
+        expect(sessionError).toMatchObject({
+            type: "session",
+            message: "Sua sessão expirou. Entre novamente para continuar."
+        });
     });
 
     it("substitui mensagens internas por uma mensagem segura", () => {

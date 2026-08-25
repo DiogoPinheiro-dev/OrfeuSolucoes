@@ -9,7 +9,7 @@ import {
     REGISTER_USER_MUTATION,
     SWITCH_COMPANY_MUTATION
 } from "../graphql/operations";
-import { toServiceError } from "../graphql/serviceError";
+import { toAuthenticationServiceError, toServiceError } from "../graphql/serviceError";
 
 
 export const login = async ({ loginOrEmail, email, password, empresaId }) => {
@@ -33,7 +33,7 @@ export const login = async ({ loginOrEmail, email, password, empresaId }) => {
 
         return payload.user;
     } catch (error) {
-        throw toServiceError(error);
+        throw toAuthenticationServiceError(error);
     }
 };
 
@@ -51,7 +51,7 @@ export const getLoginCompanies = async ({ loginOrEmail, password }) => {
 
         return response?.data?.loginCompanies ?? [];
     } catch (error) {
-        throw toServiceError(error);
+        throw toAuthenticationServiceError(error);
     }
 };
 

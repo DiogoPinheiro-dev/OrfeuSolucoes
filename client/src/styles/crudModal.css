@@ -106,6 +106,10 @@
   font-weight: 700;
   white-space: nowrap;
 }
+.crud-modal-tabs--compact button {
+  flex: 1 1 0;
+  min-width: 0;
+}
 .crud-modal-tabs button.active {
   border-color: var(--button-primary-border);
   background: var(--button-primary-bg);

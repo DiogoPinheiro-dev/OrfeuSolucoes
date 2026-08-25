@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FuncionalidadeAcaoService } from './funcionalidade-acao.service';
@@ -20,6 +20,7 @@ export class SolucaoAcessoService {
     funcionalidadePermissoes: FuncionalidadePermissao[] = [],
     database: PrismaService | Prisma.TransactionClient = this.prisma
   ): Promise<void> {
+    await this.assertActiveSolutions(solucaoIds, database);
     await (database as never as { grupoFuncionalidadeAcao: { deleteMany: Function } }).grupoFuncionalidadeAcao.deleteMany({ where: { grupoId } });
     await (database as never as { grupoSolucao: { deleteMany: Function; createMany: Function }; grupoFuncionalidade: { deleteMany: Function; createMany: Function } }).grupoSolucao.deleteMany({ where: { grupoId } });
     await (database as never as { grupoFuncionalidade: { deleteMany: Function; createMany: Function } }).grupoFuncionalidade.deleteMany({ where: { grupoId } });
@@ -59,6 +60,7 @@ export class SolucaoAcessoService {
   }
 
   async syncCompanyAccess(empresaId: number, solucaoIds: number[] = [], funcionalidadeIds: number[] = []): Promise<void> {
+    await this.assertActiveSolutions(solucaoIds, this.prisma);
     await (this.prisma as never as { empresaSolucao: { deleteMany: Function }; empresaFuncionalidade: { deleteMany: Function } }).empresaSolucao.deleteMany({ where: { empresaId } });
     await (this.prisma as never as { empresaFuncionalidade: { deleteMany: Function } }).empresaFuncionalidade.deleteMany({ where: { empresaId } });
 
@@ -284,5 +286,25 @@ export class SolucaoAcessoService {
     ]);
 
     await this.syncNewFuncionalidadeAccess(funcionalidade);
+  }
+
+  private async assertActiveSolutions(
+    solucaoIds: number[],
+    database: PrismaService | Prisma.TransactionClient
+  ): Promise<void> {
+    const ids = [...new Set(solucaoIds.map(Number))];
+
+    if (!ids.length) {
+      return;
+    }
+
+    const activeSolutions = await (database as never as { solucao: { findMany: Function } }).solucao.findMany({
+      where: { id: { in: ids }, ativo: true },
+      select: { id: true }
+    }) as Array<{ id: number }>;
+
+    if (activeSolutions.length !== ids.length) {
+      throw new BadRequestException('Solucoes inativas nao podem ser vinculadas a empresas ou grupos.');
+    }
   }
 }

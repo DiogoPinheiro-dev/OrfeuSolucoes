@@ -58,6 +58,12 @@ const renderCreate = () => render(
     </MemoryRouter>
 );
 
+const renderUnavailableCreate = () => render(
+    <MemoryRouter initialEntries={["/hub/controle-de-chamados/abrir-chamado"]}>
+        <ChamadoCreate permissions={{ podeVisualizar: false, podeIncluir: false }} contractUnavailable />
+    </MemoryRouter>
+);
+
 beforeEach(() => {
     useAuth.mockReturnValue({ user: { id: "u1", login: "solicitante", grupo: {} } });
     getCategoriasChamado.mockResolvedValue([{ id: 3, nome: "Financeiro" }]);
@@ -116,7 +122,8 @@ describe("Fluxos operacionais do Controle de Chamados", () => {
             responsavelGrupoId: null,
             acompanhanteIds: ["u3"]
         }));
-        expect(screen.getByRole("status", { name: "Rota atual" })).toHaveTextContent("/hub/controle-de-chamados/meus-chamados/ch-1");
+        await waitFor(() => expect(screen.getByRole("status", { name: "Rota atual" }))
+            .toHaveTextContent("/hub/controle-de-chamados/meus-chamados/ch-1"));
     }, 15000);
 
     it("permite abrir sem responsável quando não existe candidato", async () => {
@@ -149,6 +156,34 @@ describe("Fluxos operacionais do Controle de Chamados", () => {
         );
         expect(await screen.findByRole("button", { name: "Abrir chamado" })).toBeDisabled();
         expect(screen.getByText(/não possui permissão para abrir chamados/i)).toBeInTheDocument();
+    });
+
+    it("explica e bloqueia a abertura quando a empresa não possui soluções contratadas", async () => {
+        useAuth.mockReturnValue({
+            user: {
+                id: "u1",
+                login: "solicitante",
+                grupo: {},
+                empresa: { id: 20, nome: "Empresa sem contrato", solucaoIds: [] }
+            }
+        });
+
+        renderCreate();
+
+        expect(await screen.findByText(/empresa ativa não possui soluções contratadas/i)).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Abrir chamado" })).toBeDisabled();
+        expect(getOpcoesAberturaChamado).not.toHaveBeenCalled();
+        expect(criarChamado).not.toHaveBeenCalled();
+    });
+
+    it("bloqueia a rota direta sem consultar opções quando o contrato está indisponível", async () => {
+        renderUnavailableCreate();
+
+        expect(await screen.findByText(/empresa ativa não possui soluções contratadas/i)).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Abrir chamado" })).toBeDisabled();
+        expect(getCategoriasChamado).not.toHaveBeenCalled();
+        expect(getOpcoesAberturaChamado).not.toHaveBeenCalled();
+        expect(getAcompanhantesElegiveisChamado).not.toHaveBeenCalled();
     });
 
     it("carrega o Kanban, aplica filtros e abre o detalhe por teclado", async () => {

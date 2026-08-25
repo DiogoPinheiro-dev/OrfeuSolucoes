@@ -52,7 +52,15 @@ export class SolucaoCatalogService {
   async update(input: UpdateSolucaoInput): Promise<SolucaoType> {
     const current = await this.ensureSolucao(input.id);
 
-    if (current.padraoSistema) {
+    const hasProtectedStandardSolutionChanges = input.slug !== undefined ||
+      input.nome !== undefined ||
+      input.descricao !== undefined ||
+      input.eyebrow !== undefined ||
+      input.ativo !== undefined ||
+      input.exibirNoHub !== undefined ||
+      input.somenteAdminSistema !== undefined;
+
+    if (current.padraoSistema && hasProtectedStandardSolutionChanges) {
       throw new BadRequestException('Os dados cadastrais de uma solucao padrao do sistema nao podem ser alterados.');
     }
 
@@ -125,13 +133,19 @@ export class SolucaoCatalogService {
         input.titulo !== undefined ||
         input.label !== undefined ||
         input.descricao !== undefined ||
-        input.ordem !== undefined ||
         input.ativo !== undefined ||
         input.registryKey !== undefined ||
         input.somenteAdminSistema !== undefined;
 
       if (hasCadastralChanges) {
         throw new BadRequestException('Os dados cadastrais de uma funcionalidade padrao do sistema nao podem ser alterados.');
+      }
+
+      if (input.ordem !== undefined) {
+        await (this.prisma as never as { funcionalidade: { update: Function } }).funcionalidade.update({
+          where: { id: input.id },
+          data: { ordem: input.ordem }
+        });
       }
 
       await this.funcionalidadeAcaoService.appendFuncionalidadeAcoes(input.id, input.acoes ?? []);

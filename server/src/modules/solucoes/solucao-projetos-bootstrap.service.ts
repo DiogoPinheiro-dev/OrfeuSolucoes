@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { retryBootstrapAfterUniqueConflict } from '../../common/persistence/bootstrap-concurrency.util';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PROJETO_FEATURE_DEFINITIONS } from './constants/projeto-feature-definitions';
 import { FuncionalidadeAcaoService } from './funcionalidade-acao.service';
@@ -14,6 +15,10 @@ export class SolucaoProjetosBootstrapService {
   ) {}
 
   async ensureProjetosSolution(): Promise<void> {
+    await retryBootstrapAfterUniqueConflict(() => this.ensureProjetosSolutionOnce());
+  }
+
+  private async ensureProjetosSolutionOnce(): Promise<void> {
     const existingSolucao = (await (this.prisma as never as { solucao: { findUnique: Function } }).solucao.findUnique({
       where: { slug: 'projetos' },
       select: { id: true }
@@ -26,7 +31,6 @@ export class SolucaoProjetosBootstrapService {
             nome: 'Gerenciador de Projetos',
             descricao: 'Espaço para organizar projetos, backlog, entregas, marcos e comunicação entre as equipes.',
             eyebrow: 'Operação',
-            ordem: 10,
             ativo: true,
             exibirNoHub: true,
             somenteAdminSistema: false,
@@ -67,7 +71,6 @@ export class SolucaoProjetosBootstrapService {
               titulo: feature.titulo,
               label: feature.label,
               descricao: feature.descricao,
-              ordem: feature.ordem,
               ativo: feature.ativo,
               registryKey: feature.registryKey,
               somenteAdminSistema: false,

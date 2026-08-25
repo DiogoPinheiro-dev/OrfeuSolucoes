@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { FaBan } from "react-icons/fa";
 
 import {
     createChamadoCategoria,
@@ -217,7 +218,11 @@ export default function CategoriaChamadoManagement({ permissions }) {
                     selectedIds={selectedIds}
                     onToggleSelect={toggleSelected}
                     onToggleSelectAll={toggleVisible}
-                    isRowSelectable={() => true}
+                    isRowSelectable={(categoria) => categoria.ativo}
+                    getRowSelectionDisabledReason={() => "Este registro já está inativo."}
+                    deleteLabel="Desativar selecionados"
+                    deleteSelectionReason="Marque ao menos um registro ativo para desativação."
+                    deleteIcon={<FaBan aria-hidden="true" />}
                     onCreate={() => openModal("create")}
                     onEdit={(categoria) => openModal("edit", categoria)}
                     onView={(categoria) => openModal("view", categoria)}

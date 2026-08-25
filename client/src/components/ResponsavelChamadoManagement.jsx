@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { FaBan } from "react-icons/fa";
 
 import {
     createChamadoResponsavel,
@@ -27,7 +28,8 @@ const initialForm = {
     grupoId: "",
     solucaoIds: [],
     funcionalidadeIds: [],
-    geralSolucaoIds: []
+    geralSolucaoIds: [],
+    ativo: true
 };
 
 const booleanLabel = (value) => (value ? "Sim" : "Não");
@@ -191,7 +193,8 @@ export default function ResponsavelChamadoManagement({ permissions }) {
             grupoId: responsavel.grupoId ? idKey(responsavel.grupoId) : "",
             solucaoIds: [...solucaoIds],
             funcionalidadeIds: [...funcionalidadeIds],
-            geralSolucaoIds: [...geralSolucaoIds]
+            geralSolucaoIds: [...geralSolucaoIds],
+            ativo: responsavel.ativo
         });
     };
 
@@ -341,7 +344,7 @@ export default function ResponsavelChamadoManagement({ permissions }) {
         tipo: form.tipo,
         usuarioId: form.tipo === "USUARIO" ? form.usuarioId : null,
         grupoId: form.tipo === "GRUPO" ? Number(form.grupoId) : null,
-        ativo: true,
+        ativo: !!form.ativo,
         solucoes: selectedSolucoes.map((solucao) => {
             const solucaoIdString = idKey(solucao.id);
             const responsavelGeral = selectedGeralSolucaoIdSet.has(solucaoIdString);
@@ -471,7 +474,11 @@ export default function ResponsavelChamadoManagement({ permissions }) {
                     selectedIds={selectedIds}
                     onToggleSelect={toggleSelected}
                     onToggleSelectAll={toggleVisible}
-                    isRowSelectable={() => true}
+                    isRowSelectable={(responsavel) => responsavel.ativo}
+                    getRowSelectionDisabledReason={() => "Este registro já está inativo."}
+                    deleteLabel="Desativar selecionados"
+                    deleteSelectionReason="Marque ao menos um registro ativo para desativação."
+                    deleteIcon={<FaBan aria-hidden="true" />}
                     onCreate={() => openModal("create")}
                     onEdit={(responsavel) => openModal("edit", responsavel)}
                     onView={(responsavel) => openModal("view", responsavel)}
@@ -612,6 +619,17 @@ export default function ResponsavelChamadoManagement({ permissions }) {
                             })
                         )}
                     </fieldset>
+
+                    <label className="chamado-checkbox">
+                        <input
+                            type="checkbox"
+                            name="ativo"
+                            checked={!!form.ativo}
+                            onChange={(event) => setForm((current) => ({ ...current, ativo: event.target.checked }))}
+                            disabled={readonly || saving}
+                        />
+                        <span>Ativo</span>
+                    </label>
                 </CrudModal>
             )}
 

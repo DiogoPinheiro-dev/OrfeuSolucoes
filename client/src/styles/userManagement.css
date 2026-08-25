@@ -188,6 +188,38 @@
   background: var(--surface-white);
 }
 
+.user-feature-permission-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.user-feature-select-all {
+  flex: 0 0 auto;
+  padding: 7px 12px;
+  border: 1px solid var(--button-secondary-border);
+  border-radius: var(--button-radius);
+  background: var(--surface-white);
+  color: var(--primary);
+  cursor: pointer;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.user-feature-select-all:hover,
+.user-feature-select-all:focus-visible {
+  border-color: var(--button-primary-hover-bg);
+  background: var(--button-primary-hover-bg);
+  color: var(--button-primary-hover-text);
+  outline: none;
+}
+
+.user-feature-select-all:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
 .user-form .user-feature-permission-row .user-permission-option {
   padding: 0;
   border: 0;
@@ -260,6 +292,15 @@
 
   .user-feature-crud-options {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .user-feature-permission-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .user-feature-select-all {
+    width: 100%;
   }
 
 }

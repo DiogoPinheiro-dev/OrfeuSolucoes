@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { FaBan } from "react-icons/fa";
 
 import {
     createChamadoPrioridade,
@@ -253,7 +254,11 @@ export default function ChamadoConfiguracaoManagement({ permissions, kind }) {
                     selectedIds={selectedIds}
                     onToggleSelect={toggleSelected}
                     onToggleSelectAll={toggleVisible}
-                    isRowSelectable={() => true}
+                    isRowSelectable={(item) => item.ativo}
+                    getRowSelectionDisabledReason={() => "Este registro já está inativo."}
+                    deleteLabel="Desativar selecionados"
+                    deleteSelectionReason="Marque ao menos um registro ativo para desativação."
+                    deleteIcon={<FaBan aria-hidden="true" />}
                     onCreate={() => openModal("create")}
                     onView={(item) => openModal("view", item)}
                     onEdit={(item) => openModal("edit", item)}

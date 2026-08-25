@@ -77,6 +77,12 @@ export const getAreaAnchor = (title = "") =>
 export const canAccessSolution = (solutions, slug) =>
     solutions.some((item) => item.slug === slug);
 
+export const isAssignableSolution = (solution) => !!(
+    solution?.ativo &&
+    !solution.somenteAdminSistema &&
+    solution.slug !== "documentacao"
+);
+
 export const getUserGroupLabel = (user) =>
     user?.grupo?.nome || "Sem grupo";
 

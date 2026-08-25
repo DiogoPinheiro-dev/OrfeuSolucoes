@@ -46,6 +46,10 @@ export class SolucoesService {
     return this.solucaoBootstrapService.ensureProjetosSolution();
   }
 
+  async ensureHorasSolutionUnavailable(): Promise<void> {
+    return this.solucaoBootstrapService.ensureHorasSolutionUnavailable();
+  }
+
 
   async myHubNavigation(user: JwtPayload): Promise<SolucaoType[]> {
     return this.hubNavigationService.myHubNavigation(user);
