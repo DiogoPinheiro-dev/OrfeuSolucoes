@@ -30,8 +30,11 @@ export default function BacklogItemModal({
     item,
     responsaveis,
     parentOptions,
+    parentOptionsLoading,
+    parentOptionsError,
     saving,
     error,
+    onRetryParentOptions,
     onClose,
     onSubmit
 }) {
@@ -68,6 +71,12 @@ export default function BacklogItemModal({
         ...current,
         [key]: value
     }));
+    const currentParentUnavailable = Boolean(
+        form.paiId &&
+        !parentOptionsLoading &&
+        !parentOptionsError &&
+        !parentOptions.some((parent) => parent.id === form.paiId)
+    );
 
     const submit = (event) => {
         event.preventDefault();
@@ -97,7 +106,7 @@ export default function BacklogItemModal({
             formClassName="backlog-modal-form"
             actions={isView
                 ? <button type="button" onClick={onClose}>Fechar</button>
-                : <><button type="button" className="secondary" onClick={onClose} disabled={saving}>Cancelar</button><button type="submit" disabled={saving || !form.titulo.trim()}>{saving ? "Salvando..." : "Salvar"}</button></>}
+                : <><button type="button" className="secondary" onClick={onClose} disabled={saving}>Cancelar</button><button type="submit" disabled={saving || parentOptionsLoading || Boolean(parentOptionsError) || !form.titulo.trim()}>{saving ? "Salvando..." : "Salvar"}</button></>}
         >
             {error && <FeedbackMessage type="error" compact>{error}</FeedbackMessage>}
 
@@ -159,21 +168,51 @@ export default function BacklogItemModal({
                         ))}
                     </select>
                 </label>
-                <label>
-                    Item pai
-                    <select
-                        value={form.paiId}
-                        disabled={isView}
-                        onChange={(event) => change("paiId", event.target.value)}
-                    >
-                        <option value="">Sem item pai</option>
-                        {parentOptions.map((parent) => (
-                            <option key={parent.id} value={parent.id}>
-                                {parent.chave} — {parent.titulo}
-                            </option>
-                        ))}
-                    </select>
-                </label>
+                <div className="backlog-parent-field">
+                    <label>
+                        Item pai
+                        <select
+                            value={form.paiId}
+                            disabled={isView || parentOptionsLoading || Boolean(parentOptionsError)}
+                            aria-busy={parentOptionsLoading}
+                            aria-describedby={parentOptionsError ? "backlog-parent-options-error" : undefined}
+                            onChange={(event) => change("paiId", event.target.value)}
+                        >
+                            {parentOptionsLoading ? (
+                                <option value={form.paiId}>Carregando itens disponíveis...</option>
+                            ) : parentOptionsError ? (
+                                <option value={form.paiId}>Itens disponíveis indisponíveis</option>
+                            ) : (
+                                <>
+                                    <option value="">Sem item pai</option>
+                                    {currentParentUnavailable && (
+                                        <option value={form.paiId}>Item pai atual indisponível</option>
+                                    )}
+                                    {parentOptions.map((parent) => (
+                                        <option key={parent.id} value={parent.id}>
+                                            {parent.trilha}
+                                        </option>
+                                    ))}
+                                </>
+                            )}
+                        </select>
+                    </label>
+                    {parentOptionsError && (
+                        <div id="backlog-parent-options-error">
+                            <FeedbackMessage
+                                type="error"
+                                compact
+                                action={
+                                    <button type="button" onClick={onRetryParentOptions}>
+                                        Tentar novamente
+                                    </button>
+                                }
+                            >
+                                {parentOptionsError}
+                            </FeedbackMessage>
+                        </div>
+                    )}
+                </div>
                 <label>
                     Início previsto
                     <input

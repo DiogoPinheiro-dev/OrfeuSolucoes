@@ -9,6 +9,7 @@ import App from "./App.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import RouteLoadingFallback from "./components/RouteLoadingFallback.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
+import { HubNavigationProvider } from "./context/HubNavigationContext.jsx";
 const CompanyLogin = lazy(() => import("./pages/CompanyLogin.jsx"));
 const Ecommerce = lazy(() => import("./pages/Ecommerce.jsx"));
 const Home = lazy(() => import("./pages/Home.jsx"));
@@ -71,9 +72,11 @@ createRoot(document.getElementById("root")).render(
     <StrictMode>
         <ApolloProvider client={apolloClient}>
             <AuthProvider>
-                <Suspense fallback={<RouteLoadingFallback />}>
-                    <RouterProvider router={router} />
-                </Suspense>
+                <HubNavigationProvider>
+                    <Suspense fallback={<RouteLoadingFallback />}>
+                        <RouterProvider router={router} />
+                    </Suspense>
+                </HubNavigationProvider>
             </AuthProvider>
         </ApolloProvider>
     </StrictMode>

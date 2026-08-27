@@ -4,6 +4,7 @@ import {
     ARQUIVAR_PROJETO_ITEM_MUTATION,
     CREATE_PROJETO_ITEM_MUTATION,
     MOVER_PROJETO_ITEM_BACKLOG_MUTATION,
+    PROJETO_BACKLOG_CANDIDATOS_PAI_QUERY,
     PROJETO_BACKLOG_PROJETOS_QUERY,
     PROJETO_BACKLOG_RESPONSAVEIS_QUERY,
     PROJETO_ITEM_HISTORICO_QUERY,
@@ -39,6 +40,12 @@ export const getBacklogResponsaveis = (projetoId) => execute({
     document: PROJETO_BACKLOG_RESPONSAVEIS_QUERY,
     variables: { projetoId },
     select: (data) => data?.projetoBacklogResponsaveis || []
+});
+
+export const getBacklogCandidatosPai = (projetoId, itemId) => execute({
+    document: PROJETO_BACKLOG_CANDIDATOS_PAI_QUERY,
+    variables: { projetoId, itemId: itemId || null },
+    select: (data) => data?.projetoBacklogCandidatosPai || []
 });
 
 export const getBacklogItens = (filtro) => execute({

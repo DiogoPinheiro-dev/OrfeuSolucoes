@@ -8,8 +8,8 @@
 .budget-feedback.success { background: var(--success-soft); color: var(--success-text); }
 .budget-readonly { background: var(--warning-bg); color: var(--warning-text); }
 .budget-tabs { display: flex; gap: 8px; padding: 12px 18px; border-block: 1px solid var(--line); background: var(--surface-soft); }
-.budget-tabs button, .budget-form-grid button, .budget-empty button, .budget-finance-heading button { display: inline-flex; align-items: center; gap: 7px; min-height: 40px; padding: 9px 13px; border: 1px solid var(--button-secondary-border); border-radius: 9px; background: var(--button-secondary-bg); color: var(--primary); cursor: pointer; font-weight: 400; }
-.budget-tabs button.active, .budget-form-grid button, .budget-empty button, .budget-finance-heading button { border-color: var(--button-primary-border); background: var(--button-primary-bg); color: var(--button-primary-text); }
+.budget-tabs button, .budget-form-grid button, .budget-create-controls button, .budget-finance-heading button { display: inline-flex; align-items: center; gap: 7px; min-height: 40px; padding: 9px 13px; border: 1px solid var(--button-secondary-border); border-radius: 9px; background: var(--button-secondary-bg); color: var(--primary); cursor: pointer; font-weight: 400; }
+.budget-tabs button.active, .budget-form-grid button, .budget-create-controls button, .budget-finance-heading button { border-color: var(--button-primary-border); background: var(--button-primary-bg); color: var(--button-primary-text); }
 .budget-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; padding: 18px; background: var(--surface-soft); }
 .budget-form-grid form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; gap: 12px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-white); }
 .budget-form-grid h3, .budget-form-grid button { grid-column: 1 / -1; }

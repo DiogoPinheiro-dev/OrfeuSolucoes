@@ -72,6 +72,13 @@
   font-weight: 700;
 }
 
+.backlog-parent-field {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 8px;
+}
+
 .backlog-toolbar label {
   flex: 1 1 170px;
   font-weight: 400;

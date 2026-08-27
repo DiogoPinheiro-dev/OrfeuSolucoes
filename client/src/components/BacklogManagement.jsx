@@ -6,6 +6,7 @@ import {
     alterarStatusBacklogItem,
     arquivarBacklogItem,
     createBacklogItem,
+    getBacklogCandidatosPai,
     getBacklogItem,
     getBacklogItens,
     getBacklogProjetos,
@@ -14,10 +15,12 @@ import {
     reativarBacklogItem,
     updateBacklogItem
 } from "../../services/Projetos/BacklogService";
+import "../styles/crudGrid.css";
 import "../styles/backlogManagement.css";
 import BacklogItemModal from "./BacklogItemModal";
 import { LoadingState } from "./CrudFeedback";
 import { useConfirmAction } from "../hooks/useConfirmAction";
+import { useLatestRequest } from "../hooks/useLatestRequest";
 
 const TIPOS = { HISTORIA: "História", TAREFA: "Tarefa", BUG: "Bug", MELHORIA: "Melhoria" };
 const PRIORIDADES = { BAIXA: "Baixa", MEDIA: "Média", ALTA: "Alta", CRITICA: "Crítica" };
@@ -82,6 +85,7 @@ function applyLocalMove(rows, itemId, direction) {
 
 export default function BacklogManagement() {
     const { requestConfirmation, confirmationDialog } = useConfirmAction();
+    const parentOptionsRequest = useLatestRequest();
     const [searchParams, setSearchParams] = useSearchParams();
     const linkedProjectId = searchParams.get("projetoId") || "";
     const linkedItemId = searchParams.get("itemId") || "";
@@ -112,6 +116,9 @@ export default function BacklogManagement() {
     const [notice, setNotice] = useState("");
     const [modal, setModal] = useState(null);
     const [modalError, setModalError] = useState("");
+    const [parentOptions, setParentOptions] = useState([]);
+    const [parentOptionsLoading, setParentOptionsLoading] = useState(false);
+    const [parentOptionsError, setParentOptionsError] = useState("");
 
     const selectedProject = projects.find((project) => project.id === projectId);
     const selectedItem = rows.find((item) => item.id === selectedId);
@@ -208,6 +215,37 @@ export default function BacklogManagement() {
         const timer = window.setTimeout(() => setNotice(""), 4500);
         return () => window.clearTimeout(timer);
     }, [notice]);
+
+    const loadParentOptions = useCallback(() => {
+        if (!modal || modal.loading || !projectId) return;
+
+        setParentOptionsLoading(true);
+        setParentOptionsError("");
+        void parentOptionsRequest.run(
+            () => getBacklogCandidatosPai(projectId, modal.item?.id),
+            {
+                onSuccess: setParentOptions,
+                onError: (loadError) => {
+                    setParentOptions([]);
+                    setParentOptionsError(
+                        loadError.message || "Não foi possível carregar os itens disponíveis como pai."
+                    );
+                },
+                onSettled: () => setParentOptionsLoading(false)
+            }
+        );
+    }, [modal, parentOptionsRequest, projectId]);
+
+    useEffect(() => {
+        if (!modal || modal.loading || !projectId) {
+            parentOptionsRequest.invalidate();
+            setParentOptions([]);
+            setParentOptionsLoading(false);
+            setParentOptionsError("");
+            return;
+        }
+        loadParentOptions();
+    }, [loadParentOptions, modal, parentOptionsRequest, projectId]);
 
     const changeFilter = (key, value) => {
         setFilters((current) => ({ ...current, [key]: value }));
@@ -376,12 +414,6 @@ export default function BacklogManagement() {
         event.preventDefault();
         move(item, direction);
     };
-
-    const parentOptions = rows.filter((item) =>
-        !item.arquivadoEm &&
-        item.id !== modal?.item?.id &&
-        !item.paiId
-    );
 
     return (
         <div className="backlog-management">
@@ -649,9 +681,15 @@ export default function BacklogManagement() {
                     item={modal.item}
                     responsaveis={responsaveis}
                     parentOptions={parentOptions}
+                    parentOptionsLoading={parentOptionsLoading}
+                    parentOptionsError={parentOptionsError}
                     saving={saving}
                     error={modalError}
-                    onClose={() => setModal(null)}
+                    onRetryParentOptions={loadParentOptions}
+                    onClose={() => {
+                        parentOptionsRequest.invalidate();
+                        setModal(null);
+                    }}
                     onSubmit={saveItem}
                 />
             )}

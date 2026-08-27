@@ -10,6 +10,7 @@ import {
     alterarStatusBacklogItem,
     arquivarBacklogItem,
     createBacklogItem,
+    getBacklogCandidatosPai,
     getBacklogItem,
     getBacklogItens,
     getBacklogProjetos,
@@ -24,6 +25,7 @@ vi.mock("../../../../services/Projetos/BacklogService", () => ({
     alterarStatusBacklogItem: vi.fn(),
     arquivarBacklogItem: vi.fn(),
     createBacklogItem: vi.fn(),
+    getBacklogCandidatosPai: vi.fn(),
     getBacklogItem: vi.fn(),
     getBacklogItens: vi.fn(),
     getBacklogProjetos: vi.fn(),
@@ -56,6 +58,14 @@ const item = {
     permissoes: { podeAlterar: true, podeArquivar: true, podeReativar: false }
 };
 const secondItem = { ...item, id: "i2", chave: "ORF-2", titulo: "Revisar permissoes", ordemBacklog: 2, versao: 1 };
+const nestedParent = {
+    id: "i3",
+    chave: "ORF-3",
+    titulo: "Implementar tela",
+    paiId: "i1",
+    nivel: 1,
+    trilha: "ORF-1 — Implementar autenticacao › ORF-3 — Implementar tela"
+};
 
 const backlogPage = (items = [item, secondItem], permissoes = { podeCriar: true, podePriorizar: true }) => ({
     items,
@@ -76,6 +86,10 @@ const renderBacklog = (entry = "/hub/projetos/backlog-de-demandas") => render(
 beforeEach(() => {
     getBacklogProjetos.mockResolvedValue([project]);
     getBacklogResponsaveis.mockResolvedValue([responsible]);
+    getBacklogCandidatosPai.mockResolvedValue([
+        { id: item.id, chave: item.chave, titulo: item.titulo, paiId: null, nivel: 0, trilha: `${item.chave} — ${item.titulo}` },
+        nestedParent
+    ]);
     getBacklogItens.mockResolvedValue(backlogPage());
     getBacklogItem.mockResolvedValue(item);
     createBacklogItem.mockResolvedValue(item);
@@ -132,12 +146,55 @@ describe("Backlog de demandas", () => {
         expect(await screen.findByRole("status")).toHaveTextContent("Demanda criada com sucesso.");
     });
 
+    it("carrega candidatos fora da lista e permite selecionar um item hierárquico como pai", async () => {
+        const user = userEvent.setup();
+        getBacklogItens.mockResolvedValue(backlogPage([item]));
+        renderBacklog();
+        await screen.findByRole("row", { name: /ORF-1/ });
+
+        await user.click(screen.getByRole("button", { name: "Incluir demanda" }));
+        const dialog = screen.getByRole("dialog", { name: "Formulário da demanda" });
+        const parentSelect = await within(dialog).findByRole("combobox", { name: "Item pai" });
+        await waitFor(() => expect(parentSelect).toBeEnabled());
+        expect(getBacklogCandidatosPai).toHaveBeenCalledWith("p1", undefined);
+        expect(within(parentSelect).getByRole("option", { name: nestedParent.trilha })).toBeInTheDocument();
+
+        await user.type(within(dialog).getByRole("textbox", { name: "Título" }), "Nova subtarefa");
+        await user.selectOptions(parentSelect, nestedParent.id);
+        await user.click(within(dialog).getByRole("button", { name: "Salvar" }));
+
+        await waitFor(() => expect(createBacklogItem).toHaveBeenCalledWith(
+            expect.objectContaining({ projetoId: "p1", paiId: nestedParent.id })
+        ));
+    });
+
+    it("bloqueia o salvamento e permite repetir quando os candidatos a pai falham", async () => {
+        const user = userEvent.setup();
+        getBacklogCandidatosPai
+            .mockRejectedValueOnce(new Error("Não foi possível carregar os itens disponíveis como pai."))
+            .mockResolvedValueOnce([nestedParent]);
+        renderBacklog();
+        await screen.findByRole("row", { name: /ORF-1/ });
+
+        await user.click(screen.getByRole("button", { name: "Incluir demanda" }));
+        const dialog = screen.getByRole("dialog", { name: "Formulário da demanda" });
+        expect(await within(dialog).findByRole("alert")).toHaveTextContent(
+            "Não foi possível carregar os itens disponíveis como pai."
+        );
+        expect(within(dialog).getByRole("button", { name: "Salvar" })).toBeDisabled();
+
+        await user.click(within(dialog).getByRole("button", { name: "Tentar novamente" }));
+        await waitFor(() => expect(within(dialog).getByRole("combobox", { name: "Item pai" })).toBeEnabled());
+        expect(getBacklogCandidatosPai).toHaveBeenCalledTimes(2);
+    });
+
     it("abre a demanda em modo somente leitura", async () => {
         const user = userEvent.setup();
         renderBacklog();
         await user.click(await screen.findByRole("button", { name: "Implementar autenticacao" }));
 
         await waitFor(() => expect(getBacklogItem).toHaveBeenCalledWith("i1"));
+        await waitFor(() => expect(getBacklogCandidatosPai).toHaveBeenCalledWith("p1", "i1"));
         const dialog = await screen.findByRole("dialog", { name: "Detalhes da demanda" });
         expect(within(dialog).getByRole("textbox", { name: /T/ })).toBeDisabled();
         expect(within(dialog).queryByRole("button", { name: "Salvar" })).not.toBeInTheDocument();

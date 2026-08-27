@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getMyHubNavigation } from "../../../services/Solucoes/SolucaoService";
 import { HUB_NAVIGATION_CHANGED_EVENT } from "../../auth/hubNavigationEvents";
+import { HubNavigationProvider } from "../../context/HubNavigationContext";
 import { useAuth } from "../../hooks/useAuth";
 import { useHubNavigation } from "../../hooks/useHubNavigation";
 
@@ -16,7 +17,7 @@ vi.mock("../../hooks/useAuth", () => ({
     useAuth: vi.fn()
 }));
 
-const strictOptions = { reactStrictMode: true };
+const strictOptions = { reactStrictMode: true, wrapper: HubNavigationProvider };
 const navigation = (id, nome) => [
     {
         id,
@@ -65,6 +66,19 @@ describe("useHubNavigation", () => {
             slug: "documentacao",
             title: "Documentação"
         })]);
+        expect(getMyHubNavigation).toHaveBeenCalledTimes(2);
+    });
+
+    it("compartilha uma única carga entre consumidores simultâneos", async () => {
+        getMyHubNavigation.mockResolvedValue(navigation(10, "Configurador"));
+
+        const { result } = renderHook(() => ({
+            header: useHubNavigation(),
+            page: useHubNavigation()
+        }), strictOptions);
+
+        await waitFor(() => expect(result.current.page.loading).toBe(false));
+        expect(result.current.header).toBe(result.current.page);
         expect(getMyHubNavigation).toHaveBeenCalledTimes(2);
     });
 

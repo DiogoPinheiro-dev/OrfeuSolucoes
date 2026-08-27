@@ -1,55 +1,13 @@
-import { useEffect, useState } from "react";
+import { useContext } from "react";
 
-import { getMyHubNavigation } from "../../services/Solucoes/SolucaoService";
-import { normalizeSolutions } from "../auth/hubConfig";
-import { HUB_NAVIGATION_CHANGED_EVENT } from "../auth/hubNavigationEvents";
-import { useAuth } from "./useAuth";
-import { useLatestRequest } from "./useLatestRequest";
+import { HubNavigationContext } from "../context/hub-navigation-context";
 
 export function useHubNavigation() {
-    const { isAuthenticated, user } = useAuth();
-    const [solutions, setSolutions] = useState([]);
-    const [loading, setLoading] = useState(isAuthenticated);
-    const [error, setError] = useState("");
-    const navigationRequest = useLatestRequest();
+    const context = useContext(HubNavigationContext);
 
-    useEffect(() => {
-        if (!isAuthenticated) {
-            navigationRequest.invalidate();
-            setSolutions([]);
-            setLoading(false);
-            setError("");
-            return undefined;
-        }
+    if (!context) {
+        throw new Error("useHubNavigation must be used within HubNavigationProvider");
+    }
 
-        const loadNavigation = () => {
-            setLoading(true);
-            setError("");
-
-            return navigationRequest.run(getMyHubNavigation, {
-                onSuccess: (navigation) => {
-                    setSolutions(normalizeSolutions(navigation));
-                },
-                onError: (loadError) => {
-                    setError(loadError.message || "Não foi possível carregar o hub.");
-                    setSolutions([]);
-                },
-                onSettled: () => setLoading(false)
-            });
-        };
-
-        const handleHubNavigationChanged = () => {
-            void loadNavigation();
-        };
-
-        void loadNavigation();
-        window.addEventListener(HUB_NAVIGATION_CHANGED_EVENT, handleHubNavigationChanged);
-
-        return () => {
-            navigationRequest.invalidate();
-            window.removeEventListener(HUB_NAVIGATION_CHANGED_EVENT, handleHubNavigationChanged);
-        };
-    }, [isAuthenticated, navigationRequest, user?.empresa?.id]);
-
-    return { error, loading, solutions };
+    return context;
 }

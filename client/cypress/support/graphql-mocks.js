@@ -25,18 +25,19 @@ const defaultResponses = {
   BuscarDocumentacao: { buscarDocumentacao: [{ ...artigoIndice, trecho: "Organize prioridades do backlog do projeto." }] },
 };
 
-Cypress.Commands.add("mockGraphql", (overrides = {}) => {
+Cypress.Commands.add("mockGraphql", (overrides = {}, onRequest) => {
   const responses = { ...defaultResponses, ...overrides };
   cy.intercept("POST", graphqlUrl, (request) => {
     const operationName = request.body?.operationName;
     request.alias = operationName;
+    onRequest?.(operationName);
     const response = responses[operationName];
     if (!response) return request.reply({ statusCode: 500, body: { errors: [{ message: `Operação GraphQL sem mock: ${operationName}` }] } });
     request.reply({ statusCode: 200, body: response.errors ? response : { data: response } });
   }).as("graphql");
 });
 
-Cypress.Commands.add("visitAuthenticated", (path, overrides = {}) => {
-  cy.mockGraphql(overrides);
+Cypress.Commands.add("visitAuthenticated", (path, overrides = {}, onRequest) => {
+  cy.mockGraphql(overrides, onRequest);
   cy.visit(path);
 });

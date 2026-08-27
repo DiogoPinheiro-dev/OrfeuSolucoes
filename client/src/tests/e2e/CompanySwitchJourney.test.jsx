@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { RouterProvider, createMemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -9,6 +9,7 @@ import { getCurrentUser, switchCompany } from "../../../services/Auth/AuthServic
 import { getMyHubNavigation } from "../../../services/Solucoes/SolucaoService";
 import ProtectedRoute from "../../components/ProtectedRoute";
 import { AuthProvider } from "../../context/AuthContext";
+import { HubNavigationProvider } from "../../context/HubNavigationContext";
 import Hub from "../../pages/Hub";
 import SolutionWorkspace from "../../pages/SolutionWorkspace";
 
@@ -64,9 +65,18 @@ const renderJourney = () => {
       { path: "/hub/:slug", element: <SolutionWorkspace /> },
     ],
   }], { initialEntries: ["/hub/configurador"] });
-  render(<AuthProvider><RouterProvider router={router} /></AuthProvider>);
+  render(
+    <AuthProvider>
+      <HubNavigationProvider>
+        <RouterProvider router={router} />
+      </HubNavigationProvider>
+    </AuthProvider>
+  );
   return router;
 };
+
+const getDesktopCompanySwitcher = () => within(document.querySelector(".hub-sidebar-user-card"))
+  .getByRole("button", { name: "Trocar empresa ativa" });
 
 describe("troca de empresa pelo cabeçalho", () => {
   beforeEach(() => {
@@ -88,30 +98,36 @@ describe("troca de empresa pelo cabeçalho", () => {
     const router = renderJourney();
 
     expect(await screen.findByRole("heading", { name: "Configurador" })).toBeInTheDocument();
-    await user.click(screen.getAllByRole("button", { name: "Trocar empresa ativa" })[0]);
+    const initialSwitcher = getDesktopCompanySwitcher();
+    await user.click(initialSwitcher);
+    expect(initialSwitcher).toHaveAttribute("aria-expanded", "true");
+    expect(router.state.location.pathname).toBe("/hub/configurador");
     await user.click(screen.getByRole("option", { name: "Empresa B" }));
 
     expect(switchCompany).toHaveBeenCalledWith({ empresaId: 2 });
     await waitFor(() => expect(router.state.location.pathname).toBe("/hub"));
     expect(await screen.findByText(/1 solução\(ões\) disponível/)).toBeInTheDocument();
     await waitFor(() => expect(screen.getAllByText("Projetos").length).toBeGreaterThan(0));
-    expect(screen.getAllByRole("button", { name: "Trocar empresa ativa" })[0]).toHaveTextContent("Empresa B");
-    expect(getMyHubNavigation.mock.calls.length).toBeGreaterThanOrEqual(2);
+    expect(getDesktopCompanySwitcher()).toHaveTextContent("Empresa B");
+    expect(getMyHubNavigation).toHaveBeenCalledTimes(2);
   });
 
   it("mantém a empresa anterior e informa a falha da troca", async () => {
     const user = userEvent.setup();
     switchCompany.mockRejectedValue(new Error("Empresa indisponível."));
-    renderJourney();
+    const router = renderJourney();
 
     await screen.findByRole("heading", { name: "Configurador" });
-    await user.click(screen.getAllByRole("button", { name: "Trocar empresa ativa" })[0]);
+    const initialSwitcher = getDesktopCompanySwitcher();
+    await user.click(initialSwitcher);
+    expect(initialSwitcher).toHaveAttribute("aria-expanded", "true");
+    expect(router.state.location.pathname).toBe("/hub/configurador");
     await user.click(screen.getByRole("option", { name: "Empresa B" }));
 
     expect(await screen.findByRole("alertdialog", { name: "Não foi possível trocar a empresa" }))
       .toHaveTextContent("Empresa indisponível.");
     await user.click(screen.getByRole("button", { name: "Fechar" }));
-    const switcher = screen.getAllByRole("button", { name: "Trocar empresa ativa" })[0];
+    const switcher = getDesktopCompanySwitcher();
     expect(switcher).toHaveTextContent("Empresa A");
     expect(screen.getByRole("heading", { name: "Configurador" })).toBeInTheDocument();
   });

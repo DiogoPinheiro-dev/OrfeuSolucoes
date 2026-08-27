@@ -126,17 +126,7 @@ export class ProjetoFeedRegistroService {
       select: { id: true, chave: true, titulo: true, paiId: true }
     });
     const itens = new Map<string, AnyRecord>([...itensIniciais, ...itensAdicionais].map((item) => [item.id, item]));
-    const paisAusentes = new Set<string>();
-    itens.forEach((item) => {
-      if (item.paiId && !itens.has(item.paiId)) paisAusentes.add(item.paiId);
-    });
-    if (paisAusentes.size) {
-      const pais = await this.prisma.projetoItem.findMany({
-        where: { empresaId, projetoId: projeto.id, id: { in: [...paisAusentes] } },
-        select: { id: true, chave: true, titulo: true, paiId: true }
-      });
-      pais.forEach((item) => itens.set(item.id, item));
-    }
+    await this.completarAncestrais(itens, empresaId, projeto.id);
 
     const marcoIds = new Set<string>(marcos.map((item) => item.id));
     entregas.forEach((item) => this.adicionarTexto(marcoIds, item.marcoId));
@@ -221,8 +211,10 @@ export class ProjetoFeedRegistroService {
     const projetoContexto = `${projeto.chave} — ${projeto.nome}`;
     const contextos = new Map<string, string>(eventosComDados.map((item) => [this.chave(item.entidade, item.entidadeId), projetoContexto]));
     itens.forEach((item) => {
-      const pai = item.paiId ? itens.get(item.paiId) : null;
-      contextos.set(this.chave('ITEM', item.id), this.trilha(projetoContexto, pai ? `${pai.chave} — ${pai.titulo}` : ''));
+      contextos.set(
+        this.chave('ITEM', item.id),
+        this.trilha(projetoContexto, ...this.cadeiaItem(item, itens, false))
+      );
     });
     dependencias.forEach((item) => contextos.set(this.chave('DEPENDENCIA', item.id), projetoContexto));
     sprints.forEach((item) => contextos.set(this.chave('SPRINT', item.id), projetoContexto));
@@ -241,7 +233,10 @@ export class ProjetoFeedRegistroService {
     atualizacaoPorId.forEach((item) => contextos.set(this.chave('ATUALIZACAO', item.id), projetoContexto));
     comentarioPorId.forEach((item) => {
       const contextoPai = item.itemId
-        ? this.trilha(projetoContexto, this.itemLabel(itens.get(item.itemId)))
+        ? this.trilha(
+            projetoContexto,
+            ...this.cadeiaItem(itens.get(item.itemId), itens, true)
+          )
         : item.atualizacaoId
           ? this.trilha(projetoContexto, this.atualizacaoLabel(atualizacaoPorId.get(item.atualizacaoId)))
           : projetoContexto;
@@ -314,6 +309,55 @@ export class ProjetoFeedRegistroService {
     return ids?.size ? buscar() : [];
   }
 
+  private async completarAncestrais(
+    itens: Map<string, AnyRecord>,
+    empresaId: number,
+    projetoId: string
+  ): Promise<void> {
+    const consultados = new Set<string>();
+    while (true) {
+      const paisAusentes = new Set<string>();
+      itens.forEach((item) => {
+        if (
+          item.paiId &&
+          !itens.has(item.paiId) &&
+          !consultados.has(item.paiId)
+        ) {
+          paisAusentes.add(item.paiId);
+        }
+      });
+      if (!paisAusentes.size) return;
+      paisAusentes.forEach((id) => consultados.add(id));
+
+      const pais = await this.prisma.projetoItem.findMany({
+        where: {
+          empresaId,
+          projetoId,
+          id: { in: [...paisAusentes] }
+        },
+        select: { id: true, chave: true, titulo: true, paiId: true }
+      });
+      pais.forEach((item) => itens.set(item.id, item));
+    }
+  }
+
+  private cadeiaItem(
+    item: AnyRecord | undefined,
+    itens: Map<string, AnyRecord>,
+    incluirItem: boolean
+  ): string[] {
+    const partes: string[] = [];
+    const visitados = new Set<string>();
+    let atual = incluirItem ? item : item?.paiId ? itens.get(item.paiId) : undefined;
+
+    while (atual && !visitados.has(atual.id)) {
+      visitados.add(atual.id);
+      partes.unshift(`${atual.chave} — ${atual.titulo}`);
+      atual = atual.paiId ? itens.get(atual.paiId) : undefined;
+    }
+    return partes;
+  }
+
   private nomeDosDados(
     evento: EventoComDados,
     projeto: ProjetoFeedProjeto,
@@ -358,10 +402,6 @@ export class ProjetoFeedRegistroService {
 
   private trilha(...partes: Array<string | null | undefined>): string {
     return partes.filter((item): item is string => !!item?.trim()).join(' › ');
-  }
-
-  private itemLabel(item: AnyRecord | undefined): string {
-    return item ? `${item.chave} — ${item.titulo}` : '';
   }
 
   private atualizacaoLabel(item: AnyRecord | undefined): string {

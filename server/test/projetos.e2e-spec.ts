@@ -108,6 +108,7 @@ describe('Projetos GraphQL e2e', () => {
     atualizarCiclo: jest.fn(),
     arquivar: jest.fn(),
     reativar: jest.fn(),
+    backlogCandidatosPai: jest.fn(),
     comunicacaoProjetos: jest.fn(),
     comunicacao: jest.fn()
   };
@@ -189,6 +190,14 @@ describe('Projetos GraphQL e2e', () => {
       project = { ...project, arquivadoEm: null, arquivadoPor: null };
       return project;
     });
+    service.backlogCandidatosPai.mockResolvedValue([{
+      id: '44444444-4444-4444-8444-444444444444',
+      chave: 'ORFEU-1',
+      titulo: 'Historia principal',
+      paiId: null,
+      nivel: 0,
+      trilha: 'ORFEU-1 — Historia principal'
+    }]);
   });
 
   const gql = (token: string, query: string, variables?: Record<string, unknown>) =>
@@ -265,6 +274,32 @@ describe('Projetos GraphQL e2e', () => {
     expect(invalid.body.errors?.[0]?.extensions?.code).toBe('BAD_REQUEST');
     expect(service.comunicacao).not.toHaveBeenCalled();
 
+  });
+
+  it('expoe candidatos hierarquicos do backlog pela borda GraphQL', async () => {
+    const itemId = '55555555-5555-4555-8555-555555555555';
+    const response = await gql(adminToken, `
+      query CandidatosPai($projetoId: String!, $itemId: String) {
+        projetoBacklogCandidatosPai(projetoId: $projetoId, itemId: $itemId) {
+          id chave titulo paiId nivel trilha
+        }
+      }
+    `, { projetoId: project.id, itemId }).expect(200);
+
+    expect(response.body.errors).toBeUndefined();
+    expect(response.body.data.projetoBacklogCandidatosPai).toEqual([{
+      id: '44444444-4444-4444-8444-444444444444',
+      chave: 'ORFEU-1',
+      titulo: 'Historia principal',
+      paiId: null,
+      nivel: 0,
+      trilha: 'ORFEU-1 — Historia principal'
+    }]);
+    expect(service.backlogCandidatosPai).toHaveBeenCalledWith(
+      project.id,
+      expect.objectContaining({ sub: admin.sub, empresaId: 10 }),
+      itemId
+    );
   });
 
 

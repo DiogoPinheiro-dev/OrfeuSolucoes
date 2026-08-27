@@ -14,6 +14,7 @@ import { getMyHubNavigation } from "../../../services/Solucoes/SolucaoService";
 import App from "../../App";
 import ProtectedRoute from "../../components/ProtectedRoute";
 import { AuthProvider } from "../../context/AuthContext";
+import { HubNavigationProvider } from "../../context/HubNavigationContext";
 import CompanyLogin from "../../pages/CompanyLogin";
 import Hub from "../../pages/Hub";
 import SolutionFeaturePage from "../../pages/SolutionFeaturePage";
@@ -82,7 +83,13 @@ const createRouter = (initialEntry) => createMemoryRouter([{
 
 const renderJourney = (initialEntry) => {
   const router = createRouter(initialEntry);
-  render(<AuthProvider><RouterProvider router={router} /></AuthProvider>);
+  render(
+    <AuthProvider>
+      <HubNavigationProvider>
+        <RouterProvider router={router} />
+      </HubNavigationProvider>
+    </AuthProvider>
+  );
   return router;
 };
 
@@ -122,6 +129,7 @@ describe("jornadas críticas do frontend", () => {
 
     expect(await screen.findByRole("heading", { name: "Gestão ativa: Cadastro de usuários" })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe("/hub/configurador/cadastro-de-usuarios");
+    expect(getMyHubNavigation).toHaveBeenCalledTimes(1);
   });
 
   it("rejeita o cookie expirado e impede acesso direto a uma rota protegida", async () => {

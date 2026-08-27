@@ -22,6 +22,7 @@ import { getBacklogProjetos } from "../../services/Projetos/BacklogService";
 import { CrudModal } from "./CrudModal";
 import { EmptyState, FeedbackMessage, LoadingState } from "./CrudFeedback";
 import { useConfirmAction } from "../hooks/useConfirmAction";
+import "../styles/crudGrid.css";
 import "../styles/cronogramaManagement.css";
 
 const DAY = 86400000;

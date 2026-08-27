@@ -14,6 +14,7 @@ import {
 } from './dto/mover-projeto-item-backlog.input';
 import {
   ProjetoBacklogMovimentoType,
+  ProjetoBacklogPaiCandidatoType,
   ProjetoBacklogProjetoType
 } from './dto/projeto-backlog.type';
 import { ProjetoUsuarioType } from './dto/projeto.type';
@@ -22,6 +23,16 @@ import { ProjetoAuditoriaService } from './projeto-auditoria.service';
 import { ProjetoAuthorizationService } from './projeto-authorization.service';
 import { ProjetoItemAuthorizationService } from './projeto-item-authorization.service';
 import { ProjetoPapel, ProjetoUsuarioRecord } from './types/projeto.types';
+
+type ProjetoItemHierarquiaRecord = {
+  id: string;
+  chave: string;
+  titulo: string;
+  paiId: string | null;
+  ordemBacklog: number;
+  numero: number;
+  arquivadoEm: Date | null;
+};
 
 @Injectable()
 export class ProjetoBacklogService {
@@ -82,6 +93,59 @@ export class ProjetoBacklogService {
         )
       )
       .map(toProjetoUsuarioType);
+  }
+
+  async candidatosPai(
+    projetoId: string,
+    user: JwtPayload,
+    itemId?: string
+  ): Promise<ProjetoBacklogPaiCandidatoType[]> {
+    const contexto = await this.itemAuthorization.assertReadContext(
+      projetoId,
+      user
+    );
+    const itens = await this.prisma.projetoItem.findMany({
+      where: {
+        empresaId: contexto.empresaId,
+        projetoId: contexto.projeto.id
+      },
+      select: {
+        id: true,
+        chave: true,
+        titulo: true,
+        paiId: true,
+        ordemBacklog: true,
+        numero: true,
+        arquivadoEm: true
+      },
+      orderBy: [
+        { ordemBacklog: 'asc' },
+        { numero: 'asc' },
+        { id: 'asc' }
+      ]
+    }) as ProjetoItemHierarquiaRecord[];
+
+    if (itemId && !itens.some((item) => item.id === itemId)) {
+      throw new NotFoundException('Item de projeto nao encontrado.');
+    }
+
+    const excluidos = this.descendentesDoItem(itens, itemId);
+    const itensPorId = new Map(itens.map((item) => [item.id, item]));
+    const trilhas = new Map<string, string[]>();
+
+    return itens
+      .filter((item) => !item.arquivadoEm && !excluidos.has(item.id))
+      .map((item) => {
+        const partes = this.resolverTrilha(item, itensPorId, trilhas, new Set());
+        return {
+          id: item.id,
+          chave: item.chave,
+          titulo: item.titulo,
+          paiId: item.paiId,
+          nivel: partes.length - 1,
+          trilha: partes.join(' › ')
+        };
+      });
   }
 
   async mover(
@@ -216,5 +280,61 @@ export class ProjetoBacklogService {
       return Math.max(0, currentIndex - 1);
     }
     return Math.min(total - 1, currentIndex + 1);
+  }
+
+  private descendentesDoItem(
+    itens: ProjetoItemHierarquiaRecord[],
+    itemId?: string
+  ): Set<string> {
+    if (!itemId) return new Set();
+
+    const filhosPorPai = new Map<string, string[]>();
+    for (const item of itens) {
+      if (!item.paiId) continue;
+      filhosPorPai.set(item.paiId, [
+        ...(filhosPorPai.get(item.paiId) ?? []),
+        item.id
+      ]);
+    }
+
+    const excluidos = new Set<string>([itemId]);
+    const pendentes = [...(filhosPorPai.get(itemId) ?? [])];
+    while (pendentes.length) {
+      const atual = pendentes.shift();
+      if (!atual || excluidos.has(atual)) continue;
+      excluidos.add(atual);
+      pendentes.push(...(filhosPorPai.get(atual) ?? []));
+    }
+    return excluidos;
+  }
+
+  private resolverTrilha(
+    item: ProjetoItemHierarquiaRecord,
+    itensPorId: Map<string, ProjetoItemHierarquiaRecord>,
+    trilhas: Map<string, string[]>,
+    visitados: Set<string>
+  ): string[] {
+    const existente = trilhas.get(item.id);
+    if (existente) return existente;
+    if (visitados.has(item.id)) {
+      throw new BadRequestException(
+        'A hierarquia existente contem um ciclo e precisa ser corrigida.'
+      );
+    }
+
+    visitados.add(item.id);
+    const pai = item.paiId ? itensPorId.get(item.paiId) : null;
+    if (item.paiId && !pai) {
+      throw new BadRequestException(
+        'A hierarquia existente referencia um item pai invalido.'
+      );
+    }
+    const partesPai = pai
+      ? this.resolverTrilha(pai, itensPorId, trilhas, visitados)
+      : [];
+    const partes = [...partesPai, `${item.chave} — ${item.titulo}`];
+    visitados.delete(item.id);
+    trilhas.set(item.id, partes);
+    return partes;
   }
 }

@@ -102,6 +102,13 @@ export class ProjetoItemCatalogService {
             status === ProjetoItemStatus.CONCLUIDO ? new Date() : null
         }
       });
+      await this.garantirDependenciaHierarquica(tx, {
+        empresaId: contexto.empresaId,
+        projetoId: contexto.projeto.id,
+        paiId: item.paiId,
+        filhoId: item.id,
+        usuarioId: user.sub
+      });
       await tx.projeto.update({
         where: { id: contexto.projeto.id },
         data: { backlogVersao: { increment: 1 } }
@@ -200,6 +207,15 @@ export class ProjetoItemCatalogService {
           ? { estimativaMinutos }
           : {})
       });
+      if (input.paiId !== undefined) {
+        await this.garantirDependenciaHierarquica(tx, {
+          empresaId: contexto.empresaId,
+          projetoId: contexto.projeto.id,
+          paiId: input.paiId,
+          filhoId: current.id,
+          usuarioId: user.sub
+        });
+      }
       await this.auditoriaService.registrar(tx, {
         empresaId: contexto.empresaId,
         projetoId: contexto.projeto.id,
@@ -326,6 +342,13 @@ export class ProjetoItemCatalogService {
         arquivadoEm: null,
         arquivadoPorId: null
       });
+      await this.garantirDependenciaHierarquica(tx, {
+        empresaId: contexto.empresaId,
+        projetoId: contexto.projeto.id,
+        paiId: current.paiId,
+        filhoId: current.id,
+        usuarioId: user.sub
+      });
       await tx.projeto.update({
         where: { id: contexto.projeto.id },
         data: { backlogVersao: { increment: 1 } }
@@ -349,6 +372,37 @@ export class ProjetoItemCatalogService {
         'O item arquivado esta disponivel somente para consulta.'
       );
     }
+  }
+
+  private async garantirDependenciaHierarquica(
+    tx: Prisma.TransactionClient,
+    input: {
+      empresaId: number;
+      projetoId: string;
+      paiId?: string | null;
+      filhoId: string;
+      usuarioId: string;
+    }
+  ): Promise<void> {
+    const dependencia = await this.hierarquiaService.garantirDependenciaPaiFilho(
+      tx,
+      input
+    );
+    if (!dependencia) return;
+
+    await this.auditoriaService.registrar(tx, {
+      empresaId: input.empresaId,
+      projetoId: input.projetoId,
+      usuarioId: input.usuarioId,
+      entidade: 'DEPENDENCIA',
+      entidadeId: dependencia.id,
+      evento: dependencia.evento,
+      dados: {
+        bloqueadorId: input.paiId,
+        bloqueadoId: input.filhoId,
+        origem: 'HIERARQUIA_BACKLOG'
+      }
+    });
   }
 
   private async findReference(id: string): Promise<{

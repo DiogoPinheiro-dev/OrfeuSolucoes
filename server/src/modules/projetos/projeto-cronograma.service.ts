@@ -28,6 +28,7 @@ import {
   normalizeCalendarDate,
   validatePlannedDates
 } from './policies/projeto-input.policy';
+import { assertProjetoDependenciaSemCiclo } from './policies/projeto-dependencia.policy';
 import {
   ProjetoCronogramaAgrupamento,
   ProjetoCronogramaElementoTipo,
@@ -459,26 +460,11 @@ export class ProjetoCronogramaService {
       },
       select: { bloqueadorId: true, bloqueadoId: true }
     });
-    const graph = new Map<string, string[]>();
-    for (const item of dependencies) {
-      graph.set(item.bloqueadorId, [
-        ...(graph.get(item.bloqueadorId) ?? []),
-        item.bloqueadoId
-      ]);
-    }
-    const pending = [bloqueadoId];
-    const visited = new Set<string>();
-    while (pending.length) {
-      const current = pending.pop()!;
-      if (current === bloqueadorId) {
-        throw new BadRequestException(
-          'A dependencia criaria um ciclo no cronograma.'
-        );
-      }
-      if (visited.has(current)) continue;
-      visited.add(current);
-      pending.push(...(graph.get(current) ?? []));
-    }
+    assertProjetoDependenciaSemCiclo(
+      dependencies,
+      bloqueadorId,
+      bloqueadoId
+    );
   }
 
   private itemElement(

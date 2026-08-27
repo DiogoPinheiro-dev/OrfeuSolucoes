@@ -1013,6 +1013,15 @@ type ProjetoBacklogMovimentoType {
   itemId: String!
 }
 
+type ProjetoBacklogPaiCandidatoType {
+  chave: String!
+  id: String!
+  nivel: Int!
+  paiId: String
+  titulo: String!
+  trilha: String!
+}
+
 type ProjetoBacklogProjetoType {
   arquivadoEm: DateTime
   chave: String!
@@ -1745,6 +1754,7 @@ type Query {
   planejamentoRecursos: PlanejamentoRecursoPainelType!
   prioridadesChamado(ativas: Boolean = true): [ChamadoPrioridadeType!]!
   projeto(id: String!): ProjetoType!
+  projetoBacklogCandidatosPai(itemId: String, projetoId: String!): [ProjetoBacklogPaiCandidatoType!]!
   projetoBacklogProjetos(incluirArquivados: Boolean = false): [ProjetoBacklogProjetoType!]!
   projetoBacklogResponsaveis(projetoId: String!): [ProjetoUsuarioType!]!
   projetoComunicacao(feed: ProjetoComunicacaoFeedFiltroInput, projetoId: String!): ProjetoComunicacaoPainelType!

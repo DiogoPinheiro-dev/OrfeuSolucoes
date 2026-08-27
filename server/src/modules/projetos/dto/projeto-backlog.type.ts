@@ -24,3 +24,23 @@ export class ProjetoBacklogMovimentoType {
   backlogVersao!: number;
 }
 
+@ObjectType()
+export class ProjetoBacklogPaiCandidatoType {
+  @Field()
+  id!: string;
+
+  @Field()
+  chave!: string;
+
+  @Field()
+  titulo!: string;
+
+  @Field(() => String, { nullable: true })
+  paiId?: string | null;
+
+  @Field(() => Int)
+  nivel!: number;
+
+  @Field()
+  trilha!: string;
+}

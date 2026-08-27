@@ -12,6 +12,7 @@ import { CreateProjetoInput } from './dto/create-projeto.input';
 import { MoverProjetoItemBacklogInput } from './dto/mover-projeto-item-backlog.input';
 import {
   ProjetoBacklogMovimentoType,
+  ProjetoBacklogPaiCandidatoType,
   ProjetoBacklogProjetoType
 } from './dto/projeto-backlog.type';
 import { CreateProjetoItemInput } from './dto/create-projeto-item.input';
@@ -190,6 +191,15 @@ export class ProjetosResolver {
     @CurrentUser() user: JwtPayload
   ): Promise<ProjetoUsuarioType[]> {
     return this.projetosService.backlogResponsaveis(projetoId, user);
+  }
+
+  @Query(() => [ProjetoBacklogPaiCandidatoType])
+  projetoBacklogCandidatosPai(
+    @Args('projetoId') projetoId: string,
+    @CurrentUser() user: JwtPayload,
+    @Args('itemId', { type: () => String, nullable: true }) itemId?: string
+  ): Promise<ProjetoBacklogPaiCandidatoType[]> {
+    return this.projetosService.backlogCandidatosPai(projetoId, user, itemId);
   }
 
   @Mutation(() => ProjetoBacklogMovimentoType)

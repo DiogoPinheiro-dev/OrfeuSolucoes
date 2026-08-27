@@ -9,6 +9,7 @@ import { CreateProjetoInput } from './dto/create-projeto.input';
 import { MoverProjetoItemBacklogInput } from './dto/mover-projeto-item-backlog.input';
 import {
   ProjetoBacklogMovimentoType,
+  ProjetoBacklogPaiCandidatoType,
   ProjetoBacklogProjetoType
 } from './dto/projeto-backlog.type';
 import { CreateProjetoItemInput } from './dto/create-projeto-item.input';
@@ -204,6 +205,14 @@ export class ProjetosService {
     user: JwtPayload
   ): Promise<ProjetoUsuarioType[]> {
     return this.backlogService.responsaveis(projetoId, user);
+  }
+
+  backlogCandidatosPai(
+    projetoId: string,
+    user: JwtPayload,
+    itemId?: string
+  ): Promise<ProjetoBacklogPaiCandidatoType[]> {
+    return this.backlogService.candidatosPai(projetoId, user, itemId);
   }
 
   moverItemBacklog(

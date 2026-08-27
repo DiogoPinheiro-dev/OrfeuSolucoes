@@ -2619,13 +2619,85 @@ describe('Fluxos integrados do backend', () => {
       paiId: pai.id
     }, admin);
     expect(subtarefa).toMatchObject({ chave: 'ORF-3', paiId: pai.id, versao: 1 });
+    const dependenciaHierarquica = await world.prisma.projetoItemDependencia.findFirst({
+      where: {
+        projetoId: projeto.id,
+        bloqueadorId: pai.id,
+        bloqueadoId: subtarefa.id
+      }
+    });
+    expect(dependenciaHierarquica).toMatchObject({
+      empresaId: empresaInicialId,
+      projetoId: projeto.id,
+      bloqueadorId: pai.id,
+      bloqueadoId: subtarefa.id,
+      arquivadoEm: null
+    });
 
-    await expect(world.projetosService.createItem({
+    const terceiroNivel = await world.projetosService.createItem({
       projetoId: projeto.id,
       tipo: ProjetoItemTipo.TAREFA,
-      titulo: 'Profundidade invalida',
+      titulo: 'Terceiro nivel',
       paiId: subtarefa.id
-    }, admin)).rejects.toThrow('somente um nivel');
+    }, admin);
+    expect(terceiroNivel).toMatchObject({
+      chave: 'ORF-4',
+      paiId: subtarefa.id,
+      versao: 1
+    });
+    expect(await world.prisma.projetoItemDependencia.findFirst({
+      where: {
+        projetoId: projeto.id,
+        bloqueadorId: subtarefa.id,
+        bloqueadoId: terceiroNivel.id
+      }
+    })).toMatchObject({ arquivadoEm: null });
+    expect(await world.prisma.projetoItemDependencia.findFirst({
+      where: {
+        projetoId: projeto.id,
+        bloqueadorId: pai.id,
+        bloqueadoId: terceiroNivel.id
+      }
+    })).toBeNull();
+    await expect(world.projetosService.updateItem({
+      id: pai.id,
+      versao: pai.versao,
+      paiId: terceiroNivel.id
+    }, admin)).rejects.toThrow('descendente');
+    const outroItemRaiz = pai.id === primeiro.id ? segundo : primeiro;
+    const candidatosDoPai = await world.projetosService.backlogCandidatosPai(
+      projeto.id,
+      admin,
+      pai.id
+    );
+    expect(candidatosDoPai.map((item) => item.id)).toEqual([outroItemRaiz.id]);
+    const candidatosDoTerceiroNivel = await world.projetosService.backlogCandidatosPai(
+      projeto.id,
+      admin,
+      terceiroNivel.id
+    );
+    expect(candidatosDoTerceiroNivel.map((item) => item.id)).not.toContain(
+      terceiroNivel.id
+    );
+    expect(candidatosDoTerceiroNivel).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: pai.id, nivel: 0 }),
+      expect.objectContaining({
+        id: subtarefa.id,
+        paiId: pai.id,
+        nivel: 1,
+        trilha: `${pai.chave} — ${pai.titulo} › ORF-3 — Subtarefa`
+      })
+    ]));
+    await world.projetoCronogramaService.createDependencia({
+      projetoId: projeto.id,
+      bloqueadorId: pai.id,
+      bloqueadoId: outroItemRaiz.id
+    }, admin);
+    await expect(world.projetosService.updateItem({
+      id: pai.id,
+      versao: pai.versao,
+      paiId: outroItemRaiz.id
+    }, admin)).rejects.toThrow('ciclo no cronograma');
 
     const outroProjeto = await world.prisma.projeto.create({
       data: {
@@ -2680,6 +2752,14 @@ describe('Fluxos integrados do backend', () => {
       id: pai.id,
       versao: concluido.versao
     }, admin)).rejects.toThrow('subtarefas');
+    await expect(world.projetosService.arquivarItem({
+      id: subtarefa.id,
+      versao: subtarefa.versao
+    }, admin)).rejects.toThrow('subtarefas');
+    const terceiroNivelArquivado = await world.projetosService.arquivarItem({
+      id: terceiroNivel.id,
+      versao: terceiroNivel.versao
+    }, admin);
     const subtarefaArquivada = await world.projetosService.arquivarItem({
       id: subtarefa.id,
       versao: subtarefa.versao
@@ -2688,21 +2768,26 @@ describe('Fluxos integrados do backend', () => {
       id: pai.id,
       versao: concluido.versao
     }, admin);
+    expect(terceiroNivelArquivado.versao).toBe(2);
     expect(subtarefaArquivada.versao).toBe(2);
     expect(paiArquivado.arquivadoEm).toEqual(expect.any(Date));
     expect(paiArquivado.permissoes.podeReativar).toBe(true);
+    await expect(world.projetosService.reativarItem({
+      id: subtarefa.id,
+      versao: subtarefaArquivada.versao
+    }, admin)).rejects.toThrow('cadeia hierarquica');
     await expect(world.projetosService.updateItem({
       id: pai.id,
       versao: paiArquivado.versao,
       titulo: 'Item arquivado nao edita'
     }, admin)).rejects.toThrow('somente para consulta');
 
-    const quarto = await world.projetosService.createItem({
+    const quinto = await world.projetosService.createItem({
       projetoId: projeto.id,
       tipo: ProjetoItemTipo.MELHORIA,
       titulo: 'Numero nao reutilizado'
     }, admin);
-    expect(quarto.chave).toBe('ORF-4');
+    expect(quinto.chave).toBe('ORF-5');
     const reativado = await world.projetosService.reativarItem({
       id: pai.id,
       versao: paiArquivado.versao
@@ -5861,6 +5946,16 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
     const item = await world.prisma.projetoItem.create({
       data: { empresaId: empresaInicialId, projetoId: projeto.id, numero: 1, chave: 'COM-1', titulo: 'Item comentavel', autorId: admin.sub }
     });
+    const paiRaiz = await world.prisma.projetoItem.create({
+      data: { empresaId: empresaInicialId, projetoId: projeto.id, numero: 2, chave: 'COM-2', titulo: 'Pai raiz', autorId: admin.sub }
+    });
+    const paiIntermediario = await world.prisma.projetoItem.create({
+      data: { empresaId: empresaInicialId, projetoId: projeto.id, numero: 3, chave: 'COM-3', titulo: 'Pai intermediario', paiId: paiRaiz.id, autorId: admin.sub }
+    });
+    await world.prisma.projetoItem.update({
+      where: { id: item.id },
+      data: { paiId: paiIntermediario.id }
+    });
     await world.prisma.projetoEvento.create({
       data: { empresaId: empresaInicialId, projetoId: projeto.id, usuarioId: admin.sub, entidade: 'ITEM', entidadeId: item.id, evento: 'PRIORIZADO', dados: JSON.stringify({ de: 2, para: 1 }) }
     });
@@ -5905,13 +6000,17 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
     ]));
     const comentarioNoFeed = expectDefined(painel.feed.find((entry) => entry.entidadeId === comentarioItem.id));
     expect(comentarioNoFeed.evento).toBe('EDITADO');
-    expect(comentarioNoFeed.contexto).toBe('COM — Comunicacao integrada › COM-1 — Item comentavel');
+    expect(comentarioNoFeed.contexto).toBe(
+      'COM — Comunicacao integrada › COM-2 — Pai raiz › COM-3 — Pai intermediario › COM-1 — Item comentavel'
+    );
     expect(comentarioNoFeed.alteracoes).toEqual(expect.arrayContaining([
       expect.objectContaining({ campo: 'Conteúdo', valorAnterior: 'Decisao vinculada ao item', valorNovo: 'Decisao do item revisada' })
     ]));
     expect(painel.feed.find((entry) => entry.tipo === 'EVENTO')?.funcionalidade).toBeTruthy();
     expect(painel.feed.find((entry) => entry.entidade === 'ITEM')?.registro).toBe('COM-1 — Item comentavel');
-    expect(painel.feed.find((entry) => entry.entidade === 'ITEM')?.contexto).toBe('COM — Comunicacao integrada');
+    expect(painel.feed.find((entry) => entry.entidade === 'ITEM')?.contexto).toBe(
+      'COM — Comunicacao integrada › COM-2 — Pai raiz › COM-3 — Pai intermediario'
+    );
     expect(painel.feed.find((entry) => entry.entidade === 'ANEXO')?.contexto).toBe('COM — Comunicacao integrada › Atualização: Andamento revisado');
 
     await world.prisma.projetoItem.update({ where: { id: item.id }, data: { arquivadoEm: new Date(), arquivadoPorId: admin.sub } });

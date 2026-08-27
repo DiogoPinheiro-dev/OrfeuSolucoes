@@ -1458,6 +1458,13 @@ export const PROJETO_BACKLOG_RESPONSAVEIS_QUERY = gql`
     }
   }
 `;
+export const PROJETO_BACKLOG_CANDIDATOS_PAI_QUERY = gql`
+  query ProjetoBacklogCandidatosPai($projetoId: String!, $itemId: String) {
+    projetoBacklogCandidatosPai(projetoId: $projetoId, itemId: $itemId) {
+      id chave titulo paiId nivel trilha
+    }
+  }
+`;
 export const PROJETO_ITENS_QUERY = gql`
   ${PROJETO_ITEM_FIELDS}
   query ProjetoItens($filtro: ProjetoItemFiltroInput!) {

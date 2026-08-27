@@ -6,4 +6,16 @@ describe("navegação principal no navegador", () => {
     cy.contains("Projetos").should("be.visible");
     cy.contains("a", "Documentação").should("have.attr", "href", "/hub/documentacao");
   });
+
+  it("reutiliza a navegação carregada ao abrir outra solução", () => {
+    let navigationRequests = 0;
+
+    cy.visitAuthenticated("/hub", {}, (operationName) => {
+      if (operationName === "MyHubNavigation") navigationRequests += 1;
+    });
+    cy.wait("@MyHubNavigation");
+    cy.get('a[href="/hub/projetos"]').should("have.length", 1).click();
+    cy.contains("h1", "Projetos").should("be.visible");
+    cy.then(() => cy.wrap(navigationRequests).should("eq", 1));
+  });
 });
