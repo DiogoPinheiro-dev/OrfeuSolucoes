@@ -23,7 +23,7 @@ export class HubNavigationService {
     const fullAccessGroup = hasFullAccessGroup(user.grupo);
 
     return solucoes
-      .filter((solucao) => solucao.ativo && solucao.exibirNoHub)
+      .filter((solucao) => solucao.statusPublicacao === 'PUBLICADA' && solucao.ativo && solucao.exibirNoHub)
       .filter((solucao) => canAccessSolution({
         solutionSlug: solucao.slug,
         systemAdminOnly: solucao.somenteAdminSistema,
@@ -35,7 +35,7 @@ export class HubNavigationService {
       .map((solucao) => ({
         ...solucao,
         funcionalidades: solucao.funcionalidades
-          .filter((funcionalidade) => funcionalidade.ativo)
+          .filter((funcionalidade) => funcionalidade.statusPublicacao === 'PUBLICADA' && funcionalidade.ativo)
           .filter((funcionalidade) => canAccessFeature({
             systemAdminOnly: solucao.somenteAdminSistema || funcionalidade.somenteAdminSistema,
             systemAdmin,
@@ -44,11 +44,15 @@ export class HubNavigationService {
             companyHasFeature: companyFeatureIds.has(funcionalidade.id)
           }))
           .map((funcionalidade) => {
+            const publishedFeature = {
+              ...funcionalidade,
+              acoes: funcionalidade.acoes.filter((acao) => acao.ativo && acao.statusPublicacao === 'PUBLICADA')
+            };
             if (systemAdmin || fullAccessGroup) {
-              return withAllPermissions(funcionalidade);
+              return withAllPermissions(publishedFeature);
             }
 
-            return withPermissions(funcionalidade, groupFeaturePermissions.get(funcionalidade.id));
+            return withPermissions(publishedFeature, groupFeaturePermissions.get(funcionalidade.id));
           })
       }));
   }

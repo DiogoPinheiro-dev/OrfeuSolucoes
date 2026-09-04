@@ -6,6 +6,17 @@ import {
     getSolucoes,
     updateFuncionalidade
 } from "../../services/Solucoes/SolucaoService";
+import {
+    createActionDraft,
+    createFeatureDraft,
+    getActionDraft,
+    getCatalogProviders,
+    getFeatureDraft,
+    publishActionDraft,
+    publishFeatureDraft,
+    validateActionDraft,
+    validateFeatureDraft
+} from "../../services/Solucoes/CatalogoService";
 import { canUseFeatureAction } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
 import { useFormFieldErrors } from "../hooks/useFormFieldErrors";
@@ -20,8 +31,8 @@ import CustomDropdown from "./CustomDropdown";
 import "../styles/userManagement.css";
 
 const FEATURE_FORM_ID = "feature-registration-form";
-const FEATURE_FIELD_ORDER = ["solucaoId", "titulo", "slug", "label", "descricao", "ordem", "acoes"];
-const FEATURE_FIELD_TABS = { solucaoId: "main", titulo: "main", slug: "main", label: "main", descricao: "main", ordem: "main", acoes: "actions" };
+const FEATURE_FIELD_ORDER = ["solucaoId", "titulo", "slug", "providerKey", "label", "descricao", "ordem", "acoes"];
+const FEATURE_FIELD_TABS = { solucaoId: "main", titulo: "main", slug: "main", providerKey: "main", label: "main", descricao: "main", ordem: "main", acoes: "actions" };
 const FEATURE_FIELD_MATCHERS = { slug: [/identificador.*uso/i, /slug/i] };
 
 const initialForm = {
@@ -34,6 +45,8 @@ const initialForm = {
     ordem: 0,
     ativo: true,
     registryKey: "",
+    providerKey: "",
+    providerVersion: 1,
     somenteAdminSistema: false,
     padraoSistema: false,
     acoes: [
@@ -104,6 +117,8 @@ const normalizePayload = (form, selectedSolution) => ({
     ordem: Number(form.ordem) || 0,
     ativo: !!form.ativo,
     registryKey: buildRegistryKey(selectedSolution, form.slug) || null,
+    providerKey: form.providerKey || null,
+    providerVersion: form.providerKey ? Number(form.providerVersion) || 1 : null,
     somenteAdminSistema: !!form.somenteAdminSistema,
     acoes: form.acoes.map((acao) => ({
         ...(acao.id ? { id: Number(acao.id) } : {}),
@@ -120,6 +135,7 @@ const normalizePayload = (form, selectedSolution) => ({
 export default function FeatureManagement({ permissions }) {
     const { user: currentUser } = useAuth();
     const [solucoes, setSolucoes] = useState([]);
+    const [providers, setProviders] = useState([]);
     const [selectedId, setSelectedId] = useState("");
     const [selectedIds, setSelectedIds] = useState([]);
     const [search, setSearch] = useState("");
@@ -132,6 +148,7 @@ export default function FeatureManagement({ permissions }) {
     const [form, setForm] = useState(initialForm);
     const [activeTab, setActiveTab] = useState("main");
     const [pendingDelete, setPendingDelete] = useState(null);
+    const [pendingPublish, setPendingPublish] = useState(null);
     const solutionsRequest = useLatestRequest();
     const {
         applyError: applyFormError,
@@ -150,6 +167,7 @@ export default function FeatureManagement({ permissions }) {
     });
     const features = useMemo(() => flattenFeatures(solucoes), [solucoes]);
     const selectedFeature = useMemo(() => features.find((feature) => feature.id === selectedId) || null, [features, selectedId]);
+    const canPublish = canUseFeatureAction(currentUser, permissions, "alterar");
 
     const filteredFeatures = useMemo(() => {
         const term = search.toLowerCase().trim();
@@ -172,8 +190,11 @@ export default function FeatureManagement({ permissions }) {
         setError("");
         setLoading(true);
 
-        return solutionsRequest.run(getSolucoes, {
-            onSuccess: setSolucoes,
+        return solutionsRequest.run(() => Promise.all([getSolucoes(), getCatalogProviders()]), {
+            onSuccess: ([loadedSolutions, loadedProviders]) => {
+                setSolucoes(loadedSolutions);
+                setProviders(loadedProviders);
+            },
             onError: (loadError) => setError(loadError.message || "Não foi possível carregar funcionalidades."),
             onSettled: () => setLoading(false)
         });
@@ -246,6 +267,7 @@ export default function FeatureManagement({ permissions }) {
         if (!form.solucaoId) localErrors.solucaoId = "Selecione a solução.";
         if (!form.titulo.trim()) localErrors.titulo = "Preencha o título da funcionalidade.";
         if (!form.slug.trim()) localErrors.slug = "Preencha o identificador da funcionalidade.";
+        if (!form.providerKey) localErrors.providerKey = "Selecione a implementação da funcionalidade.";
         if (form.acoes.some((acao) => !acao.nome.trim())) localErrors.acoes = "Preencha o nome de todas as ações da funcionalidade.";
 
         if (Object.keys(localErrors).length) {
@@ -356,6 +378,41 @@ export default function FeatureManagement({ permissions }) {
         }
     };
 
+    const confirmPublish = async () => {
+        if (!pendingPublish) return;
+
+        const reason = `Publicação da funcionalidade ${pendingPublish.titulo || pendingPublish.slug}.`;
+        setGridBusy(true);
+        setError("");
+
+        try {
+            const featureDraft = await getFeatureDraft(pendingPublish.id)
+                || await createFeatureDraft(pendingPublish.id, reason);
+            const featureIssues = await validateFeatureDraft(featureDraft.id);
+            const featureErrors = featureIssues.filter((issue) => issue.severity === "ERROR");
+            if (featureErrors.length) throw new Error(featureErrors.map((issue) => issue.message).join(" "));
+
+            const draftActions = (pendingPublish.acoes || []).filter((action) => action.ativo && action.statusPublicacao === "RASCUNHO");
+            for (const action of draftActions) {
+                const actionDraft = await getActionDraft(action.id) || await createActionDraft(action.id, reason);
+                const actionIssues = await validateActionDraft(actionDraft.id);
+                const actionErrors = actionIssues.filter((issue) => issue.severity === "ERROR");
+                if (actionErrors.length) throw new Error(`${action.nome}: ${actionErrors.map((issue) => issue.message).join(" ")}`);
+                await publishActionDraft({ versionId: actionDraft.id, expectedRevision: actionDraft.revisao, reason });
+            }
+
+            await publishFeatureDraft({ versionId: featureDraft.id, expectedRevision: featureDraft.revisao, reason });
+            setPendingPublish(null);
+            setSelectedId("");
+            await loadSolucoes();
+        } catch (publishError) {
+            setPendingPublish(null);
+            setError(publishError.message || "Não foi possível publicar a funcionalidade.");
+        } finally {
+            setGridBusy(false);
+        }
+    };
+
     const selectedSolution = solucoes.find((solucao) => String(solucao.id) === String(form.solucaoId));
     const generatedRegistryKey = buildRegistryKey(selectedSolution, form.slug);
     const readonly = modalMode === "view";
@@ -370,6 +427,8 @@ export default function FeatureManagement({ permissions }) {
                         { key: "slug", label: "Identificador", render: (feature) => feature.slug || "-" },
                         { key: "solucao", label: "Solução", render: (feature) => feature.solucaoNome || "-" },
                         { key: "registryKey", label: "Rota", render: (feature) => feature.registryKey || "-" },
+                        { key: "providerKey", label: "Implementação", render: (feature) => feature.providerKey || "-" },
+                        { key: "statusPublicacao", label: "Publicação", render: (feature) => ({ RASCUNHO: "Rascunho", PUBLICADA: "Publicada", DESPUBLICADA: "Despublicada" }[feature.statusPublicacao] || feature.statusPublicacao || "-") },
                         { key: "ordem", label: "Ordem" },
                         { key: "ativo", label: "Ativo", render: (feature) => booleanLabel(feature.ativo) },
                         { key: "somenteAdminSistema", label: "Admin", render: (feature) => booleanLabel(feature.somenteAdminSistema) },
@@ -388,6 +447,17 @@ export default function FeatureManagement({ permissions }) {
                     onEdit={(feature) => openModal("edit", feature)}
                     onView={(feature) => openModal("view", feature)}
                     onDelete={handleDelete}
+                    toolbarActions={(
+                        <button
+                            type="button"
+                            className="crud-inline-action"
+                            disabled={!canPublish || !selectedFeature || selectedFeature.padraoSistema || selectedFeature.statusPublicacao !== "RASCUNHO" || gridBusy}
+                            title={!selectedFeature ? "Selecione uma funcionalidade customizada em rascunho." : undefined}
+                            onClick={() => setPendingPublish(selectedFeature)}
+                        >
+                            Publicar
+                        </button>
+                    )}
                     search={search}
                     onSearchChange={setSearch}
                     filters={(
@@ -493,6 +563,26 @@ export default function FeatureManagement({ permissions }) {
                                             disabled
                                             placeholder="Selecione a solução e informe o identificador"
                                         />
+                                    </div>
+
+                                    <div className="user-form-field">
+                                        <span className="user-form-field-label">
+                                            <span>Implementação <FormFieldError formId={FEATURE_FORM_ID} field="providerKey" errors={fieldErrors} /></span>
+                                        </span>
+                                        <CustomDropdown
+                                            name="providerKey"
+                                            value={form.providerKey || ""}
+                                            onChange={handleChange}
+                                            disabled={cadastralReadonly || saving}
+                                            invalid={!!fieldErrors.providerKey}
+                                            ariaDescribedBy={fieldErrorProps("providerKey")["aria-describedby"]}
+                                            ariaLabel="Selecionar implementação da funcionalidade"
+                                            options={[
+                                                { value: "", label: "Selecione uma implementação" },
+                                                ...providers.map((provider) => ({ value: provider.key, label: provider.key }))
+                                            ]}
+                                        />
+                                        <small>A implementação define qual tela existente será aberta por esta funcionalidade.</small>
                                     </div>
 
                                     <div className="user-form-field">
@@ -628,6 +718,16 @@ export default function FeatureManagement({ permissions }) {
                 onCancel={() => setPendingDelete(null)}
                 onConfirm={confirmDelete}
                 loading={false}
+            />
+
+            <ConfirmDialog
+                open={!!pendingPublish}
+                title="Publicar funcionalidade"
+                message={`A implementação e as ações ativas de ${pendingPublish?.titulo || "esta funcionalidade"} serão validadas antes da publicação. Deseja continuar?`}
+                confirmLabel="Publicar"
+                onCancel={() => setPendingPublish(null)}
+                onConfirm={confirmPublish}
+                loading={gridBusy}
             />
         </>
     );

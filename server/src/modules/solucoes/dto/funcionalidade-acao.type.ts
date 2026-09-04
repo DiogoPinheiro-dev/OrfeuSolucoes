@@ -30,5 +30,8 @@ export class FuncionalidadeAcaoType {
   configuracao?: string | null;
 
   @Field()
+  statusPublicacao!: string;
+
+  @Field()
   permitido!: boolean;
 }

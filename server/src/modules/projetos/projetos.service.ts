@@ -72,12 +72,8 @@ import { ProjetoAtualizacaoType, ProjetoComentarioType, ProjetoComunicacaoPainel
 import { ProjetoComunicacaoService } from './projeto-comunicacao.service';
 import { AprovarProjetoOrcamentoInput, ExcluirProjetoOrcamentoItemInput, SalvarProjetoCustoInput, SalvarProjetoOrcamentoCategoriaInput, SalvarProjetoOrcamentoInput } from './dto/projeto-orcamento.input';
 import { ExcluirProjetoRecursoInput, SalvarProjetoRecursoInput } from './dto/projeto-recurso.input';
-import { ExcluirProjetoTarefaInput, SalvarProjetoTarefaInput } from './dto/projeto-tarefa.input';
-import { ExcluirPlanejamentoRecursoExecucaoInput, SalvarPlanejamentoRecursoExecucaoInput } from './dto/projeto-planejamento-recurso.input';
 import { ProjetoOrcamentoService } from './projeto-orcamento.service';
 import { ProjetoRecursoService } from './projeto-recurso.service';
-import { ProjetoTarefaService } from './projeto-tarefa.service';
-import { ProjetoPlanejamentoRecursoService } from './projeto-planejamento-recurso.service';
 
 @Injectable()
 export class ProjetosService {
@@ -96,8 +92,6 @@ export class ProjetosService {
     private readonly cronogramaService: ProjetoCronogramaService,
     private readonly comunicacaoService: ProjetoComunicacaoService,
     private readonly recursoService: ProjetoRecursoService,
-    private readonly tarefaService: ProjetoTarefaService,
-    private readonly planejamentoRecursoService: ProjetoPlanejamentoRecursoService,
     private readonly orcamentoService: ProjetoOrcamentoService
   ) {}
 
@@ -363,11 +357,6 @@ export class ProjetosService {
   recursos(user: JwtPayload) { return this.recursoService.painel(user); }
   salvarRecurso(input: SalvarProjetoRecursoInput, user: JwtPayload) { return this.recursoService.salvarRecurso(input, user); }
   excluirRecurso(input: ExcluirProjetoRecursoInput, user: JwtPayload) { return this.recursoService.excluirRecurso(input, user); }
-  salvarTarefa(input: SalvarProjetoTarefaInput, user: JwtPayload) { return this.tarefaService.salvar(input, user); }
-  excluirTarefa(input: ExcluirProjetoTarefaInput, user: JwtPayload) { return this.tarefaService.excluir(input, user); }
-  planejamentoRecursos(user: JwtPayload) { return this.planejamentoRecursoService.painel(user); }
-  salvarPlanejamentoRecursoExecucao(input: SalvarPlanejamentoRecursoExecucaoInput, user: JwtPayload) { return this.planejamentoRecursoService.salvarExecucao(input, user); }
-  excluirPlanejamentoRecursoExecucao(input: ExcluirPlanejamentoRecursoExecucaoInput, user: JwtPayload) { return this.planejamentoRecursoService.excluirExecucao(input, user); }
   orcamentoProjetos(user: JwtPayload) { return this.orcamentoService.projetos(user); }
   orcamento(projetoId: string, user: JwtPayload) { return this.orcamentoService.painel(projetoId, user); }
   salvarOrcamento(input: SalvarProjetoOrcamentoInput, user: JwtPayload) { return this.orcamentoService.salvarOrcamento(input, user); }

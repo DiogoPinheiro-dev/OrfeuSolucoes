@@ -57,7 +57,7 @@ Exceções vigentes:
 - Backlog: hierarquia, agrupamento, priorização posicional e paginação no servidor;
 - Cronograma: Gantt, dependências e tabela equivalente para acesso textual;
 - Relatórios de chamados: filtros analíticos, paginação e exportação;
-- Planejamento de recursos: única funcionalidade com navegação principal por abas;
+- Planejamento de recursos: única funcionalidade com navegação principal por abas (`Recursos`, `Equipes` e `Planejamento`), persistida no parâmetro `tab` da URL;
 - Orçamento: estrutura híbrida; categorias e custos usam `CrudGrid compact`, enquanto resumo, formulários e histórico de taxas permanecem especializados.
 
 Capacidade não faz parte do sistema e não deve ser apresentada como módulo, indicador ou contrato.

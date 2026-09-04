@@ -72,6 +72,17 @@ describe("Header autenticado", () => {
             .toHaveAttribute("href", "/hub/documentacao");
     });
 
+    it("abre e fecha o menu móvel do Hub com estado acessível", async () => {
+        const user = userEvent.setup();
+        renderHeader();
+
+        await user.click(screen.getByRole("button", { name: "Abrir menu" }));
+        expect(screen.getByRole("button", { name: "Fechar menu" })).toHaveAttribute("aria-expanded", "true");
+        expect(screen.getByRole("navigation")).toHaveClass("header-main");
+        await user.click(screen.getByRole("button", { name: "Fechar menu" }));
+        expect(screen.getByRole("button", { name: "Abrir menu" })).toHaveAttribute("aria-expanded", "false");
+    });
+
     it("não exibe documentação fora do Hub de Soluções", () => {
         renderHeader("/ecommerce");
 

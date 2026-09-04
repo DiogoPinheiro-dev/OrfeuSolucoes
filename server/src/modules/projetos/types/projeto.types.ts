@@ -9,6 +9,7 @@ export enum ProjetoMetodologia {
 
 export enum ProjetoSituacao {
   RASCUNHO = 'RASCUNHO',
+  EM_ORCAMENTO = 'EM_ORCAMENTO',
   PLANEJADO = 'PLANEJADO',
   EM_ANDAMENTO = 'EM_ANDAMENTO',
   PAUSADO = 'PAUSADO',

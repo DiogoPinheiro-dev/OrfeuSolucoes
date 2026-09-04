@@ -2,7 +2,8 @@ import { BadRequestException } from '@nestjs/common';
 import { ProjetoPapel, ProjetoSituacao } from '../types/projeto.types';
 
 const TRANSITIONS: Record<ProjetoSituacao, ProjetoSituacao[]> = {
-  [ProjetoSituacao.RASCUNHO]: [ProjetoSituacao.PLANEJADO, ProjetoSituacao.CANCELADO],
+  [ProjetoSituacao.RASCUNHO]: [ProjetoSituacao.EM_ORCAMENTO, ProjetoSituacao.PLANEJADO, ProjetoSituacao.CANCELADO],
+  [ProjetoSituacao.EM_ORCAMENTO]: [ProjetoSituacao.RASCUNHO, ProjetoSituacao.PLANEJADO, ProjetoSituacao.CANCELADO],
   [ProjetoSituacao.PLANEJADO]: [ProjetoSituacao.EM_ANDAMENTO, ProjetoSituacao.PAUSADO, ProjetoSituacao.CANCELADO],
   [ProjetoSituacao.EM_ANDAMENTO]: [ProjetoSituacao.PAUSADO, ProjetoSituacao.CONCLUIDO, ProjetoSituacao.CANCELADO],
   [ProjetoSituacao.PAUSADO]: [ProjetoSituacao.PLANEJADO, ProjetoSituacao.EM_ANDAMENTO, ProjetoSituacao.CANCELADO],

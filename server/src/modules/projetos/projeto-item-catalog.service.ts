@@ -50,6 +50,11 @@ export class ProjetoItemCatalogService {
       input.projetoId,
       user
     );
+    const escopo = await this.authorization.escopoHierarquico(user, contexto);
+    this.authorization.assertResponsavelVisivel(
+      escopo,
+      input.responsavelId
+    );
     const titulo = this.normalizeTitulo(input.titulo);
     const descricao = this.normalizeOptionalText(input.descricao);
     const inicioPrevistoEm = normalizeCalendarDate(input.inicioPrevistoEm);
@@ -154,6 +159,17 @@ export class ProjetoItemCatalogService {
       current.projetoId,
       user
     );
+    const escopo = await this.authorization.escopoHierarquico(user, contexto);
+    this.authorization.assertResponsavelVisivel(
+      escopo,
+      current.responsavelId
+    );
+    if (input.responsavelId !== undefined) {
+      this.authorization.assertResponsavelVisivel(
+        escopo,
+        input.responsavelId
+      );
+    }
     this.assertItemWritable(current);
     const inicioPrevistoEm = input.inicioPrevistoEm === undefined
       ? current.inicioPrevistoEm
@@ -239,6 +255,11 @@ export class ProjetoItemCatalogService {
       current.projetoId,
       user
     );
+    const escopo = await this.authorization.escopoHierarquico(user, contexto);
+    this.authorization.assertResponsavelVisivel(
+      escopo,
+      current.responsavelId
+    );
     this.assertItemWritable(current);
     const statusAtual = current.status as ProjetoItemStatus;
     assertProjetoItemStatusTransition(statusAtual, input.status);
@@ -279,6 +300,11 @@ export class ProjetoItemCatalogService {
     const contexto = await this.authorization.assertArchiveContext(
       current.projetoId,
       user
+    );
+    const escopo = await this.authorization.escopoHierarquico(user, contexto);
+    this.authorization.assertResponsavelVisivel(
+      escopo,
+      current.responsavelId
     );
 
     if (current.arquivadoEm) {
@@ -325,6 +351,11 @@ export class ProjetoItemCatalogService {
     const contexto = await this.authorization.assertReactivateContext(
       current.projetoId,
       user
+    );
+    const escopo = await this.authorization.escopoHierarquico(user, contexto);
+    this.authorization.assertResponsavelVisivel(
+      escopo,
+      current.responsavelId
     );
 
     if (!current.arquivadoEm) {
@@ -414,6 +445,7 @@ export class ProjetoItemCatalogService {
     inicioPrevistoEm: Date | null;
     fimPrevistoEm: Date | null;
     estimativaMinutos: number | null;
+    responsavelId: string | null;
     arquivadoEm: Date | null;
   }> {
     const item = await this.prisma.projetoItem.findUnique({
@@ -427,6 +459,7 @@ export class ProjetoItemCatalogService {
         inicioPrevistoEm: true,
         fimPrevistoEm: true,
         estimativaMinutos: true,
+        responsavelId: true,
         arquivadoEm: true
       }
     });

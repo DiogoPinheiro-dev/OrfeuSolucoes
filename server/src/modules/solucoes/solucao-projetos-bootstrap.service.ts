@@ -4,14 +4,16 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { PROJETO_FEATURE_DEFINITIONS } from './constants/projeto-feature-definitions';
 import { FuncionalidadeAcaoService } from './funcionalidade-acao.service';
 import { SolucaoAcessoService } from './solucao-acesso.service';
-import { FuncionalidadeRecord } from './types/solucao-record.types';
+import { FuncionalidadeRecord, SolucaoRecord } from './types/solucao-record.types';
+import { CatalogoBootstrapReconciliationService } from './catalogo-bootstrap-reconciliation.service';
 
 @Injectable()
 export class SolucaoProjetosBootstrapService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly funcionalidadeAcaoService: FuncionalidadeAcaoService,
-    private readonly solucaoAcessoService: SolucaoAcessoService
+    private readonly solucaoAcessoService: SolucaoAcessoService,
+    private readonly reconciliation: CatalogoBootstrapReconciliationService
   ) {}
 
   async ensureProjetosSolution(): Promise<void> {
@@ -21,37 +23,17 @@ export class SolucaoProjetosBootstrapService {
   private async ensureProjetosSolutionOnce(): Promise<void> {
     const existingSolucao = (await (this.prisma as never as { solucao: { findUnique: Function } }).solucao.findUnique({
       where: { slug: 'projetos' },
-      select: { id: true }
-    })) as { id: number } | null;
+    })) as SolucaoRecord | null;
+
+    const solutionBaseline = { slug: 'projetos', nome: 'Gerenciador de Projetos', descricao: 'Espaço para organizar projetos, backlog, entregas, marcos e comunicação entre as equipes.', eyebrow: 'Operação', ordem: 10, ativo: true, exibirNoHub: true, somenteAdminSistema: false };
 
     const solucao = existingSolucao
-      ? (await (this.prisma as never as { solucao: { update: Function } }).solucao.update({
-          where: { id: existingSolucao.id },
-          data: {
-            nome: 'Gerenciador de Projetos',
-            descricao: 'Espaço para organizar projetos, backlog, entregas, marcos e comunicação entre as equipes.',
-            eyebrow: 'Operação',
-            ativo: true,
-            exibirNoHub: true,
-            somenteAdminSistema: false,
-            padraoSistema: true
-          },
-          select: { id: true }
-        })) as { id: number }
+      ? existingSolucao
       : (await (this.prisma as never as { solucao: { create: Function } }).solucao.create({
-          data: {
-            slug: 'projetos',
-            nome: 'Gerenciador de Projetos',
-            descricao: 'Espaço para organizar projetos, backlog, entregas, marcos e comunicação entre as equipes.',
-            eyebrow: 'Operação',
-            ordem: 10,
-            ativo: true,
-            exibirNoHub: true,
-            somenteAdminSistema: false,
-            padraoSistema: true
-          },
-          select: { id: true }
+          data: { ...solutionBaseline, padraoSistema: true }
         })) as { id: number };
+
+    await this.reconciliation.reconcileSolution(solucao.id, existingSolucao ? { ...solutionBaseline, nome: existingSolucao.nome, descricao: existingSolucao.descricao, eyebrow: existingSolucao.eyebrow, ordem: existingSolucao.ordem, ativo: existingSolucao.ativo, exibirNoHub: existingSolucao.exibirNoHub, somenteAdminSistema: existingSolucao.somenteAdminSistema } : solutionBaseline, solutionBaseline);
 
     const features = PROJETO_FEATURE_DEFINITIONS;
 
@@ -64,33 +46,18 @@ export class SolucaoProjetosBootstrapService {
           }
         }
       })) as FuncionalidadeRecord | null;
+      const featureBaseline = { solucaoId: solucao.id, slug: feature.slug, titulo: feature.titulo, label: feature.label, descricao: feature.descricao, ordem: feature.ordem, ativo: feature.ativo, registryKey: feature.registryKey, providerKey: feature.registryKey, providerVersion: 1, somenteAdminSistema: false };
       const funcionalidade = existing
-        ? (await (this.prisma as never as { funcionalidade: { update: Function } }).funcionalidade.update({
-            where: { id: existing.id },
-            data: {
-              titulo: feature.titulo,
-              label: feature.label,
-              descricao: feature.descricao,
-              ativo: feature.ativo,
-              registryKey: feature.registryKey,
-              somenteAdminSistema: false,
-              padraoSistema: true
-            }
-          })) as FuncionalidadeRecord
+        ? existing
         : (await (this.prisma as never as { funcionalidade: { create: Function } }).funcionalidade.create({
             data: {
-              solucaoId: solucao.id,
-              slug: feature.slug,
-              titulo: feature.titulo,
-              label: feature.label,
-              descricao: feature.descricao,
-              ordem: feature.ordem,
-              ativo: feature.ativo,
-              registryKey: feature.registryKey,
-              somenteAdminSistema: false,
+              ...featureBaseline,
               padraoSistema: true
             }
           })) as FuncionalidadeRecord;
+
+      const effective = existing ? { solucaoId: existing.solucaoId, slug: existing.slug, titulo: existing.titulo, label: existing.label ?? null, descricao: existing.descricao ?? null, ordem: existing.ordem, ativo: existing.ativo, registryKey: existing.registryKey ?? null, providerKey: existing.providerKey ?? existing.registryKey ?? null, providerVersion: existing.providerVersion ?? 1, somenteAdminSistema: existing.somenteAdminSistema } : featureBaseline;
+      await this.reconciliation.reconcileFeature(funcionalidade.id, effective, featureBaseline);
 
       await this.funcionalidadeAcaoService.syncFuncionalidadeAcoes(funcionalidade.id, feature.acoes, { preserveAdditionalActions: true });
 

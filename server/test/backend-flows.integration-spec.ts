@@ -74,9 +74,7 @@ import { ProjetoOrcamentoAuthorizationService } from '../src/modules/projetos/pr
 import { ProjetoOrcamentoService } from '../src/modules/projetos/projeto-orcamento.service';
 import { ProjetoRecursoAuthorizationService } from '../src/modules/projetos/projeto-recurso-authorization.service';
 import { ProjetoRecursoService } from '../src/modules/projetos/projeto-recurso.service';
-import { ProjetoTarefaAuthorizationService } from '../src/modules/projetos/projeto-tarefa-authorization.service';
-import { ProjetoTarefaService } from '../src/modules/projetos/projeto-tarefa.service';
-import { ProjetoPlanejamentoRecursoService } from '../src/modules/projetos/projeto-planejamento-recurso.service';
+import { ProjetoRecursoHierarquiaService } from '../src/modules/projetos/projeto-recurso-hierarquia.service';
 import { validateProjetoAnexoFile } from '../src/modules/projetos/policies/projeto-anexo.policy';
 import { ProjetoAnexoStorageService } from '../src/modules/projetos/projeto-anexo-storage.service';
 import {
@@ -107,6 +105,10 @@ import { SolucaoBootstrapService } from '../src/modules/solucoes/solucao-bootstr
 import { SolucaoChamadosBootstrapService } from '../src/modules/solucoes/solucao-chamados-bootstrap.service';
 import { SolucaoHorasBootstrapService } from '../src/modules/solucoes/solucao-horas-bootstrap.service';
 import { SolucaoProjetosBootstrapService } from '../src/modules/solucoes/solucao-projetos-bootstrap.service';
+import { CatalogoBootstrapReconciliationService } from '../src/modules/solucoes/catalogo-bootstrap-reconciliation.service';
+import { CatalogoLifecycleService } from '../src/modules/solucoes/catalogo-lifecycle.service';
+import { CatalogoProviderRegistry } from '../src/modules/solucoes/catalogo-provider.registry';
+import { CatalogoValidationService } from '../src/modules/solucoes/catalogo-validation.service';
 import { SolucaoCatalogService } from '../src/modules/solucoes/solucao-catalog.service';
 import { SolucaoQueryService } from '../src/modules/solucoes/solucao-query.service';
 import { SolucoesService } from '../src/modules/solucoes/solucoes.service';
@@ -131,6 +133,9 @@ type ModelName =
   | 'solucao'
   | 'funcionalidade'
   | 'funcionalidadeAcao'
+  | 'catalogoVersao'
+  | 'catalogoConflito'
+  | 'catalogoAuditoria'
   | 'grupoSolucao'
   | 'empresaSolucao'
   | 'grupoFuncionalidade'
@@ -174,6 +179,7 @@ type ModelName =
   | 'projetoTarefaRecurso'
   | 'projetoTarefaTaxaHistorico'
   | 'projetoRecurso'
+  | 'projetoRecursoEquipe'
   | 'projetoAlocacao'
   | 'projetoOrcamento'
   | 'projetoOrcamentoCategoria'
@@ -188,6 +194,9 @@ const MODELS: ModelName[] = [
   'solucao',
   'funcionalidade',
   'funcionalidadeAcao',
+  'catalogoVersao',
+  'catalogoConflito',
+  'catalogoAuditoria',
   'grupoSolucao',
   'empresaSolucao',
   'grupoFuncionalidade',
@@ -231,6 +240,7 @@ const MODELS: ModelName[] = [
   'projetoTarefaRecurso',
   'projetoTarefaTaxaHistorico',
   'projetoRecurso',
+  'projetoRecursoEquipe',
   'projetoAlocacao',
   'projetoOrcamento',
   'projetoOrcamentoCategoria',
@@ -446,6 +456,9 @@ class InMemoryPrismaService {
   public solucao = new InMemoryDelegate(this, 'solucao');
   public funcionalidade = new InMemoryDelegate(this, 'funcionalidade');
   public funcionalidadeAcao = new InMemoryDelegate(this, 'funcionalidadeAcao');
+  public catalogoVersao = new InMemoryDelegate(this, 'catalogoVersao');
+  public catalogoConflito = new InMemoryDelegate(this, 'catalogoConflito');
+  public catalogoAuditoria = new InMemoryDelegate(this, 'catalogoAuditoria');
   public grupoSolucao = new InMemoryDelegate(this, 'grupoSolucao');
   public empresaSolucao = new InMemoryDelegate(this, 'empresaSolucao');
   public grupoFuncionalidade = new InMemoryDelegate(this, 'grupoFuncionalidade');
@@ -489,6 +502,7 @@ class InMemoryPrismaService {
   public projetoTarefaRecurso = new InMemoryDelegate(this, 'projetoTarefaRecurso');
   public projetoTarefaTaxaHistorico = new InMemoryDelegate(this, 'projetoTarefaTaxaHistorico');
   public projetoRecurso = new InMemoryDelegate(this, 'projetoRecurso');
+  public projetoRecursoEquipe = new InMemoryDelegate(this, 'projetoRecursoEquipe');
   public projetoAlocacao = new InMemoryDelegate(this, 'projetoAlocacao');
   public projetoOrcamento = new InMemoryDelegate(this, 'projetoOrcamento');
   public projetoOrcamentoCategoria = new InMemoryDelegate(this, 'projetoOrcamentoCategoria');
@@ -886,6 +900,8 @@ class InMemoryPrismaService {
         return this.data.funcionalidadeAcao.filter((acao) => acao.funcionalidadeId === row.id);
       case 'funcionalidade.solucao':
         return this.data.solucao.find((solucao) => solucao.id === row.solucaoId) ?? null;
+      case 'catalogoVersao.conflitos':
+        return this.data.catalogoConflito.filter((conflito) => conflito.versaoId === row.id);
       case 'grupoSolucao.grupo':
         return this.data.grupoUsuario.find((grupo) => grupo.id === row.grupoId) ?? null;
       case 'grupoSolucao.solucao':
@@ -1128,6 +1144,7 @@ class InMemoryPrismaService {
       'solucao.funcionalidades': 'funcionalidade',
       'funcionalidade.acoes': 'funcionalidadeAcao',
       'funcionalidade.solucao': 'solucao',
+      'catalogoVersao.conflitos': 'catalogoConflito',
       'grupoSolucao.grupo': 'grupoUsuario',
       'grupoSolucao.solucao': 'solucao',
       'empresaSolucao.empresa': 'empresa',
@@ -1294,6 +1311,11 @@ class InMemoryPrismaService {
         row.exibirNoHub = row.exibirNoHub ?? true;
         row.somenteAdminSistema = row.somenteAdminSistema ?? false;
         row.padraoSistema = row.padraoSistema ?? false;
+        row.chaveTecnica = row.chaveTecnica ?? randomUUID();
+        row.versaoDefinicao = row.versaoDefinicao ?? 1;
+        row.statusPublicacao = row.statusPublicacao ?? 'PUBLICADA';
+        row.revisaoCatalogo = row.revisaoCatalogo ?? 1;
+        row.publicadoEm = row.publicadoEm ?? null;
         break;
       case 'funcionalidade':
         row.label = row.label ?? null;
@@ -1303,6 +1325,13 @@ class InMemoryPrismaService {
         row.registryKey = row.registryKey ?? null;
         row.somenteAdminSistema = row.somenteAdminSistema ?? false;
         row.padraoSistema = row.padraoSistema ?? false;
+        row.chaveTecnica = row.chaveTecnica ?? randomUUID();
+        row.providerKey = row.providerKey ?? row.registryKey;
+        row.providerVersion = row.providerVersion ?? (row.providerKey ? 1 : null);
+        row.versaoDefinicao = row.versaoDefinicao ?? 1;
+        row.statusPublicacao = row.statusPublicacao ?? 'PUBLICADA';
+        row.revisaoCatalogo = row.revisaoCatalogo ?? 1;
+        row.publicadoEm = row.publicadoEm ?? null;
         break;
       case 'funcionalidadeAcao':
         row.descricao = row.descricao ?? null;
@@ -1310,6 +1339,12 @@ class InMemoryPrismaService {
         row.ativo = row.ativo ?? true;
         row.acaoPadrao = row.acaoPadrao ?? false;
         row.configuracao = row.configuracao ?? null;
+        row.consumerKey = row.consumerKey ?? null;
+        row.consumerVersion = row.consumerVersion ?? null;
+        row.versaoDefinicao = row.versaoDefinicao ?? 1;
+        row.statusPublicacao = row.statusPublicacao ?? 'PUBLICADA';
+        row.revisaoCatalogo = row.revisaoCatalogo ?? 1;
+        row.publicadoEm = row.publicadoEm ?? null;
         break;
       case 'servico':
         row.titulo = row.titulo ?? null;
@@ -1612,6 +1647,8 @@ class TestChamadoAnexoStorage {
 type TestWorld = {
   prisma: InMemoryPrismaService;
   solucoesService: SolucoesService;
+  catalogoLifecycleService: CatalogoLifecycleService;
+  funcionalidadeAuthorizationService: FuncionalidadeAuthorizationService;
   documentacaoService: DocumentacaoService;
   gruposService: GruposUsuariosService;
   empresasService: EmpresasService;
@@ -1641,9 +1678,6 @@ type TestWorld = {
   projetoComunicacaoService: ProjetoComunicacaoService;
   projetoRecursoAuthorizationService: ProjetoRecursoAuthorizationService;
   projetoRecursoService: ProjetoRecursoService;
-  projetoTarefaAuthorizationService: ProjetoTarefaAuthorizationService;
-  projetoTarefaService: ProjetoTarefaService;
-  projetoPlanejamentoRecursoService: ProjetoPlanejamentoRecursoService;
   projetoOrcamentoAuthorizationService: ProjetoOrcamentoAuthorizationService;
   projetoOrcamentoService: ProjetoOrcamentoService;
 };
@@ -1668,7 +1702,8 @@ function createWorld(): TestWorld {
   const funcionalidadeAcaoService = new FuncionalidadeAcaoService(prismaService);
   const solucaoAcessoService = new SolucaoAcessoService(prismaService, funcionalidadeAcaoService);
   const solucaoChamadosBootstrapService = new SolucaoChamadosBootstrapService(prismaService, funcionalidadeAcaoService, solucaoAcessoService);
-  const solucaoProjetosBootstrapService = new SolucaoProjetosBootstrapService(prismaService, funcionalidadeAcaoService, solucaoAcessoService);
+  const catalogoBootstrapReconciliationService = new CatalogoBootstrapReconciliationService(prismaService);
+  const solucaoProjetosBootstrapService = new SolucaoProjetosBootstrapService(prismaService, funcionalidadeAcaoService, solucaoAcessoService, catalogoBootstrapReconciliationService);
   const solucaoHorasBootstrapService = new SolucaoHorasBootstrapService(prismaService, funcionalidadeAcaoService);
   const solucaoBootstrapService = new SolucaoBootstrapService(prismaService, funcionalidadeAcaoService, solucaoAcessoService, solucaoChamadosBootstrapService, solucaoProjetosBootstrapService, solucaoHorasBootstrapService);
   const solucaoQueryService = new SolucaoQueryService(prismaService);
@@ -1699,6 +1734,10 @@ function createWorld(): TestWorld {
   const anexoStorage = new TestChamadoAnexoStorage();
   const chamadoQueryService = new ChamadoQueryService(prismaService);
   const funcionalidadeAuthorizationService = new FuncionalidadeAuthorizationService(solucoesService);
+  const catalogoLifecycleService = new CatalogoLifecycleService(
+    prismaService,
+    new CatalogoValidationService(new CatalogoProviderRegistry())
+  );
   const projetoAuthorizationService = new ProjetoAuthorizationService(funcionalidadeAuthorizationService);
   const projetoAuditoriaService = new ProjetoAuditoriaService();
   const projetoIdempotenciaService = new ProjetoIdempotenciaService();
@@ -1709,7 +1748,13 @@ function createWorld(): TestWorld {
   const projetoCatalogService = new ProjetoCatalogService(prismaService, projetoAuthorizationService, projetoQueryService);
   const projetoEquipeService = new ProjetoEquipeService(prismaService, projetoAuthorizationService, projetoQueryService);
   const projetoLifecycleService = new ProjetoLifecycleService(prismaService, projetoAuthorizationService, projetoQueryService);
-  const projetoItemAuthorizationService = new ProjetoItemAuthorizationService(prismaService, projetoAuthorizationService);
+  const projetoRecursoAuthorizationService = new ProjetoRecursoAuthorizationService(prismaService, projetoAuthorizationService);
+  const projetoRecursoHierarquiaService = new ProjetoRecursoHierarquiaService(prismaService, projetoRecursoAuthorizationService);
+  const projetoItemAuthorizationService = new ProjetoItemAuthorizationService(
+    prismaService,
+    projetoAuthorizationService,
+    projetoRecursoHierarquiaService
+  );
   const projetoItemHierarquiaService = new ProjetoItemHierarquiaService();
   const projetoItemQueryService = new ProjetoItemQueryService(prismaService, projetoItemAuthorizationService, projetoPeriodoService);
   const projetoItemCatalogService = new ProjetoItemCatalogService(
@@ -1732,7 +1777,11 @@ function createWorld(): TestWorld {
     projetoAuthorizationService
   );
   const projetoSprintService = new ProjetoSprintService(
-    prismaService, projetoSprintAuthorizationService, projetoAuditoriaService, projetoPeriodoService
+    prismaService,
+    projetoSprintAuthorizationService,
+    projetoAuditoriaService,
+    projetoPeriodoService,
+    projetoRecursoHierarquiaService
   );
   const projetoMarcoEntregaAuthorizationService = new ProjetoMarcoEntregaAuthorizationService(
     prismaService,
@@ -1742,7 +1791,8 @@ function createWorld(): TestWorld {
     prismaService,
     projetoMarcoEntregaAuthorizationService,
     projetoAuditoriaService,
-    projetoPeriodoService
+    projetoPeriodoService,
+    projetoRecursoHierarquiaService
   );
   const projetoCronogramaAuthorizationService = new ProjetoCronogramaAuthorizationService(
     prismaService,
@@ -1751,7 +1801,8 @@ function createWorld(): TestWorld {
   const projetoCronogramaService = new ProjetoCronogramaService(
     prismaService,
     projetoCronogramaAuthorizationService,
-    projetoAuditoriaService
+    projetoAuditoriaService,
+    projetoRecursoHierarquiaService
   );
   const projetoComunicacaoAuthorizationService = new ProjetoComunicacaoAuthorizationService(
     prismaService,
@@ -1764,13 +1815,10 @@ function createWorld(): TestWorld {
     projetoAuditoriaService,
     anexoStorage as unknown as ProjetoAnexoStorageService,
     projetoFeedRegistroService,
-    projetoPeriodoService
+    projetoPeriodoService,
+    projetoRecursoHierarquiaService
   );
-  const projetoRecursoAuthorizationService = new ProjetoRecursoAuthorizationService(prismaService, projetoAuthorizationService);
   const projetoRecursoService = new ProjetoRecursoService(prismaService, projetoRecursoAuthorizationService, projetoAuditoriaService);
-  const projetoTarefaAuthorizationService = new ProjetoTarefaAuthorizationService(projetoAuthorizationService);
-  const projetoTarefaService = new ProjetoTarefaService(prismaService, projetoTarefaAuthorizationService);
-  const projetoPlanejamentoRecursoService = new ProjetoPlanejamentoRecursoService(prismaService, projetoRecursoAuthorizationService, projetoRecursoService, projetoTarefaService, projetoAuditoriaService, projetoPeriodoService);
   const projetoOrcamentoAuthorizationService = new ProjetoOrcamentoAuthorizationService(prismaService, projetoAuthorizationService);
   const projetoOrcamentoService = new ProjetoOrcamentoService(prismaService, projetoOrcamentoAuthorizationService, projetoAuditoriaService);
 
@@ -1789,8 +1837,6 @@ function createWorld(): TestWorld {
     projetoCronogramaService,
     projetoComunicacaoService,
     projetoRecursoService,
-    projetoTarefaService,
-    projetoPlanejamentoRecursoService,
     projetoOrcamentoService
   );
   const chamadoAuthorizationService = new ChamadoAuthorizationService(prismaService, funcionalidadeAuthorizationService);
@@ -1843,6 +1889,8 @@ function createWorld(): TestWorld {
   return {
     prisma,
     solucoesService,
+    catalogoLifecycleService,
+    funcionalidadeAuthorizationService,
     documentacaoService,
     gruposService,
     empresasService,
@@ -1872,9 +1920,6 @@ function createWorld(): TestWorld {
     projetoComunicacaoService,
     projetoRecursoAuthorizationService,
     projetoRecursoService,
-    projetoTarefaAuthorizationService,
-    projetoTarefaService,
-    projetoPlanejamentoRecursoService,
     projetoOrcamentoAuthorizationService,
     projetoOrcamentoService,
   };
@@ -1935,6 +1980,7 @@ async function seedConfigurador(world: TestWorld): Promise<void> {
     exibirNoHub: true,
     somenteAdminSistema: true
   });
+  await world.prisma.solucao.update({ where: { id: configurador.id }, data: { statusPublicacao: 'PUBLICADA' } });
 
   const configuradorFeatures = [
     ['cadastro-de-usuarios', 'Cadastro de usuários', 'Usuários', 'configurador.cadastro-de-usuarios'],
@@ -1944,7 +1990,7 @@ async function seedConfigurador(world: TestWorld): Promise<void> {
   ] as const;
 
   for (const [slug, titulo, label, registryKey] of configuradorFeatures) {
-    await world.solucoesService.createFuncionalidade({
+    const funcionalidade = await world.solucoesService.createFuncionalidade({
       solucaoId: configurador.id,
       slug,
       titulo,
@@ -1955,6 +2001,7 @@ async function seedConfigurador(world: TestWorld): Promise<void> {
       registryKey,
       somenteAdminSistema: true
     });
+    await world.prisma.funcionalidade.update({ where: { id: funcionalidade.id }, data: { statusPublicacao: 'PUBLICADA' } });
   }
 }
 
@@ -2017,6 +2064,201 @@ async function seedChamadoConfiguracoes(world: TestWorld, empresaId: number) {
   return { tipos, prioridades };
 }
 describe('Fluxos integrados do backend', () => {
+  it('cadastra, publica e utiliza uma funcionalidade customizada sem perde-la no bootstrap', async () => {
+    const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
+    const projetos = expectDefined((await world.solucoesService.findAll())
+      .find((solucao) => solucao.slug === 'projetos'));
+
+    const funcionalidade = await world.solucoesService.createFuncionalidade({
+      solucaoId: projetos.id,
+      slug: 'backlog-customizado',
+      titulo: 'Backlog customizado',
+      label: 'Backlog customizado',
+      descricao: 'Customizacao integrada ao provedor de backlog.',
+      ordem: 95,
+      ativo: true,
+      registryKey: 'projetos.backlog-de-demandas',
+      acoes: [{
+        chave: 'visualizar',
+        nome: 'Visualizar backlog customizado',
+        descricao: 'Permite utilizar a funcionalidade customizada.',
+        ordem: 10,
+        ativo: true,
+        configuracao: 'visualizar'
+      }, {
+        chave: 'planejar',
+        nome: 'Planejar backlog customizado',
+        descricao: 'Permite executar o planejamento customizado.',
+        ordem: 20,
+        ativo: true,
+        configuracao: 'planejar'
+      }]
+    });
+    const acao = expectDefined(funcionalidade.acoes.find((item) => item.chave === 'visualizar'));
+    const acaoPlanejar = expectDefined(funcionalidade.acoes.find((item) => item.chave === 'planejar'));
+
+    expect(funcionalidade).toMatchObject({
+      statusPublicacao: 'RASCUNHO',
+      providerKey: 'projetos.backlog-de-demandas',
+      providerVersion: 1,
+      padraoSistema: false
+    });
+    expect(acao).toMatchObject({ statusPublicacao: 'RASCUNHO' });
+    expect(await world.prisma.funcionalidadeAcao.findUnique({ where: { id: acao.id } }))
+      .toMatchObject({ consumerKey: 'visualizar', consumerVersion: 1 });
+
+    const rascunhoFuncionalidade = await world.catalogoLifecycleService.createFeatureDraft(
+      funcionalidade.id,
+      admin.sub,
+      'Publicacao da customizacao de teste.'
+    );
+    expect(await world.catalogoLifecycleService.validateFeatureDraft(rascunhoFuncionalidade.id)).toEqual([]);
+    await world.catalogoLifecycleService.publishFeatureDraft(
+      rascunhoFuncionalidade.id,
+      rascunhoFuncionalidade.revisao,
+      admin.sub
+    );
+
+    for (const acaoCustomizada of [acao, acaoPlanejar]) {
+      const rascunhoAcao = await world.catalogoLifecycleService.createActionDraft(
+        acaoCustomizada.id,
+        admin.sub,
+        'Publicacao da acao da customizacao de teste.'
+      );
+      expect(await world.catalogoLifecycleService.validateActionDraft(rascunhoAcao.id)).toEqual([]);
+      await world.catalogoLifecycleService.publishActionDraft(
+        rascunhoAcao.id,
+        rascunhoAcao.revisao,
+        admin.sub
+      );
+    }
+
+    await world.solucoesService.syncCompanyAccess(
+      empresaInicialId,
+      [projetos.id],
+      [funcionalidade.id]
+    );
+    const grupoPermitido = await world.prisma.grupoUsuario.create({ data: { nome: 'Customizacao Permitida' } });
+    const grupoNegado = await world.prisma.grupoUsuario.create({ data: { nome: 'Customizacao Negada' } });
+    const permissaoBase = {
+      funcionalidadeId: funcionalidade.id,
+      podeVisualizar: true,
+      podeIncluir: false,
+      podeAlterar: false,
+      podeExcluir: false
+    };
+    await world.solucoesService.syncGroupAccess(
+      grupoPermitido.id,
+      [projetos.id],
+      [funcionalidade.id],
+      [{
+        ...permissaoBase,
+        acoes: [{
+          funcionalidadeId: funcionalidade.id,
+          acaoId: acao.id,
+          chave: acao.chave,
+          permitido: true
+        }, {
+          funcionalidadeId: funcionalidade.id,
+          acaoId: acaoPlanejar.id,
+          chave: acaoPlanejar.chave,
+          permitido: true
+        }]
+      }]
+    );
+    await world.solucoesService.syncGroupAccess(
+      grupoNegado.id,
+      [projetos.id],
+      [funcionalidade.id],
+      [{
+        ...permissaoBase,
+        acoes: [{
+          funcionalidadeId: funcionalidade.id,
+          acaoId: acao.id,
+          chave: acao.chave,
+          permitido: true
+        }, {
+          funcionalidadeId: funcionalidade.id,
+          acaoId: acaoPlanejar.id,
+          chave: acaoPlanejar.chave,
+          permitido: false
+        }]
+      }]
+    );
+
+    const usuario = (grupo: typeof grupoPermitido, suffix: string): JwtPayload => ({
+      sub: randomUUID(),
+      nome: `Usuario ${suffix}`,
+      login: `customizacao.${suffix}`,
+      email: `customizacao.${suffix}@teste.com`,
+      empresaId: empresaInicialId,
+      grupo: {
+        id: grupo.id,
+        nome: grupo.nome,
+        acessoEcommerce: false,
+        acessoProjetos: false,
+        acessoHoras: false,
+        acessoConfigurador: false
+      }
+    } as JwtPayload);
+    const usuarioPermitido = usuario(grupoPermitido, 'permitida');
+    const usuarioNegado = usuario(grupoNegado, 'negada');
+
+    const hubPermitido = await world.solucoesService.myHubNavigation(usuarioPermitido);
+    const funcionalidadeNoHub = expectDefined(hubPermitido
+      .find((solucao) => solucao.slug === 'projetos')
+      ?.funcionalidades.find((item) => item.slug === 'backlog-customizado'));
+    expect(funcionalidadeNoHub).toMatchObject({
+      registryKey: 'projetos.backlog-de-demandas',
+      providerKey: 'projetos.backlog-de-demandas',
+      providerVersion: 1
+    });
+    expect(funcionalidadeNoHub.acoes.find((item) => item.chave === 'visualizar')?.permitido).toBe(true);
+    const acessoNegado = await world.solucoesService.findGroupAccess(grupoNegado.id);
+    expect(acessoNegado.funcionalidadePermissoes).toEqual([
+      expect.objectContaining({
+        funcionalidadeId: funcionalidade.id,
+        podeVisualizar: true,
+        acoes: expect.arrayContaining([
+          expect.objectContaining({ acaoId: acao.id, permitido: true }),
+          expect.objectContaining({ acaoId: acaoPlanejar.id, permitido: false })
+        ])
+      })
+    ]);
+    expect((await world.solucoesService.myHubNavigation(usuarioNegado))
+      .find((solucao) => solucao.slug === 'projetos')
+      ?.funcionalidades.map((item) => item.slug)).toContain('backlog-customizado');
+    await expect(world.funcionalidadeAuthorizationService.assertFeatureAction(
+      usuarioPermitido,
+      'projetos',
+      'backlog-customizado',
+      'visualizar'
+    )).resolves.toBeUndefined();
+    await expect(world.funcionalidadeAuthorizationService.assertFeatureAction(
+      usuarioNegado,
+      'projetos',
+      'backlog-customizado',
+      'planejar'
+    )).rejects.toThrow('Usuario sem permissao para executar esta acao.');
+
+    await world.solucoesService.ensureProjetosSolution();
+    const aposBootstrap = expectDefined((await world.solucoesService.findAll())
+      .find((solucao) => solucao.slug === 'projetos')
+      ?.funcionalidades.find((item) => item.slug === 'backlog-customizado'));
+    expect(aposBootstrap).toMatchObject({
+      id: funcionalidade.id,
+      statusPublicacao: 'PUBLICADA',
+      providerKey: 'projetos.backlog-de-demandas',
+      padraoSistema: false
+    });
+    await expect(world.funcionalidadeAuthorizationService.assertFeatureAction(
+      usuarioPermitido,
+      'projetos',
+      'backlog-customizado',
+      'visualizar'
+    )).resolves.toBeUndefined();
+  });
+
   it('forca a troca inicial, exige senha atual depois e revoga todas as sessoes', async () => {
     const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
     const adminRecord = expectDefined(world.prisma.data.usuario.find((user) => user.id === admin.sub));
@@ -2158,7 +2400,7 @@ describe('Fluxos integrados do backend', () => {
     const documentacaoReordenada = await world.solucoesService.update({ id: documentacao.id, ordem: 850 });
     expect(documentacaoReordenada.ordem).toBe(850);
     await expect(world.solucoesService.update({ id: documentacao.id, nome: 'Documentacao alterada' }))
-      .rejects.toThrow('Os dados cadastrais de uma solucao padrao do sistema nao podem ser alterados.');
+      .rejects.toThrow('Crie e publique um rascunho versionado para alterar uma solucao publicada.');
     await expect(world.solucoesService.remove(documentacao.id))
       .rejects.toThrow('Uma solucao padrao do sistema nao pode ser excluida.');
     const projetosSolucao = expectDefined(solucoes.find((item) => item.slug === 'projetos'));
@@ -2441,7 +2683,20 @@ describe('Fluxos integrados do backend', () => {
       metodologia: 'KANBAN' as any,
       responsavelId: responsavel.usuario.id,
       participantes: [{ usuarioId: usuarioSemAcesso.id, papel: 'MEMBRO' as any }]
-    }, admin)).rejects.toThrow('devem pertencer a empresa');    await expect(world.projetosService.create({
+    }, admin)).rejects.toThrow('devem pertencer a empresa');
+
+    const projetoEmOrcamento = await world.projetosService.create({
+      chave: 'ORC',
+      nome: 'Projeto em orcamento',
+      metodologia: 'KANBAN' as any,
+      situacao: 'EM_ORCAMENTO' as any,
+      responsavelId: admin.sub,
+      inicioPrevistoEm: '2026-09-02',
+      fimPrevistoEm: '2026-11-02'
+    }, admin);
+    expect(projetoEmOrcamento.situacao).toBe('EM_ORCAMENTO');
+
+    await expect(world.projetosService.create({
       chave: 'STS',
       nome: 'Situacao inicial invalida',
       metodologia: 'KANBAN' as any,
@@ -2581,6 +2836,12 @@ describe('Fluxos integrados do backend', () => {
         criadoPorId: admin.sub
       }
     });
+    const recursoResponsavel = await world.prisma.recurso.create({
+      data: { empresaId: empresaInicialId, usuarioId: admin.sub, ativo: true }
+    });
+    await world.prisma.projetoRecurso.create({
+      data: { empresaId: empresaInicialId, projetoId: projeto.id, recursoId: recursoResponsavel.id, ativo: true }
+    });
     const outsider = await world.prisma.usuario.create({
       data: {
         nome: 'Fora da equipe',
@@ -2719,7 +2980,7 @@ describe('Fluxos integrados do backend', () => {
       tipo: ProjetoItemTipo.TAREFA,
       titulo: 'Responsavel invalido',
       responsavelId: outsider.id
-    }, admin)).rejects.toThrow('equipe executora');
+    }, admin)).rejects.toThrow('recurso ativo vinculado');
 
     const atualizado = await world.projetosService.updateItem({
       id: pai.id,
@@ -3207,8 +3468,12 @@ describe('Fluxos integrados do backend', () => {
     }, responsavel.payload)).rejects.toThrow('Usuario sem permissao para gerenciar a equipe');
 
     const allowedTransitions: Array<[ProjetoSituacao, ProjetoSituacao]> = [
+      [ProjetoSituacao.RASCUNHO, ProjetoSituacao.EM_ORCAMENTO],
       [ProjetoSituacao.RASCUNHO, ProjetoSituacao.PLANEJADO],
       [ProjetoSituacao.RASCUNHO, ProjetoSituacao.CANCELADO],
+      [ProjetoSituacao.EM_ORCAMENTO, ProjetoSituacao.RASCUNHO],
+      [ProjetoSituacao.EM_ORCAMENTO, ProjetoSituacao.PLANEJADO],
+      [ProjetoSituacao.EM_ORCAMENTO, ProjetoSituacao.CANCELADO],
       [ProjetoSituacao.PLANEJADO, ProjetoSituacao.EM_ANDAMENTO],
       [ProjetoSituacao.PLANEJADO, ProjetoSituacao.PAUSADO],
       [ProjetoSituacao.PLANEJADO, ProjetoSituacao.CANCELADO],
@@ -3421,7 +3686,7 @@ describe('Fluxos integrados do backend', () => {
     await expect(world.solucoesService.updateFuncionalidade({
       id: cadastroProjetos.id,
       titulo: 'Cadastro de projetos alterado indevidamente'
-    })).rejects.toThrow('Os dados cadastrais de uma funcionalidade padrao do sistema nao podem ser alterados.');
+    })).rejects.toThrow('Crie e publique um rascunho versionado para alterar uma funcionalidade publicada.');
     const visualizarProjetos = expectDefined(cadastroProjetos.acoes.find((acao) => acao.chave === 'visualizar'));
     await expect(world.solucoesService.updateFuncionalidade({
       id: cadastroProjetos.id,
@@ -3433,7 +3698,7 @@ describe('Fluxos integrados do backend', () => {
         ativo: visualizarProjetos.ativo,
         acaoPadrao: visualizarProjetos.acaoPadrao
       }]
-    })).rejects.toThrow('somente novas acoes podem ser adicionadas');
+    })).rejects.toThrow('Use um rascunho versionado para alterar uma acao publicada.');
     const cadastroProjetosComAcaoAdicional = await world.solucoesService.updateFuncionalidade({
       id: cadastroProjetos.id,
       acoes: [{
@@ -3620,11 +3885,12 @@ describe('Fluxos integrados do backend', () => {
       ]
     });
     expect(funcionalidadeExtra.padraoSistema).toBe(false);
+    expect(funcionalidadeExtra.statusPublicacao).toBe('RASCUNHO');
     const acessoGrupo = await world.solucoesService.findGroupAccess(grupo.id);
     const acessoEmpresa = await world.solucoesService.findCompanyAccess(empresa.id);
 
-    expect(acessoGrupo.funcionalidadeIds).toContain(funcionalidadeExtra.id);
-    expect(acessoEmpresa.funcionalidadeIds).toContain(funcionalidadeExtra.id);
+    expect(acessoGrupo.funcionalidadeIds).not.toContain(funcionalidadeExtra.id);
+    expect(acessoEmpresa.funcionalidadeIds).not.toContain(funcionalidadeExtra.id);
 
     await world.usersService.update({
       id: usuario.id,
@@ -6077,596 +6343,6 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
     expect(ultimaPagina.feed.map((entry) => entry.id)).not.toEqual(expect.arrayContaining(primeiraPagina.feed.map((entry) => entry.id)));
     expect(paginaAjustada.feedPagina).toBe(41);
     expect(paginaAjustada.feed).toEqual(ultimaPagina.feed);
-  });
-
-  it('cadastra uma tarefa para um ou mais recursos sem vinculo direto com projetos', async () => {
-    const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
-    const recurso = await world.prisma.recurso.create({ data: { empresaId: empresaInicialId, usuarioId: admin.sub, ativo: true } });
-    const outroUsuario = await world.prisma.usuario.create({ data: { nome: 'Outro recurso', email: 'outro.recurso@teste.com', senhaHash: 'hash' } });
-    const outroRecurso = await world.prisma.recurso.create({ data: { empresaId: empresaInicialId, usuarioId: outroUsuario.id, ativo: true } });
-    const painelInicial = await world.projetoTarefaService.painel(admin);
-    expect(painelInicial.recursos.map((item) => item.id)).toEqual(expect.arrayContaining([recurso.id, outroRecurso.id]));
-
-    let tarefa = await world.projetoTarefaService.salvar({
-      recursoIds: [recurso.id, outroRecurso.id],
-      funcionalidade: 'Configurar o fluxo de cadastro de projetos',
-      estimativaMinutos: 480,
-      valorHora: '125.5',
-      moeda: 'BRL',
-      observacao: 'Especialistas responsaveis pela configuracao',
-      ativo: true
-    }, admin);
-    expect(tarefa.funcionalidade).toBe('Configurar o fluxo de cadastro de projetos');
-    expect(tarefa.estimativaMinutos).toBe(480);
-    expect(tarefa.valorHora).toBe('125.5000');
-    expect(tarefa.taxas).toHaveLength(1);
-    expect(tarefa.taxas[0]?.valorHora).toBe('125.5000');
-    expect(tarefa.recursoIds).toEqual(expect.arrayContaining([recurso.id, outroRecurso.id]));
-    expect(tarefa.recursos.map((item: any) => item.recursoId)).toEqual(expect.arrayContaining([recurso.id, outroRecurso.id]));
-    expect(await world.prisma.projetoTarefaRecurso.count({ where: { tarefaId: tarefa.id } })).toBe(2);
-    expect(tarefa.pendenteRecurso).toBe(false);
-
-    await expect(world.projetoTarefaService.salvar({
-      recursoIds: [],
-      funcionalidade: 'Tarefa sem vinculo',
-      estimativaMinutos: 480,
-      valorHora: '130',
-      moeda: 'BRL',
-      ativo: true
-    }, admin)).rejects.toThrow('Selecione ao menos um recurso');
-
-    await expect(world.projetoTarefaService.salvar({
-      recursoIds: [recurso.id],
-      funcionalidade: '   ',
-      estimativaMinutos: 480,
-      valorHora: '130',
-      moeda: 'BRL',
-      ativo: true
-    }, admin)).rejects.toThrow('Descreva a funcionalidade');
-
-    await expect(world.projetoTarefaService.salvar({
-      recursoIds: [recurso.id],
-      funcionalidade: 'Tarefa sem estimativa valida',
-      estimativaMinutos: 0,
-      valorHora: '130',
-      moeda: 'BRL',
-      ativo: true
-    }, admin)).rejects.toThrow('horas estimadas devem ser maiores que zero');
-
-    tarefa = await world.projetoTarefaService.salvar({
-      id: tarefa.id,
-      versao: tarefa.versao,
-      recursoIds: [recurso.id],
-      funcionalidade: 'Configurar e revisar o fluxo de cadastro de projetos',
-      estimativaMinutos: 600,
-      valorHora: '150.25',
-      moeda: 'BRL',
-      observacao: 'Taxa comercial revisada',
-      ativo: true
-    }, admin);
-    expect(tarefa.versao).toBe(2);
-    expect(tarefa.funcionalidade).toBe('Configurar e revisar o fluxo de cadastro de projetos');
-    expect(tarefa.estimativaMinutos).toBe(600);
-    expect(tarefa.valorHora).toBe('150.2500');
-    expect(tarefa.recursoIds).toEqual([recurso.id]);
-    expect(tarefa.recursoIds).not.toContain(outroRecurso.id);
-    expect(tarefa.taxas.map((item: any) => item.valorHora)).toEqual(expect.arrayContaining(['125.5000', '150.2500']));
-
-    await expect(world.projetoTarefaService.salvar({
-      id: tarefa.id,
-      versao: tarefa.versao,
-      recursoIds: [recurso.id, recurso.id],
-      funcionalidade: tarefa.funcionalidade,
-      estimativaMinutos: tarefa.estimativaMinutos,
-      valorHora: '150.25',
-      moeda: 'BRL',
-      ativo: true
-    }, admin)).rejects.toThrow('Nao repita o mesmo recurso');
-
-    await expect(world.projetoRecursoService.excluirRecurso({ id: recurso.id, versao: recurso.versao }, admin)).rejects.toThrow('1 tarefa(s)');
-    await expect(world.projetoTarefaService.excluir({ id: tarefa.id, versao: tarefa.versao }, admin)).resolves.toBe(true);
-    expect(await world.prisma.projetoTarefaRecurso.count({ where: { tarefaId: tarefa.id } })).toBe(0);
-    await expect(world.projetoRecursoService.excluirRecurso({ id: recurso.id, versao: recurso.versao }, admin)).resolves.toBe(true);
-  });
-  it('vincula recursos a projetos e tarefas, planeja execucoes e protege o orcamento', async () => {
-    const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
-    const gerente = await world.prisma.usuario.create({ data: { nome: 'Gerente financeiro', login: 'gerente.financeiro', email: 'gerente.financeiro@teste.com', senhaHash: 'hash', grupoId: (admin as any).grupo.id } });
-    await world.prisma.empresaUsuario.create({ data: { empresaId: empresaInicialId, usuarioId: gerente.id } });
-    const colaborador = await world.prisma.usuario.create({ data: { nome: 'Colaborador sem acesso a projetos', login: 'colaborador.recurso', email: 'colaborador.recurso@teste.com', senhaHash: 'hash' } });
-    await world.prisma.empresaUsuario.create({ data: { empresaId: empresaInicialId, usuarioId: colaborador.id } });
-    const projeto = await world.prisma.projeto.create({ data: { empresaId: empresaInicialId, chave: 'FIN', nome: 'Planejamento financeiro', responsavelId: gerente.id, criadoPorId: admin.sub } });
-    const projetoSecundario = await world.prisma.projeto.create({ data: { empresaId: empresaInicialId, chave: 'FIN-2', nome: 'Execucao financeira', responsavelId: gerente.id, criadoPorId: admin.sub } });
-
-    expect(await world.prisma.projetoRecurso.count({ where: { projetoId: projeto.id } })).toBe(0);
-    expect((await world.projetoRecursoService.painel(admin)).candidatos.map((item) => item.id)).toContain(colaborador.id);
-    const recursoExcluivel = await world.projetoRecursoService.salvarRecurso({
-      usuarioId: colaborador.id,
-      projetoIds: [projeto.id, projetoSecundario.id],
-      ativo: true
-    }, admin);
-    expect(await world.prisma.projetoRecurso.count({ where: { recursoId: recursoExcluivel.id } })).toBe(2);
-    await expect(world.projetoRecursoService.excluirRecurso({
-      id: recursoExcluivel.id,
-      versao: recursoExcluivel.versao
-    }, admin)).resolves.toBe(true);
-    expect(await world.prisma.recurso.findUnique({ where: { id: recursoExcluivel.id } })).toBeNull();
-    expect(await world.prisma.projetoRecurso.count({ where: { recursoId: recursoExcluivel.id } })).toBe(0);
-    expect(await world.prisma.projetoMembro.findFirst({ where: { usuarioId: colaborador.id, origem: 'RECURSO' } })).toBeNull();
-
-    const recurso = await world.projetoRecursoService.salvarRecurso({ usuarioId: admin.sub, projetoIds: [projeto.id, projetoSecundario.id], ativo: true }, admin);
-    expect(recurso.usuarioId).toBe(admin.sub);
-    expect(await world.prisma.projetoRecurso.count({ where: { projetoId: projeto.id } })).toBe(1);
-    expect(recurso.projetos.filter((item: any) => item.ativo).map((item: any) => item.projetoId)).toEqual(expect.arrayContaining([projeto.id, projetoSecundario.id]));
-    const vinculo = expectDefined(recurso.projetos.find((item: any) => item.projetoId === projeto.id));
-    const vinculoSecundario = expectDefined(recurso.projetos.find((item: any) => item.projetoId === projetoSecundario.id));
-    expect(vinculo.ativo).toBe(true);
-    expect(vinculoSecundario.ativo).toBe(true);
-    expect(await world.prisma.projetoMembro.findFirst({ where: { projetoId: projeto.id, usuarioId: admin.sub, origem: 'RECURSO' } })).not.toBeNull();
-    await expect(world.projetoRecursoService.salvarRecurso({ id: recurso.id, versao: recurso.versao, usuarioId: 'outro-usuario', projetoIds: [projeto.id], ativo: true }, admin)).rejects.toThrow('nao pode ser alterado');
-
-    const tarefaPlanejada = await world.projetoTarefaService.salvar({
-      recursoIds: [recurso.id],
-      funcionalidade: 'Implementar e homologar a integracao financeira',
-      estimativaMinutos: 2400,
-      valorHora: '150',
-      moeda: 'BRL',
-      ativo: true
-    }, admin);
-
-    const alocacao = expectDefined(await world.projetoPlanejamentoRecursoService.salvarExecucao({
-      projetoId: projeto.id, projetoRecursoId: vinculo.id, tarefaId: tarefaPlanejada.id, inicioEm: '2026-08-01', fimEm: '2026-08-31', alocacaoMinutos: 3000
-    }, admin));
-    expect(alocacao.atividade).toBe('Implementar e homologar a integracao financeira');
-    expect(alocacao.tarefaId).toBe(tarefaPlanejada.id);
-    expect(alocacao.alocacaoMinutos).toBe(2400);
-    const planejamento = await world.projetoPlanejamentoRecursoService.painel(admin);
-    const linhaPlanejada = expectDefined(planejamento.linhas.find((item) => item.id === vinculo.id));
-    const linhaSecundaria = expectDefined(planejamento.linhas.find((item) => item.id === vinculoSecundario.id));
-    expect(planejamento.tarefas.filter((item) => item.id === tarefaPlanejada.id)).toHaveLength(1);
-    expect(linhaPlanejada.tarefas).toHaveLength(1);
-    expect(linhaSecundaria.tarefas).toHaveLength(1);
-    expect(linhaPlanejada.estimativaTotalMinutos).toBe(2400);
-    expect(linhaPlanejada.planejamentoTarefasMinutos).toBe(2400);
-    expect(linhaPlanejada.saldoTarefasMinutos).toBe(0);
-    expect(linhaSecundaria.planejamentoTarefasMinutos).toBe(0);
-    expect(linhaPlanejada.possuiRisco).toBe(false);
-    const tarefaMoedaDiferente = await world.projetoTarefaService.salvar({
-      recursoIds: [recurso.id],
-      funcionalidade: 'Revisar custos internacionais',
-      estimativaMinutos: 120,
-      valorHora: '50',
-      moeda: 'USD',
-      ativo: true
-    }, admin);
-
-    const orcamento = await world.projetoOrcamentoService.salvarOrcamento({ projetoId: projeto.id, moeda: 'BRL' }, admin);
-    let categoria = await world.projetoOrcamentoService.salvarCategoria({
-      projetoId: projeto.id, nome: 'Pessoas', valorPlanejado: '100.005', valorComprometido: '80', valorRealizado: '120'
-    }, admin);
-    expect(categoria.valorPlanejado).toBe('100.01');
-    expect(categoria.variacao).toBe('-19.99');
-    await expect(world.projetoOrcamentoService.salvarCusto({
-      projetoId: projeto.id, categoriaId: categoria.id, tipo: 'RECURSO' as any, descricao: 'Custo em moeda divergente', recursoId: vinculo.id, tarefaId: tarefaMoedaDiferente.id,
-      quantidadeMinutos: 60, taxaHora: '50', valorPlanejado: '0', valorComprometido: '0', valorRealizado: '0'
-    }, admin)).rejects.toThrow('mesma moeda do orcamento');
-
-    let custo = await world.projetoOrcamentoService.salvarCusto({
-      projetoId: projeto.id, categoriaId: categoria.id, tipo: 'RECURSO' as any, descricao: 'Desenvolvimento', recursoId: vinculo.id, tarefaId: tarefaPlanejada.id,
-      quantidadeMinutos: 60, taxaHora: '10.5555', valorPlanejado: '0', valorComprometido: '10.5555', valorRealizado: '0'
-    }, admin);
-    expect(custo.valorPlanejado).toBe('10.56');
-    expect(custo.taxas.map((item: any) => item.taxaHora)).toEqual(['10.5555']);
-    custo = await world.projetoOrcamentoService.salvarCusto({
-      projetoId: projeto.id, id: custo.id, versao: custo.versao, categoriaId: categoria.id, tipo: 'RECURSO' as any, descricao: 'Desenvolvimento', recursoId: vinculo.id, tarefaId: tarefaPlanejada.id,
-      quantidadeMinutos: 60, taxaHora: '12', valorPlanejado: '0', valorComprometido: '12', valorRealizado: '0'
-    }, admin);
-    expect(custo.taxas).toHaveLength(2);
-    expect(custo.taxas.map((item: any) => item.taxaHora)).toEqual(expect.arrayContaining(['12.0000', '10.5555']));
-    expect(custo.tarefaId).toBe(tarefaPlanejada.id);
-    expect(custo.tarefa?.funcionalidade).toBe('Implementar e homologar a integracao financeira');
-    const painelFinanceiro = await world.projetoOrcamentoService.painel(projeto.id, admin);
-    expect(painelFinanceiro.tarefas.map((item) => item.id)).toEqual(expect.arrayContaining([tarefaPlanejada.id, tarefaMoedaDiferente.id]));
-    expect(painelFinanceiro.financeiro?.custos[0]?.tarefaId).toBe(tarefaPlanejada.id);
-    await expect(world.projetoOrcamentoService.salvarOrcamento({ projetoId: projeto.id, id: orcamento.id, versao: orcamento.versao, moeda: 'USD' }, admin)).rejects.toThrow('nao pode ser alterada');
-    await expect(world.projetoTarefaService.excluir({ id: tarefaPlanejada.id, versao: tarefaPlanejada.versao }, admin)).rejects.toThrow('Desative a tarefa');
-
-    categoria = await world.projetoOrcamentoService.salvarCategoria({
-      projetoId: projeto.id, id: categoria.id, versao: categoria.versao, nome: 'Equipe',
-      valorPlanejado: categoria.valorPlanejado, valorComprometido: categoria.valorComprometido, valorRealizado: categoria.valorRealizado
-    }, admin);
-    expect(categoria.nome).toBe('Equipe');
-    await expect(world.projetoOrcamentoService.excluirCategoria({
-      projetoId: projeto.id, id: categoria.id, versao: categoria.versao
-    }, admin)).rejects.toThrow('1 custo(s) vinculado(s)');
-
-    const categoriaSemCusto = await world.projetoOrcamentoService.salvarCategoria({
-      projetoId: projeto.id, nome: 'Reserva', valorPlanejado: '10', valorComprometido: '0', valorRealizado: '0'
-    }, admin);
-    await expect(world.projetoOrcamentoService.excluirCategoria({
-      projetoId: projeto.id, id: categoriaSemCusto.id, versao: categoriaSemCusto.versao
-    }, admin)).resolves.toBe(true);
-    const recursoAtualizado = await world.projetoRecursoService.salvarRecurso({
-      id: recurso.id,
-      versao: recurso.versao,
-      usuarioId: recurso.usuarioId,
-      projetoIds: [projetoSecundario.id],
-      ativo: true
-    }, admin);
-    const recursoDesalocado = expectDefined(recursoAtualizado.projetos.find((item: any) => item.projetoId === projeto.id));
-    expect(recursoDesalocado.ativo).toBe(false);
-    expect(await world.prisma.projetoRecurso.count({ where: { projetoId: projeto.id } })).toBe(1);
-    expect(await world.prisma.projetoMembro.findFirst({ where: { projetoId: projeto.id, usuarioId: admin.sub, origem: 'RECURSO' } })).toBeNull();
-    await expect(world.projetoRecursoService.excluirRecurso({ id: recurso.id, versao: recursoAtualizado.versao }, admin)).rejects.toThrow('1 execucao(oes)');
-    await expect(world.projetoOrcamentoService.excluirCusto({
-      projetoId: projeto.id, id: custo.id, versao: custo.versao
-    }, admin)).resolves.toBe(true);
-    await expect(world.projetoOrcamentoService.excluirCategoria({
-      projetoId: projeto.id, id: categoria.id, versao: categoria.versao
-    }, admin)).resolves.toBe(true);
-
-    const permissionSpy = jest.spyOn(world.projetoOrcamentoAuthorizationService, 'permissoes').mockResolvedValueOnce({
-      podeVisualizarFinanceiro: false, podeGerenciarFinanceiro: false, podeAprovarOrcamento: false
-    });
-    const painelSemFinanceiro = await world.projetoOrcamentoService.painel(projeto.id, admin);
-    expect(painelSemFinanceiro.financeiro).toBeNull();
-    expect(painelSemFinanceiro.tarefas).toEqual([]);
-    permissionSpy.mockRestore();
-
-    const aprovado = await world.projetoOrcamentoService.aprovar({ projetoId: projeto.id, id: orcamento.id, versao: orcamento.versao }, admin);
-    expect(aprovado.status).toBe('APROVADO');
-    await expect(world.projetoOrcamentoService.salvarCategoria({
-      projetoId: projeto.id, id: categoria.id, versao: categoria.versao, nome: categoria.nome,
-      valorPlanejado: categoria.valorPlanejado, valorComprometido: categoria.valorComprometido, valorRealizado: categoria.valorRealizado
-    }, admin)).rejects.toThrow('orcamento aprovado');
-
-    const reaberto = await world.projetoOrcamentoService.reabrir({ projetoId: projeto.id, id: aprovado.id, versao: aprovado.versao }, admin);
-    expect(reaberto.status).toBe('RASCUNHO');
-    expect(reaberto.aprovadoEm).toBeNull();
-    const categoriaAposReabertura = await world.projetoOrcamentoService.salvarCategoria({
-      projetoId: projeto.id, nome: 'Replanejamento', valorPlanejado: '150', valorComprometido: '20', valorRealizado: '10'
-    }, admin);
-    expect(categoriaAposReabertura.nome).toBe('Replanejamento');
-    const reaprovado = await world.projetoOrcamentoService.aprovar({ projetoId: projeto.id, id: reaberto.id, versao: reaberto.versao }, admin);
-    expect(reaprovado.status).toBe('APROVADO');
-    await expect(world.projetoOrcamentoService.reabrir({ projetoId: projeto.id, id: reaprovado.id, versao: reaberto.versao }, admin)).rejects.toThrow('alterado por outra pessoa');
-  });
-  it('executa a jornada integrada do projeto do backlog ao planejamento financeiro', async () => {
-    const { world, admin } = await bootstrapBaseWorld();
-
-    const projeto = await world.projetosService.create({
-      chave: 'ACE',
-      nome: 'Aceite integrado do projeto',
-      objetivo: 'Validar em conjunto os modulos operacionais entregues',
-      metodologia: 'SCRUM' as any,
-      situacao: 'PLANEJADO' as any,
-      responsavelId: admin.sub,
-      inicioPrevistoEm: '2026-10-01',
-      fimPrevistoEm: '2026-12-31'
-    }, admin);
-
-    let itemEntrega = await world.projetosService.createItem({
-      projetoId: projeto.id,
-      tipo: ProjetoItemTipo.HISTORIA,
-      titulo: 'Entregar o incremento integrado',
-      prioridade: ProjetoItemPrioridade.ALTA,
-      responsavelId: admin.sub,
-      inicioPrevistoEm: '2026-10-01',
-      fimPrevistoEm: '2026-10-10',
-      estimativaMinutos: 480
-    }, admin);
-    const itemPosterior = await world.projetosService.createItem({
-      projetoId: projeto.id,
-      tipo: ProjetoItemTipo.TAREFA,
-      titulo: 'Homologar o incremento integrado',
-      prioridade: ProjetoItemPrioridade.MEDIA,
-      responsavelId: admin.sub,
-      inicioPrevistoEm: '2026-10-11',
-      fimPrevistoEm: '2026-10-20',
-      estimativaMinutos: 240
-    }, admin);
-
-    const backlogInicial = await world.projetosService.itens(admin, {
-      projetoId: projeto.id,
-      pagina: 1,
-      limite: 20
-    });
-    await world.projetosService.moverItemBacklog({
-      itemId: itemPosterior.id,
-      backlogVersao: backlogInicial.backlogVersao,
-      direcao: ProjetoBacklogDirecao.TOPO
-    }, admin);
-    const backlogPriorizado = await world.projetosService.itens(admin, {
-      projetoId: projeto.id,
-      pagina: 1,
-      limite: 20
-    });
-    expect(backlogPriorizado.items.map((item) => item.id)).toEqual([itemPosterior.id, itemEntrega.id]);
-
-    let sprint = await world.projetoSprintService.create({
-      projetoId: projeto.id,
-      nome: 'Sprint de aceite integrado',
-      objetivo: 'Concluir o incremento principal',
-      inicioPrevistoEm: '2026-10-01',
-      fimPrevistoEm: '2026-10-14'
-    }, admin);
-    sprint = await world.projetoSprintService.adicionarItem({
-      sprintId: sprint.id,
-      itemId: itemEntrega.id,
-      versao: sprint.versao
-    }, admin);
-    sprint = await world.projetoSprintService.iniciar({ id: sprint.id, versao: sprint.versao }, admin);
-    itemEntrega = await world.projetosService.alterarStatusItem({
-      id: itemEntrega.id,
-      versao: itemEntrega.versao,
-      status: ProjetoItemStatus.EM_ANDAMENTO
-    }, admin);
-    itemEntrega = await world.projetosService.alterarStatusItem({
-      id: itemEntrega.id,
-      versao: itemEntrega.versao,
-      status: ProjetoItemStatus.CONCLUIDO
-    }, admin);
-    sprint = await world.projetoSprintService.concluir({
-      id: sprint.id,
-      versao: sprint.versao,
-      destinoIncompletos: ProjetoSprintDestinoIncompletos.BACKLOG,
-      resultado: 'Incremento principal concluido.'
-    }, admin);
-    expect(sprint.status).toBe(ProjetoSprintStatus.CONCLUIDA);
-    expect(sprint.itensConcluidos).toBe(1);
-
-    const marco = await world.projetoMarcoEntregaService.createMarco({
-      projetoId: projeto.id,
-      nome: 'Aceite operacional',
-      descricao: 'Marco da jornada integrada',
-      responsavelId: admin.sub,
-      status: 'PLANEJADO' as any,
-      dataPrevistaEm: '2026-10-20',
-      itemIds: [itemEntrega.id]
-    }, admin);
-    const entrega = await world.projetoMarcoEntregaService.createEntrega({
-      projetoId: projeto.id,
-      nome: 'Incremento integrado',
-      resultadoEsperado: 'Fluxo operacional validado',
-      criteriosAceite: 'Todos os modulos respondem no mesmo projeto',
-      responsavelId: admin.sub,
-      status: 'PLANEJADA' as any,
-      inicioPrevistoEm: '2026-10-01',
-      fimPrevistoEm: '2026-10-20',
-      marcoId: marco.id,
-      itemIds: [itemEntrega.id]
-    }, admin);
-    const dependencia = await world.projetoCronogramaService.createDependencia({
-      projetoId: projeto.id,
-      bloqueadorId: itemEntrega.id,
-      bloqueadoId: itemPosterior.id
-    }, admin);
-    const cronograma = await world.projetoCronogramaService.painel({ projetoId: projeto.id }, admin);
-    expect(cronograma.dependencias.map((item) => item.id)).toContain(dependencia.id);
-    expect(cronograma.elementos.map((item) => item.id)).toEqual(expect.arrayContaining([itemEntrega.id, itemPosterior.id, marco.id, entrega.id]));
-
-    const atualizacao = await world.projetoComunicacaoService.createAtualizacao({
-      projetoId: projeto.id,
-      conteudo: 'Jornada integrada pronta para validacao financeira',
-      saudePercebida: 'EM_DIA' as any
-    }, admin);
-    const comentario = await world.projetoComunicacaoService.createComentario({
-      projetoId: projeto.id,
-      itemId: itemEntrega.id,
-      conteudo: 'Incremento concluido na sprint de aceite.'
-    }, admin);
-
-    const recurso = await world.projetoRecursoService.salvarRecurso({
-      usuarioId: admin.sub,
-      projetoIds: [projeto.id],
-      ativo: true
-    }, admin);
-    const vinculo = expectDefined(recurso.projetos.find((item: any) => item.projetoId === projeto.id));
-    const tarefa = await world.projetoTarefaService.salvar({
-      recursoIds: [recurso.id],
-      funcionalidade: 'Executar o aceite integrado',
-      estimativaMinutos: 480,
-      valorHora: '100',
-      moeda: 'BRL',
-      ativo: true
-    }, admin);
-    const execucao = await world.projetoPlanejamentoRecursoService.salvarExecucao({
-      projetoId: projeto.id,
-      projetoRecursoId: vinculo.id,
-      tarefaId: tarefa.id,
-      inicioEm: '2026-10-01',
-      fimEm: '2026-10-10'
-    }, admin);
-    expect(execucao.alocacaoMinutos).toBe(tarefa.estimativaMinutos);
-
-    let orcamento = await world.projetoOrcamentoService.salvarOrcamento({ projetoId: projeto.id, moeda: 'BRL' }, admin);
-    const categoria = await world.projetoOrcamentoService.salvarCategoria({
-      projetoId: projeto.id,
-      nome: 'Equipe do aceite',
-      valorPlanejado: '800',
-      valorComprometido: '800',
-      valorRealizado: '0'
-    }, admin);
-    const custo = await world.projetoOrcamentoService.salvarCusto({
-      projetoId: projeto.id,
-      categoriaId: categoria.id,
-      tipo: 'RECURSO' as any,
-      descricao: 'Execucao do aceite integrado',
-      recursoId: vinculo.id,
-      tarefaId: tarefa.id,
-      quantidadeMinutos: tarefa.estimativaMinutos,
-      taxaHora: '100',
-      valorPlanejado: '0',
-      valorComprometido: '800',
-      valorRealizado: '0'
-    }, admin);
-    orcamento = await world.projetoOrcamentoService.aprovar({ projetoId: projeto.id, id: orcamento.id, versao: orcamento.versao }, admin);
-    expect(orcamento.status).toBe('APROVADO');
-    expect(custo.tarefaId).toBe(tarefa.id);
-
-    const painelMarcos = await world.projetoMarcoEntregaService.painel(projeto.id, false, admin);
-    const painelPlanejamento = await world.projetoPlanejamentoRecursoService.painel(admin);
-    const painelOrcamento = await world.projetoOrcamentoService.painel(projeto.id, admin);
-    const painelComunicacao = await world.projetoComunicacaoService.painel(projeto.id, admin, { pagina: 1, limite: 20 });
-    expect(painelMarcos.marcos.map((item) => item.id)).toContain(marco.id);
-    expect(painelMarcos.entregas.map((item) => item.id)).toContain(entrega.id);
-    expect(painelPlanejamento.linhas.find((item) => item.id === vinculo.id)?.planejamentoTarefasMinutos).toBe(480);
-    expect(painelOrcamento.financeiro?.status).toBe('APROVADO');
-    expect(painelComunicacao.feed.map((item) => item.entidadeId)).toEqual(expect.arrayContaining([atualizacao.id, comentario.id]));
-  });
-
-  it('isola planejamento e financeiro por empresa e preserva consulta ao arquivar', async () => {
-    const { world, admin } = await bootstrapBaseWorld();
-    const projeto = await world.projetosService.create({
-      chave: 'SEC',
-      nome: 'Seguranca operacional integrada',
-      metodologia: 'SCRUM' as any,
-      situacao: 'PLANEJADO' as any,
-      responsavelId: admin.sub,
-      inicioPrevistoEm: '2026-11-01',
-      fimPrevistoEm: '2026-11-30'
-    }, admin);
-    const recurso = await world.projetoRecursoService.salvarRecurso({
-      usuarioId: admin.sub,
-      projetoIds: [projeto.id],
-      ativo: true
-    }, admin);
-    const vinculo = expectDefined(recurso.projetos.find((item: any) => item.projetoId === projeto.id));
-    const tarefa = await world.projetoTarefaService.salvar({
-      recursoIds: [recurso.id],
-      funcionalidade: 'Validar isolamento e arquivamento',
-      estimativaMinutos: 360,
-      valorHora: '120',
-      moeda: 'BRL',
-      ativo: true
-    }, admin);
-    const execucao = await world.projetoPlanejamentoRecursoService.salvarExecucao({
-      projetoId: projeto.id,
-      projetoRecursoId: vinculo.id,
-      tarefaId: tarefa.id,
-      inicioEm: '2026-11-03',
-      fimEm: '2026-11-07'
-    }, admin);
-    const execucaoAtualizada = await world.projetoPlanejamentoRecursoService.salvarExecucao({
-      id: execucao.id,
-      versao: execucao.versao,
-      projetoId: projeto.id,
-      projetoRecursoId: vinculo.id,
-      tarefaId: tarefa.id,
-      inicioEm: '2026-11-04',
-      fimEm: '2026-11-08'
-    }, admin);
-    await expect(world.projetoPlanejamentoRecursoService.salvarExecucao({
-      id: execucao.id,
-      versao: execucao.versao,
-      projetoId: projeto.id,
-      projetoRecursoId: vinculo.id,
-      tarefaId: tarefa.id,
-      inicioEm: '2026-11-05',
-      fimEm: '2026-11-09'
-    }, admin)).rejects.toThrow('alterado por outra pessoa');
-
-    const orcamento = await world.projetoOrcamentoService.salvarOrcamento({ projetoId: projeto.id, moeda: 'BRL' }, admin);
-    const categoria = await world.projetoOrcamentoService.salvarCategoria({
-      projetoId: projeto.id,
-      nome: 'Seguranca',
-      valorPlanejado: '720',
-      valorComprometido: '360',
-      valorRealizado: '0'
-    }, admin);
-    const categoriaAtualizada = await world.projetoOrcamentoService.salvarCategoria({
-      projetoId: projeto.id,
-      id: categoria.id,
-      versao: categoria.versao,
-      nome: 'Seguranca e conformidade',
-      valorPlanejado: '720',
-      valorComprometido: '360',
-      valorRealizado: '0'
-    }, admin);
-    await expect(world.projetoOrcamentoService.salvarCategoria({
-      projetoId: projeto.id,
-      id: categoria.id,
-      versao: categoria.versao,
-      nome: 'Atualizacao concorrente',
-      valorPlanejado: '720',
-      valorComprometido: '360',
-      valorRealizado: '0'
-    }, admin)).rejects.toThrow('alterado por outra pessoa');
-
-    const empresaExterna = await world.prisma.empresa.create({ data: { nome: 'Empresa externa da seguranca', acessoProjetos: true } });
-    const usuarioExterno = { ...admin, empresaId: empresaExterna.id };
-    await expect(world.projetoPlanejamentoRecursoService.salvarExecucao({
-      projetoId: projeto.id,
-      projetoRecursoId: vinculo.id,
-      tarefaId: tarefa.id,
-      inicioEm: '2026-11-10',
-      fimEm: '2026-11-11'
-    }, usuarioExterno)).rejects.toThrow('Usuario sem permissao para acessar esta funcionalidade.');
-    await expect(world.projetoPlanejamentoRecursoService.painel(usuarioExterno))
-      .rejects.toThrow('Usuario sem permissao para acessar esta funcionalidade.');
-    await expect(world.projetoOrcamentoService.painel(projeto.id, usuarioExterno))
-      .rejects.toThrow('Usuario sem permissao para acessar esta funcionalidade.');
-
-    await world.projetosService.arquivar(projeto.id, admin);
-    await expect(world.projetoPlanejamentoRecursoService.salvarExecucao({
-      id: execucaoAtualizada.id,
-      versao: execucaoAtualizada.versao,
-      projetoId: projeto.id,
-      projetoRecursoId: vinculo.id,
-      tarefaId: tarefa.id,
-      inicioEm: '2026-11-06',
-      fimEm: '2026-11-10'
-    }, admin)).rejects.toThrow('projeto arquivado esta disponivel somente para consulta');
-    await expect(world.projetoOrcamentoService.salvarCategoria({
-      projetoId: projeto.id,
-      id: categoriaAtualizada.id,
-      versao: categoriaAtualizada.versao,
-      nome: categoriaAtualizada.nome,
-      valorPlanejado: categoriaAtualizada.valorPlanejado,
-      valorComprometido: categoriaAtualizada.valorComprometido,
-      valorRealizado: categoriaAtualizada.valorRealizado
-    }, admin)).rejects.toThrow('projeto arquivado esta disponivel somente para consulta');
-
-    const planejamentoArquivado = await world.projetoPlanejamentoRecursoService.painel(admin);
-    const orcamentoArquivado = await world.projetoOrcamentoService.painel(projeto.id, admin);
-    expect(planejamentoArquivado.linhas.find((item) => item.id === vinculo.id)?.alocacoes.map((item: any) => item.id)).toContain(execucao.id);
-    expect(orcamentoArquivado.financeiro?.id).toBe(orcamento.id);
-    expect(orcamentoArquivado.financeiro?.categorias.map((item: any) => item.id)).toContain(categoria.id);
-    expect(orcamentoArquivado.permissoes.podeGerenciarFinanceiro).toBe(false);
-    expect(orcamentoArquivado.permissoes.podeAprovarOrcamento).toBe(false);
-  });
-
-  it('vincula muitos recursos a uma tarefa com uma unica insercao em lote', async () => {
-    const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
-    const usuarios = Array.from({ length: 25 }, (_, index) => ({
-      id: randomUUID(),
-      nome: `Recurso de volume ${index + 1}`,
-      login: `recurso.volume.${index + 1}`,
-      email: `recurso.volume.${index + 1}@orfeu.test`,
-      senhaHash: 'hash'
-    }));
-    await world.prisma.usuario.createMany({ data: usuarios });
-    const recursos = usuarios.map((usuario) => ({
-      id: randomUUID(),
-      empresaId: empresaInicialId,
-      usuarioId: usuario.id,
-      ativo: true
-    }));
-    await world.prisma.recurso.createMany({ data: recursos });
-    const createManySpy = jest.spyOn(world.prisma.projetoTarefaRecurso, 'createMany');
-
-    const tarefa = await world.projetoTarefaService.salvar({
-      recursoIds: recursos.map((recurso) => recurso.id),
-      funcionalidade: 'Executar cadastro em lote sem N mais um',
-      estimativaMinutos: 600,
-      valorHora: '100',
-      moeda: 'BRL',
-      ativo: true
-    }, admin);
-
-    expect(tarefa.recursos).toHaveLength(25);
-    expect(createManySpy).toHaveBeenCalledTimes(1);
-    expect((expectDefined(createManySpy.mock.calls[0])[0] as any).data).toHaveLength(25);
-    createManySpy.mockRestore();
   });
 
   it('mantem backlog, Gantt e feed paginados sem N mais um com volume representativo', async () => {

@@ -24,7 +24,7 @@ import { apolloClient } from "../../lib/apolloClient";
 describe("Apollo Client", () => {
     it("envia credenciais pelo cookie sem montar um link Bearer", () => {
         expect(apolloMocks.createHttpLink).toHaveBeenCalledWith({
-            uri: expect.stringMatching(/\/graphql$/),
+            uri: "/graphql",
             credentials: "include"
         });
         expect(apolloMocks.ApolloClient).toHaveBeenCalledWith(expect.objectContaining({

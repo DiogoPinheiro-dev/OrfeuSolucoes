@@ -18,6 +18,11 @@ const funcionalidade = {
     registryKey: "configurador.cadastro-de-usuarios",
     somenteAdminSistema: true,
     padraoSistema: true,
+    chaveTecnica: "configurador.cadastro-de-usuarios",
+    providerKey: "configurador.cadastro-de-usuarios",
+    providerVersion: 1,
+    statusPublicacao: "PUBLICADA",
+    revisaoCatalogo: 1,
     podeVisualizar: true,
     podeIncluir: true,
     podeAlterar: true,
@@ -33,6 +38,7 @@ const funcionalidade = {
         ativo: true,
         acaoPadrao: true,
         configuracao: null,
+        statusPublicacao: "PUBLICADA",
         permitido: true
     }]
 };
@@ -49,6 +55,9 @@ const solucao = {
     exibirNoHub: true,
     somenteAdminSistema: true,
     padraoSistema: true,
+    chaveTecnica: "configurador",
+    statusPublicacao: "PUBLICADA",
+    revisaoCatalogo: 1,
     funcionalidades: [funcionalidade]
 };
 

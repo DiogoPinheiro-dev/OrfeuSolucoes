@@ -242,8 +242,7 @@ export class SolucaoAcessoService {
         include: { grupo: true }
       }),
       (this.prisma as never as { empresaSolucao: { findMany: Function } }).empresaSolucao.findMany({
-        where: { solucaoId: funcionalidade.solucaoId },
-        select: { empresaId: true }
+        where: { solucaoId: funcionalidade.solucaoId }, select: { empresaId: true }
       })
     ]);
 
@@ -259,17 +258,15 @@ export class SolucaoAcessoService {
         }))
       });
 
-      await this.funcionalidadeAcaoService.syncMissingActionPermissionsForFeature(funcionalidade.id);
+      await this.funcionalidadeAcaoService.syncMissingActionPermissionsForFeature(funcionalidade.id, true);
     }
 
     if ((empresas as { empresaId: number }[]).length) {
       await (this.prisma as never as { empresaFuncionalidade: { createMany: Function } }).empresaFuncionalidade.createMany({
-        data: (empresas as { empresaId: number }[]).map((item) => ({
-          empresaId: item.empresaId,
-          funcionalidadeId: funcionalidade.id
-        }))
+        data: (empresas as { empresaId: number }[]).map((item) => ({ empresaId: item.empresaId, funcionalidadeId: funcionalidade.id }))
       });
     }
+
   }
 
   async resyncFuncionalidadeAccess(funcionalidade: FuncionalidadeRecord): Promise<void> {

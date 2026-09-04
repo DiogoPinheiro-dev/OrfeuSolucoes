@@ -538,6 +538,9 @@ export const SOLUCAO_FIELDS = gql`
     exibirNoHub
     somenteAdminSistema
     padraoSistema
+    chaveTecnica
+    statusPublicacao
+    revisaoCatalogo
     funcionalidades {
       id
       slug
@@ -549,6 +552,11 @@ export const SOLUCAO_FIELDS = gql`
       registryKey
       somenteAdminSistema
       padraoSistema
+      chaveTecnica
+      providerKey
+      providerVersion
+      statusPublicacao
+      revisaoCatalogo
       podeVisualizar
       podeIncluir
       podeAlterar
@@ -563,6 +571,7 @@ export const SOLUCAO_FIELDS = gql`
         ativo
         acaoPadrao
         configuracao
+        statusPublicacao
         permitido
       }
     }
@@ -681,6 +690,10 @@ export const CREATE_FUNCIONALIDADE_MUTATION = gql`
       ordem
       ativo
       registryKey
+      providerKey
+      providerVersion
+      statusPublicacao
+      revisaoCatalogo
       somenteAdminSistema
       padraoSistema
       podeVisualizar
@@ -714,6 +727,10 @@ export const UPDATE_FUNCIONALIDADE_MUTATION = gql`
       ordem
       ativo
       registryKey
+      providerKey
+      providerVersion
+      statusPublicacao
+      revisaoCatalogo
       somenteAdminSistema
       padraoSistema
       podeVisualizar
@@ -740,6 +757,114 @@ export const DELETE_FUNCIONALIDADE_MUTATION = gql`
   mutation DeleteFuncionalidade($id: Int!) {
     deleteFuncionalidade(id: $id)
   }
+`;
+
+const CATALOGO_VERSAO_FIELDS = gql`
+  fragment CatalogoVersaoFields on CatalogoVersaoType {
+    id
+    numero
+    estado
+    origem
+    revisao
+    snapshot
+    motivo
+    publicadoEm
+  }
+`;
+
+export const CATALOGO_PROVIDERS_QUERY = gql`
+  query CatalogoProviders {
+    catalogoProviders { key version documentationKey }
+  }
+`;
+
+export const CATALOGO_RASCUNHO_FUNCIONALIDADE_QUERY = gql`
+  query CatalogoRascunhoFuncionalidade($funcionalidadeId: Int!) {
+    catalogoRascunhoFuncionalidade(funcionalidadeId: $funcionalidadeId) { ...CatalogoVersaoFields }
+  }
+  ${CATALOGO_VERSAO_FIELDS}
+`;
+
+export const CATALOGO_RASCUNHO_ACAO_QUERY = gql`
+  query CatalogoRascunhoAcao($acaoId: Int!) {
+    catalogoRascunhoAcao(acaoId: $acaoId) { ...CatalogoVersaoFields }
+  }
+  ${CATALOGO_VERSAO_FIELDS}
+`;
+
+export const CRIAR_RASCUNHO_SOLUCAO_MUTATION = gql`
+  mutation CriarRascunhoSolucao($solucaoId: Int!, $motivo: String) {
+    criarRascunhoSolucao(solucaoId: $solucaoId, motivo: $motivo) { ...CatalogoVersaoFields }
+  }
+  ${CATALOGO_VERSAO_FIELDS}
+`;
+
+export const SALVAR_RASCUNHO_SOLUCAO_MUTATION = gql`
+  mutation SalvarRascunhoSolucao($input: UpdateCatalogoSolucaoDraftInput!) {
+    salvarRascunhoSolucao(input: $input) { ...CatalogoVersaoFields }
+  }
+  ${CATALOGO_VERSAO_FIELDS}
+`;
+
+export const PUBLICAR_RASCUNHO_SOLUCAO_MUTATION = gql`
+  mutation PublicarRascunhoSolucao($versaoId: String!, $revisaoEsperada: Int!, $motivo: String) {
+    publicarRascunhoSolucao(versaoId: $versaoId, revisaoEsperada: $revisaoEsperada, motivo: $motivo) { ...CatalogoVersaoFields }
+  }
+  ${CATALOGO_VERSAO_FIELDS}
+`;
+
+export const CRIAR_RASCUNHO_FUNCIONALIDADE_MUTATION = gql`
+  mutation CriarRascunhoFuncionalidade($funcionalidadeId: Int!, $motivo: String) {
+    criarRascunhoFuncionalidade(funcionalidadeId: $funcionalidadeId, motivo: $motivo) { ...CatalogoVersaoFields }
+  }
+  ${CATALOGO_VERSAO_FIELDS}
+`;
+
+export const VALIDAR_RASCUNHO_FUNCIONALIDADE_QUERY = gql`
+  query ValidarRascunhoFuncionalidade($versaoId: String!) {
+    validarRascunhoFuncionalidade(versaoId: $versaoId) { code field message severity }
+  }
+`;
+
+export const SALVAR_RASCUNHO_FUNCIONALIDADE_MUTATION = gql`
+  mutation SalvarRascunhoFuncionalidade($input: UpdateCatalogoFuncionalidadeDraftInput!) {
+    salvarRascunhoFuncionalidade(input: $input) { ...CatalogoVersaoFields }
+  }
+  ${CATALOGO_VERSAO_FIELDS}
+`;
+
+export const PUBLICAR_RASCUNHO_FUNCIONALIDADE_MUTATION = gql`
+  mutation PublicarRascunhoFuncionalidade($versaoId: String!, $revisaoEsperada: Int!, $motivo: String) {
+    publicarRascunhoFuncionalidade(versaoId: $versaoId, revisaoEsperada: $revisaoEsperada, motivo: $motivo) { ...CatalogoVersaoFields }
+  }
+  ${CATALOGO_VERSAO_FIELDS}
+`;
+
+export const CRIAR_RASCUNHO_ACAO_MUTATION = gql`
+  mutation CriarRascunhoAcao($acaoId: Int!, $motivo: String) {
+    criarRascunhoAcao(acaoId: $acaoId, motivo: $motivo) { ...CatalogoVersaoFields }
+  }
+  ${CATALOGO_VERSAO_FIELDS}
+`;
+
+export const VALIDAR_RASCUNHO_ACAO_QUERY = gql`
+  query ValidarRascunhoAcao($versaoId: String!) {
+    validarRascunhoAcao(versaoId: $versaoId) { code field message severity }
+  }
+`;
+
+export const SALVAR_RASCUNHO_ACAO_MUTATION = gql`
+  mutation SalvarRascunhoAcao($input: UpdateCatalogoAcaoDraftInput!) {
+    salvarRascunhoAcao(input: $input) { ...CatalogoVersaoFields }
+  }
+  ${CATALOGO_VERSAO_FIELDS}
+`;
+
+export const PUBLICAR_RASCUNHO_ACAO_MUTATION = gql`
+  mutation PublicarRascunhoAcao($versaoId: String!, $revisaoEsperada: Int!, $motivo: String) {
+    publicarRascunhoAcao(versaoId: $versaoId, revisaoEsperada: $revisaoEsperada, motivo: $motivo) { ...CatalogoVersaoFields }
+  }
+  ${CATALOGO_VERSAO_FIELDS}
 `;
 
 export const CHAMADO_FIELDS = gql`
@@ -1632,55 +1757,29 @@ export const PROJETO_RECURSOS_QUERY = gql`
 `;
 export const SALVAR_PROJETO_RECURSO_MUTATION = gql`mutation SalvarProjetoRecurso($input: SalvarProjetoRecursoInput!) { salvarProjetoRecurso(input: $input) { id } }`;
 export const EXCLUIR_PROJETO_RECURSO_MUTATION = gql`mutation ExcluirProjetoRecurso($input: ExcluirProjetoRecursoInput!) { excluirProjetoRecurso(input: $input) }`;
-export const SALVAR_PROJETO_TAREFA_MUTATION = gql`mutation SalvarProjetoTarefa($input: SalvarProjetoTarefaInput!) { salvarProjetoTarefa(input: $input) { id } }`;
-export const EXCLUIR_PROJETO_TAREFA_MUTATION = gql`mutation ExcluirProjetoTarefa($input: ExcluirProjetoTarefaInput!) { excluirProjetoTarefa(input: $input) }`;
-export const PLANEJAMENTO_RECURSOS_QUERY = gql`
-  ${PROJETO_RECURSO_USER_FIELDS}
-  query PlanejamentoRecursos {
-    planejamentoRecursos {
-      recursos { id usuarioId ativo versao usuario { ...ProjetoRecursoUserFields } }
+
+export const PROJETO_ORGANIZACAO_QUERY = gql`
+  query ProjetoOrganizacao {
+    projetoOrganizacao {
+      candidatos { ...ProjetoRecursoUserFields }
+      capacitacoes { id nome descricao nivelHierarquico ativo versao }
+      recursos { id usuarioId ativo versao usuario { ...ProjetoRecursoUserFields } capacitacao { id nome descricao nivelHierarquico ativo versao } }
+      equipes {
+        id nome descricao ativo versao
+        recursos { id usuarioId ativo versao usuario { ...ProjetoRecursoUserFields } capacitacao { id nome nivelHierarquico ativo versao } }
+        projetos { id chave nome arquivadoEm }
+      }
       projetos { id chave nome arquivadoEm }
-      tarefas {
-        id recursoIds funcionalidade estimativaMinutos valorHora moeda observacao ativo versao
-        pendenteRecurso planejadoMinutos saldoMinutos sobreplanejada
-        recursos {
-          id recursoId ativo
-          recurso { id ativo usuario { ...ProjetoRecursoUserFields } }
-        }
-        taxas { id valorHora moeda criadoEm criadoPor { ...ProjetoRecursoUserFields } }
-      }
-      linhas {
-        id cadastroRecursoId projetoId versao recursoAtivo vinculoAtivo
-        usuario { ...ProjetoRecursoUserFields }
-        projeto { id chave nome arquivadoEm }
-        alocacaoTotalMinutos estimativaTotalMinutos planejamentoTarefasMinutos saldoTarefasMinutos alocacoesPendentes possuiRisco
-        custosEstimados { moeda valor }
-        tarefas {
-          id recursoIds funcionalidade estimativaMinutos valorHora moeda observacao ativo versao
-          pendenteRecurso planejadoMinutos saldoMinutos sobreplanejada
-          recursos {
-            id recursoId ativo
-            recurso { id ativo usuario { ...ProjetoRecursoUserFields } }
-          }
-          taxas { id valorHora moeda criadoEm criadoPor { ...ProjetoRecursoUserFields } }
-        }
-        alocacoes { id projetoRecursoId tarefaId atividade inicioEm fimEm alocacaoMinutos versao }
-      }
-      tarefasPendentes {
-        id recursoIds funcionalidade estimativaMinutos valorHora moeda observacao ativo versao
-        pendenteRecurso planejadoMinutos saldoMinutos sobreplanejada
-        recursos {
-          id recursoId ativo
-          recurso { id ativo usuario { ...ProjetoRecursoUserFields } }
-        }
-        taxas { id valorHora moeda criadoEm criadoPor { ...ProjetoRecursoUserFields } }
-      }
       permissoes { podeIncluir podeAlterar podeExcluir }
     }
   }
+  ${PROJETO_RECURSO_USER_FIELDS}
 `;
-export const SALVAR_PLANEJAMENTO_RECURSO_EXECUCAO_MUTATION = gql`mutation SalvarPlanejamentoRecursoExecucao($input: SalvarPlanejamentoRecursoExecucaoInput!) { salvarPlanejamentoRecursoExecucao(input: $input) { id } }`;
-export const EXCLUIR_PLANEJAMENTO_RECURSO_EXECUCAO_MUTATION = gql`mutation ExcluirPlanejamentoRecursoExecucao($input: ExcluirPlanejamentoRecursoExecucaoInput!) { excluirPlanejamentoRecursoExecucao(input: $input) }`;export const PROJETO_ORCAMENTO_PROJETOS_QUERY = gql`
+export const SALVAR_CAPACITACAO_MUTATION = gql`mutation SalvarCapacitacao($input: SalvarCapacitacaoInput!) { salvarCapacitacao(input: $input) { id } }`;
+export const EXCLUIR_CAPACITACAO_MUTATION = gql`mutation ExcluirCapacitacao($input: ExcluirCapacitacaoInput!) { excluirCapacitacao(input: $input) }`;
+export const SALVAR_EQUIPE_MUTATION = gql`mutation SalvarEquipe($input: SalvarEquipeInput!) { salvarEquipe(input: $input) { id } }`;
+export const EXCLUIR_EQUIPE_MUTATION = gql`mutation ExcluirEquipe($input: ExcluirEquipeInput!) { excluirEquipe(input: $input) }`;
+export const PROJETO_ORCAMENTO_PROJETOS_QUERY = gql`
   query ProjetoOrcamentoProjetos { projetoOrcamentoProjetos { id chave nome arquivadoEm } }
 `;
 export const PROJETO_ORCAMENTO_QUERY = gql`
@@ -1688,11 +1787,11 @@ export const PROJETO_ORCAMENTO_QUERY = gql`
   query ProjetoOrcamento($projetoId: String!) {
     projetoOrcamento(projetoId: $projetoId) {
       recursos { id cadastroRecursoId usuarioId ativo versao usuario { ...ProjetoRecursoUserFields } }
-      tarefas { id recursoIds funcionalidade estimativaMinutos valorHora moeda ativo }
+      itens { id chave titulo estimativaMinutos responsavelId arquivado }
       financeiro {
         id moeda status versao totalPlanejado totalComprometido totalRealizado variacao aprovadoEm
         categorias { id nome valorPlanejado valorComprometido valorRealizado variacao versao }
-        custos { id categoriaId tipo descricao recursoId tarefaId quantidadeMinutos taxaHora valorPlanejado valorComprometido valorRealizado versao recurso { id cadastroRecursoId usuarioId ativo versao usuario { ...ProjetoRecursoUserFields } } tarefa { id recursoIds funcionalidade estimativaMinutos valorHora moeda ativo } taxas { id taxaHora criadoEm criadoPor { ...ProjetoRecursoUserFields } } }
+        custos { id categoriaId tipo descricao recursoId itemId quantidadeMinutos taxaHora valorPlanejado valorComprometido valorRealizado versao recurso { id cadastroRecursoId usuarioId ativo versao usuario { ...ProjetoRecursoUserFields } } item { id chave titulo estimativaMinutos responsavelId arquivado } taxas { id taxaHora criadoEm criadoPor { ...ProjetoRecursoUserFields } } }
       }
       permissoes { podeVisualizarFinanceiro podeGerenciarFinanceiro podeAprovarOrcamento }
     }

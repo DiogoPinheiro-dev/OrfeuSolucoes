@@ -26,6 +26,7 @@ import {
   ProjetoMarcoEntregaContexto
 } from './projeto-marco-entrega-authorization.service';
 import { ProjetoPeriodoService } from './projeto-periodo.service';
+import { ProjetoRecursoHierarquiaService } from './projeto-recurso-hierarquia.service';
 import { ProjetoItemStatus } from './types/projeto-item.types';
 import {
   ProjetoEntregaStatus,
@@ -49,7 +50,8 @@ export class ProjetoMarcoEntregaService {
     private readonly prisma: PrismaService,
     private readonly authorization: ProjetoMarcoEntregaAuthorizationService,
     private readonly auditoria: ProjetoAuditoriaService,
-    private readonly periodo: ProjetoPeriodoService
+    private readonly periodo: ProjetoPeriodoService,
+    private readonly recursoHierarquia: ProjetoRecursoHierarquiaService
   ) {}
 
   async painel(
@@ -58,19 +60,30 @@ export class ProjetoMarcoEntregaService {
     user: JwtPayload
   ): Promise<ProjetoMarcoEntregaPainelType> {
     const contexto = await this.authorization.assertReadContext(projetoId, user);
+    const escopo = await this.recursoHierarquia.escopo(
+      user,
+      contexto.empresaId,
+      contexto.projeto.id
+    );
+    const filtroItens = this.recursoHierarquia.filtroProjetoItem(escopo);
     const [marcos, entregas, itens, permissoes] = await Promise.all([
       this.prisma.projetoMarco.findMany({
         where: { projetoId, empresaId: contexto.empresaId, ...(!incluirArquivados ? { arquivadoEm: null } : {}) },
-        include: MARCO_INCLUDE,
+        include: this.marcoInclude(filtroItens),
         orderBy: [{ dataPrevistaEm: 'asc' }, { nome: 'asc' }]
       }),
       this.prisma.projetoEntrega.findMany({
         where: { projetoId, empresaId: contexto.empresaId, ...(!incluirArquivados ? { arquivadoEm: null } : {}) },
-        include: ENTREGA_INCLUDE,
+        include: this.entregaInclude(filtroItens),
         orderBy: [{ fimPrevistoEm: 'asc' }, { nome: 'asc' }]
       }),
       this.prisma.projetoItem.findMany({
-        where: { projetoId, empresaId: contexto.empresaId, arquivadoEm: null },
+        where: {
+          projetoId,
+          empresaId: contexto.empresaId,
+          arquivadoEm: null,
+          ...filtroItens
+        },
         orderBy: [{ ordemBacklog: 'asc' }, { numero: 'asc' }]
       }),
       this.authorization.effectivePermissions(contexto, user)
@@ -84,13 +97,23 @@ export class ProjetoMarcoEntregaService {
         ...contexto.projeto.membros
           .filter((membro) => membro.usuarioId !== contexto.projeto.responsavelId)
           .map((membro) => membro.usuario)
-      ].map((usuario) => ({
+      ].filter((usuario) =>
+        !escopo.restrito || escopo.usuarioIds.includes(usuario.id)
+      ).map((usuario) => ({
         id: usuario.id,
         nome: usuario.nome,
         login: usuario.login,
         email: usuario.email
       })),
-      permissoes
+      permissoes: escopo.restrito
+        ? {
+            ...permissoes,
+            podeCriar: false,
+            podeEditar: false,
+            podeArquivar: false,
+            podeReativar: false
+          }
+        : permissoes
     };
   }
 
@@ -227,7 +250,28 @@ export class ProjetoMarcoEntregaService {
   private async writeContext(projetoId: string, user: JwtPayload, action: string, operation: string) {
     const contexto = await this.authorization.assertReadContext(projetoId, user);
     await this.authorization.assertAction(contexto, user, action, operation);
+    const escopo = await this.recursoHierarquia.escopo(
+      user,
+      contexto.empresaId,
+      contexto.projeto.id
+    );
+    this.recursoHierarquia.assertVisaoCompleta(escopo, operation);
     return contexto;
+  }
+
+  private marcoInclude(filtroItens: Prisma.ProjetoItemWhereInput) {
+    return {
+      responsavel: true,
+      itens: { where: { item: filtroItens }, include: { item: true } }
+    };
+  }
+
+  private entregaInclude(filtroItens: Prisma.ProjetoItemWhereInput) {
+    return {
+      responsavel: true,
+      marco: true,
+      itens: { where: { item: filtroItens }, include: { item: true } }
+    };
   }
 
   private async assertRelations(tx: Prisma.TransactionClient, contexto: ProjetoMarcoEntregaContexto, responsavelId: string, itemIds: string[], marcoId?: string | null) {

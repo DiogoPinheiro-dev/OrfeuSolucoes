@@ -42,7 +42,7 @@ describe("serviços de arquivos", () => {
         const file = new File(["conteúdo"], "arquivo.txt", { type: "text/plain" });
 
         await expect(uploadChamadoAnexos("chamado-1", [file], "mensagem-1")).resolves.toEqual([{ id: 1 }]);
-        expect(fetch).toHaveBeenNthCalledWith(1, expect.stringContaining("/chamados/chamado-1/anexos"), expect.objectContaining({
+        expect(fetch).toHaveBeenNthCalledWith(1, "/chamados/chamado-1/anexos", expect.objectContaining({
             method: "POST",
             credentials: "include",
             body: expect.any(FormData)
@@ -54,6 +54,7 @@ describe("serviços de arquivos", () => {
             mimeType: "text/plain"
         });
         expect(chamadoAnexoDownloadUrl("https://files.example/a.txt")).toBe("https://files.example/a.txt");
+        expect(chamadoAnexoDownloadUrl("/chamados/anexos/1")).toBe("/chamados/anexos/1");
         expect(chamadoAnexoDownloadUrl("")).toBe("#");
     });
 
@@ -83,7 +84,9 @@ describe("serviços de arquivos", () => {
         await expect(uploadProjetoAnexos("p1", [file], { comentarioId: "c1" })).resolves.toEqual([{ id: "a1" }]);
         await expect(abrirProjetoAnexo("/projetos/anexos/a1", "projeto.txt")).resolves.toEqual({ objectUrl: "blob:arquivo", nomeArquivo: "projeto.txt" });
         await expect(excluirProjetoAnexo("p1", "a1")).resolves.toEqual({ removido: true });
-        expect(fetch).toHaveBeenLastCalledWith(expect.stringContaining("/projetos/p1/anexos/a1"), expect.objectContaining({ method: "DELETE" }));
+        expect(fetch).toHaveBeenNthCalledWith(1, "/projetos/p1/anexos", expect.objectContaining({ method: "POST" }));
+        expect(fetch).toHaveBeenNthCalledWith(2, "/projetos/anexos/a1", { credentials: "include" });
+        expect(fetch).toHaveBeenLastCalledWith("/projetos/p1/anexos/a1", expect.objectContaining({ method: "DELETE" }));
         expect(fetch.mock.calls.every(([, options]) => options.credentials === "include" && options.headers === undefined)).toBe(true);
     });
 

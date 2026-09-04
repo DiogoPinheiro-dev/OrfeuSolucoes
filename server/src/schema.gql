@@ -67,6 +67,39 @@ type AuthPayloadType {
   user: UserType!
 }
 
+type CapacitacaoType {
+  ativo: Boolean!
+  descricao: String
+  id: String!
+  nivelHierarquico: Int!
+  nome: String!
+  versao: Int!
+}
+
+type CatalogoProviderType {
+  documentationKey: String
+  key: String!
+  version: Int!
+}
+
+type CatalogoValidationIssueType {
+  code: String!
+  field: String
+  message: String!
+  severity: String!
+}
+
+type CatalogoVersaoType {
+  estado: String!
+  id: String!
+  motivo: String
+  numero: Int!
+  origem: String!
+  publicadoEm: DateTime
+  revisao: Int!
+  snapshot: String!
+}
+
 type ChamadoAcompanhanteType {
   adicionadoPorId: String
   adicionadoPorNome: String
@@ -442,6 +475,8 @@ input CreateFuncionalidadeInput {
   descricao: String
   label: String
   ordem: Int = 0
+  providerKey: String
+  providerVersion: Int
   registryKey: String
   slug: String!
   solucaoId: Int!
@@ -665,9 +700,23 @@ type EmpresaType {
   solucaoSlugs: [String!]!
 }
 
-input ExcluirPlanejamentoRecursoExecucaoInput {
+type EquipeType {
+  ativo: Boolean!
+  descricao: String
   id: String!
-  projetoId: String!
+  nome: String!
+  projetos: [ProjetoRecursoProjetoType!]!
+  recursos: [OrganizacaoRecursoType!]!
+  versao: Int!
+}
+
+input ExcluirCapacitacaoInput {
+  id: String!
+  versao: Int!
+}
+
+input ExcluirEquipeInput {
+  id: String!
   versao: Int!
 }
 
@@ -683,11 +732,6 @@ input ExcluirProjetoOrcamentoItemInput {
 }
 
 input ExcluirProjetoRecursoInput {
-  id: String!
-  versao: Int!
-}
-
-input ExcluirProjetoTarefaInput {
   id: String!
   versao: Int!
 }
@@ -728,6 +772,7 @@ type FuncionalidadeAcaoType {
   nome: String!
   ordem: Int!
   permitido: Boolean!
+  statusPublicacao: String!
 }
 
 input FuncionalidadePermissaoInput {
@@ -751,6 +796,7 @@ type FuncionalidadePermissaoType {
 type FuncionalidadeType {
   acoes: [FuncionalidadeAcaoType!]!
   ativo: Boolean!
+  chaveTecnica: String!
   descricao: String
   id: Int!
   label: String
@@ -760,9 +806,13 @@ type FuncionalidadeType {
   podeExcluir: Boolean!
   podeIncluir: Boolean!
   podeVisualizar: Boolean!
+  providerKey: String
+  providerVersion: Int
   registryKey: String
+  revisaoCatalogo: Int!
   slug: String!
   somenteAdminSistema: Boolean!
+  statusPublicacao: String!
   titulo: String!
 }
 
@@ -853,6 +903,9 @@ type Mutation {
   createSolucao(input: CreateSolucaoInput!): SolucaoType!
   createUser(input: CreateUserInput!): UserType!
   criarChamado(input: CriarChamadoInput!): ChamadoType!
+  criarRascunhoAcao(acaoId: Int!, motivo: String): CatalogoVersaoType!
+  criarRascunhoFuncionalidade(funcionalidadeId: Int!, motivo: String): CatalogoVersaoType!
+  criarRascunhoSolucao(motivo: String, solucaoId: Int!): CatalogoVersaoType!
   deleteChamadoCategoria(id: Int!): Boolean!
   deleteChamadoPrioridade(id: Int!): Boolean!
   deleteChamadoResponsavel(id: Int!): Boolean!
@@ -865,13 +918,16 @@ type Mutation {
   deleteServico(id: Int!): Boolean!
   deleteSolucao(id: Int!): Boolean!
   deleteUser(id: String!): Boolean!
+  despublicarAcao(acaoId: Int!, motivo: String!): Boolean!
+  despublicarFuncionalidade(funcionalidadeId: Int!, motivo: String!): Boolean!
+  despublicarSolucao(motivo: String!, solucaoId: Int!): Boolean!
   encerrarChamado(id: String!, observacao: String): ChamadoType!
-  excluirPlanejamentoRecursoExecucao(input: ExcluirPlanejamentoRecursoExecucaoInput!): Boolean!
+  excluirCapacitacao(input: ExcluirCapacitacaoInput!): Boolean!
+  excluirEquipe(input: ExcluirEquipeInput!): Boolean!
   excluirProjetoComentario(input: ExcluirProjetoComentarioInput!): ProjetoComentarioType!
   excluirProjetoCusto(input: ExcluirProjetoOrcamentoItemInput!): Boolean!
   excluirProjetoOrcamentoCategoria(input: ExcluirProjetoOrcamentoItemInput!): Boolean!
   excluirProjetoRecurso(input: ExcluirProjetoRecursoInput!): Boolean!
-  excluirProjetoTarefa(input: ExcluirProjetoTarefaInput!): Boolean!
   iniciarProjetoSprint(input: TransicionarProjetoSprintInput!): ProjetoSprintType!
   liberarAtendimentoChamado(id: String!): ChamadoType!
   login(input: LoginInput!): AuthPayloadType!
@@ -880,6 +936,9 @@ type Mutation {
   marcarChamadoNotificacaoComoLida(id: String!): Boolean!
   marcarTodasChamadoNotificacoesComoLidas: Int!
   moverProjetoItemBacklog(input: MoverProjetoItemBacklogInput!): ProjetoBacklogMovimentoType!
+  publicarRascunhoAcao(motivo: String, revisaoEsperada: Int!, versaoId: String!): CatalogoVersaoType!
+  publicarRascunhoFuncionalidade(motivo: String, revisaoEsperada: Int!, versaoId: String!): CatalogoVersaoType!
+  publicarRascunhoSolucao(motivo: String, revisaoEsperada: Int!, versaoId: String!): CatalogoVersaoType!
   reabrirChamado(id: String!, observacao: String): ChamadoType!
   reabrirProjetoOrcamento(input: AprovarProjetoOrcamentoInput!): ProjetoFinanceiroType!
   reativarProjeto(id: String!): ProjetoType!
@@ -891,12 +950,21 @@ type Mutation {
   removerItemProjetoSprint(input: AlterarEscopoProjetoSprintInput!): ProjetoSprintType!
   resolverChamado(id: String!, observacao: String): ChamadoType!
   responderChamado(input: ResponderChamadoInput!): ChamadoType!
-  salvarPlanejamentoRecursoExecucao(input: SalvarPlanejamentoRecursoExecucaoInput!): PlanejamentoRecursoExecucaoType!
+  restaurarPadraoAcao(acaoId: Int!, motivo: String!): CatalogoVersaoType!
+  restaurarPadraoFuncionalidade(funcionalidadeId: Int!, motivo: String!): CatalogoVersaoType!
+  restaurarPadraoSolucao(motivo: String!, solucaoId: Int!): CatalogoVersaoType!
+  restaurarVersaoAcao(motivo: String!, versaoId: String!): CatalogoVersaoType!
+  restaurarVersaoFuncionalidade(motivo: String!, versaoId: String!): CatalogoVersaoType!
+  restaurarVersaoSolucao(motivo: String!, versaoId: String!): CatalogoVersaoType!
+  salvarCapacitacao(input: SalvarCapacitacaoInput!): CapacitacaoType!
+  salvarEquipe(input: SalvarEquipeInput!): EquipeType!
   salvarProjetoCusto(input: SalvarProjetoCustoInput!): ProjetoCustoType!
   salvarProjetoOrcamento(input: SalvarProjetoOrcamentoInput!): ProjetoFinanceiroType!
   salvarProjetoOrcamentoCategoria(input: SalvarProjetoOrcamentoCategoriaInput!): ProjetoOrcamentoCategoriaType!
   salvarProjetoRecurso(input: SalvarProjetoRecursoInput!): ProjetoRecursoType!
-  salvarProjetoTarefa(input: SalvarProjetoTarefaInput!): ProjetoTarefaType!
+  salvarRascunhoAcao(input: UpdateCatalogoAcaoDraftInput!): CatalogoVersaoType!
+  salvarRascunhoFuncionalidade(input: UpdateCatalogoFuncionalidadeDraftInput!): CatalogoVersaoType!
+  salvarRascunhoSolucao(input: UpdateCatalogoSolucaoDraftInput!): CatalogoVersaoType!
   switchCompany(input: SwitchCompanyInput!): AuthPayloadType!
   transferirChamado(input: AtribuirChamadoInput!): ChamadoType!
   updateChamadoCategoria(input: UpdateChamadoCategoriaInput!): ChamadoCategoriaType!
@@ -922,49 +990,13 @@ type Mutation {
   updateUser(input: UpdateUserInput!): UserType!
 }
 
-type PlanejamentoRecursoCustoType {
-  moeda: String!
-  valor: String!
-}
-
-type PlanejamentoRecursoExecucaoType {
-  alocacaoMinutos: Int!
-  atividade: String
-  fimEm: DateTime!
+type OrganizacaoRecursoType {
+  ativo: Boolean!
+  capacitacao: CapacitacaoType
   id: String!
-  inicioEm: DateTime!
-  projetoRecursoId: String!
-  tarefaId: String
-  versao: Int!
-}
-
-type PlanejamentoRecursoLinhaType {
-  alocacaoTotalMinutos: Int!
-  alocacoes: [PlanejamentoRecursoExecucaoType!]!
-  alocacoesPendentes: Int!
-  cadastroRecursoId: String!
-  custosEstimados: [PlanejamentoRecursoCustoType!]!
-  estimativaTotalMinutos: Int!
-  id: String!
-  planejamentoTarefasMinutos: Int!
-  possuiRisco: Boolean!
-  projeto: ProjetoRecursoProjetoType!
-  projetoId: String!
-  recursoAtivo: Boolean!
-  saldoTarefasMinutos: Int!
-  tarefas: [ProjetoTarefaType!]!
   usuario: ProjetoUsuarioType!
+  usuarioId: String!
   versao: Int!
-  vinculoAtivo: Boolean!
-}
-
-type PlanejamentoRecursoPainelType {
-  linhas: [PlanejamentoRecursoLinhaType!]!
-  permissoes: ProjetoRecursoPermissoesType!
-  projetos: [ProjetoRecursoProjetoType!]!
-  recursos: [ProjetoRecursoType!]!
-  tarefas: [ProjetoTarefaType!]!
-  tarefasPendentes: [ProjetoTarefaType!]!
 }
 
 type ProjetoAnexoType {
@@ -1169,14 +1201,13 @@ enum ProjetoCronogramaSeveridade {
   CRITICO
 }
 
-type ProjetoCustoTarefaResumoType {
-  ativo: Boolean!
-  estimativaMinutos: Int!
-  funcionalidade: String!
+type ProjetoCustoItemResumoType {
+  arquivado: Boolean!
+  chave: String!
+  estimativaMinutos: Int
   id: String!
-  moeda: String!
-  recursoIds: [String!]!
-  valorHora: String!
+  responsavelId: String
+  titulo: String!
 }
 
 type ProjetoCustoTaxaHistoricoType {
@@ -1195,11 +1226,11 @@ type ProjetoCustoType {
   categoriaId: String
   descricao: String!
   id: String!
+  item: ProjetoCustoItemResumoType
+  itemId: String
   quantidadeMinutos: Int
   recurso: ProjetoRecursoResumoType
   recursoId: String
-  tarefa: ProjetoCustoTarefaResumoType
-  tarefaId: String
   taxaHora: String
   taxas: [ProjetoCustoTaxaHistoricoType!]!
   tipo: ProjetoCustoTipo!
@@ -1462,9 +1493,9 @@ type ProjetoOrcamentoCategoriaType {
 
 type ProjetoOrcamentoPainelType {
   financeiro: ProjetoFinanceiroType
+  itens: [ProjetoCustoItemResumoType!]!
   permissoes: ProjetoOrcamentoPermissoesType!
   recursos: [ProjetoRecursoResumoType!]!
-  tarefas: [ProjetoCustoTarefaResumoType!]!
 }
 
 type ProjetoOrcamentoPermissoesType {
@@ -1483,6 +1514,15 @@ type ProjetoOrcamentoProjetoType {
 enum ProjetoOrcamentoStatus {
   APROVADO
   RASCUNHO
+}
+
+type ProjetoOrganizacaoPainelType {
+  candidatos: [ProjetoUsuarioType!]!
+  capacitacoes: [CapacitacaoType!]!
+  equipes: [EquipeType!]!
+  permissoes: ProjetoRecursoPermissoesType!
+  projetos: [ProjetoRecursoProjetoType!]!
+  recursos: [OrganizacaoRecursoType!]!
 }
 
 type ProjetoPageType {
@@ -1563,6 +1603,7 @@ enum ProjetoSituacao {
   CANCELADO
   CONCLUIDO
   EM_ANDAMENTO
+  EM_ORCAMENTO
   PAUSADO
   PLANEJADO
   RASCUNHO
@@ -1655,45 +1696,6 @@ type ProjetoSprintType {
   versao: Int!
 }
 
-type ProjetoTarefaRecursoType {
-  ativo: Boolean!
-  id: String!
-  usuario: ProjetoUsuarioType!
-}
-
-type ProjetoTarefaRecursoVinculoType {
-  ativo: Boolean!
-  id: String!
-  recurso: ProjetoTarefaRecursoType!
-  recursoId: String!
-}
-
-type ProjetoTarefaTaxaHistoricoType {
-  criadoEm: DateTime!
-  criadoPor: ProjetoUsuarioType!
-  id: String!
-  moeda: String!
-  valorHora: String!
-}
-
-type ProjetoTarefaType {
-  ativo: Boolean!
-  estimativaMinutos: Int!
-  funcionalidade: String!
-  id: String!
-  moeda: String!
-  observacao: String
-  pendenteRecurso: Boolean!
-  planejadoMinutos: Int!
-  recursoIds: [String!]!
-  recursos: [ProjetoTarefaRecursoVinculoType!]!
-  saldoMinutos: Int!
-  sobreplanejada: Boolean!
-  taxas: [ProjetoTarefaTaxaHistoricoType!]!
-  valorHora: String!
-  versao: Int!
-}
-
 type ProjetoType {
   arquivadoEm: DateTime
   arquivadoPor: ProjetoUsuarioType
@@ -1733,6 +1735,9 @@ type Query {
   acompanhantesElegiveisChamado(chamadoId: String): [ChamadoResponsavelUsuarioOptionType!]!
   atendentesDisponiveis: [AtendenteChamadoType!]!
   buscarDocumentacao(filtro: DocumentacaoFiltroInput, termo: String!): [DocumentacaoBuscaResultadoType!]!
+  catalogoProviders: [CatalogoProviderType!]!
+  catalogoRascunhoAcao(acaoId: Int!): CatalogoVersaoType
+  catalogoRascunhoFuncionalidade(funcionalidadeId: Int!): CatalogoVersaoType
   categoriasChamado(ativas: Boolean = true): [ChamadoCategoriaType!]!
   chamado(id: String!): ChamadoType!
   chamadosArquivados(filtro: ChamadoFiltroInput): ChamadoPageType!
@@ -1751,7 +1756,6 @@ type Query {
   notificacoesChamado(limite: Int = 30): [ChamadoNotificacaoType!]!
   notificacoesChamadoNaoLidas: Int!
   opcoesAberturaChamado: ChamadoResponsavelOptionsType!
-  planejamentoRecursos: PlanejamentoRecursoPainelType!
   prioridadesChamado(ativas: Boolean = true): [ChamadoPrioridadeType!]!
   projeto(id: String!): ProjetoType!
   projetoBacklogCandidatosPai(itemId: String, projetoId: String!): [ProjetoBacklogPaiCandidatoType!]!
@@ -1766,6 +1770,7 @@ type Query {
   projetoMarcosEntregas(incluirArquivados: Boolean = false, projetoId: String!): ProjetoMarcoEntregaPainelType!
   projetoOrcamento(projetoId: String!): ProjetoOrcamentoPainelType!
   projetoOrcamentoProjetos: [ProjetoOrcamentoProjetoType!]!
+  projetoOrganizacao: ProjetoOrganizacaoPainelType!
   projetoParticipantesDisponiveis: [ProjetoUsuarioType!]!
   projetoRecursos: ProjetoRecursoPainelType!
   projetoRecursosProjetos: [ProjetoRecursoProjetoType!]!
@@ -1782,6 +1787,8 @@ type Query {
   sugerirChaveProjeto(nome: String!): String!
   tiposChamado(ativas: Boolean = true): [ChamadoTipoType!]!
   users: [UserType!]!
+  validarRascunhoAcao(versaoId: String!): [CatalogoValidationIssueType!]!
+  validarRascunhoFuncionalidade(versaoId: String!): [CatalogoValidationIssueType!]!
 }
 
 input RegisterUserInput {
@@ -1796,14 +1803,22 @@ input ResponderChamadoInput {
   conteudo: String!
 }
 
-input SalvarPlanejamentoRecursoExecucaoInput {
-  alocacaoMinutos: Int
-  fimEm: String!
+input SalvarCapacitacaoInput {
+  ativo: Boolean!
+  descricao: String
   id: String
-  inicioEm: String!
-  projetoId: String!
-  projetoRecursoId: String!
-  tarefaId: String!
+  nivelHierarquico: Int!
+  nome: String!
+  versao: Int
+}
+
+input SalvarEquipeInput {
+  ativo: Boolean!
+  descricao: String
+  id: String
+  nome: String!
+  projetoIds: [String!]!
+  recursoIds: [String!]!
   versao: Int
 }
 
@@ -1811,10 +1826,10 @@ input SalvarProjetoCustoInput {
   categoriaId: String
   descricao: String!
   id: String
+  itemId: String
   projetoId: String!
   quantidadeMinutos: Int
   recursoId: String
-  tarefaId: String
   taxaHora: String
   tipo: ProjetoCustoTipo!
   valorComprometido: String!
@@ -1842,21 +1857,9 @@ input SalvarProjetoOrcamentoInput {
 
 input SalvarProjetoRecursoInput {
   ativo: Boolean!
+  capacitacaoId: String
   id: String
-  projetoIds: [String!]!
   usuarioId: String!
-  versao: Int
-}
-
-input SalvarProjetoTarefaInput {
-  ativo: Boolean!
-  estimativaMinutos: Int!
-  funcionalidade: String!
-  id: String
-  moeda: String!
-  observacao: String
-  recursoIds: [String!]!
-  valorHora: String!
   versao: Int
 }
 
@@ -1871,6 +1874,7 @@ type ServicoType {
 
 type SolucaoType {
   ativo: Boolean!
+  chaveTecnica: String!
   descricao: String
   exibirNoHub: Boolean!
   eyebrow: String
@@ -1879,8 +1883,10 @@ type SolucaoType {
   nome: String!
   ordem: Float!
   padraoSistema: Boolean!
+  revisaoCatalogo: Int!
   slug: String!
   somenteAdminSistema: Boolean!
+  statusPublicacao: String!
 }
 
 input SwitchCompanyInput {
@@ -1890,6 +1896,46 @@ input SwitchCompanyInput {
 input TransicionarProjetoSprintInput {
   id: String!
   versao: Int!
+}
+
+input UpdateCatalogoAcaoDraftInput {
+  ativo: Boolean
+  configuracao: String
+  consumerKey: String
+  consumerVersion: Int
+  descricao: String
+  motivo: String
+  nome: String
+  ordem: Int
+  revisaoEsperada: Int!
+  versaoId: String!
+}
+
+input UpdateCatalogoFuncionalidadeDraftInput {
+  ativo: Boolean
+  descricao: String
+  label: String
+  motivo: String
+  ordem: Int
+  providerKey: String
+  providerVersion: Int
+  revisaoEsperada: Int!
+  somenteAdminSistema: Boolean
+  titulo: String
+  versaoId: String!
+}
+
+input UpdateCatalogoSolucaoDraftInput {
+  ativo: Boolean
+  descricao: String
+  exibirNoHub: Boolean
+  eyebrow: String
+  motivo: String
+  nome: String
+  ordem: Int
+  revisaoEsperada: Int!
+  somenteAdminSistema: Boolean
+  versaoId: String!
 }
 
 input UpdateChamadoCategoriaInput {
@@ -1952,6 +1998,8 @@ input UpdateFuncionalidadeInput {
   id: Int!
   label: String
   ordem: Int
+  providerKey: String
+  providerVersion: Int
   registryKey: String
   slug: String
   solucaoId: Int

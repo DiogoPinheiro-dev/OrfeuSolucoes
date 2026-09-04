@@ -35,6 +35,10 @@ import {
   ProjetoCronogramaSeveridade
 } from './types/projeto-cronograma.types';
 import { ProjetoItemStatus } from './types/projeto-item.types';
+import {
+  ProjetoRecursoEscopoHierarquico,
+  ProjetoRecursoHierarquiaService
+} from './projeto-recurso-hierarquia.service';
 
 const DEPENDENCIA_INCLUDE = {
   bloqueador: true,
@@ -62,7 +66,8 @@ export class ProjetoCronogramaService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly authorization: ProjetoCronogramaAuthorizationService,
-    private readonly auditoria: ProjetoAuditoriaService
+    private readonly auditoria: ProjetoAuditoriaService,
+    private readonly recursoHierarquia: ProjetoRecursoHierarquiaService
   ) {}
 
   async painel(
@@ -78,13 +83,20 @@ export class ProjetoCronogramaService {
       : null;
     const fimFiltro = input.fimEm ? normalizeCalendarDate(input.fimEm) : null;
     validatePlannedDates(inicioFiltro, fimFiltro);
+    const escopo = await this.recursoHierarquia.escopo(
+      user,
+      contexto.empresaId,
+      contexto.projeto.id
+    );
+    const filtroItens = this.recursoHierarquia.filtroProjetoItem(escopo);
 
     const [itens, marcos, entregas, dependencias, permissoes] =
       await Promise.all([
         this.prisma.projetoItem.findMany({
           where: {
             projetoId: input.projetoId,
-            empresaId: contexto.empresaId
+            empresaId: contexto.empresaId,
+            ...filtroItens
           },
           include: { responsavel: true },
           orderBy: [{ ordemBacklog: 'asc' }, { numero: 'asc' }]
@@ -94,7 +106,10 @@ export class ProjetoCronogramaService {
             projetoId: input.projetoId,
             empresaId: contexto.empresaId
           },
-          include: { responsavel: true, itens: { include: { item: true } } },
+          include: {
+            responsavel: true,
+            itens: { where: { item: filtroItens }, include: { item: true } }
+          },
           orderBy: [{ dataPrevistaEm: 'asc' }, { nome: 'asc' }]
         }),
         this.prisma.projetoEntrega.findMany({
@@ -102,13 +117,18 @@ export class ProjetoCronogramaService {
             projetoId: input.projetoId,
             empresaId: contexto.empresaId
           },
-          include: { responsavel: true, itens: { include: { item: true } } },
+          include: {
+            responsavel: true,
+            itens: { where: { item: filtroItens }, include: { item: true } }
+          },
           orderBy: [{ inicioPrevistoEm: 'asc' }, { nome: 'asc' }]
         }),
         this.prisma.projetoItemDependencia.findMany({
           where: {
             projetoId: input.projetoId,
             empresaId: contexto.empresaId,
+            bloqueador: filtroItens,
+            bloqueado: filtroItens,
             ...(!input.incluirDependenciasArquivadas
               ? { arquivadoEm: null }
               : {})
@@ -239,9 +259,14 @@ export class ProjetoCronogramaService {
       user
     );
     await this.authorization.assertManageDependencies(contexto, user);
+    const escopo = await this.recursoHierarquia.escopo(
+      user,
+      contexto.empresaId,
+      contexto.projeto.id
+    );
 
     return this.prisma.$transaction(async (tx) => {
-      await this.assertEndpoints(tx, contexto, input);
+      await this.assertEndpoints(tx, contexto, input, escopo);
       const existente = await tx.projetoItemDependencia.findFirst({
         where: {
           projetoId: input.projetoId,
@@ -308,6 +333,11 @@ export class ProjetoCronogramaService {
       user
     );
     await this.authorization.assertManageDependencies(contexto, user);
+    const escopo = await this.recursoHierarquia.escopo(
+      user,
+      contexto.empresaId,
+      contexto.projeto.id
+    );
     if (reactivate === !reference.arquivadoEm) {
       throw new BadRequestException(
         reactivate
@@ -317,12 +347,12 @@ export class ProjetoCronogramaService {
     }
 
     return this.prisma.$transaction(async (tx) => {
+      await this.assertEndpoints(tx, contexto, {
+        projetoId: reference.projetoId,
+        bloqueadorId: reference.bloqueadorId,
+        bloqueadoId: reference.bloqueadoId
+      }, escopo);
       if (reactivate) {
-        await this.assertEndpoints(tx, contexto, {
-          projetoId: reference.projetoId,
-          bloqueadorId: reference.bloqueadorId,
-          bloqueadoId: reference.bloqueadoId
-        });
         await this.assertNoCycle(
           tx,
           reference.projetoId,
@@ -375,6 +405,15 @@ export class ProjetoCronogramaService {
       user
     );
     await this.authorization.assertEditDates(contexto, user);
+    const escopo = await this.recursoHierarquia.escopo(
+      user,
+      contexto.empresaId,
+      contexto.projeto.id
+    );
+    this.recursoHierarquia.assertPodeAcessarResponsavel(
+      escopo,
+      current.responsavelId
+    );
     const inicio = input.inicioPrevistoEm === undefined
       ? current.inicioPrevistoEm
       : normalizeCalendarDate(input.inicioPrevistoEm);
@@ -424,13 +463,15 @@ export class ProjetoCronogramaService {
       projetoId: string;
       bloqueadorId: string;
       bloqueadoId: string;
-    }
+    },
+    escopo: ProjetoRecursoEscopoHierarquico
   ): Promise<void> {
     const itens = await tx.projetoItem.findMany({
       where: {
         id: { in: [input.bloqueadorId, input.bloqueadoId] },
         projetoId: input.projetoId,
-        empresaId: contexto.empresaId
+        empresaId: contexto.empresaId,
+        ...this.recursoHierarquia.filtroProjetoItem(escopo)
       }
     });
     if (itens.length !== 2) {

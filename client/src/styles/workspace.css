@@ -36,6 +36,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
   color: var(--muted);
 }
 
@@ -183,6 +184,35 @@
 }
 
 @media (max-width: 600px) {
+  .workspace-breadcrumb {
+    width: 100%;
+    gap: 6px;
+    overflow: hidden;
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+
+  .workspace-breadcrumb > * {
+    min-width: 0;
+  }
+
+  .workspace-breadcrumb > span,
+  .workspace-breadcrumb > a:first-child {
+    flex: 0 0 auto;
+  }
+
+  .workspace-breadcrumb > a:not(:first-child) {
+    flex: 0 1 40%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .workspace-breadcrumb > strong:last-child {
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   .workspace-panel-link {
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 10px;

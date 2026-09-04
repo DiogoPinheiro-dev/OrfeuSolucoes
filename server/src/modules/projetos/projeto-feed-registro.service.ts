@@ -65,10 +65,6 @@ export class ProjetoFeedRegistroService {
         select: { id: true, usuarioId: true }
       })),
 
-      this.buscarQuando(idsPorEntidade.get('ALOCACAO'), () => this.prisma.projetoAlocacao.findMany({
-        where: { empresaId, projetoId: projeto.id, id: { in: [...(idsPorEntidade.get('ALOCACAO') ?? [])] } },
-        select: { id: true, recursoId: true, tarefaId: true, atividade: true, inicioEm: true, fimEm: true }
-      })),
       this.buscarQuando(idsPorEntidade.get('ORCAMENTO'), () => this.prisma.projetoOrcamento.findMany({
         where: { empresaId, projetoId: projeto.id, id: { in: [...(idsPorEntidade.get('ORCAMENTO') ?? [])] } },
         select: { id: true }
@@ -91,7 +87,7 @@ export class ProjetoFeedRegistroService {
       }))
     ]) as AnyRecord[][];
     const [itensIniciais = [], dependencias = [], sprints = [], marcos = [], entregas = [], recursosIniciais = [],
-      alocacoes = [], orcamentos = [], categorias = [], custos = [], comentarios = [], anexos = []] = resultados;
+      orcamentos = [], categorias = [], custos = [], comentarios = [], anexos = []] = resultados;
 
     const comentarioIds = new Set<string>(comentarios.map((item) => item.id));
     anexos.forEach((item) => this.adicionarTexto(comentarioIds, item.comentarioId));
@@ -145,9 +141,7 @@ export class ProjetoFeedRegistroService {
     });
     const categoriaPorId = new Map<string, AnyRecord>([...categorias, ...categoriasAdicionais].map((item) => [item.id, item]));
 
-    const projetoRecursoIds = new Set<string>([
-      ...alocacoes.map((item) => item.recursoId)
-    ]);
+    const projetoRecursoIds = new Set<string>();
     eventosComDados.forEach((item) => this.adicionarTexto(projetoRecursoIds, this.valor(item.dadosConvertidos, 'projetoRecursoId')));
     const projetosRecursos = projetoRecursoIds.size ? await this.prisma.projetoRecurso.findMany({
       where: { empresaId, projetoId: projeto.id, id: { in: [...projetoRecursoIds] } },
@@ -173,14 +167,6 @@ export class ProjetoFeedRegistroService {
     }) : [];
     const usuarioPorId = new Map<string, AnyRecord>(usuarios.map((item) => [item.id, item]));
 
-    const tarefaIds = new Set<string>(alocacoes.map((item) => item.tarefaId).filter(Boolean));
-    eventosComDados.forEach((item) => this.adicionarTexto(tarefaIds, this.valor(item.dadosConvertidos, 'tarefaId')));
-    const tarefas = tarefaIds.size ? await this.prisma.projetoTarefa.findMany({
-      where: { empresaId, id: { in: [...tarefaIds] } },
-      select: { id: true, funcionalidade: true }
-    }) : [];
-    const tarefaPorId = new Map<string, AnyRecord>(tarefas.map((item) => [item.id, item]));
-
     const registros = new Map<string, string>();
     registros.set(this.chave('PROJETO', projeto.id), `${projeto.chave} — ${projeto.nome}`);
     itens.forEach((item) => registros.set(this.chave('ITEM', item.id), `${item.chave} — ${item.titulo}`));
@@ -197,11 +183,6 @@ export class ProjetoFeedRegistroService {
       if (nome) registros.set(this.chave('RECURSO', item.id), nome);
     });
 
-    alocacoes.forEach((item) => {
-      const tarefa = item.tarefaId ? tarefaPorId.get(item.tarefaId)?.funcionalidade : null;
-      const nome = this.nomeRecursoProjeto(item.recursoId, projetoRecursoPorId, recursos, usuarioPorId);
-      registros.set(this.chave('ALOCACAO', item.id), this.periodoLabel(item.atividade || tarefa || `Alocação${nome ? ` de ${nome}` : ''}`, item.inicioEm, item.fimEm));
-    });
     orcamentos.forEach((item) => registros.set(this.chave('ORCAMENTO', item.id), `Orçamento — ${projeto.chave} — ${projeto.nome}`));
     categoriaPorId.forEach((item) => registros.set(this.chave('ORCAMENTO_CATEGORIA', item.id), item.nome));
     custos.forEach((item) => registros.set(this.chave('CUSTO', item.id), item.descricao));
@@ -222,11 +203,6 @@ export class ProjetoFeedRegistroService {
     entregas.forEach((item) => contextos.set(this.chave('ENTREGA', item.id), this.trilha(projetoContexto, item.marcoId ? marcoPorId.get(item.marcoId)?.nome : '')));
     recursos.forEach((item) => contextos.set(this.chave('RECURSO', item.id), projetoContexto));
 
-    alocacoes.forEach((item) => {
-      const nome = this.nomeRecursoProjeto(item.recursoId, projetoRecursoPorId, recursos, usuarioPorId);
-      const tarefa = item.tarefaId ? tarefaPorId.get(item.tarefaId)?.funcionalidade : null;
-      contextos.set(this.chave('ALOCACAO', item.id), this.trilha(projetoContexto, nome ? `Recurso: ${nome}` : '', tarefa ? `Tarefa: ${tarefa}` : ''));
-    });
     orcamentos.forEach((item) => contextos.set(this.chave('ORCAMENTO', item.id), projetoContexto));
     categoriaPorId.forEach((item) => contextos.set(this.chave('ORCAMENTO_CATEGORIA', item.id), this.trilha(projetoContexto, 'Orçamento')));
     custos.forEach((item) => contextos.set(this.chave('CUSTO', item.id), this.trilha(projetoContexto, 'Orçamento', item.categoriaId ? categoriaPorId.get(item.categoriaId)?.nome : '')));
@@ -257,15 +233,8 @@ export class ProjetoFeedRegistroService {
     for (const evento of eventosComDados) {
       const chave = this.chave(evento.entidade, evento.entidadeId);
       if (!registros.has(chave)) {
-        const nome = this.nomeDosDados(evento, projeto, itens, projetoRecursoPorId, recursos, usuarioPorId, tarefaPorId);
+        const nome = this.nomeDosDados(evento, projeto, itens, projetoRecursoPorId, recursos, usuarioPorId);
         if (nome) registros.set(chave, nome);
-      }
-      if (evento.entidade === 'ALOCACAO') {
-        const projetoRecursoId = String(this.valor(evento.dadosConvertidos, 'projetoRecursoId') ?? '');
-        const nome = this.nomeRecursoProjeto(projetoRecursoId, projetoRecursoPorId, recursos, usuarioPorId);
-        const tarefaId = String(this.valor(evento.dadosConvertidos, 'tarefaId') ?? '');
-        const tarefa = tarefaId ? tarefaPorId.get(tarefaId)?.funcionalidade : null;
-        contextos.set(chave, this.trilha(projetoContexto, nome ? `Recurso: ${nome}` : '', tarefa ? `Tarefa: ${tarefa}` : ''));
       }
       if (evento.entidade === 'CUSTO') {
         const categoriaId = String(this.valor(evento.dadosConvertidos, 'categoriaId') ?? '');
@@ -364,8 +333,7 @@ export class ProjetoFeedRegistroService {
     itens: Map<string, AnyRecord>,
     projetoRecursoPorId: Map<string, AnyRecord>,
     recursos: Map<string, AnyRecord>,
-    usuarios: Map<string, AnyRecord>,
-    tarefas: Map<string, AnyRecord>
+    usuarios: Map<string, AnyRecord>
   ): string {
     const dados = evento.dadosConvertidos;
     if (!dados) return '';
@@ -387,14 +355,6 @@ export class ProjetoFeedRegistroService {
     }
     if (evento.entidade === 'CUSTO') return this.resumo(this.valor(dados, 'descricao'));
     if (evento.entidade === 'RECURSO') return this.usuarioLabel(usuarios.get(String(this.valor(dados, 'usuarioId') ?? '')));
-    if (evento.entidade === 'ALOCACAO') {
-      const projetoRecursoId = String(this.valor(dados, 'projetoRecursoId') ?? '');
-      const nomeRecurso = this.nomeRecursoProjeto(projetoRecursoId, projetoRecursoPorId, recursos, usuarios);
-      const tarefaId = String(this.valor(dados, 'tarefaId') ?? '');
-      const atividade = this.resumo(this.valor(dados, 'atividade')) || tarefas.get(tarefaId)?.funcionalidade;
-      const base = atividade || `Execução${nomeRecurso ? ` de ${nomeRecurso}` : ''}`;
-      return this.periodoLabel(base, this.valor(dados, 'inicioEm'), this.valor(dados, 'fimEm'));
-    }
     if (evento.entidade === 'ORCAMENTO') return `Orçamento — ${projeto.chave} — ${projeto.nome}`;
     if (evento.entidade === 'ANEXO') return this.resumo(this.valor(dados, 'nomeOriginal'));
     return this.resumo(this.valor(dados, 'nome')) || this.resumo(this.valor(dados, 'titulo')) || this.resumo(this.valor(dados, 'descricao'));
@@ -422,19 +382,6 @@ export class ProjetoFeedRegistroService {
 
   private usuarioLabel(usuario: AnyRecord | undefined): string {
     return usuario?.nome || usuario?.login || usuario?.email || '';
-  }
-
-  private periodoLabel(base: string, inicio: unknown, fim: unknown): string {
-    const inicioLabel = this.dataLabel(inicio);
-    const fimLabel = this.dataLabel(fim);
-    return inicioLabel && fimLabel ? `${base} — ${inicioLabel} a ${fimLabel}` : base;
-  }
-
-  private dataLabel(value: unknown): string {
-    if (!value) return '';
-    const data = value instanceof Date ? value : new Date(String(value));
-    if (Number.isNaN(data.getTime())) return '';
-    return `${String(data.getUTCDate()).padStart(2, '0')}/${String(data.getUTCMonth() + 1).padStart(2, '0')}/${data.getUTCFullYear()}`;
   }
 
   private valor(dados: AnyRecord | null, campo: string): unknown {

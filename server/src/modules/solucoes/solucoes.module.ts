@@ -12,10 +12,16 @@ import { SolucaoCatalogService } from './solucao-catalog.service';
 import { SolucaoQueryService } from './solucao-query.service';
 import { SolucoesResolver } from './solucoes.resolver';
 import { SolucoesService } from './solucoes.service';
+import { CatalogoProviderRegistry } from './catalogo-provider.registry';
+import { CatalogoValidationService } from './catalogo-validation.service';
+import { CatalogoLifecycleService } from './catalogo-lifecycle.service';
+import { CatalogoResolver } from './catalogo.resolver';
+import { CatalogoActionConsumerRegistry } from './catalogo-action-consumer.registry';
+import { CatalogoBootstrapReconciliationService } from './catalogo-bootstrap-reconciliation.service';
 
 @Module({
   imports: [PrismaModule],
-  providers: [FuncionalidadeAcaoService, FuncionalidadeAuthorizationService, HubNavigationService, SolucaoAcessoService, SolucaoBootstrapService, SolucaoChamadosBootstrapService, SolucaoHorasBootstrapService, SolucaoProjetosBootstrapService, SolucaoCatalogService, SolucaoQueryService, SolucoesService, SolucoesResolver],
-  exports: [FuncionalidadeAcaoService, FuncionalidadeAuthorizationService, HubNavigationService, SolucaoAcessoService, SolucaoBootstrapService, SolucaoChamadosBootstrapService, SolucaoHorasBootstrapService, SolucaoProjetosBootstrapService, SolucaoCatalogService, SolucaoQueryService, SolucoesService]
+  providers: [CatalogoProviderRegistry, CatalogoActionConsumerRegistry, CatalogoBootstrapReconciliationService, CatalogoValidationService, CatalogoLifecycleService, CatalogoResolver, FuncionalidadeAcaoService, FuncionalidadeAuthorizationService, HubNavigationService, SolucaoAcessoService, SolucaoBootstrapService, SolucaoChamadosBootstrapService, SolucaoHorasBootstrapService, SolucaoProjetosBootstrapService, SolucaoCatalogService, SolucaoQueryService, SolucoesService, SolucoesResolver],
+  exports: [CatalogoProviderRegistry, CatalogoValidationService, CatalogoLifecycleService, FuncionalidadeAcaoService, FuncionalidadeAuthorizationService, HubNavigationService, SolucaoAcessoService, SolucaoBootstrapService, SolucaoChamadosBootstrapService, SolucaoHorasBootstrapService, SolucaoProjetosBootstrapService, SolucaoCatalogService, SolucaoQueryService, SolucoesService]
 })
 export class SolucoesModule {}

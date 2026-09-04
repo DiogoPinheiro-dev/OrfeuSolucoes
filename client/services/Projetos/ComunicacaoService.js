@@ -10,7 +10,7 @@ import {
     UPDATE_PROJETO_COMENTARIO_MUTATION
 } from "../graphql/operations";
 
-const graphqlUrl = import.meta.env.VITE_GRAPHQL_URL ?? "http://localhost:3001/graphql";
+const graphqlUrl = import.meta.env.VITE_GRAPHQL_URL ?? "/graphql";
 const apiBaseUrl = (import.meta.env.VITE_API_URL ?? graphqlUrl.replace(/\/graphql\/?$/, "")).replace(/\/$/, "");
 const restError = async (response) => {
     try {

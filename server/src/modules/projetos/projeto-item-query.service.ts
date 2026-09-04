@@ -40,10 +40,12 @@ export class ProjetoItemQueryService {
       filtro.pagina,
       filtro.limite
     );
+    const escopo = await this.authorization.escopoHierarquico(user, contexto);
     const termo = filtro.termo?.trim();
     const where: Prisma.ProjetoItemWhereInput = {
       empresaId: contexto.empresaId,
       projetoId: contexto.projeto.id,
+      ...this.authorization.filtroVisibilidade(escopo),
       ...(!filtro.incluirArquivados ? { arquivadoEm: null } : {}),
       ...(filtro.tipo ? { tipo: filtro.tipo } : {}),
       ...(filtro.status ? { status: filtro.status } : {}),
@@ -106,12 +108,14 @@ export class ProjetoItemQueryService {
       reference.projetoId,
       user
     );
+    const escopo = await this.authorization.escopoHierarquico(user, contexto);
     const [item, permissoes] = await Promise.all([
       this.prisma.projetoItem.findFirst({
         where: {
           id,
           empresaId: contexto.empresaId,
-          projetoId: contexto.projeto.id
+          projetoId: contexto.projeto.id,
+          ...this.authorization.filtroVisibilidade(escopo)
         },
         include: PROJETO_ITEM_INCLUDE
       }),
@@ -145,6 +149,20 @@ export class ProjetoItemQueryService {
       reference.projetoId,
       user
     );
+    const escopo = await this.authorization.escopoHierarquico(user, contexto);
+    const itemVisivel = await this.prisma.projetoItem.findFirst({
+      where: {
+        id,
+        empresaId: contexto.empresaId,
+        projetoId: contexto.projeto.id,
+        ...this.authorization.filtroVisibilidade(escopo)
+      },
+      select: { id: true }
+    });
+
+    if (!itemVisivel) {
+      throw new NotFoundException('Item de projeto nao encontrado.');
+    }
     const eventos = await this.prisma.projetoEvento.findMany({
       where: {
         empresaId: contexto.empresaId,

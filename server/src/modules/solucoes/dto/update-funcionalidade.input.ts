@@ -49,6 +49,16 @@ export class UpdateFuncionalidadeInput {
   @IsString()
   registryKey?: string | null;
 
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  providerKey?: string | null;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsInt()
+  providerVersion?: number | null;
+
   @Field(() => Boolean, { nullable: true })
   @IsOptional()
   @IsBoolean()

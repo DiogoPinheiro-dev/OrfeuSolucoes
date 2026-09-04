@@ -21,8 +21,6 @@ import { ChamadosService } from '../src/modules/chamados/chamados.service';
 import { ProjetoComunicacaoResolver } from '../src/modules/projetos/projeto-comunicacao.resolver';
 import { ProjetoOrcamentoResolver } from '../src/modules/projetos/projeto-orcamento.resolver';
 import { ProjetoRecursoResolver } from '../src/modules/projetos/projeto-recurso.resolver';
-import { ProjetoTarefaResolver } from '../src/modules/projetos/projeto-tarefa.resolver';
-import { ProjetoPlanejamentoRecursoResolver } from '../src/modules/projetos/projeto-planejamento-recurso.resolver';
 
 const testUser = {
   sub: '11111111-1111-4111-8111-111111111111',
@@ -274,12 +272,8 @@ describe('Chamados GraphQL e HTTP e2e', () => {
   });
   it('mantem os resolvers GraphQL de recursos, tarefas, grade e orcamento protegidos', () => {
     const resourceGuards = Reflect.getMetadata(GUARDS_METADATA, ProjetoRecursoResolver) ?? [];
-    const taskGuards = Reflect.getMetadata(GUARDS_METADATA, ProjetoTarefaResolver) ?? [];
-    const resourcePlanningGuards = Reflect.getMetadata(GUARDS_METADATA, ProjetoPlanejamentoRecursoResolver) ?? [];
     const budgetGuards = Reflect.getMetadata(GUARDS_METADATA, ProjetoOrcamentoResolver) ?? [];
     expect(resourceGuards).toContain(GqlAuthGuard);
-    expect(taskGuards).toContain(GqlAuthGuard);
-    expect(resourcePlanningGuards).toContain(GqlAuthGuard);
     expect(budgetGuards).toContain(GqlAuthGuard);
   });
 

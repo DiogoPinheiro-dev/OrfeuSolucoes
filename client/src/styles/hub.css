@@ -110,3 +110,24 @@
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 620px) {
+  .hub-main {
+    padding-bottom: 24px;
+  }
+
+  .hub-hero {
+    padding-top: 12px;
+  }
+
+  .hub-hero-inner > div,
+  .hub-summary-card,
+  .hub-guidance .container {
+    padding: 20px;
+    border-radius: 20px;
+  }
+
+  .hub-hero h1 {
+    font-size: clamp(1.75rem, 9vw, 2.3rem);
+  }
+}

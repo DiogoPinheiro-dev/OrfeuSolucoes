@@ -107,9 +107,9 @@ export const PROJETO_FEATURE_DEFINITIONS: ProjetoFeatureDefinition[] = [
   },
   {
     slug: 'planejamento-de-recursos',
-    titulo: 'Planejamento de recursos',
-    label: 'Planejamento de recursos',
-    descricao: 'Gerencie os vínculos dos recursos com os projetos e suas tarefas.',
+    titulo: 'Recursos, equipes e planejamento',
+    label: 'Recursos e equipes',
+    descricao: 'Gerencie recursos, equipes e a atribuição dos itens do backlog.',
     ordem: 70,
     registryKey: 'projetos.planejamento-de-recursos',
     ativo: true

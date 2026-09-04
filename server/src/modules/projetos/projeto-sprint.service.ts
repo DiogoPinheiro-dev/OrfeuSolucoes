@@ -26,6 +26,7 @@ import {
   ProjetoSprintContexto
 } from './projeto-sprint-authorization.service';
 import { ProjetoPeriodoService } from './projeto-periodo.service';
+import { ProjetoRecursoHierarquiaService } from './projeto-recurso-hierarquia.service';
 import {
   ProjetoItemPrioridade,
   ProjetoItemStatus,
@@ -50,7 +51,8 @@ export class ProjetoSprintService {
     private readonly prisma: PrismaService,
     private readonly authorization: ProjetoSprintAuthorizationService,
     private readonly auditoria: ProjetoAuditoriaService,
-    private readonly periodo: ProjetoPeriodoService
+    private readonly periodo: ProjetoPeriodoService,
+    private readonly recursoHierarquia: ProjetoRecursoHierarquiaService
   ) {}
 
   async painel(
@@ -58,16 +60,23 @@ export class ProjetoSprintService {
     user: JwtPayload
   ): Promise<ProjetoSprintPainelType> {
     const contexto = await this.authorization.assertReadContext(projetoId, user);
+    const escopo = await this.recursoHierarquia.escopo(
+      user,
+      contexto.empresaId,
+      contexto.projeto.id
+    );
+    const filtroItens = this.recursoHierarquia.filtroProjetoItem(escopo);
     const [sprints, candidatos, permissoes] = await Promise.all([
       this.prisma.projetoSprint.findMany({
         where: { projetoId, empresaId: contexto.empresaId },
-        include: SPRINT_INCLUDE,
+        include: this.sprintInclude(filtroItens),
         orderBy: [{ inicioPrevistoEm: 'desc' }, { criadoEm: 'desc' }]
       }),
       this.prisma.projetoItem.findMany({
         where: {
           projetoId,
           empresaId: contexto.empresaId,
+          ...filtroItens,
           arquivadoEm: null,
           NOT: { status: { in: [ProjetoItemStatus.CONCLUIDO, ProjetoItemStatus.CANCELADO] } },
           sprints: { none: { retiradoEm: null } }
@@ -86,7 +95,14 @@ export class ProjetoSprintService {
         sprint.status === ProjetoSprintStatus.CANCELADA
       ),
       candidatos: candidatos.map((item) => this.toCandidato(item)),
-      permissoes
+      permissoes: escopo.restrito
+        ? {
+            ...permissoes,
+            podeIniciar: false,
+            podeConcluir: false,
+            podeCancelar: false
+          }
+        : permissoes
     };
   }
 
@@ -134,6 +150,12 @@ export class ProjetoSprintService {
   ): Promise<ProjetoSprintType> {
     const reference = await this.reference(input.id);
     const contexto = await this.authorization.assertReadContext(reference.projetoId, user);
+    const escopo = await this.recursoHierarquia.escopo(
+      user,
+      contexto.empresaId,
+      contexto.projeto.id
+    );
+    const filtroItens = this.recursoHierarquia.filtroProjetoItem(escopo);
     await this.authorization.assertAction(
       contexto,
       user,
@@ -158,7 +180,7 @@ export class ProjetoSprintService {
       await this.audit(tx, contexto, user, input.id, 'ALTERADA', {
         versaoAnterior: input.versao
       });
-      return this.findOne(input.id, tx);
+      return this.findOne(input.id, tx, filtroItens);
     }, {
       isolationLevel: Prisma.TransactionIsolationLevel.Serializable
     });
@@ -170,6 +192,12 @@ export class ProjetoSprintService {
   ): Promise<ProjetoSprintType> {
     const sprint = await this.reference(input.sprintId);
     const contexto = await this.authorization.assertReadContext(sprint.projetoId, user);
+    const escopo = await this.recursoHierarquia.escopo(
+      user,
+      contexto.empresaId,
+      contexto.projeto.id
+    );
+    const filtroItens = this.recursoHierarquia.filtroProjetoItem(escopo);
     await this.authorization.assertAction(
       contexto,
       user,
@@ -184,7 +212,8 @@ export class ProjetoSprintService {
           id: input.itemId,
           projetoId: sprint.projetoId,
           empresaId: contexto.empresaId,
-          arquivadoEm: null
+          arquivadoEm: null,
+          ...filtroItens
         }
       });
       if (!item) throw new NotFoundException('Item de projeto nao encontrado.');
@@ -221,7 +250,7 @@ export class ProjetoSprintService {
         chave: item.chave,
         aposInicio: sprint.status === ProjetoSprintStatus.ATIVA
       });
-      return this.findOne(sprint.id, tx);
+      return this.findOne(sprint.id, tx, filtroItens);
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 
@@ -231,6 +260,12 @@ export class ProjetoSprintService {
   ): Promise<ProjetoSprintType> {
     const sprint = await this.reference(input.sprintId);
     const contexto = await this.authorization.assertReadContext(sprint.projetoId, user);
+    const escopo = await this.recursoHierarquia.escopo(
+      user,
+      contexto.empresaId,
+      contexto.projeto.id
+    );
+    const filtroItens = this.recursoHierarquia.filtroProjetoItem(escopo);
     await this.authorization.assertAction(
       contexto,
       user,
@@ -244,7 +279,8 @@ export class ProjetoSprintService {
         where: {
           sprintId: sprint.id,
           itemId: input.itemId,
-          retiradoEm: null
+          retiradoEm: null,
+          item: filtroItens
         },
         include: { item: true }
       });
@@ -266,7 +302,7 @@ export class ProjetoSprintService {
         chave: vinculo.item.chave,
         aposInicio: sprint.status === ProjetoSprintStatus.ATIVA
       });
-      return this.findOne(sprint.id, tx);
+      return this.findOne(sprint.id, tx, filtroItens);
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 
@@ -276,6 +312,12 @@ export class ProjetoSprintService {
   ): Promise<ProjetoSprintType> {
     const sprint = await this.reference(input.id);
     const contexto = await this.authorization.assertReadContext(sprint.projetoId, user);
+    const escopo = await this.recursoHierarquia.escopo(
+      user,
+      contexto.empresaId,
+      contexto.projeto.id
+    );
+    this.recursoHierarquia.assertVisaoCompleta(escopo, 'iniciar a sprint');
     await this.authorization.assertAction(
       contexto,
       user,
@@ -334,6 +376,12 @@ export class ProjetoSprintService {
   ): Promise<ProjetoSprintType> {
     const sprint = await this.reference(input.id);
     const contexto = await this.authorization.assertReadContext(sprint.projetoId, user);
+    const escopo = await this.recursoHierarquia.escopo(
+      user,
+      contexto.empresaId,
+      contexto.projeto.id
+    );
+    this.recursoHierarquia.assertVisaoCompleta(escopo, 'concluir a sprint');
     await this.authorization.assertAction(
       contexto,
       user,
@@ -428,6 +476,12 @@ export class ProjetoSprintService {
   ): Promise<ProjetoSprintType> {
     const sprint = await this.reference(input.id);
     const contexto = await this.authorization.assertReadContext(sprint.projetoId, user);
+    const escopo = await this.recursoHierarquia.escopo(
+      user,
+      contexto.empresaId,
+      contexto.projeto.id
+    );
+    this.recursoHierarquia.assertVisaoCompleta(escopo, 'cancelar a sprint');
     await this.authorization.assertAction(
       contexto,
       user,
@@ -469,14 +523,25 @@ export class ProjetoSprintService {
 
   private async findOne(
     id: string,
-    tx: Prisma.TransactionClient | PrismaService = this.prisma
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+    filtroItens: Prisma.ProjetoItemWhereInput = {}
   ): Promise<ProjetoSprintType> {
     const sprint = await tx.projetoSprint.findUnique({
       where: { id },
-      include: SPRINT_INCLUDE
+      include: this.sprintInclude(filtroItens)
     });
     if (!sprint) throw new NotFoundException('Sprint nao encontrada.');
     return this.toType(sprint);
+  }
+
+  private sprintInclude(filtroItens: Prisma.ProjetoItemWhereInput) {
+    return {
+      itens: {
+        where: { item: filtroItens },
+        include: { item: true },
+        orderBy: { incluidoEm: 'asc' as const }
+      }
+    };
   }
 
   private async claimVersion(

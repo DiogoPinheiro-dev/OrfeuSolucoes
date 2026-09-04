@@ -11,6 +11,7 @@ import { ProjetoAnexoStorageService } from './projeto-anexo-storage.service';
 import { ProjetoComunicacaoAuthorizationService, ProjetoComunicacaoContexto } from './projeto-comunicacao-authorization.service';
 import { ProjetoFeedRegistroService } from './projeto-feed-registro.service';
 import { ProjetoPeriodoService } from './projeto-periodo.service';
+import { ProjetoRecursoHierarquiaService } from './projeto-recurso-hierarquia.service';
 import { MAX_PROJETO_ANEXO_FILES, validateProjetoAnexoFile } from './policies/projeto-anexo.policy';
 import { ProjetoUploadFile } from './types/projeto-comunicacao.types';
 import { ProjetoSaude } from './types/projeto.types';
@@ -40,7 +41,8 @@ export class ProjetoComunicacaoService {
     private readonly auditoria: ProjetoAuditoriaService,
     private readonly storage: ProjetoAnexoStorageService,
     private readonly feedRegistros: ProjetoFeedRegistroService,
-    private readonly periodo: ProjetoPeriodoService
+    private readonly periodo: ProjetoPeriodoService,
+    private readonly recursoHierarquia: ProjetoRecursoHierarquiaService
   ) {}
 
   async projetos(user: JwtPayload): Promise<ProjetoComunicacaoProjetoType[]> {
@@ -56,18 +58,65 @@ export class ProjetoComunicacaoService {
     filtro: ProjetoComunicacaoFeedFiltroInput = {}
   ): Promise<ProjetoComunicacaoPainelType> {
     const contexto = await this.authorization.assertReadContext(projetoId, user);
+    const escopo = await this.recursoHierarquia.escopo(
+      user,
+      contexto.empresaId,
+      contexto.projeto.id
+    );
+    const filtroItens = this.recursoHierarquia.filtroProjetoItem(escopo);
+    const comentarioWhere: Prisma.ProjetoComentarioWhereInput = {
+      projetoId,
+      empresaId: contexto.empresaId,
+      OR: [{ itemId: null }, { item: filtroItens }]
+    };
+    const [itensVisiveis, dependenciasVisiveis, comentariosVisiveis] = escopo.restrito
+      ? await Promise.all([
+          this.prisma.projetoItem.findMany({
+            where: { projetoId, empresaId: contexto.empresaId, ...filtroItens },
+            select: { id: true }
+          }),
+          this.prisma.projetoItemDependencia.findMany({
+            where: {
+              projetoId,
+              empresaId: contexto.empresaId,
+              bloqueador: filtroItens,
+              bloqueado: filtroItens
+            },
+            select: { id: true }
+          }),
+          this.prisma.projetoComentario.findMany({
+            where: comentarioWhere,
+            select: { id: true }
+          })
+        ])
+      : [[], [], []];
+    const filtroEventos: Prisma.ProjetoEventoWhereInput = escopo.restrito
+      ? {
+          OR: [
+            { entidade: { notIn: ['ITEM', 'DEPENDENCIA', 'COMENTARIO'] } },
+            { entidade: 'ITEM', entidadeId: { in: itensVisiveis.map(({ id }) => id) } },
+            { entidade: 'DEPENDENCIA', entidadeId: { in: dependenciasVisiveis.map(({ id }) => id) } },
+            { entidade: 'COMENTARIO', entidadeId: { in: comentariosVisiveis.map(({ id }) => id) } }
+          ]
+        }
+      : {};
     const { pagina: paginaSolicitada, limite } = this.periodo.normalizePaginacao(filtro.pagina, filtro.limite);
     const feedEventWhere: Prisma.ProjetoEventoWhereInput = {
       projetoId,
       empresaId: contexto.empresaId,
-      OR: [
-        { NOT: { entidade: { in: ['ATUALIZACAO', 'COMENTARIO'] } } },
-        { entidade: 'COMENTARIO', evento: 'EXCLUIDO' }
+      AND: [
+        filtroEventos,
+        {
+          OR: [
+            { NOT: { entidade: { in: ['ATUALIZACAO', 'COMENTARIO'] } } },
+            { entidade: 'COMENTARIO', evento: 'EXCLUIDO' }
+          ]
+        }
       ]
     };
     const [totalAtualizacoes, totalComentarios, totalEventos] = await Promise.all([
       this.prisma.projetoAtualizacao.count({ where: { projetoId, empresaId: contexto.empresaId } }),
-      this.prisma.projetoComentario.count({ where: { projetoId, empresaId: contexto.empresaId, excluidoEm: null } }),
+      this.prisma.projetoComentario.count({ where: { ...comentarioWhere, excluidoEm: null } }),
       this.prisma.projetoEvento.count({ where: feedEventWhere })
     ]);
     const feedTotal = totalAtualizacoes + totalComentarios + totalEventos;
@@ -76,9 +125,9 @@ export class ProjetoComunicacaoService {
     const scanLimit = feedPagina * limite;
     const [atualizacoes, comentarios, eventos, itensDisponiveis, permissoes] = await Promise.all([
       this.prisma.projetoAtualizacao.findMany({ where: { projetoId, empresaId: contexto.empresaId }, include: ATUALIZACAO_INCLUDE, orderBy: [{ criadoEm: 'desc' }, { id: 'desc' }], take: Math.max(100, scanLimit) }),
-      this.prisma.projetoComentario.findMany({ where: { projetoId, empresaId: contexto.empresaId, excluidoEm: null }, include: COMENTARIO_INCLUDE, orderBy: [{ criadoEm: 'desc' }, { id: 'desc' }], take: Math.max(200, scanLimit) }),
+      this.prisma.projetoComentario.findMany({ where: { ...comentarioWhere, excluidoEm: null }, include: COMENTARIO_INCLUDE, orderBy: [{ criadoEm: 'desc' }, { id: 'desc' }], take: Math.max(200, scanLimit) }),
       this.prisma.projetoEvento.findMany({ where: feedEventWhere, include: { usuario: true }, orderBy: [{ criadoEm: 'desc' }, { id: 'desc' }], take: scanLimit }),
-      this.prisma.projetoItem.findMany({ where: { projetoId, empresaId: contexto.empresaId, arquivadoEm: null }, select: { id: true, chave: true, titulo: true }, orderBy: [{ ordemBacklog: 'asc' }, { numero: 'asc' }] }),
+      this.prisma.projetoItem.findMany({ where: { projetoId, empresaId: contexto.empresaId, arquivadoEm: null, ...filtroItens }, select: { id: true, chave: true, titulo: true }, orderBy: [{ ordemBacklog: 'asc' }, { numero: 'asc' }] }),
       this.authorization.effectivePermissions(contexto, user)
     ]);
     const mappedUpdates = atualizacoes.map((item) => this.toAtualizacao(item as AnyRecord, user, permissoes));
@@ -190,7 +239,12 @@ export class ProjetoComunicacaoService {
   async createComentario(input: CreateProjetoComentarioInput, user: JwtPayload): Promise<ProjetoComentarioType> {
     const contexto = await this.authorization.assertReadContext(input.projetoId, user);
     await this.authorization.assertComment(contexto, user);
-    await this.assertCommentTarget(contexto, input.atualizacaoId, input.itemId);
+    await this.assertCommentTarget(
+      contexto,
+      user,
+      input.atualizacaoId,
+      input.itemId
+    );
     const record = await this.prisma.$transaction(async (tx) => {
       const created = await tx.projetoComentario.create({ data: { empresaId: contexto.empresaId, projetoId: input.projetoId,
         autorId: user.sub, conteudo: input.conteudo.trim(), atualizacaoId: input.atualizacaoId ?? null, itemId: input.itemId ?? null }, include: COMENTARIO_INCLUDE });
@@ -204,6 +258,7 @@ export class ProjetoComunicacaoService {
     const current = await this.prisma.projetoComentario.findUnique({ where: { id: input.id } });
     if (!current || current.excluidoEm) throw new NotFoundException('Comentario nao encontrado.');
     const contexto = await this.authorization.assertReadContext(current.projetoId, user);
+    await this.assertItemVisivel(contexto, current.itemId, user);
     if (current.autorId === user.sub) await this.authorization.assertComment(contexto, user);
     else await this.authorization.assertModerate(contexto, user);
     if (current.versao !== input.versao) throw new ConflictException('O comentario foi alterado por outro usuario. Recarregue o feed.');
@@ -221,6 +276,7 @@ export class ProjetoComunicacaoService {
     const current = await this.prisma.projetoComentario.findUnique({ where: { id: input.id }, include: COMENTARIO_INCLUDE });
     if (!current || current.excluidoEm) throw new NotFoundException('Comentario nao encontrado.');
     const contexto = await this.authorization.assertReadContext(current.projetoId, user);
+    await this.assertItemVisivel(contexto, current.itemId, user);
     if (current.autorId === user.sub) await this.authorization.assertComment(contexto, user);
     else await this.authorization.assertModerate(contexto, user);
     const changed = await this.prisma.projetoComentario.updateMany({ where: { id: current.id, versao: input.versao, excluidoEm: null },
@@ -238,7 +294,12 @@ export class ProjetoComunicacaoService {
     if (!files.length) throw new BadRequestException('Selecione ao menos um arquivo para anexar.');
     if (files.length > MAX_PROJETO_ANEXO_FILES) throw new BadRequestException(`Informe no maximo ${MAX_PROJETO_ANEXO_FILES} anexos por envio.`);
     files.forEach(validateProjetoAnexoFile);
-    await this.assertAttachmentTarget(contexto, atualizacaoId, comentarioId);
+    await this.assertAttachmentTarget(
+      contexto,
+      user,
+      atualizacaoId,
+      comentarioId
+    );
     await this.assertCompanyStorageQuota(contexto.empresaId, files);
     const created: ProjetoAnexoType[] = [];
     for (const file of files) {
@@ -255,8 +316,12 @@ export class ProjetoComunicacaoService {
 
   async prepararDownload(projetoId: string, anexoId: string, user: JwtPayload) {
     const contexto = await this.authorization.assertReadContext(projetoId, user);
-    const anexo = await this.prisma.projetoAnexo.findFirst({ where: { id: anexoId, projetoId, empresaId: contexto.empresaId, excluidoEm: null } });
+    const anexo = await this.prisma.projetoAnexo.findFirst({
+      where: { id: anexoId, projetoId, empresaId: contexto.empresaId, excluidoEm: null },
+      include: { comentario: { select: { itemId: true } } }
+    });
     if (!anexo) throw new NotFoundException('Anexo nao encontrado.');
+    await this.assertItemVisivel(contexto, anexo.comentario?.itemId, user);
     const caminhoAbsoluto = this.storage.resolve(anexo.caminho);
     if (!existsSync(caminhoAbsoluto)) throw new NotFoundException('Arquivo do anexo nao encontrado no armazenamento.');
     return { caminhoAbsoluto, nomeOriginal: anexo.nomeOriginal, mimeType: anexo.mimeType };
@@ -264,8 +329,12 @@ export class ProjetoComunicacaoService {
 
   async excluirAnexo(projetoId: string, anexoId: string, user: JwtPayload): Promise<void> {
     const contexto = await this.authorization.assertReadContext(projetoId, user);
-    const anexo = await this.prisma.projetoAnexo.findFirst({ where: { id: anexoId, projetoId, empresaId: contexto.empresaId, excluidoEm: null } });
+    const anexo = await this.prisma.projetoAnexo.findFirst({
+      where: { id: anexoId, projetoId, empresaId: contexto.empresaId, excluidoEm: null },
+      include: { comentario: { select: { itemId: true } } }
+    });
     if (!anexo) throw new NotFoundException('Anexo nao encontrado.');
+    await this.assertItemVisivel(contexto, anexo.comentario?.itemId, user);
     await this.authorization.assertManageAttachments(contexto, user);
     if (anexo.autorId !== user.sub && !this.authorization.isSystemAdmin(user)) {
       try { await this.authorization.assertModerate(contexto, user); }
@@ -276,20 +345,63 @@ export class ProjetoComunicacaoService {
     await this.prisma.$transaction((tx) => this.audit(tx, contexto, user, 'ANEXO', anexo.id, 'EXCLUIDO'));
   }
 
-  private async assertCommentTarget(contexto: ProjetoComunicacaoContexto, atualizacaoId?: string | null, itemId?: string | null): Promise<void> {
+  private async assertCommentTarget(
+    contexto: ProjetoComunicacaoContexto,
+    user: JwtPayload,
+    atualizacaoId?: string | null,
+    itemId?: string | null
+  ): Promise<void> {
     if (atualizacaoId && itemId) throw new BadRequestException('O comentario deve possuir somente um alvo.');
     if (atualizacaoId) {
       const target = await this.prisma.projetoAtualizacao.findFirst({ where: { id: atualizacaoId, projetoId: contexto.projeto.id, empresaId: contexto.empresaId } });
       if (!target) throw new BadRequestException('Atualizacao nao encontrada neste projeto.');
     }
     if (itemId) {
-      const target = await this.prisma.projetoItem.findFirst({ where: { id: itemId, projetoId: contexto.projeto.id, empresaId: contexto.empresaId } });
+      const escopo = await this.recursoHierarquia.escopo(
+        user,
+        contexto.empresaId,
+        contexto.projeto.id
+      );
+      const target = await this.prisma.projetoItem.findFirst({ where: {
+        id: itemId,
+        projetoId: contexto.projeto.id,
+        empresaId: contexto.empresaId,
+        ...this.recursoHierarquia.filtroProjetoItem(escopo)
+      } });
       if (!target) throw new BadRequestException('Item nao encontrado neste projeto.');
       if (target.arquivadoEm) throw new BadRequestException('Itens arquivados nao podem receber comentarios.');
     }
   }
 
-  private async assertAttachmentTarget(contexto: ProjetoComunicacaoContexto, atualizacaoId?: string | null, comentarioId?: string | null): Promise<void> {
+  private async assertItemVisivel(
+    contexto: ProjetoComunicacaoContexto,
+    itemId: string | null | undefined,
+    user: JwtPayload
+  ): Promise<void> {
+    if (!itemId) return;
+    const escopo = await this.recursoHierarquia.escopo(
+      user,
+      contexto.empresaId,
+      contexto.projeto.id
+    );
+    const item = await this.prisma.projetoItem.findFirst({
+      where: {
+        id: itemId,
+        projetoId: contexto.projeto.id,
+        empresaId: contexto.empresaId,
+        ...this.recursoHierarquia.filtroProjetoItem(escopo)
+      },
+      select: { id: true }
+    });
+    if (!item) throw new NotFoundException('Comentario nao encontrado.');
+  }
+
+  private async assertAttachmentTarget(
+    contexto: ProjetoComunicacaoContexto,
+    user: JwtPayload,
+    atualizacaoId?: string | null,
+    comentarioId?: string | null
+  ): Promise<void> {
     if (atualizacaoId && comentarioId) throw new BadRequestException('O anexo deve possuir somente um alvo.');
     if (atualizacaoId) {
       const target = await this.prisma.projetoAtualizacao.findFirst({ where: { id: atualizacaoId, projetoId: contexto.projeto.id, empresaId: contexto.empresaId } });
@@ -298,6 +410,7 @@ export class ProjetoComunicacaoService {
     if (comentarioId) {
       const target = await this.prisma.projetoComentario.findFirst({ where: { id: comentarioId, projetoId: contexto.projeto.id, empresaId: contexto.empresaId, excluidoEm: null } });
       if (!target) throw new BadRequestException('Comentario nao encontrado neste projeto.');
+      await this.assertItemVisivel(contexto, target.itemId, user);
     }
   }
 

@@ -4,7 +4,7 @@ import { useFormFieldErrors } from "../hooks/useFormFieldErrors";
 
 import { CrudModal, CrudModalTabPanel, CrudModalTabs } from "./CrudModal";
 import FormFieldError from "./FormFieldError";
-import { FeedbackMessage, LoadingState } from "./CrudFeedback";
+import { LoadingState } from "./CrudFeedback";
 
 const PROJECT_FORM_ID = "project-registration-form";
 const PROJECT_FIELD_ORDER = ["nome", "chave", "metodologia", "objetivo", "descricao", "situacao", "saude", "inicioPrevistoEm", "fimPrevistoEm"];
@@ -135,6 +135,8 @@ export default function ProjectEditorModal({
             onClose={onClose}
             onSubmit={submit}
             formClassName="project-form"
+            processing={saving}
+            generalError={formError}
             actions={mode === "view"
                 ? <button type="button" onClick={onClose}>Fechar</button>
                 : <>
@@ -153,8 +155,6 @@ export default function ProjectEditorModal({
             />
 
             {loading && <LoadingState message="Carregando detalhes..." compact />}
-            {formError && <FeedbackMessage type="error" compact>{formError}</FeedbackMessage>}
-
             <CrudModalTabPanel active={activeTab === "geral"}>
                 <fieldset className="project-form-grid" disabled={mode === "view" || !canEditDetails || saving || loading}>
                 <label className="project-form-wide">
@@ -187,7 +187,7 @@ export default function ProjectEditorModal({
 
             <CrudModalTabPanel active={activeTab === "planejamento"}>
                 <fieldset className="project-form-grid" disabled={mode === "view" || !canEditDetails || saving || loading}>
-                {mode === "create" && <label>Status inicial<select value={form.situacao} onChange={(event) => setField("situacao", event.target.value)}><option value="RASCUNHO">Rascunho</option><option value="PLANEJADO">Planejado</option></select></label>}
+                {mode === "create" && <label>Status inicial<select value={form.situacao} onChange={(event) => setField("situacao", event.target.value)}><option value="RASCUNHO">Rascunho</option><option value="EM_ORCAMENTO">Em orçamento</option><option value="PLANEJADO">Planejado</option></select></label>}
                 {mode === "create" && <label>Saúde inicial<select value={form.saude} onChange={(event) => setField("saude", event.target.value)}><option value="EM_DIA">Em dia</option><option value="EM_RISCO">Em risco</option><option value="ATRASADO">Atrasado</option></select></label>}
                 <label>Início previsto <FormFieldError formId={PROJECT_FORM_ID} field="inicioPrevistoEm" errors={fieldErrors} /><input type="date" name="inicioPrevistoEm" value={form.inicioPrevistoEm} onChange={(event) => setField("inicioPrevistoEm", event.target.value)} {...fieldErrorProps("inicioPrevistoEm")} /></label>
                 <label>Término previsto <FormFieldError formId={PROJECT_FORM_ID} field="fimPrevistoEm" errors={fieldErrors} /><input type="date" name="fimPrevistoEm" value={form.fimPrevistoEm} onChange={(event) => setField("fimPrevistoEm", event.target.value)} {...fieldErrorProps("fimPrevistoEm")} /></label>

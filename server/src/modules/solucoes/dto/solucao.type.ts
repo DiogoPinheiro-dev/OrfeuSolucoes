@@ -33,6 +33,15 @@ export class SolucaoType {
   @Field()
   padraoSistema!: boolean;
 
+  @Field()
+  chaveTecnica!: string;
+
+  @Field()
+  statusPublicacao!: string;
+
+  @Field(() => Int)
+  revisaoCatalogo!: number;
+
   @Field(() => [FuncionalidadeType])
   funcionalidades!: FuncionalidadeType[];
 }

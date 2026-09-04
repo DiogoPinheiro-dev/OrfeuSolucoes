@@ -2,7 +2,11 @@ import { BadRequestException } from '@nestjs/common';
 import { ProjetoMetodologia, ProjetoSaude, ProjetoSituacao } from '../types/projeto.types';
 
 const METODOLOGIAS = new Set(Object.values(ProjetoMetodologia));
-const SITUACOES_INICIAIS = new Set([ProjetoSituacao.RASCUNHO, ProjetoSituacao.PLANEJADO]);
+const SITUACOES_INICIAIS = new Set([
+  ProjetoSituacao.RASCUNHO,
+  ProjetoSituacao.EM_ORCAMENTO,
+  ProjetoSituacao.PLANEJADO
+]);
 const SAUDES = new Set(Object.values(ProjetoSaude));
 
 export function normalizeProjetoKey(chave: string): string {
@@ -35,7 +39,7 @@ export function validateProjetoDefaults(
   }
 
   if (!SITUACOES_INICIAIS.has(situacao)) {
-    throw new BadRequestException('A situacao inicial deve ser RASCUNHO ou PLANEJADO.');
+    throw new BadRequestException('A situacao inicial deve ser RASCUNHO, EM_ORCAMENTO ou PLANEJADO.');
   }
 
   if (!SAUDES.has(saude)) {

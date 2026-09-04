@@ -21,14 +21,13 @@ export class ProjetoRecursoResumoType {
 }
 
 @ObjectType()
-export class ProjetoCustoTarefaResumoType {
+export class ProjetoCustoItemResumoType {
   @Field() id!: string;
-  @Field(() => [String]) recursoIds!: string[];
-  @Field() funcionalidade!: string;
-  @Field(() => Int) estimativaMinutos!: number;
-  @Field() valorHora!: string;
-  @Field() moeda!: string;
-  @Field() ativo!: boolean;
+  @Field() chave!: string;
+  @Field() titulo!: string;
+  @Field(() => Int, { nullable: true }) estimativaMinutos?: number | null;
+  @Field(() => String, { nullable: true }) responsavelId?: string | null;
+  @Field() arquivado!: boolean;
 }
 
 @ObjectType()
@@ -57,7 +56,7 @@ export class ProjetoCustoType {
   @Field(() => ProjetoCustoTipo) tipo!: ProjetoCustoTipo;
   @Field() descricao!: string;
   @Field(() => String, { nullable: true }) recursoId?: string | null;
-  @Field(() => String, { nullable: true }) tarefaId?: string | null;
+  @Field(() => String, { nullable: true }) itemId?: string | null;
   @Field(() => Int, { nullable: true }) quantidadeMinutos?: number | null;
   @Field(() => String, { nullable: true }) taxaHora?: string | null;
   @Field() valorPlanejado!: string;
@@ -65,7 +64,7 @@ export class ProjetoCustoType {
   @Field() valorRealizado!: string;
   @Field(() => Int) versao!: number;
   @Field(() => ProjetoRecursoResumoType, { nullable: true }) recurso?: ProjetoRecursoResumoType | null;
-  @Field(() => ProjetoCustoTarefaResumoType, { nullable: true }) tarefa?: ProjetoCustoTarefaResumoType | null;
+  @Field(() => ProjetoCustoItemResumoType, { nullable: true }) item?: ProjetoCustoItemResumoType | null;
   @Field(() => [ProjetoCustoTaxaHistoricoType]) taxas!: ProjetoCustoTaxaHistoricoType[];
 }
 
@@ -94,7 +93,7 @@ export class ProjetoOrcamentoPermissoesType {
 @ObjectType()
 export class ProjetoOrcamentoPainelType {
   @Field(() => [ProjetoRecursoResumoType]) recursos!: ProjetoRecursoResumoType[];
-  @Field(() => [ProjetoCustoTarefaResumoType]) tarefas!: ProjetoCustoTarefaResumoType[];
+  @Field(() => [ProjetoCustoItemResumoType]) itens!: ProjetoCustoItemResumoType[];
   @Field(() => ProjetoFinanceiroType, { nullable: true }) financeiro?: ProjetoFinanceiroType | null;
   @Field(() => ProjetoOrcamentoPermissoesType) permissoes!: ProjetoOrcamentoPermissoesType;
 }

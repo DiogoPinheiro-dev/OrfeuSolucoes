@@ -23,11 +23,6 @@ import { ProjetoOrcamentoService } from './projeto-orcamento.service';
 import { ProjetoRecursoAuthorizationService } from './projeto-recurso-authorization.service';
 import { ProjetoRecursoResolver } from './projeto-recurso.resolver';
 import { ProjetoRecursoService } from './projeto-recurso.service';
-import { ProjetoTarefaAuthorizationService } from './projeto-tarefa-authorization.service';
-import { ProjetoTarefaResolver } from './projeto-tarefa.resolver';
-import { ProjetoTarefaService } from './projeto-tarefa.service';
-import { ProjetoPlanejamentoRecursoResolver } from './projeto-planejamento-recurso.resolver';
-import { ProjetoPlanejamentoRecursoService } from './projeto-planejamento-recurso.service';
 import { ProjetoAnexoStorageService } from './projeto-anexo-storage.service';
 import { ProjetoAuditoriaService } from './projeto-auditoria.service';
 import { ProjetoIdempotenciaService } from './projeto-idempotencia.service';
@@ -44,6 +39,10 @@ import { ProjetoItemQueryService } from './projeto-item-query.service';
 import { ProjetoQueryService } from './projeto-query.service';
 import { ProjetosResolver } from './projetos.resolver';
 import { ProjetosService } from './projetos.service';
+import { ProjetoOrganizacaoResolver } from './projeto-organizacao.resolver';
+import { ProjetoOrganizacaoService } from './projeto-organizacao.service';
+import { ProjetoEquipeVinculoService } from './projeto-equipe-vinculo.service';
+import { ProjetoRecursoHierarquiaService } from './projeto-recurso-hierarquia.service';
 
 @Module({
   imports: [PrismaModule, SolucoesModule],
@@ -62,9 +61,9 @@ import { ProjetosService } from './projetos.service';
     ProjetoComunicacaoService,
     ProjetoRecursoAuthorizationService,
     ProjetoRecursoService,
-    ProjetoTarefaAuthorizationService,
-    ProjetoTarefaService,
-    ProjetoPlanejamentoRecursoService,
+    ProjetoOrganizacaoService,
+    ProjetoEquipeVinculoService,
+    ProjetoRecursoHierarquiaService,
     ProjetoOrcamentoAuthorizationService,
     ProjetoOrcamentoService,
     ProjetoAnexoStorageService,
@@ -88,9 +87,8 @@ import { ProjetosService } from './projetos.service';
     ProjetoCronogramaResolver,
     ProjetoComunicacaoResolver,
     ProjetoRecursoResolver,
-    ProjetoTarefaResolver,
-    ProjetoPlanejamentoRecursoResolver,
     ProjetoOrcamentoResolver,
+    ProjetoOrganizacaoResolver,
   ],
   exports: [
     ProjetoAuthorizationService,
@@ -101,9 +99,6 @@ import { ProjetosService } from './projetos.service';
     ProjetoComunicacaoService,
     ProjetoRecursoAuthorizationService,
     ProjetoRecursoService,
-    ProjetoTarefaAuthorizationService,
-    ProjetoTarefaService,
-    ProjetoPlanejamentoRecursoService,
     ProjetoOrcamentoAuthorizationService,
     ProjetoOrcamentoService,
     ProjetoAuditoriaService,

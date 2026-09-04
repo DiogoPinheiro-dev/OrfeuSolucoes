@@ -11,6 +11,7 @@ const USER_SELECT = { id: true, nome: true, login: true, email: true };
 const PROJECT_SELECT = { id: true, chave: true, nome: true, arquivadoEm: true };
 const RESOURCE_INCLUDE = {
   usuario: { select: USER_SELECT },
+  capacitacao: true,
   projetos: { include: { projeto: { select: PROJECT_SELECT } }, orderBy: { criadoEm: 'asc' as const } }
 };
 
@@ -40,15 +41,14 @@ export class ProjetoRecursoService {
   async salvarRecurso(input: SalvarProjetoRecursoInput, user: JwtPayload) {
     const action = input.id ? ProjetoAcao.ALTERAR : ProjetoAcao.INCLUIR;
     const empresaId = await this.authorization.empresa(user, action);
-    const projetoIds = [...new Set(input.projetoIds)];
-    if (projetoIds.length === 0) throw new BadRequestException('Selecione pelo menos um projeto.');
     const atual = input.id ? await this.prisma.recurso.findFirst({ where: { id: input.id, empresaId }, include: { projetos: true } }) : null;
     if (input.id && !atual) throw new NotFoundException('Recurso nao encontrado.');
     if (atual && atual.usuarioId !== input.usuarioId) throw new BadRequestException('O usuario do recurso nao pode ser alterado. Cadastre outro recurso.');
-    const projetos = await this.prisma.projeto.findMany({ where: { id: { in: projetoIds }, empresaId }, select: PROJECT_SELECT });
-    if (projetos.length !== projetoIds.length) throw new NotFoundException('Um ou mais projetos nao foram encontrados.');
-    if (projetos.some((projeto) => projeto.arquivadoEm && !atual?.projetos.some((vinculo) => vinculo.projetoId === projeto.id && vinculo.ativo))) {
-      throw new BadRequestException('Projetos arquivados nao podem receber recursos.');
+    if (input.capacitacaoId && !(await this.prisma.capacitacao.findFirst({ where: { id: input.capacitacaoId, empresaId, ativo: true } }))) throw new BadRequestException('Selecione uma capacitação ativa da empresa.');
+    const legacyProjetoIds = input.projetoIds ? [...new Set(input.projetoIds)] : null;
+    if (legacyProjetoIds) {
+      const projetos = await this.prisma.projeto.findMany({ where: { id: { in: legacyProjetoIds }, empresaId }, select: PROJECT_SELECT });
+      if (projetos.length !== legacyProjetoIds.length) throw new NotFoundException('Um ou mais projetos nao foram encontrados.');
     }
     if (!atual) {
       await this.assertUsuarioElegivel(empresaId, input.usuarioId);
@@ -59,30 +59,23 @@ export class ProjetoRecursoService {
 
     const saved = await this.prisma.$transaction(async (tx) => {
       const recurso = atual
-        ? await this.updateVersioned(tx.recurso, atual.id, input.versao, { ativo: input.ativo }, 'O recurso', { empresaId })
-        : await tx.recurso.create({ data: { empresaId, usuarioId: input.usuarioId, ativo: input.ativo } });
+        ? await this.updateVersioned(tx.recurso, atual.id, input.versao, { ativo: input.ativo, capacitacaoId: input.capacitacaoId ?? null }, 'O recurso', { empresaId })
+        : await tx.recurso.create({ data: { empresaId, usuarioId: input.usuarioId, capacitacaoId: input.capacitacaoId ?? null, ativo: input.ativo } });
 
-      const vinculosAtuais = atual?.projetos ?? [];
-      const selecionados = new Set(projetoIds);
-      for (const projetoId of projetoIds) {
-        let vinculo = vinculosAtuais.find((item) => item.projetoId === projetoId) ?? null;
-        let alterado = false;
-        if (!vinculo) {
-          vinculo = await tx.projetoRecurso.create({ data: { empresaId, projetoId, recursoId: recurso.id, ativo: true } });
-          alterado = true;
-        } else if (!vinculo.ativo) {
-          vinculo = await this.updateVersioned(tx.projetoRecurso, vinculo.id, vinculo.versao, { ativo: true }, 'A alocacao do recurso', { empresaId });
-          alterado = true;
+      if (legacyProjetoIds) {
+        const vinculosAtuais = atual?.projetos ?? [];
+        for (const projetoId of legacyProjetoIds) {
+          let vinculo = vinculosAtuais.find((item) => item.projetoId === projetoId) ?? null;
+          if (!vinculo) vinculo = await tx.projetoRecurso.create({ data: { empresaId, projetoId, recursoId: recurso.id, ativo: true, vinculoDireto: true } });
+          else if (!vinculo.ativo || !vinculo.vinculoDireto) vinculo = await this.updateVersioned(tx.projetoRecurso, vinculo.id, vinculo.versao, { ativo: true, vinculoDireto: true }, 'A alocacao do recurso', { empresaId });
+          if (!vinculo) throw new NotFoundException('Alocacao do recurso nao encontrada.');
+          await this.audit(tx, empresaId, projetoId, user, 'RECURSO', recurso.id, 'ALOCADO', { projetoRecursoId: vinculo.id, usuarioId: recurso.usuarioId });
         }
-        if (!vinculo) throw new NotFoundException('Alocacao do recurso nao encontrada.');
-        if (alterado) {
-          await this.audit(tx, empresaId, projetoId, user, 'RECURSO', recurso.id, recurso.ativo ? 'ALOCADO' : 'VINCULADO', { projetoRecursoId: vinculo.id, usuarioId: recurso.usuarioId });
+        for (const vinculo of vinculosAtuais.filter((item) => item.ativo && !legacyProjetoIds.includes(item.projetoId))) {
+          const origensEquipe = await tx.projetoRecursoEquipe.count({ where: { projetoRecursoId: vinculo.id } });
+          const desativado = await this.updateVersioned(tx.projetoRecurso, vinculo.id, vinculo.versao, { ativo: origensEquipe > 0, vinculoDireto: false }, 'A alocacao do recurso', { empresaId });
+          await this.audit(tx, empresaId, vinculo.projetoId, user, 'RECURSO', recurso.id, 'DESALOCADO', { projetoRecursoId: desativado.id, usuarioId: recurso.usuarioId });
         }
-      }
-
-      for (const vinculo of vinculosAtuais.filter((item) => item.ativo && !selecionados.has(item.projetoId))) {
-        const desativado = await this.updateVersioned(tx.projetoRecurso, vinculo.id, vinculo.versao, { ativo: false }, 'A alocacao do recurso', { empresaId });
-        await this.audit(tx, empresaId, vinculo.projetoId, user, 'RECURSO', recurso.id, 'DESALOCADO', { projetoRecursoId: desativado.id, usuarioId: recurso.usuarioId });
       }
 
       const vinculosFinais = await tx.projetoRecurso.findMany({ where: { recursoId: recurso.id, empresaId } });
@@ -107,14 +100,12 @@ export class ProjetoRecursoService {
 
       const vinculos = await tx.projetoRecurso.findMany({ where: { recursoId: input.id, empresaId } });
       const vinculoIds = vinculos.map((item) => item.id);
-      const [tarefas, alocacoes, custos] = await Promise.all([
-        tx.projetoTarefaRecurso.count({ where: { recursoId: input.id, empresaId } }),
-        vinculoIds.length ? tx.projetoAlocacao.count({ where: { recursoId: { in: vinculoIds }, empresaId } }) : Promise.resolve(0),
+      const [itens, custos] = await Promise.all([
+        tx.projetoItem.count({ where: { responsavelId: recurso.usuarioId, empresaId } }),
         vinculoIds.length ? tx.projetoCusto.count({ where: { recursoId: { in: vinculoIds }, empresaId } }) : Promise.resolve(0)
       ]);
       const dependencias = [
-        tarefas ? `${tarefas} tarefa(s)` : null,
-        alocacoes ? `${alocacoes} execucao(oes)` : null,
+        itens ? `${itens} item(ns) de projeto` : null,
         custos ? `${custos} custo(s)` : null
       ].filter(Boolean);
       if (dependencias.length) {
@@ -164,6 +155,7 @@ export class ProjetoRecursoService {
       ativo: item.ativo,
       versao: item.versao,
       usuario: this.user(item.usuario),
+      capacitacao: item.capacitacao ?? null,
       projetos: (item.projetos ?? []).map((vinculo: any) => ({
         id: vinculo.id,
         projetoId: vinculo.projetoId,

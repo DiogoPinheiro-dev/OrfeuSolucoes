@@ -1,36 +1,28 @@
 import { ForbiddenException } from '@nestjs/common';
 import { ServicosService } from './servicos.service';
 
-describe('ServicosService authorization', () => {
-  function buildService() {
-    const catalog = {
-      findAll: jest.fn().mockResolvedValue([])
-    };
-    return {
-      catalog,
-      service: new ServicosService(catalog as never)
-    };
-  }
+describe('ServicosService', () => {
+  const admin = { sub: 'admin', padraoSistema: true } as never;
+  const input = { id: 1 } as never;
+  const result = { id: 1 };
+  const catalog = { create: jest.fn(), findAll: jest.fn(), update: jest.fn(), remove: jest.fn() };
+  const service = new ServicosService(catalog as never);
+  beforeEach(() => { jest.clearAllMocks(); Object.values(catalog).forEach((mock) => mock.mockReturnValue(result)); });
 
-  it('nao permite consultar o catalogo global com usuario comum', () => {
-    const { service, catalog } = buildService();
-
-    expect(() => service.findAllAsAdmin({
-      sub: 'usuario',
-      email: 'usuario@teste.com',
-      padraoSistema: false
-    })).toThrow(ForbiddenException);
-    expect(catalog.findAll).not.toHaveBeenCalled();
+  it.each([
+    ['create', 'create', [input]], ['findAll', 'findAll', []], ['update', 'update', [input]], ['remove', 'remove', [1]]
+  ] as const)('delega %s ao catálogo', (method, target, args) => {
+    expect((service[method] as never as (...values: unknown[]) => unknown)(...args)).toBe(result);
+    expect(catalog[target]).toHaveBeenCalledWith(...args);
   });
 
-  it('permite o catalogo ao administrador inicial', async () => {
-    const { service, catalog } = buildService();
-
-    await service.findAllAsAdmin({
-      sub: 'admin',
-      email: 'admin@teste.com',
-      padraoSistema: true
-    });
-    expect(catalog.findAll).toHaveBeenCalled();
+  it.each([
+    ['createAsAdmin', 'create', [input]], ['findAllAsAdmin', 'findAll', []],
+    ['updateAsAdmin', 'update', [input]], ['removeAsAdmin', 'remove', [1]]
+  ] as const)('autoriza o administrador antes de %s', (method, target, args) => {
+    expect((service[method] as never as (...values: unknown[]) => unknown)(...args, admin)).toBe(result);
+    expect(catalog[target]).toHaveBeenCalledWith(...args);
+    expect(() => (service[method] as never as (...values: unknown[]) => unknown)(...args, { padraoSistema: false }))
+      .toThrow(ForbiddenException);
   });
 });

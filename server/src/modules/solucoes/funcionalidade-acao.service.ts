@@ -12,10 +12,10 @@ import { comparableActionKey, legacyActionAllowed, normalizeActionKey, withLegac
 export class FuncionalidadeAcaoService {
   constructor(private readonly prisma: PrismaService) {}
 
-  normalizeActionInputs(acoes?: FuncionalidadeAcaoInput[]): FuncionalidadeAcaoInput[] {
+  normalizeActionInputs(acoes?: FuncionalidadeAcaoInput[], includeDefaultActions = true): FuncionalidadeAcaoInput[] {
     const byKey = new Map<string, FuncionalidadeAcaoInput>();
 
-    for (const acao of [...DEFAULT_ACTIONS, ...(acoes ?? [])]) {
+    for (const acao of [...(includeDefaultActions ? DEFAULT_ACTIONS : []), ...(acoes ?? [])]) {
       const chave = normalizeActionKey(acao.chave);
 
       if (!chave) {
@@ -30,22 +30,22 @@ export class FuncionalidadeAcaoService {
         configuracao: acao.configuracao?.trim() || null,
         ordem: acao.ordem ?? 0,
         ativo: acao.ativo ?? true,
-        acaoPadrao: acao.acaoPadrao ?? DEFAULT_ACTIONS.some((item) => item.chave === chave)
+        acaoPadrao: acao.acaoPadrao ?? (includeDefaultActions && DEFAULT_ACTIONS.some((item) => item.chave === chave))
       });
     }
 
     return [...byKey.values()];
   }
 
-  async syncFuncionalidadeAcoes(funcionalidadeId: number, acoes?: FuncionalidadeAcaoInput[], options: { preserveAdditionalActions?: boolean } = {}): Promise<void> {
-    const normalized = this.normalizeActionInputs(acoes);
+  async syncFuncionalidadeAcoes(funcionalidadeId: number, acoes?: FuncionalidadeAcaoInput[], options: { preserveAdditionalActions?: boolean; includeDefaultActions?: boolean } = {}): Promise<void> {
+    const normalized = this.normalizeActionInputs(acoes, options.includeDefaultActions ?? true);
     const submittedIds = normalized.map((acao) => acao.id).filter((id): id is number => !!id);
     const submittedKeys = normalized.map((acao) => acao.chave).filter(Boolean);
     const submittedConfigs = normalized.map((acao) => acao.configuracao).filter((configuracao): configuracao is string => !!configuracao);
     const existingActions = (await (this.prisma as never as { funcionalidadeAcao: { findMany: Function } }).funcionalidadeAcao.findMany({
       where: { funcionalidadeId },
-      select: { id: true, chave: true, configuracao: true }
-    })) as Pick<FuncionalidadeAcaoRecord, 'id' | 'chave' | 'configuracao'>[];
+      select: { id: true, chave: true, configuracao: true, statusPublicacao: true }
+    })) as Pick<FuncionalidadeAcaoRecord, 'id' | 'chave' | 'configuracao' | 'statusPublicacao'>[];
 
     for (const acao of normalized) {
       const data = {
@@ -58,8 +58,16 @@ export class FuncionalidadeAcaoService {
         acaoPadrao: acao.acaoPadrao ?? false,
         configuracao: acao.configuracao ?? null
       };
+      const createData = {
+        ...data,
+        statusPublicacao: (acao.acaoPadrao || (options.includeDefaultActions ?? true)) ? 'PUBLICADA' : 'RASCUNHO',
+        consumerKey: acao.configuracao ?? acao.chave,
+        consumerVersion: 1
+      };
 
       if (acao.id) {
+        const existingAction = existingActions.find((item) => item.id === acao.id);
+        if (existingAction?.statusPublicacao !== 'RASCUNHO') continue;
         await (this.prisma as never as { funcionalidadeAcao: { update: Function } }).funcionalidadeAcao.update({
           where: { id: acao.id },
           data
@@ -75,6 +83,7 @@ export class FuncionalidadeAcaoService {
         );
 
         if (existingAction) {
+          if (existingAction.statusPublicacao !== 'RASCUNHO') continue;
           await (this.prisma as never as { funcionalidadeAcao: { update: Function } }).funcionalidadeAcao.update({
             where: { id: existingAction.id },
             data
@@ -83,14 +92,14 @@ export class FuncionalidadeAcaoService {
           await (this.prisma as never as { funcionalidadeAcao: { upsert: Function } }).funcionalidadeAcao.upsert({
             where: { funcionalidadeId_chave: { funcionalidadeId, chave: acao.chave } },
             update: data,
-            create: data
+            create: createData
           });
         }
       }
     }
 
     if (!options.preserveAdditionalActions) {
-      await (this.prisma as never as { funcionalidadeAcao: { deleteMany: Function } }).funcionalidadeAcao.deleteMany({
+      await (this.prisma as never as { funcionalidadeAcao: { updateMany: Function } }).funcionalidadeAcao.updateMany({
         where: {
           funcionalidadeId,
           acaoPadrao: false,
@@ -99,7 +108,8 @@ export class FuncionalidadeAcaoService {
             ...(submittedKeys.length ? [{ chave: { in: submittedKeys } }] : []),
             ...(submittedConfigs.length ? [{ configuracao: { in: submittedConfigs } }] : [])
           ]
-        }
+        },
+        data: { ativo: false, statusPublicacao: 'DESPUBLICADA' }
       });
     }
 
@@ -113,8 +123,8 @@ export class FuncionalidadeAcaoService {
 
     const existingActions = (await (this.prisma as never as { funcionalidadeAcao: { findMany: Function } }).funcionalidadeAcao.findMany({
       where: { funcionalidadeId },
-      select: { id: true, chave: true, configuracao: true }
-    })) as Pick<FuncionalidadeAcaoRecord, 'id' | 'chave' | 'configuracao'>[];
+      select: { id: true, chave: true, configuracao: true, statusPublicacao: true }
+    })) as Pick<FuncionalidadeAcaoRecord, 'id' | 'chave' | 'configuracao' | 'statusPublicacao'>[];
     const actionsToCreate: Array<{
       chave: string;
       nome: string;
@@ -126,16 +136,23 @@ export class FuncionalidadeAcaoService {
     }> = [];
 
     for (const acao of acoes) {
-      if (acao.id) {
-        throw new FormFieldBadRequestException('acoes', 'Em funcionalidades padrao, somente novas acoes podem ser adicionadas.');
-      }
-
       const chave = normalizeActionKey(acao.chave || acao.nome);
       const nome = acao.nome.trim();
       const configuracao = acao.configuracao?.trim() || null;
 
       if (!chave || !nome) {
         throw new FormFieldBadRequestException('acoes', 'Informe o nome e o identificador da nova acao.');
+      }
+
+      if (acao.id) {
+        const existing = existingActions.find((item) => item.id === acao.id);
+        if (!existing) throw new FormFieldBadRequestException('acoes', 'A acao informada nao pertence a esta funcionalidade.');
+        if (existing.statusPublicacao !== 'RASCUNHO') throw new FormFieldBadRequestException('acoes', 'Use um rascunho versionado para alterar uma acao publicada.');
+        await (this.prisma as never as { funcionalidadeAcao: { update: Function } }).funcionalidadeAcao.update({
+          where: { id: acao.id },
+          data: { nome, descricao: acao.descricao?.trim() || null, ordem: acao.ordem ?? 0, ativo: acao.ativo ?? true, configuracao }
+        });
+        continue;
       }
 
       const comparableKey = comparableActionKey(chave);
@@ -160,12 +177,12 @@ export class FuncionalidadeAcaoService {
         acaoPadrao: false,
         configuracao
       });
-      existingActions.push({ id: 0, chave, configuracao });
+      existingActions.push({ id: 0, chave, configuracao, statusPublicacao: 'RASCUNHO' });
     }
 
     for (const acao of actionsToCreate) {
       await (this.prisma as never as { funcionalidadeAcao: { create: Function } }).funcionalidadeAcao.create({
-        data: { funcionalidadeId, ...acao }
+        data: { funcionalidadeId, ...acao, statusPublicacao: 'RASCUNHO', consumerKey: acao.configuracao ?? acao.chave, consumerVersion: 1 }
       });
     }
 
@@ -179,7 +196,7 @@ export class FuncionalidadeAcaoService {
     database: PrismaService | Prisma.TransactionClient = this.prisma
   ): Promise<void> {
     const acoes = (await (database as never as { funcionalidadeAcao: { findMany: Function } }).funcionalidadeAcao.findMany({
-      where: { funcionalidadeId: { in: funcionalidadeIds }, ativo: true },
+      where: { funcionalidadeId: { in: funcionalidadeIds }, ativo: true, statusPublicacao: 'PUBLICADA' },
       select: { id: true, funcionalidadeId: true, chave: true }
     })) as Pick<FuncionalidadeAcaoRecord, 'id' | 'funcionalidadeId' | 'chave'>[];
 
@@ -211,7 +228,7 @@ export class FuncionalidadeAcaoService {
     });
   }
 
-  async syncMissingActionPermissionsForFeature(funcionalidadeId: number): Promise<void> {
+  async syncMissingActionPermissionsForFeature(funcionalidadeId: number, useLegacyDefaults = false): Promise<void> {
     const [grupos, acoes, existing] = await Promise.all([
       (this.prisma as never as { grupoFuncionalidade: { findMany: Function } }).grupoFuncionalidade.findMany({
         where: { funcionalidadeId },
@@ -224,7 +241,7 @@ export class FuncionalidadeAcaoService {
         }
       }),
       (this.prisma as never as { funcionalidadeAcao: { findMany: Function } }).funcionalidadeAcao.findMany({
-        where: { funcionalidadeId, ativo: true },
+        where: { funcionalidadeId, ativo: true, statusPublicacao: 'PUBLICADA' },
         select: { id: true, chave: true }
       }),
       (this.prisma as never as { grupoFuncionalidadeAcao: { findMany: Function } }).grupoFuncionalidadeAcao.findMany({
@@ -239,13 +256,13 @@ export class FuncionalidadeAcaoService {
         .map((acao) => ({
           grupoId: grupo.grupoId,
           funcionalidadeAcaoId: acao.id,
-          permitido: legacyActionAllowed(acao.chave, withLegacyPermissions({
+          permitido: useLegacyDefaults ? legacyActionAllowed(acao.chave, withLegacyPermissions({
             funcionalidadeId,
             podeVisualizar: grupo.podeVisualizar ?? true,
             podeIncluir: grupo.podeIncluir ?? false,
             podeAlterar: grupo.podeAlterar ?? false,
             podeExcluir: grupo.podeExcluir ?? false
-          }))
+          })) : false
         }))
     );
 

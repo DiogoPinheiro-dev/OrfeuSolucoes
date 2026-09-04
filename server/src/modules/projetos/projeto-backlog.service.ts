@@ -22,7 +22,7 @@ import { toProjetoUsuarioType } from './mappers/projeto.mapper';
 import { ProjetoAuditoriaService } from './projeto-auditoria.service';
 import { ProjetoAuthorizationService } from './projeto-authorization.service';
 import { ProjetoItemAuthorizationService } from './projeto-item-authorization.service';
-import { ProjetoPapel, ProjetoUsuarioRecord } from './types/projeto.types';
+import { ProjetoSituacao } from './types/projeto.types';
 
 type ProjetoItemHierarquiaRecord = {
   id: string;
@@ -55,6 +55,7 @@ export class ProjetoBacklogService {
     return this.prisma.projeto.findMany({
       where: {
         empresaId,
+        situacao: ProjetoSituacao.RASCUNHO,
         ...this.projectAuthorization.visibilityWhere(user),
         ...(!incluirArquivados ? { arquivadoEm: null } : {})
       },
@@ -76,15 +77,24 @@ export class ProjetoBacklogService {
       projetoId,
       user
     );
-    const usuarios = [
-      contexto.projeto.responsavel,
-      ...contexto.projeto.membros
-        .filter((membro) => membro.papel === ProjetoPapel.MEMBRO)
-        .map((membro) => membro.usuario)
-    ];
-    const unique = new Map<string, ProjetoUsuarioRecord>();
-
-    for (const usuario of usuarios) unique.set(usuario.id, usuario);
+    const escopo = await this.itemAuthorization.escopoHierarquico(
+      user,
+      contexto
+    );
+    const vinculos = await this.prisma.projetoRecurso.findMany({
+      where: {
+        empresaId: contexto.empresaId,
+        projetoId: contexto.projeto.id,
+        ativo: true,
+        cadastro: { ativo: true },
+        ...this.itemAuthorization.filtroProjetoRecurso(escopo)
+      },
+      include: { cadastro: { include: { usuario: true } } }
+    });
+    const unique = new Map(vinculos.map((vinculo) => [
+      vinculo.cadastro.usuario.id,
+      vinculo.cadastro.usuario
+    ]));
 
     return [...unique.values()]
       .sort((a, b) =>
@@ -104,10 +114,15 @@ export class ProjetoBacklogService {
       projetoId,
       user
     );
+    const escopo = await this.itemAuthorization.escopoHierarquico(
+      user,
+      contexto
+    );
     const itens = await this.prisma.projetoItem.findMany({
       where: {
         empresaId: contexto.empresaId,
-        projetoId: contexto.projeto.id
+        projetoId: contexto.projeto.id,
+        ...this.itemAuthorization.filtroVisibilidade(escopo)
       },
       select: {
         id: true,

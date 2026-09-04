@@ -16,6 +16,11 @@ export function toFuncionalidadeType(funcionalidade: FuncionalidadeRecord): Func
     registryKey: funcionalidade.registryKey ?? null,
     somenteAdminSistema: funcionalidade.somenteAdminSistema,
     padraoSistema: funcionalidade.padraoSistema,
+    chaveTecnica: funcionalidade.chaveTecnica ?? funcionalidade.registryKey ?? `${funcionalidade.solucaoId}.${funcionalidade.slug}`,
+    providerKey: funcionalidade.providerKey ?? null,
+    providerVersion: funcionalidade.providerVersion ?? null,
+    statusPublicacao: funcionalidade.statusPublicacao ?? 'PUBLICADA',
+    revisaoCatalogo: funcionalidade.revisaoCatalogo ?? 1,
     podeVisualizar: funcionalidade.podeVisualizar ?? true,
     podeIncluir: funcionalidade.podeIncluir ?? false,
     podeAlterar: funcionalidade.podeAlterar ?? false,
@@ -35,6 +40,7 @@ export function toFuncionalidadeAcaoType(acao: FuncionalidadeAcaoRecord): Funcio
     ativo: acao.ativo,
     acaoPadrao: acao.acaoPadrao,
     configuracao: acao.configuracao ?? null,
+    statusPublicacao: acao.statusPublicacao ?? 'PUBLICADA',
     permitido: acao.permitido ?? false
   };
 }

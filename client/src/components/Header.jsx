@@ -258,10 +258,10 @@ export default function Header() {
                 <button
                     className="mobile-toggle"
                     aria-expanded={open}
-                    aria-label="Abrir menu"
+                    aria-label={open ? "Fechar menu" : "Abrir menu"}
                     onClick={() => setOpen((isOpen) => !isOpen)}
                 >
-                    <span className="hamburger">&#9776;</span>
+                    <span className="hamburger" aria-hidden="true">{open ? "×" : "☰"}</span>
                 </button>
 
                 <ul className={`nav-links list-unstyled mb-0 ${open ? "open" : ""}`}>

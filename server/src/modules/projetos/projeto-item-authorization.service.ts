@@ -6,6 +6,10 @@ import { ProjetoAcao, ProjetoFuncionalidade } from './constants/projeto-operacio
 import { resolveMeuPapel } from './mappers/projeto.mapper';
 import { ProjetoAuthorizationService } from './projeto-authorization.service';
 import {
+  ProjetoRecursoEscopoHierarquico,
+  ProjetoRecursoHierarquiaService
+} from './projeto-recurso-hierarquia.service';
+import {
   ProjetoItemContexto,
   ProjetoItemPermissoesEfetivas
 } from './types/projeto-item.types';
@@ -22,7 +26,8 @@ const PROJECT_INCLUDE = {
 export class ProjetoItemAuthorizationService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly authorization: ProjetoAuthorizationService
+    private readonly authorization: ProjetoAuthorizationService,
+    private readonly recursoHierarquia: ProjetoRecursoHierarquiaService
   ) {}
 
   async assertReadContext(
@@ -111,12 +116,19 @@ export class ProjetoItemAuthorizationService {
     projetoId: string,
     user: JwtPayload
   ): Promise<ProjetoItemContexto> {
-    return this.assertMutationContext(
+    const contexto = await this.assertMutationContext(
       projetoId,
       user,
       ProjetoAcao.PRIORIZAR,
       'priorizar o backlog'
     );
+    const escopo = await this.escopoHierarquico(user, contexto);
+    if (escopo.restrito) {
+      throw new ForbiddenException(
+        'Somente usuários com visão completa do projeto podem priorizar o backlog.'
+      );
+    }
+    return contexto;
   }
 
   async assertResponsavelElegivel(
@@ -126,29 +138,54 @@ export class ProjetoItemAuthorizationService {
   ): Promise<void> {
     if (!responsavelId) return;
 
-    const papel = responsavelId === contexto.projeto.responsavelId
-      ? ProjetoPapel.RESPONSAVEL
-      : contexto.projeto.membros.find(
-          (item) => item.usuarioId === responsavelId
-        )?.papel;
-    const vinculo = await tx.empresaUsuario.findUnique({
+    const recurso = await tx.projetoRecurso.findFirst({
       where: {
-        empresaId_usuarioId: {
-          empresaId: contexto.empresaId,
-          usuarioId: responsavelId
-        }
+        empresaId: contexto.empresaId,
+        projetoId: contexto.projeto.id,
+        ativo: true,
+        cadastro: { usuarioId: responsavelId, ativo: true }
       },
       select: { id: true }
     });
 
-    if (
-      !vinculo ||
-      (papel !== ProjetoPapel.RESPONSAVEL && papel !== ProjetoPapel.MEMBRO)
-    ) {
+    if (!recurso) {
       throw new ForbiddenException(
-        'O responsavel do item deve pertencer a empresa e a equipe executora do projeto.'
+        'O responsável do item deve ser um recurso ativo vinculado ao projeto.'
       );
     }
+  }
+
+  async escopoHierarquico(
+    user: JwtPayload,
+    contexto: ProjetoItemContexto
+  ): Promise<ProjetoRecursoEscopoHierarquico> {
+    return this.recursoHierarquia.escopo(
+      user,
+      contexto.empresaId,
+      contexto.projeto.id
+    );
+  }
+
+  filtroVisibilidade(
+    escopo: ProjetoRecursoEscopoHierarquico
+  ): Prisma.ProjetoItemWhereInput {
+    return this.recursoHierarquia.filtroProjetoItem(escopo);
+  }
+
+  filtroProjetoRecurso(
+    escopo: ProjetoRecursoEscopoHierarquico
+  ): Prisma.ProjetoRecursoWhereInput {
+    return this.recursoHierarquia.filtroProjetoRecurso(escopo);
+  }
+
+  assertResponsavelVisivel(
+    escopo: ProjetoRecursoEscopoHierarquico,
+    responsavelId?: string | null
+  ): void {
+    this.recursoHierarquia.assertPodeAcessarResponsavel(
+      escopo,
+      responsavelId
+    );
   }
 
   async effectivePermissions(
@@ -177,13 +214,15 @@ export class ProjetoItemAuthorizationService {
       podeAlterar,
       podeAlterarStatus,
       podeArquivar,
-      podePriorizar
+      podePriorizar,
+      escopo
     ] = await Promise.all([
       this.can(user, ProjetoAcao.INCLUIR),
       this.can(user, ProjetoAcao.ALTERAR),
       this.can(user, ProjetoAcao.ALTERAR_STATUS),
       this.can(user, ProjetoAcao.EXCLUIR),
-      this.can(user, ProjetoAcao.PRIORIZAR)
+      this.can(user, ProjetoAcao.PRIORIZAR),
+      this.escopoHierarquico(user, contexto)
     ]);
 
     return {
@@ -194,7 +233,8 @@ export class ProjetoItemAuthorizationService {
         podeExecutar && podeAlterarStatus && !somenteLeitura,
       podeArquivar: podeExecutar && podeArquivar && !somenteLeitura,
       podeReativar: podeExecutar && podeAlterar && !somenteLeitura,
-      podePriorizar: podeExecutar && podePriorizar && !somenteLeitura
+      podePriorizar:
+        podeExecutar && podePriorizar && !escopo.restrito && !somenteLeitura
     };
   }
 

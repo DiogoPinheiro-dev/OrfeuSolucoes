@@ -116,14 +116,20 @@ describe("Cadastro de projetos", () => {
         await user.type(within(dialog).getByRole("textbox", { name: /Nome/ }), "Novo Projeto");
         await user.click(within(dialog).getByRole("button", { name: "Sugerir" }));
         await waitFor(() => expect(sugerirChaveProjeto).toHaveBeenCalledWith("Novo Projeto"));
+        await user.click(within(dialog).getByRole("tab", { name: "Planejamento" }));
+        await user.selectOptions(within(dialog).getByRole("combobox", { name: "Status inicial" }), "EM_ORCAMENTO");
+        await user.type(within(dialog).getByLabelText(/Início previsto/), "2026-09-02");
+        await user.type(within(dialog).getByLabelText(/Término previsto/), "2026-11-02");
         await user.click(within(dialog).getByRole("button", { name: "Salvar" }));
 
         await waitFor(() => expect(createProjeto).toHaveBeenCalledWith(expect.objectContaining({
             chave: "ORF",
             nome: "Novo Projeto",
             metodologia: "SCRUM",
-            situacao: "RASCUNHO",
-            saude: "EM_DIA"
+            situacao: "EM_ORCAMENTO",
+            saude: "EM_DIA",
+            inicioPrevistoEm: "2026-09-02",
+            fimPrevistoEm: "2026-11-02"
         })));
         expect(await screen.findByRole("status")).toHaveTextContent("Projeto criado com sucesso.");
     });
@@ -143,6 +149,7 @@ describe("Cadastro de projetos", () => {
     it("confirma arquivamento e permite alterar o ciclo autorizado", async () => {
         const user = userEvent.setup();
         render(<ProjectManagement permissions={permissions} />);
+        expect(await screen.findByRole("option", { name: "Em orçamento" })).toBeInTheDocument();
         await user.click(await screen.findByRole("cell", { name: "Orfeu Evolucao" }));
 
         await user.click(screen.getByRole("button", { name: "Alterar ciclo" }));

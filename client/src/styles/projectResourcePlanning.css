@@ -382,35 +382,6 @@
   font-size: 1.2rem;
 }
 
-.resource-planning-view-tabs {
-  display: flex;
-  gap: 6px;
-  padding: 0 18px;
-  border-bottom: 1px solid var(--line);
-}
-
-.resource-planning-view-tabs button {
-  padding: 12px 18px;
-  border: 0;
-  border-bottom: 3px solid transparent;
-  background: transparent;
-  color: var(--muted);
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.resource-planning-view-tabs button:hover,
-.resource-planning-view-tabs button:focus-visible {
-  color: var(--primary);
-  outline: 0;
-}
-
-.resource-planning-view-tabs button.active {
-  border-bottom-color: var(--button-primary-border);
-  color: var(--primary);
-}
-
 .resource-planning-task-risk {
   display: inline-flex;
   align-items: center;
@@ -435,15 +406,6 @@
 
     .resource-planning-task-form {
     padding: 16px;
-  }
-
-  .resource-planning-view-tabs {
-    overflow-x: auto;
-    padding: 0;
-  }
-
-  .resource-planning-view-tabs button {
-    flex: 1 0 max-content;
   }
 
   .resource-planning-section-heading {

@@ -41,7 +41,8 @@ export class SolucaoCatalogService {
         ordem: input.ordem ?? 0,
         ativo: input.ativo ?? true,
         exibirNoHub: input.exibirNoHub ?? true,
-        somenteAdminSistema: input.somenteAdminSistema ?? false
+        somenteAdminSistema: input.somenteAdminSistema ?? false,
+        statusPublicacao: 'RASCUNHO'
       },
       include: { funcionalidades: { include: { acoes: { orderBy: [{ ordem: 'asc' }, { nome: 'asc' }] } } } }
     })) as SolucaoRecord;
@@ -52,16 +53,9 @@ export class SolucaoCatalogService {
   async update(input: UpdateSolucaoInput): Promise<SolucaoType> {
     const current = await this.ensureSolucao(input.id);
 
-    const hasProtectedStandardSolutionChanges = input.slug !== undefined ||
-      input.nome !== undefined ||
-      input.descricao !== undefined ||
-      input.eyebrow !== undefined ||
-      input.ativo !== undefined ||
-      input.exibirNoHub !== undefined ||
-      input.somenteAdminSistema !== undefined;
-
-    if (current.padraoSistema && hasProtectedStandardSolutionChanges) {
-      throw new BadRequestException('Os dados cadastrais de uma solucao padrao do sistema nao podem ser alterados.');
+    const orderOnly = input.ordem !== undefined && Object.keys(input).every((key) => key === 'id' || key === 'ordem');
+    if (current.statusPublicacao !== 'RASCUNHO' && !orderOnly) {
+      throw new BadRequestException('Crie e publique um rascunho versionado para alterar uma solucao publicada.');
     }
 
     if (input.slug !== undefined) {
@@ -97,6 +91,9 @@ export class SolucaoCatalogService {
     if (solucao.padraoSistema) {
       throw new BadRequestException('Uma solucao padrao do sistema nao pode ser excluida.');
     }
+    if (solucao.statusPublicacao !== 'RASCUNHO') {
+      throw new BadRequestException('Somente uma solucao customizada nunca publicada pode ser excluida. Despublique itens publicados.');
+    }
     await (this.prisma as never as { solucao: { delete: Function } }).solucao.delete({ where: { id } });
     return true;
   }
@@ -114,12 +111,14 @@ export class SolucaoCatalogService {
         ordem: input.ordem ?? 0,
         ativo: input.ativo ?? true,
         registryKey: input.registryKey?.trim() || null,
-        somenteAdminSistema: input.somenteAdminSistema ?? false
+        somenteAdminSistema: input.somenteAdminSistema ?? false,
+        statusPublicacao: 'RASCUNHO',
+        providerKey: input.providerKey?.trim() || input.registryKey?.trim() || null,
+        providerVersion: input.providerVersion ?? ((input.providerKey?.trim() || input.registryKey?.trim()) ? 1 : null)
       }
     })) as FuncionalidadeRecord;
 
-    await this.funcionalidadeAcaoService.syncFuncionalidadeAcoes(created.id, input.acoes);
-    await this.solucaoAcessoService.syncNewFuncionalidadeAccess(created);
+    await this.funcionalidadeAcaoService.syncFuncionalidadeAcoes(created.id, input.acoes, { includeDefaultActions: false });
 
     return toFuncionalidadeType(await this.findFuncionalidadeRecord(created.id));
   }
@@ -127,27 +126,17 @@ export class SolucaoCatalogService {
   async updateFuncionalidade(input: UpdateFuncionalidadeInput): Promise<FuncionalidadeType> {
     const existing = await this.ensureFuncionalidade(input.id);
 
-    if (existing.padraoSistema) {
-      const hasCadastralChanges = input.solucaoId !== undefined ||
-        input.slug !== undefined ||
-        input.titulo !== undefined ||
-        input.label !== undefined ||
-        input.descricao !== undefined ||
-        input.ativo !== undefined ||
-        input.registryKey !== undefined ||
+    if (existing.statusPublicacao !== 'RASCUNHO') {
+      const orderOnly = input.ordem !== undefined && Object.keys(input).every((key) => key === 'id' || key === 'ordem');
+      if (orderOnly) {
+        await (this.prisma as never as { funcionalidade: { update: Function } }).funcionalidade.update({ where: { id: input.id }, data: { ordem: input.ordem } });
+        return toFuncionalidadeType(await this.findFuncionalidadeRecord(input.id));
+      }
+      const hasCadastralChanges = input.solucaoId !== undefined || input.slug !== undefined || input.titulo !== undefined ||
+        input.label !== undefined || input.descricao !== undefined || input.ativo !== undefined ||
+        input.registryKey !== undefined || input.providerKey !== undefined || input.providerVersion !== undefined ||
         input.somenteAdminSistema !== undefined;
-
-      if (hasCadastralChanges) {
-        throw new BadRequestException('Os dados cadastrais de uma funcionalidade padrao do sistema nao podem ser alterados.');
-      }
-
-      if (input.ordem !== undefined) {
-        await (this.prisma as never as { funcionalidade: { update: Function } }).funcionalidade.update({
-          where: { id: input.id },
-          data: { ordem: input.ordem }
-        });
-      }
-
+      if (hasCadastralChanges) throw new BadRequestException('Crie e publique um rascunho versionado para alterar uma funcionalidade publicada.');
       await this.funcionalidadeAcaoService.appendFuncionalidadeAcoes(input.id, input.acoes ?? []);
       return toFuncionalidadeType(await this.findFuncionalidadeRecord(input.id));
     }
@@ -167,16 +156,14 @@ export class SolucaoCatalogService {
         ...(input.ordem !== undefined ? { ordem: input.ordem } : {}),
         ...(input.ativo !== undefined ? { ativo: input.ativo } : {}),
         ...(input.registryKey !== undefined ? { registryKey: input.registryKey?.trim() || null } : {}),
+        ...(input.providerKey !== undefined ? { providerKey: input.providerKey?.trim() || null } : {}),
+        ...(input.providerVersion !== undefined ? { providerVersion: input.providerVersion } : {}),
         ...(input.somenteAdminSistema !== undefined ? { somenteAdminSistema: input.somenteAdminSistema } : {})
       }
     })) as FuncionalidadeRecord;
 
     if (input.acoes !== undefined) {
-      await this.funcionalidadeAcaoService.syncFuncionalidadeAcoes(input.id, input.acoes);
-    }
-
-    if (input.solucaoId !== undefined) {
-      await this.solucaoAcessoService.resyncFuncionalidadeAccess(updated);
+      await this.funcionalidadeAcaoService.syncFuncionalidadeAcoes(input.id, input.acoes, { includeDefaultActions: false });
     }
 
     return toFuncionalidadeType(await this.findFuncionalidadeRecord(input.id));
@@ -187,6 +174,9 @@ export class SolucaoCatalogService {
 
     if (funcionalidade.padraoSistema) {
       throw new BadRequestException('Uma funcionalidade padrao do sistema nao pode ser excluida.');
+    }
+    if (funcionalidade.statusPublicacao !== 'RASCUNHO') {
+      throw new BadRequestException('Somente uma funcionalidade customizada nunca publicada pode ser excluida. Despublique itens publicados.');
     }
 
     await (this.prisma as never as { funcionalidade: { delete: Function } }).funcionalidade.delete({ where: { id } });

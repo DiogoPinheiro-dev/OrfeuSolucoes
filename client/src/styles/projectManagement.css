@@ -789,3 +789,9 @@
   font-weight: 700;
   white-space: nowrap;
 }
+
+.project-management .status-em_orcamento {
+  border-color: color-mix(in srgb, var(--warning-text) 18%, var(--line));
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}

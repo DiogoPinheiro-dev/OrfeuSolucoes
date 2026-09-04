@@ -9,6 +9,17 @@ import { getEmpresas as getAuthEmpresas } from "../../../services/Auth/AuthServi
 import { createEmpresa, deleteEmpresa, getEmpresas, updateEmpresa } from "../../../services/Empresas/EmpresaService";
 import { createGrupoUsuario, deleteGrupoUsuario, getGruposUsuarios, updateGrupoUsuario } from "../../../services/GruposUsuarios/GrupoUsuarioService";
 import { createFuncionalidade, createSolucao, deleteFuncionalidade, deleteSolucao, getSolucoes, updateFuncionalidade, updateSolucao } from "../../../services/Solucoes/SolucaoService";
+import {
+    createActionDraft,
+    createFeatureDraft,
+    getActionDraft,
+    getCatalogProviders,
+    getFeatureDraft,
+    publishActionDraft,
+    publishFeatureDraft,
+    validateActionDraft,
+    validateFeatureDraft
+} from "../../../services/Solucoes/CatalogoService";
 import { createUser, deleteUser, getUsers, updateUser } from "../../../services/Users/UserService";
 import CompanyManagement from "../../components/CompanyManagement";
 import FeatureManagement from "../../components/FeatureManagement";
@@ -27,6 +38,11 @@ vi.mock("../../../services/GruposUsuarios/GrupoUsuarioService", () => ({
 vi.mock("../../../services/Solucoes/SolucaoService", () => ({
     createFuncionalidade: vi.fn(), createSolucao: vi.fn(), deleteFuncionalidade: vi.fn(), deleteSolucao: vi.fn(),
     getSolucoes: vi.fn(), updateFuncionalidade: vi.fn(), updateSolucao: vi.fn()
+}));
+vi.mock("../../../services/Solucoes/CatalogoService", () => ({
+    createActionDraft: vi.fn(), createFeatureDraft: vi.fn(), getActionDraft: vi.fn(), getCatalogProviders: vi.fn(),
+    getFeatureDraft: vi.fn(), publishActionDraft: vi.fn(), publishFeatureDraft: vi.fn(),
+    validateActionDraft: vi.fn(), validateFeatureDraft: vi.fn()
 }));
 vi.mock("../../../services/Users/UserService", () => ({
     createUser: vi.fn(), deleteUser: vi.fn(), getUsers: vi.fn(), updateUser: vi.fn()
@@ -58,6 +74,9 @@ const solution = {
         titulo: "Usuários",
         label: "Usuários",
         registryKey: "configurador.cadastro-de-usuarios",
+        providerKey: "configurador.cadastro-de-usuarios",
+        providerVersion: 1,
+        statusPublicacao: "PUBLICADA",
         ordem: 1,
         ativo: true,
         padraoSistema: true,
@@ -68,6 +87,9 @@ const solution = {
         titulo: "Rotina customizada",
         label: "Rotina customizada",
         registryKey: "configurador.rotina-customizada",
+        providerKey: "configurador.cadastro-de-usuarios",
+        providerVersion: 1,
+        statusPublicacao: "RASCUNHO",
         ordem: 2,
         ativo: false,
         padraoSistema: false,
@@ -158,6 +180,18 @@ beforeEach(() => {
     getEmpresas.mockResolvedValue([company, systemCompany]);
     getGruposUsuarios.mockResolvedValue([group, customGroup]);
     getSolucoes.mockResolvedValue([solution, standardSolution]);
+    getCatalogProviders.mockResolvedValue([
+        { key: "configurador.cadastro-de-usuarios", version: 1 },
+        { key: "projetos.backlog-de-demandas", version: 1 }
+    ]);
+    getFeatureDraft.mockResolvedValue(null);
+    getActionDraft.mockResolvedValue(null);
+    createFeatureDraft.mockResolvedValue({ id: "feature-draft", revisao: 1 });
+    createActionDraft.mockResolvedValue({ id: "action-draft", revisao: 1 });
+    validateFeatureDraft.mockResolvedValue([]);
+    validateActionDraft.mockResolvedValue([]);
+    publishFeatureDraft.mockResolvedValue({ id: "feature-draft", estado: "PUBLICADA" });
+    publishActionDraft.mockResolvedValue({ id: "action-draft", estado: "PUBLICADA" });
     getUsers.mockResolvedValue([registeredUser, systemUser]);
     createEmpresa.mockResolvedValue(company);
     updateEmpresa.mockResolvedValue(company);
@@ -478,8 +512,15 @@ describe("CRUDs do Configurador", () => {
         await user.click(screen.getByRole("option", { name: "Configurador" }));
         await user.type(screen.getByRole("textbox", { name: /T.tulo/ }), "Nova rotina");
         await user.type(screen.getByRole("textbox", { name: "Identificador" }), "nova-rotina");
+        await user.click(screen.getByRole("button", { name: "Selecionar implementação da funcionalidade" }));
+        await user.click(screen.getByRole("option", { name: "configurador.cadastro-de-usuarios" }));
         await user.click(screen.getByRole("button", { name: "Salvar" }));
-        await waitFor(() => expect(createFuncionalidade).toHaveBeenCalledWith(expect.objectContaining({ titulo: "Nova rotina", slug: "nova-rotina" })));
+        await waitFor(() => expect(createFuncionalidade).toHaveBeenCalledWith(expect.objectContaining({
+            titulo: "Nova rotina",
+            slug: "nova-rotina",
+            providerKey: "configurador.cadastro-de-usuarios",
+            providerVersion: 1
+        })));
         await waitFor(() => expect(getSolucoes).toHaveBeenCalledTimes(initialLoadCount + 1));
 
         await user.click(screen.getByRole("cell", { name: "Rotina customizada" }));
@@ -497,6 +538,37 @@ describe("CRUDs do Configurador", () => {
         await waitFor(() => expect(deleteFuncionalidade).toHaveBeenCalledWith(12));
         await waitFor(() => expect(getSolucoes).toHaveBeenCalledTimes(initialLoadCount + 3));
     }, 15000);
+
+    it("publica ações validadas antes da funcionalidade e reaproveita rascunhos existentes", async () => {
+        const user = userEvent.setup();
+        const featureWithAction = {
+            ...solution,
+            funcionalidades: solution.funcionalidades.map((feature) => feature.id !== 12 ? feature : {
+                ...feature,
+                acoes: [{ id: 21, chave: "visualizar", nome: "Visualizar", ativo: true, statusPublicacao: "RASCUNHO" }]
+            })
+        };
+        getSolucoes.mockResolvedValue([featureWithAction, standardSolution]);
+        getFeatureDraft.mockResolvedValue({ id: "feature-existing-draft", revisao: 3 });
+        getActionDraft.mockResolvedValue({ id: "action-existing-draft", revisao: 2 });
+
+        render(<FeatureManagement permissions={permissions} />);
+        await user.click(await screen.findByRole("cell", { name: "Rotina customizada" }));
+        await user.click(screen.getByRole("button", { name: "Publicar" }));
+        await user.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Publicar" }));
+
+        await waitFor(() => expect(publishFeatureDraft).toHaveBeenCalledWith(expect.objectContaining({
+            versionId: "feature-existing-draft",
+            expectedRevision: 3
+        })));
+        expect(createFeatureDraft).not.toHaveBeenCalled();
+        expect(createActionDraft).not.toHaveBeenCalled();
+        expect(publishActionDraft).toHaveBeenCalledWith(expect.objectContaining({
+            versionId: "action-existing-draft",
+            expectedRevision: 2
+        }));
+        expect(publishActionDraft.mock.invocationCallOrder[0]).toBeLessThan(publishFeatureDraft.mock.invocationCallOrder[0]);
+    });
 
     it("mantém erro de campo no modal e explica todas as proteções padrão", async () => {
         const user = userEvent.setup();

@@ -78,7 +78,11 @@ function createSubject() {
     {} as never,
     storage as never,
     {} as never,
-    {} as never
+    {} as never,
+    {
+      escopo: jest.fn().mockResolvedValue({ restrito: false, recursoIds: [], usuarioIds: [] }),
+      filtroProjetoItem: jest.fn().mockReturnValue({})
+    } as never
   );
   const user = { sub: 'usuario-1', email: 'usuario@orfeu.test', empresaId: 1 };
 

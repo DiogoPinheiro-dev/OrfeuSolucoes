@@ -9,6 +9,11 @@ export type SolucaoRecord = {
   exibirNoHub: boolean;
   somenteAdminSistema: boolean;
   padraoSistema: boolean;
+  chaveTecnica?: string;
+  versaoDefinicao?: number;
+  statusPublicacao?: string;
+  revisaoCatalogo?: number;
+  publicadoEm?: Date | null;
   funcionalidades?: FuncionalidadeRecord[];
 };
 
@@ -24,6 +29,13 @@ export type FuncionalidadeRecord = {
   registryKey?: string | null;
   somenteAdminSistema: boolean;
   padraoSistema: boolean;
+  chaveTecnica?: string;
+  providerKey?: string | null;
+  providerVersion?: number | null;
+  versaoDefinicao?: number;
+  statusPublicacao?: string;
+  revisaoCatalogo?: number;
+  publicadoEm?: Date | null;
   podeVisualizar?: boolean;
   podeIncluir?: boolean;
   podeAlterar?: boolean;
@@ -41,5 +53,8 @@ export type FuncionalidadeAcaoRecord = {
   ativo: boolean;
   acaoPadrao: boolean;
   configuracao?: string | null;
+  consumerKey?: string | null;
+  consumerVersion?: number | null;
+  statusPublicacao?: string;
   permitido?: boolean;
 };

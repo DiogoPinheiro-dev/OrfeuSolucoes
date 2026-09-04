@@ -6,13 +6,14 @@ import { AprovarProjetoOrcamentoInput, ExcluirProjetoOrcamentoItemInput, SalvarP
 import { ProjetoAuditoriaService } from './projeto-auditoria.service';
 import { ProjetoOrcamentoAuthorizationService, ProjetoOrcamentoContexto } from './projeto-orcamento-authorization.service';
 import { ProjetoCustoTipo, ProjetoOrcamentoStatus } from './types/projeto-orcamento.types';
+import { ProjetoSituacao } from './types/projeto.types';
 
 const USER_SELECT = { id: true, nome: true, login: true, email: true };
 const RESOURCE_INCLUDE = { cadastro: { include: { usuario: { select: USER_SELECT } } } };
-const TASK_SELECT = { id: true, funcionalidade: true, estimativaMinutos: true, valorHora: true, moeda: true, ativo: true, recursos: { select: { recursoId: true } } };
+const ITEM_SELECT = { id: true, chave: true, titulo: true, estimativaMinutos: true, responsavelId: true, arquivadoEm: true };
 const FINANCE_INCLUDE = {
   categorias: { orderBy: { nome: 'asc' as const } },
-  custos: { include: { recurso: { include: RESOURCE_INCLUDE }, tarefa: { select: TASK_SELECT }, taxas: { include: { criadoPor: { select: USER_SELECT } }, orderBy: { criadoEm: 'desc' as const } } }, orderBy: { descricao: 'asc' as const } }
+  custos: { include: { recurso: { include: RESOURCE_INCLUDE }, item: { select: ITEM_SELECT }, taxas: { include: { criadoPor: { select: USER_SELECT } }, orderBy: { criadoEm: 'desc' as const } } }, orderBy: { descricao: 'asc' as const } }
 };
 
 @Injectable()
@@ -21,18 +22,18 @@ export class ProjetoOrcamentoService {
 
   async projetos(user: JwtPayload) {
     const { where } = await this.authorization.projetos(user);
-    return this.prisma.projeto.findMany({ where, select: { id: true, chave: true, nome: true, arquivadoEm: true }, orderBy: [{ arquivadoEm: 'asc' }, { nome: 'asc' }] });
+    return this.prisma.projeto.findMany({ where: { ...where, situacao: ProjetoSituacao.EM_ORCAMENTO, arquivadoEm: null }, select: { id: true, chave: true, nome: true, arquivadoEm: true }, orderBy: { nome: 'asc' } });
   }
 
   async painel(projetoId: string, user: JwtPayload) {
     const contexto = await this.authorization.contexto(projetoId, user);
     const permissoes = await this.authorization.permissoes(contexto, user);
-    const [recursos, tarefas, financeiro] = await Promise.all([
+    const [recursos, itens, financeiro] = await Promise.all([
       this.prisma.projetoRecurso.findMany({ where: { projetoId }, include: RESOURCE_INCLUDE, orderBy: { criadoEm: 'asc' } }),
-      permissoes.podeVisualizarFinanceiro ? this.prisma.projetoTarefa.findMany({ where: { empresaId: contexto.empresaId, recursos: { some: { recurso: { projetos: { some: { projetoId } } } } } }, select: TASK_SELECT, orderBy: [{ ativo: 'desc' }, { funcionalidade: 'asc' }] }) : Promise.resolve([]),
+      permissoes.podeVisualizarFinanceiro ? this.prisma.projetoItem.findMany({ where: { empresaId: contexto.empresaId, projetoId }, select: ITEM_SELECT, orderBy: [{ arquivadoEm: 'asc' }, { ordemBacklog: 'asc' }] }) : Promise.resolve([]),
       permissoes.podeVisualizarFinanceiro ? this.prisma.projetoOrcamento.findUnique({ where: { projetoId }, include: FINANCE_INCLUDE }) : Promise.resolve(null)
     ]);
-    return { recursos: recursos.map((item) => this.recurso(item)), tarefas: tarefas.map((item) => this.tarefa(item)), financeiro: financeiro ? this.financeiro(financeiro) : null, permissoes };
+    return { recursos: recursos.map((item) => this.recurso(item)), itens: itens.map((item) => this.item(item)), financeiro: financeiro ? this.financeiro(financeiro) : null, permissoes };
   }
 
   async salvarOrcamento(input: SalvarProjetoOrcamentoInput, user: JwtPayload) {
@@ -63,16 +64,16 @@ export class ProjetoOrcamentoService {
   async salvarCusto(input: SalvarProjetoCustoInput, user: JwtPayload) {
     const contexto = await this.authorization.contexto(input.projetoId, user); await this.authorization.gerenciarFinanceiro(contexto, user);
     const orcamento = await this.orcamentoRascunho(input.projetoId); if (input.categoriaId) await this.assertCategoria(orcamento.id, input.categoriaId);
-    if (input.tipo === ProjetoCustoTipo.FIXO && input.tarefaId) throw new BadRequestException('Custos fixos nao podem ser associados a tarefas.');
+    if (input.tipo === ProjetoCustoTipo.FIXO && input.itemId) throw new BadRequestException('Custos fixos nao podem ser associados a itens do projeto.');
     if (input.tipo === ProjetoCustoTipo.RECURSO) {
       if (!input.recursoId || !input.quantidadeMinutos || !input.taxaHora) throw new BadRequestException('Custos de recurso exigem recurso, quantidade e taxa por hora.');
       await this.assertRecurso(input.projetoId, input.recursoId, input.id);
-      if (input.tarefaId) await this.assertTarefa(contexto, orcamento.moeda, input.recursoId, input.tarefaId, input.id);
+      if (input.itemId) await this.assertItem(contexto, input.recursoId, input.itemId, input.id);
     }
     const taxa = input.tipo === ProjetoCustoTipo.RECURSO ? this.money(input.taxaHora!, 4) : null;
     const planejado = input.tipo === ProjetoCustoTipo.RECURSO ? new Prisma.Decimal(input.quantidadeMinutos!).div(60).mul(taxa!).toDecimalPlaces(2).toFixed(2) : this.money(input.valorPlanejado);
     return this.prisma.$transaction(async (tx) => {
-      const data = { categoriaId: input.categoriaId || null, tipo: input.tipo, descricao: input.descricao.trim(), recursoId: input.tipo === ProjetoCustoTipo.RECURSO ? input.recursoId : null, tarefaId: input.tipo === ProjetoCustoTipo.RECURSO ? input.tarefaId || null : null, quantidadeMinutos: input.tipo === ProjetoCustoTipo.RECURSO ? input.quantidadeMinutos : null, taxaHora: taxa, valorPlanejado: planejado, valorComprometido: this.money(input.valorComprometido), valorRealizado: this.money(input.valorRealizado) };
+      const data = { categoriaId: input.categoriaId || null, tipo: input.tipo, descricao: input.descricao.trim(), recursoId: input.tipo === ProjetoCustoTipo.RECURSO ? input.recursoId : null, itemId: input.tipo === ProjetoCustoTipo.RECURSO ? input.itemId || null : null, quantidadeMinutos: input.tipo === ProjetoCustoTipo.RECURSO ? input.quantidadeMinutos : null, taxaHora: taxa, valorPlanejado: planejado, valorComprometido: this.money(input.valorComprometido), valorRealizado: this.money(input.valorRealizado) };
       const anterior = input.id ? await tx.projetoCusto.findUnique({ where: { id: input.id } }) : null;
       const record = input.id ? await this.updateVersioned(tx.projetoCusto, input.id, input.versao, data, 'O custo', { orcamentoId: orcamento.id }) : await tx.projetoCusto.create({ data: { ...data, empresaId: contexto.empresaId, projetoId: input.projetoId, orcamentoId: orcamento.id, criadoPorId: user.sub } });
       if (taxa && (!anterior?.taxaHora || !new Prisma.Decimal(anterior.taxaHora).equals(taxa))) await tx.projetoCustoTaxaHistorico.create({ data: { custoId: record.id, taxaHora: taxa, criadoPorId: user.sub } });
@@ -112,13 +113,13 @@ export class ProjetoOrcamentoService {
       if (!custoAtual) throw new BadRequestException('Selecione um recurso ativo cadastrado no projeto.');
     }
   }
-  private async assertTarefa(contexto: ProjetoOrcamentoContexto, moeda: string, recursoId: string, id: string, custoId?: string | null) {
-    const tarefa = await this.prisma.projetoTarefa.findFirst({ where: { id, empresaId: contexto.empresaId, recursos: { some: { recurso: { projetos: { some: { id: recursoId, projetoId: contexto.projeto.id } } } } } }, select: TASK_SELECT });
-    if (!tarefa) throw new BadRequestException('Selecione uma tarefa vinculada ao recurso.');
-    if (tarefa.moeda !== moeda) throw new BadRequestException('A moeda da tarefa deve ser a mesma moeda do orcamento.');
-    if (!tarefa.ativo) {
-      const custoAtual = custoId ? await this.prisma.projetoCusto.findFirst({ where: { id: custoId, projetoId: contexto.projeto.id, recursoId, tarefaId: id } }) : null;
-      if (!custoAtual) throw new BadRequestException('Selecione uma tarefa ativa vinculada ao recurso.');
+  private async assertItem(contexto: ProjetoOrcamentoContexto, recursoId: string, id: string, custoId?: string | null) {
+    const recurso = await this.prisma.projetoRecurso.findFirst({ where: { id: recursoId, projetoId: contexto.projeto.id }, include: { cadastro: true } });
+    const item = recurso ? await this.prisma.projetoItem.findFirst({ where: { id, empresaId: contexto.empresaId, projetoId: contexto.projeto.id, responsavelId: recurso.cadastro.usuarioId }, select: ITEM_SELECT }) : null;
+    if (!item) throw new BadRequestException('Selecione um item do projeto atribuido ao recurso.');
+    if (item.arquivadoEm) {
+      const custoAtual = custoId ? await this.prisma.projetoCusto.findFirst({ where: { id: custoId, projetoId: contexto.projeto.id, recursoId, itemId: id } }) : null;
+      if (!custoAtual) throw new BadRequestException('Selecione um item ativo do projeto atribuido ao recurso.');
     }
   }
   private async orcamentoRascunho(projetoId: string) { const item = await this.prisma.projetoOrcamento.findUnique({ where: { projetoId } }); if (!item) throw new BadRequestException('Cadastre o orcamento-base antes desta operacao.'); this.assertDraft(item); return item; }
@@ -132,7 +133,7 @@ export class ProjetoOrcamentoService {
   private audit(tx: Prisma.TransactionClient, contexto: ProjetoOrcamentoContexto, user: JwtPayload, entidade: string, entidadeId: string, evento: string, dados: any) { return this.auditoria.registrar(tx, { empresaId: contexto.empresaId, projetoId: contexto.projeto.id, usuarioId: user.sub, entidade, entidadeId, evento, dados }); }
   private findFinanceiro(tx: Prisma.TransactionClient | PrismaService, projetoId: string) { return tx.projetoOrcamento.findUnique({ where: { projetoId }, include: FINANCE_INCLUDE }).then((item) => { if (!item) throw new NotFoundException('Orcamento nao encontrado.'); return item; }); }
   private categoria(item: any) { const planned = new Prisma.Decimal(item.valorPlanejado); return { ...item, valorPlanejado: planned.toFixed(2), valorComprometido: new Prisma.Decimal(item.valorComprometido).toFixed(2), valorRealizado: new Prisma.Decimal(item.valorRealizado).toFixed(2), variacao: planned.minus(item.valorRealizado).toFixed(2) }; }
-  private tarefa(item: any) { return { ...item, recursoIds: (item.recursos ?? []).map((recurso: any) => recurso.recursoId), valorHora: new Prisma.Decimal(item.valorHora).toFixed(4) }; }
-  private custo(item: any) { if (!item) throw new NotFoundException('Custo nao encontrado.'); return { ...item, taxaHora: item.taxaHora ? new Prisma.Decimal(item.taxaHora).toFixed(4) : null, valorPlanejado: new Prisma.Decimal(item.valorPlanejado).toFixed(2), valorComprometido: new Prisma.Decimal(item.valorComprometido).toFixed(2), valorRealizado: new Prisma.Decimal(item.valorRealizado).toFixed(2), recurso: item.recurso ? this.recurso(item.recurso) : null, tarefa: item.tarefa ? this.tarefa(item.tarefa) : null, taxas: (item.taxas ?? []).map((taxa: any) => ({ ...taxa, taxaHora: new Prisma.Decimal(taxa.taxaHora).toFixed(4), criadoPor: this.user(taxa.criadoPor) })) }; }
+  private item(item: any) { return { ...item, arquivado: Boolean(item.arquivadoEm) }; }
+  private custo(item: any) { if (!item) throw new NotFoundException('Custo nao encontrado.'); return { ...item, taxaHora: item.taxaHora ? new Prisma.Decimal(item.taxaHora).toFixed(4) : null, valorPlanejado: new Prisma.Decimal(item.valorPlanejado).toFixed(2), valorComprometido: new Prisma.Decimal(item.valorComprometido).toFixed(2), valorRealizado: new Prisma.Decimal(item.valorRealizado).toFixed(2), recurso: item.recurso ? this.recurso(item.recurso) : null, item: item.item ? this.item(item.item) : null, taxas: (item.taxas ?? []).map((taxa: any) => ({ ...taxa, taxaHora: new Prisma.Decimal(taxa.taxaHora).toFixed(4), criadoPor: this.user(taxa.criadoPor) })) }; }
   private financeiro(item: any) { const categorias = (item.categorias ?? []).map((entry: any) => this.categoria(entry)); const sum = (field: string) => categorias.reduce((total: Prisma.Decimal, entry: any) => total.add(entry[field]), new Prisma.Decimal(0)); const planned = sum('valorPlanejado'); const actual = sum('valorRealizado'); return { ...item, totalPlanejado: planned.toFixed(2), totalComprometido: sum('valorComprometido').toFixed(2), totalRealizado: actual.toFixed(2), variacao: planned.minus(actual).toFixed(2), categorias, custos: (item.custos ?? []).map((entry: any) => this.custo(entry)) }; }
 }

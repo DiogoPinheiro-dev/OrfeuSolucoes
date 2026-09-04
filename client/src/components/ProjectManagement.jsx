@@ -18,10 +18,11 @@ import { FeedbackMessage } from "./CrudFeedback";
 import "../styles/projectManagement.css";
 
 const METODOLOGIAS = { SCRUM: "Scrum", KANBAN: "Kanban", HIBRIDA: "Híbrida", OUTRA: "Outra" };
-const SITUACOES = { RASCUNHO: "Rascunho", PLANEJADO: "Planejado", EM_ANDAMENTO: "Em andamento", PAUSADO: "Pausado", CONCLUIDO: "Concluído", CANCELADO: "Cancelado" };
+const SITUACOES = { RASCUNHO: "Rascunho", EM_ORCAMENTO: "Em orçamento", PLANEJADO: "Planejado", EM_ANDAMENTO: "Em andamento", PAUSADO: "Pausado", CONCLUIDO: "Concluído", CANCELADO: "Cancelado" };
 const SAUDES = { EM_DIA: "Em dia", EM_RISCO: "Em risco", ATRASADO: "Atrasado" };
 const TRANSICOES = {
-    RASCUNHO: ["RASCUNHO", "PLANEJADO", "CANCELADO"],
+    RASCUNHO: ["RASCUNHO", "EM_ORCAMENTO", "PLANEJADO", "CANCELADO"],
+    EM_ORCAMENTO: ["EM_ORCAMENTO", "RASCUNHO", "PLANEJADO", "CANCELADO"],
     PLANEJADO: ["PLANEJADO", "EM_ANDAMENTO", "PAUSADO", "CANCELADO"],
     EM_ANDAMENTO: ["EM_ANDAMENTO", "PAUSADO", "CONCLUIDO", "CANCELADO"],
     PAUSADO: ["PAUSADO", "PLANEJADO", "EM_ANDAMENTO", "CANCELADO"],

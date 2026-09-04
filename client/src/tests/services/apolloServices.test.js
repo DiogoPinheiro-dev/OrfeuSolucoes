@@ -13,7 +13,6 @@ import * as EmpresaService from "../../../services/Empresas/EmpresaService";
 import * as GrupoUsuarioService from "../../../services/GruposUsuarios/GrupoUsuarioService";
 import * as MarcoEntregaService from "../../../services/Projetos/MarcoEntregaService";
 import * as OrcamentoService from "../../../services/Projetos/OrcamentoService";
-import * as PlanejamentoRecursoService from "../../../services/Projetos/PlanejamentoRecursoService";
 import * as ProjetoService from "../../../services/Projetos/ProjetoService";
 import * as RecursoService from "../../../services/Projetos/RecursoService";
 import * as ServicoCreateService from "../../../services/Servicos/CreateServices";
@@ -63,7 +62,6 @@ const modules = {
     GrupoUsuarioService,
     MarcoEntregaService,
     OrcamentoService,
-    PlanejamentoRecursoService,
     ProjetoService,
     RecursoService,
     ServicoCreateService,

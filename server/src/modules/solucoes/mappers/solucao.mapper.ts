@@ -14,6 +14,9 @@ export function toType(solucao: SolucaoRecord): SolucaoType {
     exibirNoHub: solucao.exibirNoHub,
     somenteAdminSistema: solucao.somenteAdminSistema,
     padraoSistema: solucao.padraoSistema,
+    chaveTecnica: solucao.chaveTecnica ?? solucao.slug,
+    statusPublicacao: solucao.statusPublicacao ?? 'PUBLICADA',
+    revisaoCatalogo: solucao.revisaoCatalogo ?? 1,
     funcionalidades: (solucao.funcionalidades ?? []).map((funcionalidade) => toFuncionalidadeType(funcionalidade))
   };
 }

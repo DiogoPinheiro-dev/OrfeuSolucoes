@@ -34,6 +34,21 @@ export class FuncionalidadeType {
   padraoSistema!: boolean;
 
   @Field()
+  chaveTecnica!: string;
+
+  @Field(() => String, { nullable: true })
+  providerKey?: string | null;
+
+  @Field(() => Int, { nullable: true })
+  providerVersion?: number | null;
+
+  @Field()
+  statusPublicacao!: string;
+
+  @Field(() => Int)
+  revisaoCatalogo!: number;
+
+  @Field()
   podeVisualizar!: boolean;
 
   @Field()
