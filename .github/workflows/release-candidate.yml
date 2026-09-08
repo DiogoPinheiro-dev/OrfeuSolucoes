@@ -40,7 +40,7 @@ jobs:
           cache-dependency-path: server/package-lock.json
       - name: Instalar backend em ambiente limpo
         working-directory: server
-        run: npm ci
+        run: npm ci --include=dev
       - name: Preparar banco anterior à migration destrutiva
         run: |
           for attempt in {1..30}; do
