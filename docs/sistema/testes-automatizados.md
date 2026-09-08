@@ -79,3 +79,16 @@ Em 25 de agosto de 2026, a suíte geral do frontend concluiu 502 testes, o Cypre
 | Backend | 75,73% | 65,70% | 72,89% | 76,93% |
 
 O Prisma validou o schema e confirmou 70 migrations aplicadas no SQL Server. Essa contagem representa o estado daquela revisão; os comandos continuam sendo a fonte de verdade para validações posteriores.
+
+## Integração contínua
+
+O workflow `.github/workflows/quality.yml` executa os gates em jobs independentes:
+
+- estática, contratos editoriais e detecção de testes focados ou desativados;
+- regressão e cobertura do backend;
+- qualidade e cobertura do frontend;
+- validação do Prisma e aplicação das migrations em um SQL Server limpo;
+- auditoria das dependências de produção;
+- build de homologação e jornadas Cypress no Electron.
+
+Cada job usa `npm ci`. Coberturas, relatórios de segurança, capturas e logs do navegador são publicados como artefatos quando disponíveis, inclusive para auxiliar o diagnóstico de falhas.

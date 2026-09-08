@@ -1,0 +1,223 @@
+name: Qualidade
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  static-and-contracts:
+    name: Estática e contratos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            client/package-lock.json
+            server/package-lock.json
+      - name: Instalar frontend
+        working-directory: client
+        run: npm ci
+      - name: Instalar backend
+        working-directory: server
+        run: npm ci
+      - name: Auditar testes focados ou desativados
+        run: node scripts/ci-static-audit.mjs
+      - name: Validar frontend estaticamente
+        working-directory: client
+        run: npm run lint
+      - name: Validar documentação executável
+        working-directory: server
+        run: npm run test:documentation
+      - name: Verificar integridade textual do commit
+        run: |
+          if git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
+            git diff --check HEAD~1 HEAD
+          else
+            git diff --check
+          fi
+
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - name: Instalar dependências
+        working-directory: server
+        run: npm ci
+      - name: Gerar cliente Prisma
+        working-directory: server
+        run: npm run prisma:generate
+      - name: Executar regressão
+        working-directory: server
+        run: npm run test:regression
+      - name: Executar cobertura
+        working-directory: server
+        run: npm run test:coverage
+      - name: Publicar cobertura do backend
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cobertura-backend
+          path: server/coverage
+          if-no-files-found: ignore
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - name: Instalar dependências
+        working-directory: client
+        run: npm ci
+      - name: Executar gate de qualidade
+        working-directory: client
+        run: npm run test:quality
+      - name: Executar cobertura
+        working-directory: client
+        run: npm run test:coverage
+      - name: Publicar cobertura do frontend
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cobertura-frontend
+          path: client/coverage
+          if-no-files-found: ignore
+
+  prisma-and-migrations:
+    name: Prisma e migrations
+    runs-on: ubuntu-latest
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: Y
+          MSSQL_SA_PASSWORD: OrfeuCi_Sql2026!
+        ports:
+          - 1433:1433
+    env:
+      DATABASE_URL: "sqlserver://localhost:1433;database=OrfeuCi;user=sa;password=OrfeuCi_Sql2026!;encrypt=true;trustServerCertificate=true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - name: Instalar dependências
+        working-directory: server
+        run: npm ci
+      - name: Aguardar SQL Server e criar banco limpo
+        run: |
+          for attempt in {1..30}; do
+            if docker exec "${{ job.services.sqlserver.id }}" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'OrfeuCi_Sql2026!' -C -Q "IF DB_ID('OrfeuCi') IS NULL CREATE DATABASE [OrfeuCi]"; then
+              exit 0
+            fi
+            sleep 2
+          done
+          exit 1
+      - name: Validar schema
+        working-directory: server
+        run: npx prisma validate
+      - name: Aplicar migrations desde zero
+        working-directory: server
+        run: npx prisma migrate deploy
+      - name: Confirmar estado das migrations
+        working-directory: server
+        run: npx prisma migrate status
+
+  security:
+    name: Segurança de dependências
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Instalar frontend
+        working-directory: client
+        run: npm ci
+      - name: Instalar backend
+        working-directory: server
+        run: npm ci
+      - name: Auditar dependências de produção do frontend
+        id: audit-frontend
+        continue-on-error: true
+        working-directory: client
+        run: npm audit --omit=dev --audit-level=high --json > audit-frontend.json
+      - name: Auditar dependências de produção do backend
+        id: audit-backend
+        continue-on-error: true
+        working-directory: server
+        run: npm audit --omit=dev --audit-level=high --json > audit-backend.json
+      - name: Publicar relatórios de segurança
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auditoria-dependencias
+          path: |
+            client/audit-frontend.json
+            server/audit-backend.json
+          if-no-files-found: ignore
+      - name: Aplicar gate de segurança
+        if: always()
+        run: |
+          test "${{ steps.audit-frontend.outcome }}" = "success"
+          test "${{ steps.audit-backend.outcome }}" = "success"
+
+  browser:
+    name: Navegador
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - name: Instalar dependências
+        working-directory: client
+        run: npm ci
+      - name: Gerar build de homologação
+        working-directory: client
+        run: npm run build
+      - name: Executar jornadas no navegador
+        working-directory: client
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 > preview.log 2>&1 &
+          npm run test:e2e:browser
+      - name: Publicar evidências do navegador
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidencias-navegador
+          path: |
+            client/cypress/artifacts
+            client/preview.log
+          if-no-files-found: ignore
