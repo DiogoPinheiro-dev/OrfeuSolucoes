@@ -11,19 +11,6 @@ export default defineConfig({
       '/projetos': 'http://localhost:3001',
     },
   },
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (!id.includes('node_modules')) return undefined
-          if (id.includes('react-icons') || id.includes('lucide-react')) return 'vendor-icons'
-          if (id.includes('@apollo') || id.includes('graphql')) return 'vendor-graphql'
-          if (id.includes('react')) return 'vendor-react'
-          return 'vendor'
-        },
-      },
-    },
-  },
   test: {
     setupFiles: './src/tests/setup.js',
     testTimeout: 15000,

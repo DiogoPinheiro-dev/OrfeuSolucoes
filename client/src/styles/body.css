@@ -15,7 +15,8 @@
   content: "";
   position: absolute;
   inset: 0;
-  background-image: url("../assets/Banner_logo_orfeu_soluções.png");
+  background-image: url("../assets/banner-orfeu-desktop.jpg");
+  background-image: image-set(url("../assets/banner-orfeu-desktop.webp") type("image/webp"));
   background-size: cover;
   background-position: 60% center;
   background-repeat: no-repeat;
@@ -252,9 +253,10 @@
   }
 
   .hero::before {
-    background-image: url("../assets/Banner_logo_orfeu_soluções.png");
-    background-size: cover cover;
-    background-position: 55% center;
+    background-image: url("../assets/banner-orfeu-mobile.jpg");
+    background-image: image-set(url("../assets/banner-orfeu-mobile.webp") type("image/webp"));
+    background-size: cover;
+    background-position: center;
   }
 
   .hero h1 {
