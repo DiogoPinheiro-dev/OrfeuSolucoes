@@ -200,4 +200,81 @@ describe('CatalogoLifecycleService', () => {
     await expect(service.restoreActionVersion('old-action', 'author', 'Rollback')).resolves.toBe(restored);
     expect(db.catalogoVersao.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ estado: 'RASCUNHO', origem: 'RESTAURACAO' }) }));
   });
+
+  it('atualiza rascunho de solução com revisão otimista e auditoria', async () => {
+    const current = { slug: 'projetos', nome: 'Projetos', descricao: null, eyebrow: null, ordem: 1, ativo: true, exibirNoHub: true, somenteAdminSistema: false };
+    const draft = { id: 'solution-draft', solucaoId: 1, estado: 'RASCUNHO', revisao: 2, snapshot: JSON.stringify(current), motivo: null };
+    const updated = { ...draft, revisao: 3, snapshot: JSON.stringify({ ...current, nome: 'Gestão de projetos' }), motivo: 'Ajuste' };
+    const db = { catalogoVersao: { findUnique: jest.fn().mockResolvedValue(draft), updateMany: jest.fn().mockResolvedValue({ count: 1 }), findUniqueOrThrow: jest.fn().mockResolvedValue(updated) }, catalogoAuditoria: { create: jest.fn() } };
+    const service = new CatalogoLifecycleService({ $transaction: (callback: any) => callback(db) } as never, new CatalogoValidationService(new CatalogoProviderRegistry()));
+
+    await expect(service.updateSolutionDraft({ versaoId: draft.id, revisaoEsperada: 2, nome: ' Gestão de projetos ', motivo: ' Ajuste ' }, 'author')).resolves.toBe(updated);
+    expect(db.catalogoVersao.updateMany).toHaveBeenCalledWith(expect.objectContaining({ where: { id: draft.id, estado: 'RASCUNHO', revisao: 2 } }));
+    expect(db.catalogoAuditoria.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ evento: 'RASCUNHO_ALTERADO' }) }));
+  });
+
+  it('despublica solução, funcionalidade e ação somente com motivo e estado publicado', async () => {
+    const solution = { slug: 'projetos', nome: 'Projetos', descricao: null, eyebrow: null, ordem: 1, ativo: true, exibirNoHub: true, somenteAdminSistema: false, statusPublicacao: 'PUBLICADA' };
+    const action = { funcionalidadeId: 10, chave: 'visualizar', nome: 'Visualizar', descricao: null, ordem: 1, ativo: true, configuracao: null, consumerKey: 'visualizar', consumerVersion: 1, statusPublicacao: 'PUBLICADA' };
+    const db: any = {
+      solucao: { findUnique: jest.fn().mockResolvedValue(solution), update: jest.fn().mockResolvedValue({ ...solution, statusPublicacao: 'DESPUBLICADA' }) },
+      funcionalidade: { findUnique: jest.fn().mockResolvedValue(feature), update: jest.fn().mockResolvedValue({ ...feature, statusPublicacao: 'DESPUBLICADA' }) },
+      funcionalidadeAcao: { findUnique: jest.fn().mockResolvedValue(action), update: jest.fn().mockResolvedValue({ ...action, statusPublicacao: 'DESPUBLICADA' }) },
+      catalogoAuditoria: { create: jest.fn() }
+    };
+    const service = new CatalogoLifecycleService({ $transaction: (callback: any) => callback(db) } as never, new CatalogoValidationService(new CatalogoProviderRegistry()));
+
+    await expect(service.unpublishSolution(1, 'author', ' Ocultar ')).resolves.toMatchObject({ statusPublicacao: 'DESPUBLICADA' });
+    await expect(service.unpublishFeature(10, 'author', ' Ocultar ')).resolves.toMatchObject({ statusPublicacao: 'DESPUBLICADA' });
+    await expect(service.unpublishAction(5, 'author', ' Ocultar ')).resolves.toMatchObject({ statusPublicacao: 'DESPUBLICADA' });
+    expect(db.catalogoAuditoria.create).toHaveBeenCalledTimes(3);
+  });
+
+  it('recusa despublicação sem motivo antes de abrir transação', async () => {
+    const prisma = { $transaction: jest.fn() };
+    const service = new CatalogoLifecycleService(prisma as never, new CatalogoValidationService(new CatalogoProviderRegistry()));
+
+    await expect(service.unpublishSolution(1, 'author', ' ')).rejects.toBeInstanceOf(BadRequestException);
+    await expect(service.unpublishFeature(10, 'author', ' ')).rejects.toBeInstanceOf(BadRequestException);
+    await expect(service.unpublishAction(5, 'author', ' ')).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('cria e atualiza rascunho de ação preservando identidade técnica', async () => {
+    const action = { funcionalidadeId: 10, chave: 'exportar', nome: 'Exportar', descricao: null, ordem: 1, ativo: true, configuracao: null, consumerKey: 'visualizar', consumerVersion: 1, versaoDefinicao: 1 };
+    const draft = { id: 'action-draft', funcionalidadeAcaoId: 5, estado: 'RASCUNHO', revisao: 1, snapshot: JSON.stringify(action), motivo: null };
+    const updated = { ...draft, revisao: 2, snapshot: JSON.stringify({ ...action, nome: 'Exportar dados' }) };
+    const db = {
+      funcionalidadeAcao: { findUnique: jest.fn().mockResolvedValue(action) },
+      catalogoVersao: { findFirst: jest.fn().mockResolvedValueOnce(null).mockResolvedValueOnce(null), create: jest.fn().mockResolvedValue(draft), findUnique: jest.fn().mockResolvedValue(draft), updateMany: jest.fn().mockResolvedValue({ count: 1 }), findUniqueOrThrow: jest.fn().mockResolvedValue(updated) },
+      catalogoAuditoria: { create: jest.fn() }
+    };
+    const service = new CatalogoLifecycleService({ $transaction: (callback: any) => callback(db) } as never, new CatalogoValidationService(new CatalogoProviderRegistry()));
+
+    await expect(service.createActionDraft(5, 'author')).resolves.toBe(draft);
+    await expect(service.updateActionDraft({ versaoId: draft.id, revisaoEsperada: 1, nome: ' Exportar dados ' }, 'author')).resolves.toBe(updated);
+    const savedSnapshot = JSON.parse(db.catalogoVersao.updateMany.mock.calls[0][0].data.snapshot);
+    expect(savedSnapshot).toMatchObject({ funcionalidadeId: 10, chave: 'exportar', nome: 'Exportar dados' });
+  });
+
+  it('reporta consumidor incompatível e conflitos pendentes antes de publicar ação', async () => {
+    const actionConsumers = { isCompatible: jest.fn().mockReturnValue(false) };
+    const prisma = { catalogoVersao: { findUnique: jest.fn().mockResolvedValue({ funcionalidadeAcaoId: 5, estado: 'RASCUNHO', snapshot: JSON.stringify({ consumerKey: 'inexistente', consumerVersion: 99 }), conflitos: [{ id: 'conflict' }] }) } };
+    const service = new CatalogoLifecycleService(prisma as never, new CatalogoValidationService(new CatalogoProviderRegistry()), actionConsumers as never);
+
+    await expect(service.validateActionDraft('draft')).resolves.toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: 'CONSUMER_INCOMPATIBLE' }),
+      expect.objectContaining({ code: 'CONFLICTS_PENDING' })
+    ]));
+  });
+
+  it('recusa restauração de baseline ausente sem abrir transação', async () => {
+    const prisma = { catalogoVersao: { findFirst: jest.fn().mockResolvedValue(null) }, $transaction: jest.fn() };
+    const service = new CatalogoLifecycleService(prisma as never, new CatalogoValidationService(new CatalogoProviderRegistry()));
+
+    await expect(service.restoreSolutionBaseline(1, 'author', 'Restaurar')).rejects.toBeInstanceOf(BadRequestException);
+    await expect(service.restoreFeatureBaseline(10, 'author', 'Restaurar')).rejects.toBeInstanceOf(BadRequestException);
+    await expect(service.restoreActionBaseline(5, 'author', 'Restaurar')).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
 });
