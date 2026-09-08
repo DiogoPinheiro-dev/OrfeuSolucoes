@@ -4,9 +4,10 @@ export type CatalogoCodeProvider = {
   key: string;
   version: number;
   documentationKey?: string;
+  aliases?: string[];
 };
 
-const provider = (key: string): CatalogoCodeProvider => ({ key, version: 1, documentationKey: key });
+const provider = (key: string, aliases: string[] = []): CatalogoCodeProvider => ({ key, version: 1, documentationKey: key, aliases });
 
 const CODE_PROVIDERS: CatalogoCodeProvider[] = [
   'configurador.cadastro-de-usuarios',
@@ -32,16 +33,24 @@ const CODE_PROVIDERS: CatalogoCodeProvider[] = [
   'projetos.marcos-e-entregas',
   'projetos.cronograma-e-gantt',
   'projetos.comunicacao-do-projeto',
-  'projetos.planejamento-de-recursos',
   'projetos.orcamento-do-projeto'
-].map(provider);
+].map((key) => provider(key));
+
+CODE_PROVIDERS.push(provider('projetos.planejamento-de-recursos', [
+  'projetos.recursos-do-projeto',
+  'projetos.grade-de-capacitacao'
+]));
 
 @Injectable()
 export class CatalogoProviderRegistry {
   private readonly providers = new Map(CODE_PROVIDERS.map((item) => [item.key, item]));
+  private readonly aliases = new Map(CODE_PROVIDERS.flatMap((item) =>
+    (item.aliases ?? []).map((alias) => [alias, item.key] as const)
+  ));
 
   find(key?: string | null): CatalogoCodeProvider | null {
-    return key ? this.providers.get(key) ?? null : null;
+    if (!key) return null;
+    return this.providers.get(this.aliases.get(key) ?? key) ?? null;
   }
 
   isCompatible(key?: string | null, requiredVersion?: number | null): boolean {

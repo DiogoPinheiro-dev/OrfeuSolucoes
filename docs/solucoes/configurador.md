@@ -57,7 +57,9 @@ As operações cadastrais de solução são restritas ao administrador do sistem
 
 ## Funcionalidades
 
-Uma funcionalidade pertence a uma solução e define slug, título, rótulo, descrição, ordem, estado ativo, `RegistryKey` e eventual restrição ao administrador do sistema. Também pode possuir ações específicas além das quatro permissões CRUD.
+Uma funcionalidade pertence a uma solução e define slug, título, rótulo, descrição, ordem, estado ativo, `RegistryKey`, `providerKey`, versão compatível do provider e eventual restrição ao administrador do sistema. Também pode possuir ações específicas além das quatro permissões CRUD.
+
+O `RegistryKey` preserva a identidade técnica usada por rotas e documentação. A implementação executável é selecionada exclusivamente pelo `providerKey` versionado no manifesto frontend. Uma funcionalidade sem provider conhecido ou com versão incompatível não pode ser publicada; se um contrato inconsistente chegar defensivamente ao navegador, nenhuma tela alternativa é executada. O catálogo atual usa providers desenvolvidos em código; não existe construtor no-code nem renderer declarativo.
 
 Funcionalidades marcadas como padrão do sistema são protegidas contra alteração cadastral e exclusão; somente sua ordem pode ser alterada. Elas continuam visíveis para consulta, mas não podem ser marcadas nos checkboxes de exclusão. Funcionalidades personalizadas seguem as permissões recebidas para inclusão, alteração e exclusão.
 
@@ -73,7 +75,7 @@ Para uma funcionalidade aparecer ao usuário, o backend considera em conjunto:
 4. soluções, funcionalidades e ações liberadas ao grupo;
 5. flags de atividade, exibição no Hub e restrição administrativa.
 
-O frontend normaliza o resultado para `podeVisualizar`, `podeIncluir`, `podeAlterar`, `podeExcluir` e `acoes`. O administrador inicial pode ignorar as permissões do grupo, mas continua limitado às soluções contratadas pela empresa ativa. Configurador permanece reservado ao administrador inicial. Documentação fica disponível para qualquer usuário autenticado, independentemente de empresa, contrato ou grupo; a audiência declarada em cada artigo continua determinando quais conteúdos aparecem no catálogo.
+O frontend normaliza o resultado preservando também `providerKey`, `providerVersion` e `RegistryKey`, além de `podeVisualizar`, `podeIncluir`, `podeAlterar`, `podeExcluir` e `acoes`. A permissão herdada da solução é apenas o primeiro limite: ela não concede automaticamente acesso às funcionalidades ou ações, que continuam dependendo dos vínculos e permissões próprios validados pelo backend. O administrador inicial pode ignorar as permissões do grupo, mas continua limitado às soluções contratadas pela empresa ativa. Configurador permanece reservado ao administrador inicial. Documentação fica disponível para qualquer usuário autenticado, independentemente de empresa, contrato ou grupo; a audiência declarada em cada artigo continua determinando quais conteúdos aparecem no catálogo.
 
 ## Integrações
 

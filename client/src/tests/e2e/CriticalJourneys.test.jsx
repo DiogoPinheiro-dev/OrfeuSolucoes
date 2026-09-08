@@ -60,6 +60,8 @@ const hubNavigation = [{
     titulo: "Cadastro de usuários",
     descricao: "Gerencie os usuários",
     registryKey: "configurador.cadastro-de-usuarios",
+    providerKey: "configurador.cadastro-de-usuarios",
+    providerVersion: 1,
     podeVisualizar: true,
   }],
 }];

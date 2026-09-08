@@ -4,7 +4,9 @@
 
 O frontend é uma aplicação React servida pelo Vite. O roteamento fica em `client/src/main.jsx`, a sessão autenticada é mantida por `AuthProvider` e as chamadas GraphQL são executadas pelo Apollo Client.
 
-As páginas de rota e as telas vinculadas às funcionalidades do Hub são carregadas sob demanda. O registro estável entre funcionalidade e componente fica em `client/src/auth/hubConfig.js`; a resolução da tela ocorre por `RegistryKey`, sem depender do título apresentado ao usuário.
+As páginas de rota e as telas vinculadas às funcionalidades do Hub são carregadas sob demanda. O manifesto único em `client/src/auth/featureProviders.jsx` associa cada `providerKey` versionada ao seu loader lazy, às propriedades fixas da implementação e aos aliases históricos suportados. O `RegistryKey` permanece como identidade técnica para rota e documentação, sem depender do título apresentado ao usuário.
+
+A navegação recebida do backend preserva `providerKey` e `providerVersion`. A página da funcionalidade resolve diretamente esse contrato no manifesto; provider ausente ou incompatível não executa outra tela por aproximação. Links antigos de Recursos e Grade de capacitação são aliases explícitos do provider atual de Planejamento de recursos.
 
 Os componentes React coordenam estado e apresentação. Operações Apollo, montagem de documentos GraphQL e conversão de erros permanecem em `client/services`.
 
@@ -19,6 +21,8 @@ O Hub recebe do backend somente as soluções e funcionalidades disponíveis par
 - ações dinâmicas retornadas em `acoes`.
 
 O frontend usa essas permissões para ocultar ou desabilitar comandos. Essa verificação melhora a experiência, mas não substitui a autorização aplicada pelo backend.
+
+O acesso efetivo é cumulativamente restritivo: a solução precisa estar publicada, ativa, disponível para a empresa e liberada ao grupo; depois, a funcionalidade também precisa estar publicada, ativa, contratada e visível ao grupo. A liberação da solução não concede automaticamente acesso às funcionalidades nem às ações. Administradores previstos pelas políticas do backend podem receber acesso integral, mas continuam sujeitos ao escopo e às restrições sistêmicas aplicáveis.
 
 ## Cadastros convencionais
 

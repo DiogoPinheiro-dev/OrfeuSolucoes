@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { FEATURE_COMPONENT_REGISTRY } from "../../auth/hubConfig";
+import { FEATURE_PROVIDER_KEYS } from "../../auth/featureProviders";
 import {
     CROSS_CUTTING_COVERAGE_MATRIX,
     FEATURE_COVERAGE_MATRIX,
@@ -9,7 +9,7 @@ import {
 
 describe("contrato de cobertura de regressão do sistema", () => {
     it("mantém todas as funcionalidades registradas no Hub na matriz", () => {
-        const registeredKeys = Object.keys(FEATURE_COMPONENT_REGISTRY).sort();
+        const registeredKeys = [...FEATURE_PROVIDER_KEYS].sort();
         const coveredKeys = FEATURE_COVERAGE_MATRIX.map((item) => item.registryKey).sort();
 
         expect(coveredKeys).toEqual(registeredKeys);

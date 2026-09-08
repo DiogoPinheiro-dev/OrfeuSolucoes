@@ -1,31 +1,3 @@
-export const FEATURE_COMPONENT_REGISTRY = {
-    "configurador.cadastro-de-usuarios": "user-management",
-    "configurador.cadastro-de-grupos": "group-management",
-    "configurador.cadastro-de-empresas": "company-management",
-    "configurador.cadastro-de-solucoes": "solution-management",
-    "configurador.cadastro-de-funcionalidades": "feature-management",
-    "controle-de-chamados.abrir-chamado": "chamado-create",
-    "controle-de-chamados.meus-chamados": "meus-chamados",
-    "controle-de-chamados.painel-atendimento": "painel-atendimento",
-    "controle-de-chamados.chamados-arquivados": "chamados-arquivados",
-    "controle-de-chamados.dashboard": "chamado-dashboard",
-    "controle-de-chamados.relatorios": "chamado-relatorio",
-    "controle-de-chamados.categorias": "categoria-chamado-management",
-    "controle-de-chamados.tipos": "tipo-chamado-management",
-    "controle-de-chamados.prioridades": "prioridade-chamado-management",
-    "controle-de-chamados.responsaveis": "responsavel-chamado-management",
-    "controle-de-chamados.sla": "sla-chamado-management",
-    "controle-de-chamados.emails-solucoes": "email-solucao-chamado-management",
-    "projetos.cadastro-de-projetos": "project-management",
-    "projetos.backlog-de-demandas": "project-backlog",
-    "projetos.sprints": "project-sprints",
-    "projetos.marcos-e-entregas": "project-milestones-deliveries",
-    "projetos.cronograma-e-gantt": "project-schedule-gantt",
-    "projetos.comunicacao-do-projeto": "project-communication",
-    "projetos.planejamento-de-recursos": "project-resource-planning",
-    "projetos.orcamento-do-projeto": "project-budget"
-};
-
 export const normalizeSolutions = (solutions = []) =>
     solutions.map((solution) => ({
         id: solution.id,
@@ -41,6 +13,8 @@ export const normalizeSolutions = (solutions = []) =>
             title: feature.titulo,
             description: feature.descricao,
             registryKey: feature.registryKey,
+            providerKey: feature.providerKey,
+            providerVersion: feature.providerVersion,
             podeVisualizar: feature.podeVisualizar !== false,
             podeIncluir: !!feature.podeIncluir,
             podeAlterar: !!feature.podeAlterar,

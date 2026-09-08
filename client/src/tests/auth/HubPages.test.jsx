@@ -18,6 +18,9 @@ vi.mock("../../components/UserManagement", () => ({ default: ({ permissions }) =
 vi.mock("../../components/ChamadoCreate", () => ({
     default: ({ contractUnavailable }) => <div>Formulário de chamado:{contractUnavailable ? "indisponível" : "disponível"}</div>
 }));
+vi.mock("../../components/ProjectResourcePlanningManagement", () => ({
+    default: () => <div>Planejamento de recursos</div>
+}));
 
 const solution = {
     id: 1,
@@ -32,6 +35,8 @@ const solution = {
         title: "Cadastro de usuários",
         description: "Gerencie usuários",
         registryKey: "configurador.cadastro-de-usuarios",
+        providerKey: "configurador.cadastro-de-usuarios",
+        providerVersion: 1,
         podeVisualizar: true
     }]
 };
@@ -93,9 +98,68 @@ describe("páginas do Hub", () => {
         expect(await screen.findByText("Usuários:Cadastro de usuários")).toBeInTheDocument();
     });
 
+    it("mantém o shell em loading enquanto a navegação autorizada não chegou", () => {
+        useHubNavigation.mockReturnValue({ loading: true, error: "", solutions: [] });
+
+        renderAt("/hub/configurador/cadastro-de-usuarios");
+
+        expect(screen.getByRole("heading", { name: "Carregando funcionalidade..." })).toBeInTheDocument();
+        expect(screen.getByText("Header")).toBeInTheDocument();
+        expect(screen.getByText("Footer")).toBeInTheDocument();
+    });
+
+    it("apresenta fallback defensivo para provider desconhecido sem executar outra tela", () => {
+        useHubNavigation.mockReturnValue({
+            loading: false,
+            error: "",
+            solutions: [{
+                ...solution,
+                areas: [{
+                    ...solution.areas[0],
+                    slug: "provider-desconhecido",
+                    registryKey: "configurador.provider-inexistente",
+                    providerKey: "configurador.provider-inexistente"
+                }]
+            }]
+        });
+
+        renderAt("/hub/configurador/provider-desconhecido");
+
+        expect(screen.getByRole("heading", { name: "Cadastro de usuários" })).toBeInTheDocument();
+        expect(screen.getByText("Funcionalidade sem tela vinculada no momento.")).toBeInTheDocument();
+        expect(screen.queryByText(/Usuários:Cadastro/)).not.toBeInTheDocument();
+    });
+
     it("redireciona funcionalidade desconhecida para a solução correta", async () => {
         renderAt("/hub/configurador/inexistente");
         expect(await screen.findByText("/hub/configurador")).toBeInTheDocument();
+    });
+
+    it("mantém links antigos por alias e abre o provider atual", async () => {
+        useHubNavigation.mockReturnValue({
+            loading: false,
+            error: "",
+            solutions: [{
+                id: 2,
+                slug: "projetos",
+                title: "Projetos",
+                areas: [{
+                    id: 21,
+                    slug: "planejamento-de-recursos",
+                    title: "Planejamento de recursos",
+                    label: "Planejamento",
+                    registryKey: "projetos.planejamento-de-recursos",
+                    providerKey: "projetos.planejamento-de-recursos",
+                    providerVersion: 1,
+                    podeVisualizar: true
+                }]
+            }]
+        });
+
+        renderAt("/hub/projetos/grade-de-capacitacao");
+
+        expect(await screen.findByText("Planejamento de recursos")).toBeInTheDocument();
+        expect(screen.getByText("/hub/projetos/grade-de-capacitacao")).toBeInTheDocument();
     });
 
     it("mantém a abertura de chamados explicativa e indisponível sem contrato", async () => {
