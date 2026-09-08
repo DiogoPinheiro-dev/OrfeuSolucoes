@@ -1,0 +1,106 @@
+name: Release candidate
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  database-rehearsal:
+    name: Migração, backup e rollback
+    runs-on: ubuntu-latest
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: Y
+          MSSQL_SA_PASSWORD: OrfeuRc_Sql2026!
+        ports:
+          - 1433:1433
+        volumes:
+          - /tmp/orfeu-backups:/var/opt/mssql/backups
+    env:
+      DATABASE_URL: "sqlserver://localhost:1433;database=OrfeuRc;user=sa;password=OrfeuRc_Sql2026!;encrypt=true;trustServerCertificate=true"
+      NODE_ENV: production
+      APP_ENV: homologation
+      PORT: 3001
+      CORS_ORIGIN: http://127.0.0.1:4173
+      JWT_SECRET: release-candidate-jwt-secret-2026-validation
+      GOOGLE_TOKEN_ENCRYPTION_KEY: release-candidate-google-token-key-2026
+      INITIAL_ADMIN_PASSWORD: OrfeuRc_Admin2026!
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - name: Instalar backend em ambiente limpo
+        working-directory: server
+        run: npm ci
+      - name: Preparar banco anterior à migration destrutiva
+        run: |
+          for attempt in {1..30}; do
+            if docker exec "${{ job.services.sqlserver.id }}" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'OrfeuRc_Sql2026!' -C -Q "IF DB_ID('OrfeuRc') IS NULL CREATE DATABASE [OrfeuRc]"; then
+              break
+            fi
+            test "$attempt" -lt 30 || exit 1
+            sleep 2
+          done
+          cp -R server/prisma /tmp/prisma-pre-legacy
+          find /tmp/prisma-pre-legacy/migrations -mindepth 1 -maxdepth 1 -type d -name '202609*' -exec rm -rf {} +
+          npx --prefix server prisma migrate deploy --schema /tmp/prisma-pre-legacy/schema.prisma
+          docker exec -i "${{ job.services.sqlserver.id }}" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'OrfeuRc_Sql2026!' -C -d OrfeuRc -b < scripts/release-candidate/seed-pre-task-migration.sql
+      - name: Criar backup recuperável
+        run: |
+          docker exec "${{ job.services.sqlserver.id }}" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'OrfeuRc_Sql2026!' -C -Q "BACKUP DATABASE [OrfeuRc] TO DISK = N'/var/opt/mssql/backups/orfeu-pre-upgrade.bak' WITH INIT, CHECKSUM"
+          docker exec "${{ job.services.sqlserver.id }}" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'OrfeuRc_Sql2026!' -C -Q "RESTORE VERIFYONLY FROM DISK = N'/var/opt/mssql/backups/orfeu-pre-upgrade.bak' WITH CHECKSUM"
+      - name: Aplicar migrations e reconciliar dados
+        working-directory: server
+        run: |
+          npx prisma validate
+          npx prisma migrate deploy
+          npx prisma migrate status
+          docker exec -i "${{ job.services.sqlserver.id }}" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'OrfeuRc_Sql2026!' -C -d OrfeuRc -b < ../scripts/release-candidate/verify-upgrade.sql
+      - name: Ensaiar rollback por restauração
+        run: |
+          docker exec "${{ job.services.sqlserver.id }}" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'OrfeuRc_Sql2026!' -C -Q "ALTER DATABASE [OrfeuRc] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; RESTORE DATABASE [OrfeuRc] FROM DISK = N'/var/opt/mssql/backups/orfeu-pre-upgrade.bak' WITH REPLACE, RECOVERY; ALTER DATABASE [OrfeuRc] SET MULTI_USER"
+          docker exec -i "${{ job.services.sqlserver.id }}" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'OrfeuRc_Sql2026!' -C -d OrfeuRc -b < scripts/release-candidate/verify-rollback.sql
+      - name: Reaplicar migrations após o rollback
+        working-directory: server
+        run: |
+          npx prisma migrate deploy
+          npx prisma migrate status
+          docker exec -i "${{ job.services.sqlserver.id }}" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'OrfeuRc_Sql2026!' -C -d OrfeuRc -b < ../scripts/release-candidate/verify-upgrade.sql
+      - name: Executar bootstrap duas vezes e validar runtime
+        working-directory: server
+        run: |
+          npm run build
+          for cycle in 1 2; do
+            node dist/main.js > "runtime-$cycle.log" 2>&1 &
+            server_pid=$!
+            for attempt in {1..30}; do
+              if curl --fail --silent --show-error -H 'Content-Type: application/json' -H 'Origin: http://127.0.0.1:4173' --data '{"query":"{ health }"}' http://127.0.0.1:3001/graphql | grep -q '"health":"ok"'; then
+                break
+              fi
+              test "$attempt" -lt 30 || { cat "runtime-$cycle.log"; kill "$server_pid" || true; exit 1; }
+              sleep 2
+            done
+            cors_code=$(curl --silent --output /dev/null --write-out '%{http_code}' -H 'Content-Type: application/json' -H 'Origin: https://origem-invalida.orfeu.test' --data '{"query":"mutation { logout }"}' http://127.0.0.1:3001/graphql)
+            test "$cors_code" = "403"
+            kill "$server_pid"
+            wait "$server_pid" || true
+          done
+          docker exec -i "${{ job.services.sqlserver.id }}" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'OrfeuRc_Sql2026!' -C -d OrfeuRc -b < ../scripts/release-candidate/verify-bootstrap.sql
+      - name: Publicar evidências do ensaio
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: evidencias-release-candidate
+          path: server/runtime-*.log
+          if-no-files-found: ignore
