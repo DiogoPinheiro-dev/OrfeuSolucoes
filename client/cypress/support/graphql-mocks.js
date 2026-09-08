@@ -10,7 +10,7 @@ export const usuarioAutenticado = {
 };
 export const navegacaoHub = [{
   __typename: "SolucaoType", id: 20, slug: "projetos", nome: "Projetos", descricao: "Gestão de projetos", eyebrow: "Planejamento", ordem: 1, ativo: true, exibirNoHub: true, somenteAdminSistema: false, padraoSistema: false,
-  funcionalidades: [{ __typename: "FuncionalidadeType", id: 21, slug: "cadastro-de-projetos", titulo: "Cadastro de projetos", label: "Projetos", descricao: "Cadastre e acompanhe projetos", ordem: 1, ativo: true, registryKey: "projetos.cadastro-de-projetos", somenteAdminSistema: false, padraoSistema: true, podeVisualizar: true, podeIncluir: true, podeAlterar: true, podeExcluir: true, acoes: [] }],
+  funcionalidades: [{ __typename: "FuncionalidadeType", id: 21, slug: "cadastro-de-projetos", titulo: "Cadastro de projetos", label: "Projetos", descricao: "Cadastre e acompanhe projetos", ordem: 1, ativo: true, registryKey: "projetos.cadastro-de-projetos", providerKey: "projetos.cadastro-de-projetos", providerVersion: 1, somenteAdminSistema: false, padraoSistema: true, podeVisualizar: true, podeIncluir: true, podeAlterar: true, podeExcluir: true, acoes: [] }],
 }, {
   __typename: "SolucaoType", id: 90, slug: "documentacao", nome: "Documentação", descricao: "Manuais de uso e referências do sistema conforme seu nível de acesso.", eyebrow: "Central de conhecimento", ordem: 900, ativo: true, exibirNoHub: true, somenteAdminSistema: false, padraoSistema: true, funcionalidades: [],
 }];

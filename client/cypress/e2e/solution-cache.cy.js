@@ -10,6 +10,8 @@ const funcionalidades = [{
   ordem: 1,
   ativo: true,
   registryKey: "configurador.cadastro-de-usuarios",
+  providerKey: "configurador.cadastro-de-usuarios",
+  providerVersion: 1,
   somenteAdminSistema: true,
   padraoSistema: true,
   podeVisualizar: true,
@@ -39,6 +41,8 @@ const funcionalidades = [{
   ordem: 2,
   ativo: false,
   registryKey: "configurador.rotina-customizada",
+  providerKey: "configurador.rotina-customizada",
+  providerVersion: 1,
   somenteAdminSistema: false,
   padraoSistema: false,
   podeVisualizar: true,
@@ -71,6 +75,8 @@ const navegacaoConfigurador = [{
     titulo: "Cadastro de soluções",
     label: "Soluções",
     registryKey: "configurador.cadastro-de-solucoes",
+    providerKey: "configurador.cadastro-de-solucoes",
+    providerVersion: 1,
   }],
 }];
 

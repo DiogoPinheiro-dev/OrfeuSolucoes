@@ -10,6 +10,8 @@ const cronogramaFeature = {
   ordem: 2,
   ativo: true,
   registryKey: "projetos.cronograma-e-gantt",
+  providerKey: "projetos.cronograma-e-gantt",
+  providerVersion: 1,
   somenteAdminSistema: false,
   padraoSistema: true,
   podeVisualizar: true,
@@ -28,6 +30,8 @@ const backlogFeature = {
   descricao: "Cadastre e priorize as demandas do projeto",
   ordem: 1,
   registryKey: "projetos.backlog-de-demandas",
+  providerKey: "projetos.backlog-de-demandas",
+  providerVersion: 1,
 };
 
 const budgetFeature = {
@@ -39,6 +43,8 @@ const budgetFeature = {
   descricao: "Gerencie o orçamento financeiro do projeto",
   ordem: 3,
   registryKey: "projetos.orcamento-do-projeto",
+  providerKey: "projetos.orcamento-do-projeto",
+  providerVersion: 1,
 };
 
 const navegacaoProjetos = [{
