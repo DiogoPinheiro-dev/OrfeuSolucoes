@@ -1289,7 +1289,7 @@
   }
 }
 
-@media (max-width: 620px) {
+@media (max-width: 920px) {
   .site-header--hub-sidebar {
     inset: 0 auto auto 0;
     width: 100dvw;
@@ -1335,6 +1335,10 @@
     min-width: 0;
     max-width: 100%;
     overflow: visible;
+  }
+
+  .site-header--hub-sidebar .mobile-hub-profile {
+    display: none;
   }
 
   .site-header--hub-sidebar .brand-logo {

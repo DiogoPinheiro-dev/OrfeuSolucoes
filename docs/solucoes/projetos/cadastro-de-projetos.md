@@ -10,7 +10,7 @@ No Hub, abra **Gerenciador de Projetos** e selecione **Cadastro de projetos**.
 
 ## Consultar projetos
 
-A listagem permite pesquisar e filtrar por metodologia, situação e saúde. A paginação é processada pelo servidor. Quando necessário, habilite a opção de incluir projetos arquivados.
+A listagem permite pesquisar e filtrar por metodologia, situação e saúde. A paginação é processada pelo servidor em páginas de até cinco projetos e usa o rodapé compartilhado dos cadastros. Quando necessário, habilite a opção de incluir projetos arquivados.
 
 ## Criar ou alterar
 

@@ -1,8 +1,10 @@
-import { useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FaEdit, FaEye, FaPlus, FaTrashAlt } from "react-icons/fa";
 
 import { EmptyState, FeedbackMessage, LoadingState } from "./CrudFeedback";
 import "../styles/crudGrid.css";
+
+const CRUD_PAGE_SIZE = 5;
 
 export default function CrudGrid({
     title,
@@ -23,6 +25,7 @@ export default function CrudGrid({
     filters,
     pagination,
     paginationConfig,
+    paginationResetKey,
     toolbarActions,
     emptyMessage = "Nenhum registro encontrado.",
     error = null,
@@ -52,10 +55,14 @@ export default function CrudGrid({
     getRowLabel = (row) => row.nome || row.email || "registro"
 }) {
     const rowRefs = useRef(new Map());
-    const structuredPagination = paginationConfig && !pagination;
-    const paginationMode = paginationConfig?.mode || "server";
-    const currentPage = Math.max(1, paginationConfig?.page || 1);
-    const pageSize = Math.max(1, paginationConfig?.pageSize || rows.length || 1);
+    const previousResetKey = useRef(paginationResetKey);
+    const previousSearch = useRef(search);
+    const [localPage, setLocalPage] = useState(1);
+    const structuredPagination = !pagination;
+    const paginationMode = paginationConfig?.mode || "local";
+    const controlledPage = paginationConfig?.page;
+    const currentPage = Math.max(1, controlledPage || localPage);
+    const pageSize = Math.min(CRUD_PAGE_SIZE, Math.max(1, paginationConfig?.pageSize || CRUD_PAGE_SIZE));
     const totalItems = paginationMode === "local" ? rows.length : Math.max(0, paginationConfig?.totalItems ?? rows.length);
     const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
     const visibleRows = useMemo(() => {
@@ -64,10 +71,42 @@ export default function CrudGrid({
         return rows.slice(start, start + pageSize);
     }, [currentPage, pageSize, paginationMode, rows, structuredPagination, totalPages]);
     const selectedRow = rows.find((row) => getRowId(row) === selectedId);
-    const selectedIdSet = new Set(selectedIds);
+    const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
     const selectableRows = visibleRows.filter((row) => isRowSelectable(row));
     const allVisibleSelected = selectableRows.length > 0 && selectableRows.every((row) => selectedIdSet.has(getRowId(row)));
     const effectivePage = Math.min(currentPage, totalPages);
+
+    const clearSelection = useCallback(() => {
+        onSelect?.(null);
+        const selectedVisibleRows = visibleRows.filter((row) => selectedIdSet.has(getRowId(row)));
+        if (selectedVisibleRows.length) onToggleSelectAll?.(false, selectedVisibleRows);
+    }, [getRowId, onSelect, onToggleSelectAll, selectedIdSet, visibleRows]);
+
+    const changePage = (nextPage) => {
+        const validPage = Math.max(1, Math.min(nextPage, totalPages));
+        if (validPage === effectivePage) return;
+        clearSelection();
+        if (controlledPage == null) setLocalPage(validPage);
+        paginationConfig?.onPageChange?.(validPage);
+    };
+
+    useEffect(() => {
+        if (currentPage <= totalPages) return;
+        clearSelection();
+        if (controlledPage == null) setLocalPage(totalPages);
+        paginationConfig?.onPageChange?.(totalPages);
+    }, [clearSelection, controlledPage, currentPage, paginationConfig, totalPages]);
+
+    useEffect(() => {
+        const searchChanged = previousSearch.current !== search;
+        const resetKeyChanged = previousResetKey.current !== paginationResetKey;
+        previousSearch.current = search;
+        previousResetKey.current = paginationResetKey;
+        if (!searchChanged && !resetKeyChanged) return;
+        clearSelection();
+        if (controlledPage == null) setLocalPage(1);
+        if (effectivePage !== 1) paginationConfig?.onPageChange?.(1);
+    }, [clearSelection, controlledPage, effectivePage, paginationConfig, paginationResetKey, search]);
 
     const actionReason = (action, allowed, needsSelection = false) => {
         if (busy) return "Aguarde o processamento atual.";
@@ -109,8 +148,8 @@ export default function CrudGrid({
         <footer className="crud-pagination" aria-label="Paginação">
             <span aria-live="polite">{paginationConfig?.label || `${totalItems} registro(s)`} · Página {effectivePage} de {totalPages}</span>
             <div className="crud-pagination-actions">
-                <button type="button" disabled={effectivePage <= 1 || busy} onClick={() => paginationConfig.onPageChange?.(effectivePage - 1)}>Anterior</button>
-                <button type="button" disabled={effectivePage >= totalPages || busy} onClick={() => paginationConfig.onPageChange?.(effectivePage + 1)}>Próxima</button>
+                <button type="button" disabled={effectivePage <= 1 || busy} onClick={() => changePage(effectivePage - 1)}>Anterior</button>
+                <button type="button" disabled={effectivePage >= totalPages || busy} onClick={() => changePage(effectivePage + 1)}>Próxima</button>
             </div>
         </footer>
     );

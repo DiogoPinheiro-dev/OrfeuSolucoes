@@ -16,7 +16,7 @@ As telas são resolvidas pelo `RegistryKey` recebido do backend. Alterar somente
 
 ## Padrão das telas
 
-Os cinco cadastros usam `CrudGrid`, `CrudModal`, `ConfirmDialog` e seleção compartilhada. A linha ativa alimenta alteração e visualização; checkboxes marcam registros para exclusão ou desativação, conforme a persistência real do domínio. Pesquisa, carregamento, erro, estado vazio, processamento e mensagens de sucesso são apresentados na própria tela.
+Os cinco cadastros usam `CrudGrid`, `CrudModal`, `ConfirmDialog` e seleção compartilhada. As grades exibem até cinco registros por página. A linha ativa alimenta alteração e visualização; checkboxes marcam registros para exclusão ou desativação, conforme a persistência real do domínio. Pesquisa, carregamento, erro, estado vazio, processamento e mensagens de sucesso são apresentados na própria tela.
 
 Os botões incluir, alterar, visualizar e excluir respeitam as permissões da funcionalidade ativa. O backend repete a autorização e é a fonte de verdade para permitir a operação.
 

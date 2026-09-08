@@ -28,7 +28,7 @@ O acesso efetivo é cumulativamente restritivo: a solução precisa estar public
 
 Cadastros convencionais reutilizam os seguintes contratos:
 
-- `CrudGrid`: cabeçalho, pesquisa, filtros, toolbar, tabela, estados de carregamento/erro/vazio e paginação;
+- `CrudGrid`: cabeçalho, pesquisa, filtros, toolbar, tabela, estados de carregamento/erro/vazio e paginação compartilhada de até cinco registros por página. Coleções completas usam recorte local; consultas já paginadas preservam o recorte no servidor. Ao trocar de página, a linha ativa e as marcações de exclusão da página visível são limpas;
 - `CrudModal`: inclusão, alteração, visualização e exclusão;
 - `ConfirmDialog`: confirmações simples, de atenção ou destrutivas;
 - `useCrudSelection`: separação entre linha ativa e registros marcados para exclusão;

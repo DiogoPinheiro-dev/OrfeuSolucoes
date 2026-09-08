@@ -56,7 +56,7 @@ const page = (items = [project]) => ({
     items,
     total: items.length,
     pagina: 1,
-    limite: 20,
+    limite: 5,
     totalPaginas: items.length ? 1 : 0
 });
 
@@ -82,6 +82,7 @@ describe("Cadastro de projetos", () => {
         render(<ProjectManagement permissions={permissions} />);
 
         expect(await screen.findByRole("cell", { name: "Orfeu Evolucao" })).toBeInTheDocument();
+        expect(getProjetos).toHaveBeenCalledWith(expect.objectContaining({ pagina: 1, limite: 5 }));
         await user.type(screen.getByRole("searchbox", { name: "Pesquisar" }), "evolucao");
         await waitFor(() => expect(getProjetos).toHaveBeenLastCalledWith(expect.objectContaining({ termo: "evolucao" })), { timeout: 2000 });
 

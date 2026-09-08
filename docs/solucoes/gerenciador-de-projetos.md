@@ -21,7 +21,7 @@ Cada tela é resolvida pelo `RegistryKey` recebido do backend. Empresa, funciona
 
 O cadastro mantém chave, nome, objetivo, descrição, metodologia, situação, saúde, datas, responsável e equipe. As metodologias disponíveis são Scrum, Kanban, híbrida e outra. A situação pode ser rascunho, em orçamento, planejado, em andamento, pausado, concluído ou cancelado; a saúde registra projeto em dia, em risco ou atrasado.
 
-A listagem possui pesquisa, filtros por metodologia, situação e saúde, paginação pelo servidor e opção de incluir projetos arquivados. A visualização apresenta os dados completos em modo somente leitura.
+A listagem possui pesquisa, filtros por metodologia, situação e saúde, paginação pelo servidor em páginas de até cinco projetos e opção de incluir projetos arquivados. A visualização apresenta os dados completos em modo somente leitura.
 
 As ações dinâmicas `gerenciar_membros`, `alterar_status` e `reativar_projeto` complementam as permissões CRUD. Um membro pode exercer o papel de responsável, membro ou observador. Alterações de ciclo respeitam as transições aceitas pelo estado atual. O arquivamento preserva o projeto e seus registros; projetos arquivados permanecem consultáveis e podem ser reativados por usuário autorizado.
 

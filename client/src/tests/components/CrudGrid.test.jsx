@@ -13,6 +13,7 @@ const rows = [
     { id: "3", nome: "Gamma" },
     { id: "4", nome: "Delta" }
 ];
+const elevenRows = Array.from({ length: 11 }, (_, index) => ({ id: String(index + 1), nome: `Registro ${index + 1}` }));
 
 const baseProps = {
     title: "Registros", columns, rows,
@@ -78,6 +79,56 @@ describe("CrudGrid", () => {
         rerender(<CrudGrid {...baseProps} pagination={<span>Paginação legada</span>} paginationConfig={{ mode: "local", page: 2, pageSize: 2, onPageChange }} />);
         expect(screen.getByText("Paginação legada")).toBeInTheDocument();
         expect(screen.getByText("Alpha")).toBeInTheDocument();
+    });
+
+    it("limits local CRUD pages to five records and keeps the footer outside the scroll area", async () => {
+        const user = userEvent.setup();
+        const { container } = render(<CrudGrid {...baseProps} rows={elevenRows} />);
+
+        expect(screen.getAllByRole("row")).toHaveLength(6);
+        expect(screen.getByText("11 registro(s) · Página 1 de 3")).toBeInTheDocument();
+        expect(container.querySelector(".crud-table-wrap + .crud-pagination")).toBeInTheDocument();
+
+        await user.click(screen.getByRole("button", { name: "Próxima" }));
+        expect(screen.getByText("Registro 6")).toBeInTheDocument();
+        expect(screen.queryByText("Registro 1")).not.toBeInTheDocument();
+
+        await user.click(screen.getByRole("button", { name: "Próxima" }));
+        expect(screen.getByText("Registro 11")).toBeInTheDocument();
+        expect(screen.getAllByRole("row")).toHaveLength(2);
+    });
+
+    it.each([
+        [0, 1, 1],
+        [1, 1, 1],
+        [5, 1, 5],
+        [6, 2, 5]
+    ])("paginates %i local records into %i page(s)", (rowCount, pageCount, bodyRowCount) => {
+        render(<CrudGrid {...baseProps} rows={elevenRows.slice(0, rowCount)} />);
+        expect(screen.getByText(`${rowCount} registro(s) · Página 1 de ${pageCount}`)).toBeInTheDocument();
+        expect(screen.getAllByRole("row")).toHaveLength(bodyRowCount + 1);
+    });
+
+    it("clears active and deletion selections before changing pages", async () => {
+        const user = userEvent.setup();
+        const onSelect = vi.fn();
+        const onToggleSelectAll = vi.fn();
+        render(<CrudGrid {...baseProps} rows={elevenRows} selectedId="1" selectedIds={["1", "2"]} onSelect={onSelect} onToggleSelectAll={onToggleSelectAll} />);
+
+        await user.click(screen.getByRole("button", { name: "Próxima" }));
+
+        expect(onSelect).toHaveBeenCalledWith(null);
+        expect(onToggleSelectAll).toHaveBeenCalledWith(false, elevenRows.slice(0, 2));
+    });
+
+    it("returns to the previous valid page when the last page becomes empty", async () => {
+        const onPageChange = vi.fn();
+        const { rerender } = render(<CrudGrid {...baseProps} rows={elevenRows} paginationConfig={{ mode: "local", page: 3, pageSize: 5, onPageChange }} />);
+        expect(screen.getByText("Registro 11")).toBeInTheDocument();
+
+        rerender(<CrudGrid {...baseProps} rows={elevenRows.slice(0, 10)} paginationConfig={{ mode: "local", page: 3, pageSize: 5, onPageChange }} />);
+
+        expect(onPageChange).toHaveBeenCalledWith(2);
     });
 
     it("supports row navigation, viewing and deletion selection by keyboard", () => {
