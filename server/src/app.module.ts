@@ -40,7 +40,7 @@ import { PrismaModule } from './prisma/prisma.module';
         sortSchema: true,
         context: ({ req, res }: { req: Request; res: Response }) => ({ req, res }),
         introspection: configService.get<string>('NODE_ENV') !== 'production',
-        playground: configService.get<string>('NODE_ENV') !== 'production'
+        graphiql: configService.get<string>('NODE_ENV') !== 'production'
       })
     }),
     PrismaModule,
