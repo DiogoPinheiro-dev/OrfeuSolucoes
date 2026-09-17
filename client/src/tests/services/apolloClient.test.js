@@ -19,10 +19,10 @@ vi.mock("@apollo/client", () => ({
     createHttpLink: apolloMocks.createHttpLink
 }));
 
-import { apolloClient } from "../../lib/apolloClient";
-
 describe("Apollo Client", () => {
-    it("envia credenciais pelo cookie sem montar um link Bearer", () => {
+    it("envia credenciais pelo cookie sem montar um link Bearer", async () => {
+        const { apolloClient } = await import("../../lib/apolloClient");
+
         expect(apolloMocks.createHttpLink).toHaveBeenCalledWith({
             uri: "/graphql",
             credentials: "include"
