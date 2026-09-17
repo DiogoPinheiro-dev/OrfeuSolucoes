@@ -4,7 +4,7 @@
 
 O frontend é uma aplicação React servida pelo Vite. O roteamento fica em `client/src/main.jsx`, a sessão autenticada é mantida por `AuthProvider` e as chamadas GraphQL são executadas pelo Apollo Client.
 
-As páginas de rota e as telas vinculadas às funcionalidades do Hub são carregadas sob demanda. O manifesto único em `client/src/auth/featureProviders.jsx` associa cada `providerKey` versionada ao seu loader lazy, às propriedades fixas da implementação e aos aliases históricos suportados. O `RegistryKey` permanece como identidade técnica para rota e documentação, sem depender do título apresentado ao usuário.
+As páginas de rota e as telas vinculadas às funcionalidades do Hub são carregadas sob demanda. O manifesto único em `client/src/auth/featureProviders.js` associa cada `providerKey` versionada ao seu loader lazy, às propriedades fixas da implementação e aos aliases históricos suportados. O `RegistryKey` permanece como identidade técnica para rota e documentação, sem depender do título apresentado ao usuário.
 
 A navegação recebida do backend preserva `providerKey` e `providerVersion`. A página da funcionalidade resolve diretamente esse contrato no manifesto; provider ausente ou incompatível não executa outra tela por aproximação. Links antigos de Recursos e Grade de capacitação são aliases explícitos do provider de Cadastro de recursos (`projetos.planejamento-de-recursos`).
 

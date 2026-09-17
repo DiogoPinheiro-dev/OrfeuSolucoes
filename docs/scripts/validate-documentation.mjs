@@ -7,7 +7,7 @@ const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const docsRoot = path.resolve(scriptDirectory, "..");
 const repositoryRoot = path.resolve(docsRoot, "..");
 const catalogPath = path.join(docsRoot, "catalogo.json");
-const registryPath = path.join(repositoryRoot, "client", "src", "auth", "featureProviders.jsx");
+const registryPath = path.join(repositoryRoot, "client", "src", "auth", "featureProviders.js");
 const outputPath = path.join(docsRoot, "generated", "documentacao-manifest.json");
 
 try {
