@@ -48,6 +48,12 @@ export class FuncionalidadeType {
   @Field(() => Int)
   revisaoCatalogo!: number;
 
+  @Field(() => Int, { nullable: true })
+  agrupamentoId?: number | null;
+
+  @Field(() => Int, { nullable: true })
+  ordemNoAgrupamento?: number | null;
+
   @Field()
   podeVisualizar!: boolean;
 

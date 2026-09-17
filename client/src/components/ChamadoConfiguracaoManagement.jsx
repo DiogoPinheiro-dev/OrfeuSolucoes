@@ -329,6 +329,8 @@ export default function ChamadoConfiguracaoManagement({ permissions, kind }) {
                 open={!!pendingDelete}
                 title={settings.deleteTitle}
                 message={settings.deleteMessage.replace("{label}", pendingDelete?.label || settings.emptyDelete)}
+                confirmLabel="Desativar"
+                variant="warning"
                 onCancel={() => setPendingDelete(null)}
                 onConfirm={confirmDelete}
                 loading={false}

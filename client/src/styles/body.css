@@ -242,21 +242,21 @@
   }
 
   .hero {
-    min-height: 100vh;
-    min-height: 100svh;
+    --hero-mobile-art-size: min(100vw, 720px, 100svh);
+    min-height: var(--hero-mobile-art-size);
   }
 
   .hero-inner {
-    min-height: 100vh;
-    min-height: 100svh;
-    padding: calc(var(--site-header-height-mobile) + 24px) 0 56px;
+    min-height: var(--hero-mobile-art-size);
+    padding: var(--site-header-height-mobile) 0 0;
   }
 
   .hero::before {
-    background-image: url("../assets/banner-orfeu-mobile.jpg");
-    background-image: image-set(url("../assets/banner-orfeu-mobile.webp") type("image/webp"));
-    background-size: cover;
-    background-position: center;
+    inset: 0 0 auto;
+    height: var(--hero-mobile-art-size);
+    background-image: url("../assets/banner-orfeu-mobile-fit.jpg");
+    background-size: var(--hero-mobile-art-size) var(--hero-mobile-art-size);
+    background-position: center top;
   }
 
   .hero h1 {

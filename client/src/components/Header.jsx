@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, LogOut, PanelLeftClose, PanelLeftOpen, UserRound } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
-import { getUserGroupLabel } from "../auth/hubConfig";
+import { getUserGroupLabel, getWorkspaceEntries } from "../auth/hubConfig";
 import { useHubNavigation } from "../hooks/useHubNavigation";
 import { useAuth } from "../hooks/useAuth";
 import CustomDropdown from "./CustomDropdown";
@@ -312,13 +312,13 @@ export default function Header() {
 
                                         {hasAreas && expanded && (
                                             <ul className="hub-submenu list-unstyled">
-                                                {solution.areas.map((area) => (
-                                                    <li key={area.title}>
+                                                {getWorkspaceEntries(solution).map((entry) => (
+                                                    <li key={entry.key}>
                                                         <Link
-                                                            to={`${solutionPath}/${area.slug}`}
+                                                            to={entry.path}
                                                             onClick={closeMenu}
                                                         >
-                                                            {area.title}
+                                                            {entry.title}
                                                         </Link>
                                                     </li>
                                                 ))}

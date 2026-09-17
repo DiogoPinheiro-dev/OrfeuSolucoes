@@ -2,11 +2,6 @@ import { BadRequestException } from '@nestjs/common';
 import { ProjetoMetodologia, ProjetoSaude, ProjetoSituacao } from '../types/projeto.types';
 
 const METODOLOGIAS = new Set(Object.values(ProjetoMetodologia));
-const SITUACOES_INICIAIS = new Set([
-  ProjetoSituacao.RASCUNHO,
-  ProjetoSituacao.EM_ORCAMENTO,
-  ProjetoSituacao.PLANEJADO
-]);
 const SAUDES = new Set(Object.values(ProjetoSaude));
 
 export function normalizeProjetoKey(chave: string): string {
@@ -31,15 +26,15 @@ export function normalizeRequiredName(nome: string): string {
 
 export function validateProjetoDefaults(
   metodologia: ProjetoMetodologia,
-  situacao = ProjetoSituacao.RASCUNHO,
+  situacao = ProjetoSituacao.EM_ORCAMENTO,
   saude = ProjetoSaude.EM_DIA
 ): void {
   if (!METODOLOGIAS.has(metodologia)) {
     throw new BadRequestException('Metodologia de projeto invalida.');
   }
 
-  if (!SITUACOES_INICIAIS.has(situacao)) {
-    throw new BadRequestException('A situacao inicial deve ser RASCUNHO, EM_ORCAMENTO ou PLANEJADO.');
+  if (situacao !== ProjetoSituacao.EM_ORCAMENTO) {
+    throw new BadRequestException('Todo projeto deve começar no ciclo Em orçamento e ser aprovado em Orçamento do projeto.');
   }
 
   if (!SAUDES.has(saude)) {

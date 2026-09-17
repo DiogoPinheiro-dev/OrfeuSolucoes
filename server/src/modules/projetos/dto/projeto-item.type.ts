@@ -112,9 +112,21 @@ export class ProjetoItemType {
 }
 
 @ObjectType()
+export class ProjetoItemGrupoType {
+  @Field()
+  valor!: string;
+
+  @Field(() => Int)
+  total!: number;
+}
+
+@ObjectType()
 export class ProjetoItemPageType {
   @Field(() => [ProjetoItemType])
   items!: ProjetoItemType[];
+
+  @Field(() => [ProjetoItemGrupoType], { description: 'Totais de cada grupo no backlog filtrado inteiro, quando houver agrupamento.' })
+  grupos!: ProjetoItemGrupoType[];
 
   @Field(() => Int)
   total!: number;

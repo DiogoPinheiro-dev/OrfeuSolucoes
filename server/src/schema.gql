@@ -469,12 +469,24 @@ input CreateEmpresaInput {
   solucaoIds: [Int!]
 }
 
+input CreateFuncionalidadeAgrupamentoInput {
+  ativo: Boolean
+  descricao: String
+  label: String
+  ordem: Int
+  slug: String!
+  solucaoId: Int!
+  titulo: String!
+}
+
 input CreateFuncionalidadeInput {
   acoes: [FuncionalidadeAcaoInput!]
+  agrupamentoId: Int
   ativo: Boolean = true
   descricao: String
   label: String
   ordem: Int = 0
+  ordemNoAgrupamento: Int
   providerKey: String
   providerVersion: Int
   registryKey: String
@@ -546,7 +558,7 @@ input CreateProjetoInput {
   participantes: [ProjetoMembroInput!] = []
   responsavelId: String
   saude: ProjetoSaude = EM_DIA
-  situacao: ProjetoSituacao = RASCUNHO
+  situacao: ProjetoSituacao = EM_ORCAMENTO
 }
 
 input CreateProjetoItemDependenciaInput {
@@ -775,6 +787,19 @@ type FuncionalidadeAcaoType {
   statusPublicacao: String!
 }
 
+type FuncionalidadeAgrupamentoType {
+  ativo: Boolean!
+  chaveTecnica: String!
+  descricao: String
+  id: Int!
+  label: String
+  ordem: Int!
+  padraoSistema: Boolean!
+  slug: String!
+  solucaoId: Int!
+  titulo: String!
+}
+
 input FuncionalidadePermissaoInput {
   acoes: [FuncionalidadeAcaoPermissaoInput!]
   funcionalidadeId: Int!
@@ -795,12 +820,14 @@ type FuncionalidadePermissaoType {
 
 type FuncionalidadeType {
   acoes: [FuncionalidadeAcaoType!]!
+  agrupamentoId: Int
   ativo: Boolean!
   chaveTecnica: String!
   descricao: String
   id: Int!
   label: String
   ordem: Float!
+  ordemNoAgrupamento: Int
   padraoSistema: Boolean!
   podeAlterar: Boolean!
   podeExcluir: Boolean!
@@ -889,6 +916,7 @@ type Mutation {
   createChamadoTipo(input: CreateChamadoTipoInput!): ChamadoTipoType!
   createEmpresa(input: CreateEmpresaInput!): EmpresaType!
   createFuncionalidade(input: CreateFuncionalidadeInput!): FuncionalidadeType!
+  createFuncionalidadeAgrupamento(input: CreateFuncionalidadeAgrupamentoInput!): FuncionalidadeAgrupamentoType!
   createGoogleEmailConta(input: CreateGoogleEmailContaInput!): GoogleEmailContaType!
   createGrupoUsuario(input: CreateGrupoUsuarioInput!): GrupoUsuarioType!
   createProjeto(input: CreateProjetoInput!): ProjetoType!
@@ -913,6 +941,7 @@ type Mutation {
   deleteChamadoTipo(id: Int!): Boolean!
   deleteEmpresa(id: Int!): Boolean!
   deleteFuncionalidade(id: Int!): Boolean!
+  deleteFuncionalidadeAgrupamento(id: Int!): Boolean!
   deleteGoogleEmailConta(id: Int!): Boolean!
   deleteGrupoUsuario(id: Int!): Boolean!
   deleteServico(id: Int!): Boolean!
@@ -974,6 +1003,7 @@ type Mutation {
   updateChamadoTipo(input: UpdateChamadoTipoInput!): ChamadoTipoType!
   updateEmpresa(input: UpdateEmpresaInput!): EmpresaType!
   updateFuncionalidade(input: UpdateFuncionalidadeInput!): FuncionalidadeType!
+  updateFuncionalidadeAgrupamento(input: UpdateFuncionalidadeAgrupamentoInput!): FuncionalidadeAgrupamentoType!
   updateGoogleEmailConta(input: UpdateGoogleEmailContaInput!): GoogleEmailContaType!
   updateGrupoUsuario(input: UpdateGrupoUsuarioInput!): GrupoUsuarioType!
   updateProjeto(input: UpdateProjetoInput!): ProjetoType!
@@ -1031,6 +1061,12 @@ type ProjetoAtualizacaoType {
   projetoId: String!
   saudePercebida: ProjetoSaude
   versao: Int!
+}
+
+enum ProjetoBacklogAgrupamento {
+  PRIORIDADE
+  STATUS
+  TIPO
 }
 
 enum ProjetoBacklogDirecao {
@@ -1331,6 +1367,7 @@ type ProjetoItemDependenciaType {
 }
 
 input ProjetoItemFiltroInput {
+  agruparPor: ProjetoBacklogAgrupamento
   incluirArquivados: Boolean = false
   limite: Int = 20
   pagina: Int = 1
@@ -1340,6 +1377,11 @@ input ProjetoItemFiltroInput {
   status: ProjetoItemStatus
   termo: String
   tipo: ProjetoItemTipo
+}
+
+type ProjetoItemGrupoType {
+  total: Int!
+  valor: String!
 }
 
 type ProjetoItemHistoricoType {
@@ -1352,6 +1394,11 @@ type ProjetoItemHistoricoType {
 
 type ProjetoItemPageType {
   backlogVersao: Int!
+
+  """
+  Totais de cada grupo no backlog filtrado inteiro, quando houver agrupamento.
+  """
+  grupos: [ProjetoItemGrupoType!]!
   items: [ProjetoItemType!]!
   limite: Int!
   pagina: Int!
@@ -1521,6 +1568,7 @@ type ProjetoOrganizacaoPainelType {
   capacitacoes: [CapacitacaoType!]!
   equipes: [EquipeType!]!
   permissoes: ProjetoRecursoPermissoesType!
+  permissoesEquipes: ProjetoRecursoPermissoesType!
   projetos: [ProjetoRecursoProjetoType!]!
   recursos: [OrganizacaoRecursoType!]!
 }
@@ -1873,6 +1921,7 @@ type ServicoType {
 }
 
 type SolucaoType {
+  agrupamentos: [FuncionalidadeAgrupamentoType!]!
   ativo: Boolean!
   chaveTecnica: String!
   descricao: String
@@ -1991,13 +2040,24 @@ input UpdateEmpresaInput {
   solucaoIds: [Int!]
 }
 
-input UpdateFuncionalidadeInput {
-  acoes: [FuncionalidadeAcaoInput!]
+input UpdateFuncionalidadeAgrupamentoInput {
   ativo: Boolean
   descricao: String
   id: Int!
   label: String
   ordem: Int
+  titulo: String
+}
+
+input UpdateFuncionalidadeInput {
+  acoes: [FuncionalidadeAcaoInput!]
+  agrupamentoId: Int
+  ativo: Boolean
+  descricao: String
+  id: Int!
+  label: String
+  ordem: Int
+  ordemNoAgrupamento: Int
   providerKey: String
   providerVersion: Int
   registryKey: String

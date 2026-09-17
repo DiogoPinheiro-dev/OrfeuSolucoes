@@ -101,6 +101,7 @@ import { FuncionalidadeAcaoService } from '../src/modules/solucoes/funcionalidad
 import { FuncionalidadeAuthorizationService } from '../src/modules/solucoes/funcionalidade-authorization.service';
 import { HubNavigationService } from '../src/modules/solucoes/hub-navigation.service';
 import { SolucaoAcessoService } from '../src/modules/solucoes/solucao-acesso.service';
+import { FuncionalidadeAgrupamentoService } from '../src/modules/solucoes/funcionalidade-agrupamento.service';
 import { SolucaoBootstrapService } from '../src/modules/solucoes/solucao-bootstrap.service';
 import { SolucaoChamadosBootstrapService } from '../src/modules/solucoes/solucao-chamados-bootstrap.service';
 import { SolucaoHorasBootstrapService } from '../src/modules/solucoes/solucao-horas-bootstrap.service';
@@ -133,6 +134,7 @@ type ModelName =
   | 'solucao'
   | 'funcionalidade'
   | 'funcionalidadeAcao'
+  | 'funcionalidadeAgrupamento'
   | 'catalogoVersao'
   | 'catalogoConflito'
   | 'catalogoAuditoria'
@@ -194,6 +196,7 @@ const MODELS: ModelName[] = [
   'solucao',
   'funcionalidade',
   'funcionalidadeAcao',
+  'funcionalidadeAgrupamento',
   'catalogoVersao',
   'catalogoConflito',
   'catalogoAuditoria',
@@ -255,6 +258,7 @@ const INTEGER_ID_MODELS = new Set<ModelName>([
   'solucao',
   'funcionalidade',
   'funcionalidadeAcao',
+  'funcionalidadeAgrupamento',
   'grupoSolucao',
   'empresaSolucao',
   'grupoFuncionalidade',
@@ -456,6 +460,7 @@ class InMemoryPrismaService {
   public solucao = new InMemoryDelegate(this, 'solucao');
   public funcionalidade = new InMemoryDelegate(this, 'funcionalidade');
   public funcionalidadeAcao = new InMemoryDelegate(this, 'funcionalidadeAcao');
+  public funcionalidadeAgrupamento = new InMemoryDelegate(this, 'funcionalidadeAgrupamento');
   public catalogoVersao = new InMemoryDelegate(this, 'catalogoVersao');
   public catalogoConflito = new InMemoryDelegate(this, 'catalogoConflito');
   public catalogoAuditoria = new InMemoryDelegate(this, 'catalogoAuditoria');
@@ -900,6 +905,12 @@ class InMemoryPrismaService {
         return this.data.funcionalidadeAcao.filter((acao) => acao.funcionalidadeId === row.id);
       case 'funcionalidade.solucao':
         return this.data.solucao.find((solucao) => solucao.id === row.solucaoId) ?? null;
+      case 'funcionalidade.agrupamento':
+        return row.agrupamentoId ? this.data.funcionalidadeAgrupamento.find((agrupamento) => agrupamento.id === row.agrupamentoId) ?? null : null;
+      case 'solucao.agrupamentos':
+        return this.data.funcionalidadeAgrupamento.filter((agrupamento) => agrupamento.solucaoId === row.id);
+      case 'funcionalidadeAgrupamento.funcionalidades':
+        return this.data.funcionalidade.filter((funcionalidade) => funcionalidade.agrupamentoId === row.id);
       case 'catalogoVersao.conflitos':
         return this.data.catalogoConflito.filter((conflito) => conflito.versaoId === row.id);
       case 'grupoSolucao.grupo':
@@ -1144,6 +1155,9 @@ class InMemoryPrismaService {
       'solucao.funcionalidades': 'funcionalidade',
       'funcionalidade.acoes': 'funcionalidadeAcao',
       'funcionalidade.solucao': 'solucao',
+      'funcionalidade.agrupamento': 'funcionalidadeAgrupamento',
+      'solucao.agrupamentos': 'funcionalidadeAgrupamento',
+      'funcionalidadeAgrupamento.funcionalidades': 'funcionalidade',
       'catalogoVersao.conflitos': 'catalogoConflito',
       'grupoSolucao.grupo': 'grupoUsuario',
       'grupoSolucao.solucao': 'solucao',
@@ -1332,6 +1346,18 @@ class InMemoryPrismaService {
         row.statusPublicacao = row.statusPublicacao ?? 'PUBLICADA';
         row.revisaoCatalogo = row.revisaoCatalogo ?? 1;
         row.publicadoEm = row.publicadoEm ?? null;
+        row.agrupamentoId = row.agrupamentoId ?? null;
+        row.ordemNoAgrupamento = row.ordemNoAgrupamento ?? null;
+        break;
+      case 'funcionalidadeAgrupamento':
+        row.label = row.label ?? null;
+        row.descricao = row.descricao ?? null;
+        row.ordem = row.ordem ?? 0;
+        row.ativo = row.ativo ?? true;
+        row.padraoSistema = row.padraoSistema ?? false;
+        row.chaveTecnica = row.chaveTecnica ?? randomUUID();
+        row.criadoEm = row.criadoEm ?? now;
+        row.atualizadoEm = row.atualizadoEm ?? now;
         break;
       case 'funcionalidadeAcao':
         row.descricao = row.descricao ?? null;
@@ -1701,15 +1727,16 @@ function createWorld(): TestWorld {
   } as ConfigService;
   const funcionalidadeAcaoService = new FuncionalidadeAcaoService(prismaService);
   const solucaoAcessoService = new SolucaoAcessoService(prismaService, funcionalidadeAcaoService);
-  const solucaoChamadosBootstrapService = new SolucaoChamadosBootstrapService(prismaService, funcionalidadeAcaoService, solucaoAcessoService);
+  const funcionalidadeAgrupamentoService = new FuncionalidadeAgrupamentoService(prismaService);
+  const solucaoChamadosBootstrapService = new SolucaoChamadosBootstrapService(prismaService, funcionalidadeAcaoService, solucaoAcessoService, funcionalidadeAgrupamentoService);
   const catalogoBootstrapReconciliationService = new CatalogoBootstrapReconciliationService(prismaService);
-  const solucaoProjetosBootstrapService = new SolucaoProjetosBootstrapService(prismaService, funcionalidadeAcaoService, solucaoAcessoService, catalogoBootstrapReconciliationService);
+  const solucaoProjetosBootstrapService = new SolucaoProjetosBootstrapService(prismaService, funcionalidadeAcaoService, solucaoAcessoService, catalogoBootstrapReconciliationService, funcionalidadeAgrupamentoService);
   const solucaoHorasBootstrapService = new SolucaoHorasBootstrapService(prismaService, funcionalidadeAcaoService);
-  const solucaoBootstrapService = new SolucaoBootstrapService(prismaService, funcionalidadeAcaoService, solucaoAcessoService, solucaoChamadosBootstrapService, solucaoProjetosBootstrapService, solucaoHorasBootstrapService);
+  const solucaoBootstrapService = new SolucaoBootstrapService(prismaService, funcionalidadeAcaoService, solucaoAcessoService, solucaoChamadosBootstrapService, solucaoProjetosBootstrapService, solucaoHorasBootstrapService, funcionalidadeAgrupamentoService);
   const solucaoQueryService = new SolucaoQueryService(prismaService);
-  const solucaoCatalogService = new SolucaoCatalogService(prismaService, funcionalidadeAcaoService, solucaoAcessoService);
+  const solucaoCatalogService = new SolucaoCatalogService(prismaService, funcionalidadeAcaoService, solucaoAcessoService, funcionalidadeAgrupamentoService);
   const hubNavigationService = new HubNavigationService(solucaoAcessoService, solucaoQueryService);
-  const solucoesService = new SolucoesService(solucaoAcessoService, solucaoBootstrapService, solucaoCatalogService, hubNavigationService, solucaoQueryService);
+  const solucoesService = new SolucoesService(solucaoAcessoService, solucaoBootstrapService, solucaoCatalogService, hubNavigationService, solucaoQueryService, funcionalidadeAgrupamentoService);
   const documentacaoCatalogService = new DocumentacaoCatalogService(join(process.cwd(), '../docs'));
   const documentacaoAuthorizationService = new DocumentacaoAuthorizationService(hubNavigationService);
   const documentacaoSearchService = new DocumentacaoSearchService();
@@ -2259,6 +2286,246 @@ describe('Fluxos integrados do backend', () => {
     )).resolves.toBeUndefined();
   });
 
+  it('agrupa funcionalidades somente para navegacao e preserva a autorizacao de cada aba', async () => {
+    const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
+    const solucoes = await world.solucoesService.findAll();
+    const chamados = expectDefined(solucoes.find((solucao) => solucao.slug === 'controle-de-chamados'));
+    const projetos = expectDefined(solucoes.find((solucao) => solucao.slug === 'projetos'));
+    const funcionalidade = (slug: string) => expectDefined(chamados.funcionalidades.find((item) => item.slug === slug));
+    const tipos = funcionalidade('tipos');
+    const prioridades = funcionalidade('prioridades');
+    const sla = funcionalidade('sla');
+    const arquivados = funcionalidade('chamados-arquivados');
+    const meusChamados = funcionalidade('meus-chamados');
+    const painelAtendimento = funcionalidade('painel-atendimento');
+    const backlog = expectDefined(projetos.funcionalidades.find((item) => item.slug === 'backlog-de-demandas'));
+    const configuracoes = expectDefined(chamados.agrupamentos.find((item) => item.slug === 'configuracoes-do-atendimento'));
+
+    await expect(world.solucoesService.createAgrupamento({ solucaoId: chamados.id, slug: 'tipos', titulo: 'Conflito de rota' }, admin.sub))
+      .rejects.toThrow('Já existe uma funcionalidade ou agrupamento');
+    await expect(world.solucoesService.createAgrupamento({ solucaoId: chamados.id, slug: 'configuracoes-do-atendimento', titulo: 'Duplicado' }, admin.sub))
+      .rejects.toThrow('Já existe uma funcionalidade ou agrupamento');
+    await expect(world.solucoesService.updateFuncionalidade({ id: backlog.id, agrupamentoId: configuracoes.id }, admin.sub))
+      .rejects.toThrow('não pertence à solução');
+    await expect(world.solucoesService.updateFuncionalidade({ id: tipos.id, titulo: 'Outro titulo', agrupamentoId: configuracoes.id }, admin.sub))
+      .rejects.toThrow('rascunho versionado');
+
+    await world.solucoesService.syncCompanyAccess(empresaInicialId, [chamados.id], [tipos.id, prioridades.id, sla.id, arquivados.id]);
+    const usuarioDoGrupo = async (nome: string, liberada: typeof tipos): Promise<JwtPayload> => {
+      const grupo = await world.prisma.grupoUsuario.create({ data: { nome } });
+      await world.solucoesService.syncGroupAccess(grupo.id, [chamados.id], [liberada.id], [{
+        funcionalidadeId: liberada.id,
+        podeVisualizar: true,
+        podeIncluir: true,
+        podeAlterar: true,
+        podeExcluir: true,
+        acoes: []
+      }]);
+      return {
+        sub: randomUUID(),
+        nome,
+        login: `agrupamento.${grupo.id}`,
+        email: `agrupamento.${grupo.id}@teste.com`,
+        empresaId: empresaInicialId,
+        grupo: { id: grupo.id, nome: grupo.nome, acessoEcommerce: false, acessoProjetos: false, acessoHoras: false, acessoConfigurador: false }
+      } as JwtPayload;
+    };
+
+    const somenteTipos = await usuarioDoGrupo('Somente tipos', tipos);
+    const navegacao = expectDefined((await world.solucoesService.myHubNavigation(somenteTipos))
+      .find((solucao) => solucao.slug === 'controle-de-chamados'));
+    expect(navegacao.agrupamentos.map((item) => item.slug)).toEqual(['configuracoes-do-atendimento']);
+    expect(navegacao.funcionalidades.filter((item) => item.agrupamentoId === configuracoes.id).map((item) => item.slug)).toEqual(['tipos']);
+    await expect(world.funcionalidadeAuthorizationService.assertFeatureAction(somenteTipos, 'controle-de-chamados', 'tipos', 'alterar'))
+      .resolves.toBeUndefined();
+    await expect(world.funcionalidadeAuthorizationService.assertFeatureAction(somenteTipos, 'controle-de-chamados', 'sla', 'visualizar'))
+      .rejects.toThrow('Usuario sem permissao');
+    await expect(world.funcionalidadeAuthorizationService.assertFeatureAction(somenteTipos, 'controle-de-chamados', 'prioridades', 'incluir'))
+      .rejects.toThrow('Usuario sem permissao');
+
+    const somenteArquivados = await usuarioDoGrupo('Somente arquivados', arquivados);
+    const semAbas = expectDefined((await world.solucoesService.myHubNavigation(somenteArquivados))
+      .find((solucao) => solucao.slug === 'controle-de-chamados'));
+    expect(semAbas.agrupamentos).toEqual([]);
+
+    const fila = await world.solucoesService.createAgrupamento({ solucaoId: chamados.id, slug: 'fila-do-atendimento', titulo: 'Fila do atendimento' }, admin.sub);
+    for (const [index, item] of [meusChamados, painelAtendimento].entries()) {
+      await world.solucoesService.updateFuncionalidade({ id: item.id, agrupamentoId: fila.id, ordemNoAgrupamento: index + 1 }, admin.sub);
+    }
+    expect((await world.prisma.catalogoAuditoria.findMany({ where: { entidade: 'AGRUPAMENTO', entidadeId: fila.id } }))
+      .map((item) => item.evento)).toEqual(['CRIADO']);
+    expect(await world.prisma.catalogoAuditoria.count({ where: { entidade: 'FUNCIONALIDADE', evento: 'AGRUPAMENTO_ALTERADO', autorId: admin.sub } })).toBe(2);
+
+    await world.solucoesService.ensureControleChamadosSolution();
+    const aposBootstrap = expectDefined((await world.solucoesService.findAll()).find((solucao) => solucao.slug === 'controle-de-chamados'));
+    expect(aposBootstrap.funcionalidades.filter((item) => item.agrupamentoId === fila.id).map((item) => item.slug).sort())
+      .toEqual(['meus-chamados', 'painel-atendimento']);
+
+    await expect(world.solucoesService.removeAgrupamento(fila.id, admin.sub)).rejects.toThrow('Retire as funcionalidades');
+    for (const item of [meusChamados, painelAtendimento]) {
+      await world.solucoesService.updateFuncionalidade({ id: item.id, agrupamentoId: null }, admin.sub);
+    }
+    await expect(world.solucoesService.removeAgrupamento(fila.id, admin.sub)).resolves.toBe(true);
+  });
+
+  it('cria os agrupamentos padrao uma unica vez e preserva a personalizacao no bootstrap', async () => {
+    const { world, admin } = await bootstrapBaseWorld();
+    const composicao = async (solucaoSlug: string, agrupamentoSlug: string) => {
+      const solucao = expectDefined((await world.solucoesService.findAll()).find((item) => item.slug === solucaoSlug));
+      const agrupamento = expectDefined(solucao.agrupamentos.find((item) => item.slug === agrupamentoSlug));
+      const abas = solucao.funcionalidades
+        .filter((item) => item.agrupamentoId === agrupamento.id)
+        .sort((left, right) => (left.ordemNoAgrupamento ?? 0) - (right.ordemNoAgrupamento ?? 0))
+        .map((item) => item.slug);
+      return { solucao, agrupamento, abas };
+    };
+
+    const registrosDoBootstrap = () => world.prisma.catalogoAuditoria.count({ where: { entidade: 'AGRUPAMENTO', evento: 'BOOTSTRAP_REGISTRADO' } });
+    const padroes = [
+      ['configurador', 'acessos', 'Usuários e acessos', ['cadastro-de-usuarios', 'cadastro-de-grupos', 'cadastro-de-empresas']],
+      ['configurador', 'catalogo', 'Catálogo do Hub', ['cadastro-de-solucoes', 'cadastro-de-funcionalidades']],
+      ['controle-de-chamados', 'indicadores', 'Indicadores do atendimento', ['dashboard', 'relatorios']],
+      ['controle-de-chamados', 'configuracoes-do-atendimento', 'Configurações do atendimento', ['categorias', 'tipos', 'prioridades', 'sla', 'responsaveis', 'emails-solucoes']],
+      ['projetos', 'execucao-do-projeto', 'Execução do projeto', ['sprints', 'marcos-e-entregas', 'cronograma-e-gantt']],
+      ['projetos', 'recursos-e-equipes', 'Recursos e equipes', ['planejamento-de-recursos', 'equipes']]
+    ] as const;
+    for (const [solucaoSlug, agrupamentoSlug, titulo, abas] of padroes) {
+      const atual = await composicao(solucaoSlug, agrupamentoSlug);
+      expect(atual.agrupamento).toMatchObject({ titulo, ativo: true, padraoSistema: true });
+      expect(atual.abas).toEqual(abas);
+    }
+    const registrosIniciais = await registrosDoBootstrap();
+    expect(registrosIniciais).toBe(padroes.length);
+
+    const chamados = await composicao('controle-de-chamados', 'configuracoes-do-atendimento');
+    const sla = expectDefined(chamados.solucao.funcionalidades.find((item) => item.slug === 'sla'));
+    await world.solucoesService.updateAgrupamento({ id: chamados.agrupamento.id, titulo: 'Parametros do atendimento', ativo: false }, admin.sub);
+    await world.solucoesService.updateFuncionalidade({ id: sla.id, agrupamentoId: null }, admin.sub);
+    await expect(world.solucoesService.removeAgrupamento(chamados.agrupamento.id, admin.sub)).rejects.toThrow('Desative-o');
+
+    await world.solucoesService.ensureDefaultConfiguradorFeatures();
+    await world.solucoesService.ensureControleChamadosSolution();
+    await world.solucoesService.ensureProjetosSolution();
+
+    const aposBootstrap = await composicao('controle-de-chamados', 'configuracoes-do-atendimento');
+    expect(aposBootstrap.agrupamento).toMatchObject({ id: chamados.agrupamento.id, titulo: 'Parametros do atendimento', ativo: false });
+    expect(aposBootstrap.abas).toEqual(['categorias', 'tipos', 'prioridades', 'responsaveis', 'emails-solucoes']);
+    expect(aposBootstrap.solucao.agrupamentos.map((item) => item.slug).sort()).toEqual(['configuracoes-do-atendimento', 'indicadores']);
+    for (const [solucaoSlug, agrupamentoSlug, , abas] of padroes) {
+      if (agrupamentoSlug === 'configuracoes-do-atendimento') continue;
+      expect((await composicao(solucaoSlug, agrupamentoSlug)).abas).toEqual(abas);
+    }
+    expect(await registrosDoBootstrap()).toBe(registrosIniciais);
+  });
+
+  it('cria a funcionalidade de equipes com o acesso exato da funcionalidade de recursos em uma base existente', async () => {
+    const { world, empresaInicialId } = await bootstrapBaseWorld();
+    const projetosAtual = async () => expectDefined((await world.solucoesService.findAll()).find((item) => item.slug === 'projetos'));
+    const inicial = await projetosAtual();
+    const funcionalidade = (slug: string) => expectDefined(inicial.funcionalidades.find((item) => item.slug === slug));
+    const recursos = funcionalidade('planejamento-de-recursos');
+    const backlog = funcionalidade('backlog-de-demandas');
+    const equipesAnterior = funcionalidade('equipes');
+
+    // Simula uma base anterior à separação: Equipes ainda não existe e Recursos está fora de agrupamentos.
+    const acoesAnteriores = (await world.prisma.funcionalidadeAcao.findMany({ where: { funcionalidadeId: equipesAnterior.id } })).map((acao) => acao.id);
+    await world.prisma.grupoFuncionalidadeAcao.deleteMany({ where: { funcionalidadeAcaoId: { in: acoesAnteriores } } });
+    await world.prisma.catalogoVersao.deleteMany({ where: { funcionalidadeAcaoId: { in: acoesAnteriores } } });
+    for (const modelo of [world.prisma.catalogoVersao, world.prisma.funcionalidadeAcao, world.prisma.grupoFuncionalidade, world.prisma.empresaFuncionalidade, world.prisma.chamadoResponsavelFuncionalidade]) {
+      await modelo.deleteMany({ where: { funcionalidadeId: equipesAnterior.id } });
+    }
+    await world.prisma.funcionalidade.delete({ where: { id: equipesAnterior.id } });
+    await world.prisma.funcionalidade.update({ where: { id: recursos.id }, data: { agrupamentoId: null, ordemNoAgrupamento: null } });
+    await world.prisma.funcionalidadeAgrupamento.deleteMany({ where: { solucaoId: inicial.id, slug: 'recursos-e-equipes' } });
+
+    const grupoDeRecursos = await world.prisma.grupoUsuario.create({ data: { nome: 'Inclusao de recursos' } });
+    await world.solucoesService.syncGroupAccess(grupoDeRecursos.id, [inicial.id], [recursos.id], [{
+      funcionalidadeId: recursos.id,
+      podeVisualizar: true,
+      podeIncluir: true,
+      podeAlterar: false,
+      podeExcluir: false,
+      acoes: []
+    }]);
+    const grupoDoBacklog = await world.prisma.grupoUsuario.create({ data: { nome: 'Somente backlog' } });
+    await world.solucoesService.syncGroupAccess(grupoDoBacklog.id, [inicial.id], [backlog.id], [{
+      funcionalidadeId: backlog.id,
+      podeVisualizar: true,
+      podeIncluir: true,
+      podeAlterar: true,
+      podeExcluir: true,
+      acoes: []
+    }]);
+    const empresaSemRecursos = await world.prisma.empresa.create({ data: { nome: 'Empresa sem recursos' } });
+    await world.solucoesService.syncCompanyAccess(empresaSemRecursos.id, [inicial.id], [backlog.id]);
+
+    await world.solucoesService.ensureProjetosSolution();
+
+    const atual = await projetosAtual();
+    const equipes = expectDefined(atual.funcionalidades.find((item) => item.slug === 'equipes'));
+    const agrupamento = expectDefined(atual.agrupamentos.find((item) => item.slug === 'recursos-e-equipes'));
+    expect(equipes.id).not.toBe(equipesAnterior.id);
+    expect(atual.funcionalidades.filter((item) => item.agrupamentoId === agrupamento.id).map((item) => item.slug).sort())
+      .toEqual(['equipes', 'planejamento-de-recursos']);
+
+    const permissoesDosGrupos = async (funcionalidadeId: number) => (await world.prisma.grupoFuncionalidade.findMany({ where: { funcionalidadeId } }))
+      .map((item) => [item.grupoId, item.podeVisualizar, item.podeIncluir, item.podeAlterar, item.podeExcluir].join(':'))
+      .sort();
+    const permissoesDasAcoes = async (funcionalidadeId: number) => {
+      const chaves = new Map((await world.prisma.funcionalidadeAcao.findMany({ where: { funcionalidadeId } })).map((acao) => [acao.id, acao.chave]));
+      return (await world.prisma.grupoFuncionalidadeAcao.findMany({ where: { funcionalidadeAcaoId: { in: [...chaves.keys()] } } }))
+        .map((item) => [item.grupoId, chaves.get(item.funcionalidadeAcaoId), item.permitido].join(':'))
+        .sort();
+    };
+    const empresasContratantes = async (funcionalidadeId: number) => (await world.prisma.empresaFuncionalidade.findMany({ where: { funcionalidadeId } }))
+      .map((item) => item.empresaId)
+      .sort((left, right) => left - right);
+
+    expect(await permissoesDosGrupos(equipes.id)).toEqual(await permissoesDosGrupos(recursos.id));
+    expect(await permissoesDosGrupos(equipes.id)).toContain(`${grupoDeRecursos.id}:true:true:false:false`);
+    expect((await permissoesDosGrupos(equipes.id)).some((item) => item.startsWith(`${grupoDoBacklog.id}:`))).toBe(false);
+    expect(await permissoesDasAcoes(equipes.id)).toEqual(await permissoesDasAcoes(recursos.id));
+    expect(await empresasContratantes(equipes.id)).toEqual(await empresasContratantes(recursos.id));
+    expect(await empresasContratantes(equipes.id)).toContain(empresaInicialId);
+    expect(await empresasContratantes(equipes.id)).not.toContain(empresaSemRecursos.id);
+
+    const autorizar = (grupo: AnyRecord, acao: 'visualizar' | 'incluir' | 'alterar') =>
+      world.funcionalidadeAuthorizationService.assertFeatureAction({
+        sub: randomUUID(),
+        nome: grupo.nome,
+        login: `equipes.${grupo.id}`,
+        email: `equipes.${grupo.id}@teste.com`,
+        empresaId: empresaInicialId,
+        grupo: { id: grupo.id, nome: grupo.nome, acessoEcommerce: false, acessoProjetos: false, acessoHoras: false, acessoConfigurador: false }
+      } as JwtPayload, 'projetos', 'equipes', acao);
+    await expect(autorizar(grupoDeRecursos, 'incluir')).resolves.toBeUndefined();
+    await expect(autorizar(grupoDeRecursos, 'alterar')).rejects.toThrow('Usuario sem permissao');
+    await expect(autorizar(grupoDoBacklog, 'visualizar')).rejects.toThrow('Usuario sem permissao');
+  });
+
+  it('associa ao agrupamento padrao somente funcionalidades livres de uma base existente', async () => {
+    const { world, admin } = await bootstrapBaseWorld();
+    // Simula uma base anterior aos agrupamentos padrao, com uma associacao feita pelo administrador.
+    await world.prisma.funcionalidade.updateMany({ where: {}, data: { agrupamentoId: null, ordemNoAgrupamento: null } });
+    await world.prisma.funcionalidadeAgrupamento.deleteMany({});
+    const chamados = expectDefined((await world.solucoesService.findAll()).find((item) => item.slug === 'controle-de-chamados'));
+    const tipos = expectDefined(chamados.funcionalidades.find((item) => item.slug === 'tipos'));
+    const personalizado = await world.solucoesService.createAgrupamento({ solucaoId: chamados.id, slug: 'cadastros-basicos', titulo: 'Cadastros básicos' }, admin.sub);
+    await world.solucoesService.updateFuncionalidade({ id: tipos.id, agrupamentoId: personalizado.id, ordemNoAgrupamento: 1 }, admin.sub);
+
+    await world.solucoesService.ensureControleChamadosSolution();
+
+    const atual = expectDefined((await world.solucoesService.findAll()).find((item) => item.slug === 'controle-de-chamados'));
+    const padrao = expectDefined(atual.agrupamentos.find((item) => item.slug === 'configuracoes-do-atendimento'));
+    const membros = (agrupamentoId: number) => atual.funcionalidades
+      .filter((item) => item.agrupamentoId === agrupamentoId)
+      .map((item) => item.slug)
+      .sort();
+    expect(padrao).toMatchObject({ padraoSistema: true, ativo: true });
+    expect(membros(padrao.id)).toEqual(['categorias', 'emails-solucoes', 'prioridades', 'responsaveis', 'sla']);
+    expect(membros(personalizado.id)).toEqual(['tipos']);
+  });
+
   it('forca a troca inicial, exige senha atual depois e revoga todas as sessoes', async () => {
     const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
     const adminRecord = expectDefined(world.prisma.data.usuario.find((user) => user.id === admin.sub));
@@ -2624,7 +2891,7 @@ describe('Fluxos integrados do backend', () => {
       metodologia: 'KANBAN' as any
     }, admin);
     expect(projetoProprio.responsavelId).toBe(admin.sub);
-    expect(projetoProprio.situacao).toBe('RASCUNHO');
+    expect(projetoProprio.situacao).toBe('EM_ORCAMENTO');
     expect(projetoProprio.saude).toBe('EM_DIA');
     expect(projetoProprio.membros).toHaveLength(0);
     expect(await world.prisma.projetoRecurso.count({ where: { projetoId: projetoProprio.id } })).toBe(0);
@@ -2634,7 +2901,7 @@ describe('Fluxos integrados do backend', () => {
       nome: 'Projeto com equipe',
       objetivo: ' Objetivo inicial ',
       metodologia: 'SCRUM' as any,
-      situacao: 'PLANEJADO' as any,
+      situacao: 'EM_ORCAMENTO' as any,
       responsavelId: responsavel.usuario.id,
       inicioPrevistoEm: '2026-08-01',
       fimPrevistoEm: '2026-12-15',
@@ -2696,13 +2963,12 @@ describe('Fluxos integrados do backend', () => {
     }, admin);
     expect(projetoEmOrcamento.situacao).toBe('EM_ORCAMENTO');
 
-    await expect(world.projetosService.create({
-      chave: 'STS',
-      nome: 'Situacao inicial invalida',
-      metodologia: 'KANBAN' as any,
-      situacao: 'EM_ANDAMENTO' as any,
-      responsavelId: admin.sub
-    }, admin)).rejects.toThrow('A situacao inicial deve ser');
+    for (const situacao of ['RASCUNHO', 'PLANEJADO', 'EM_ANDAMENTO']) {
+      await expect(world.projetosService.create({
+        chave: 'STS', nome: 'Situacao inicial invalida', metodologia: 'KANBAN' as any,
+        situacao: situacao as any, responsavelId: admin.sub
+      }, admin)).rejects.toThrow('Todo projeto deve começar no ciclo Em orçamento');
+    }
 
     const originalCreateMany = world.prisma.projetoMembro.createMany.bind(world.prisma.projetoMembro);
     world.prisma.projetoMembro.createMany = async () => { throw new Error('falha simulada nos membros'); };
@@ -3368,7 +3634,8 @@ describe('Fluxos integrados do backend', () => {
     const solucoes = await world.solucoesService.findAll();
     const projetosSolucao = expectDefined(solucoes.find((item) => item.slug === 'projetos'));
     const cadastroProjetos = expectDefined(projetosSolucao.funcionalidades.find((item) => item.slug === 'cadastro-de-projetos'));
-    await world.solucoesService.syncCompanyAccess(empresaInicialId, [projetosSolucao.id], [cadastroProjetos.id]);
+    const orcamentoProjetos = expectDefined(projetosSolucao.funcionalidades.find((item) => item.slug === 'orcamento-do-projeto'));
+    await world.solucoesService.syncCompanyAccess(empresaInicialId, [projetosSolucao.id], [cadastroProjetos.id, orcamentoProjetos.id]);
     const grupo = await world.prisma.grupoUsuario.create({ data: { nome: 'Governanca de Projetos' } });
     await world.solucoesService.syncGroupAccess(
       grupo.id,
@@ -3471,8 +3738,6 @@ describe('Fluxos integrados do backend', () => {
       [ProjetoSituacao.RASCUNHO, ProjetoSituacao.EM_ORCAMENTO],
       [ProjetoSituacao.RASCUNHO, ProjetoSituacao.PLANEJADO],
       [ProjetoSituacao.RASCUNHO, ProjetoSituacao.CANCELADO],
-      [ProjetoSituacao.EM_ORCAMENTO, ProjetoSituacao.RASCUNHO],
-      [ProjetoSituacao.EM_ORCAMENTO, ProjetoSituacao.PLANEJADO],
       [ProjetoSituacao.EM_ORCAMENTO, ProjetoSituacao.CANCELADO],
       [ProjetoSituacao.PLANEJADO, ProjetoSituacao.EM_ANDAMENTO],
       [ProjetoSituacao.PLANEJADO, ProjetoSituacao.PAUSADO],
@@ -3484,7 +3749,7 @@ describe('Fluxos integrados do backend', () => {
       [ProjetoSituacao.PAUSADO, ProjetoSituacao.EM_ANDAMENTO],
       [ProjetoSituacao.PAUSADO, ProjetoSituacao.CANCELADO],
       [ProjetoSituacao.CONCLUIDO, ProjetoSituacao.PLANEJADO],
-      [ProjetoSituacao.CANCELADO, ProjetoSituacao.PLANEJADO]
+      [ProjetoSituacao.CANCELADO, ProjetoSituacao.EM_ORCAMENTO]
     ];
     for (const [atual, nova] of allowedTransitions) {
       expect(() => assertProjetoSituacaoTransition(atual, nova, ProjetoPapel.RESPONSAVEL, false)).not.toThrow();
@@ -3501,6 +3766,45 @@ describe('Fluxos integrados do backend', () => {
       ProjetoPapel.MEMBRO,
       false
     )).toThrow('Apenas o responsavel');
+
+    for (const situacao of [ProjetoSituacao.RASCUNHO, ProjetoSituacao.PLANEJADO]) {
+      await expect(world.projetosService.atualizarCiclo({ projetoId: projeto.id, situacao }, admin))
+        .rejects.toThrow('Aprove o orçamento em Orçamento do projeto');
+    }
+    await world.projetosService.atualizarCiclo({ projetoId: projeto.id, situacao: ProjetoSituacao.CANCELADO }, admin);
+    await expect(world.projetosService.atualizarCiclo({ projetoId: projeto.id, situacao: ProjetoSituacao.PLANEJADO }, admin))
+      .rejects.toThrow('nao permitida');
+    const retomadoParaOrcamento = await world.projetosService.atualizarCiclo({ projetoId: projeto.id, situacao: ProjetoSituacao.EM_ORCAMENTO }, admin);
+    expect(retomadoParaOrcamento.fimRealEm).toBeNull();
+    const orcamento = await world.projetosService.salvarOrcamento({ projetoId: projeto.id, moeda: 'BRL' }, admin);
+    const aprovacao = { projetoId: projeto.id, id: orcamento.id, versao: orcamento.versao };
+    await expect(world.projetosService.aprovarOrcamento(aprovacao, observador.payload)).rejects.toThrow();
+    await expect(world.projetosService.aprovarOrcamento({ ...aprovacao, versao: orcamento.versao + 1 }, admin)).rejects.toThrow('outra pessoa');
+
+    const registrarEvento = world.prisma.projetoEvento.create.bind(world.prisma.projetoEvento);
+    world.prisma.projetoEvento.create = async () => { throw new Error('falha simulada na auditoria da aprovação'); };
+    try {
+      await expect(world.projetosService.aprovarOrcamento(aprovacao, admin)).rejects.toThrow('falha simulada na auditoria');
+    } finally {
+      world.prisma.projetoEvento.create = registrarEvento;
+    }
+    expect(await world.prisma.projeto.findUnique({ where: { id: projeto.id } })).toMatchObject({ situacao: 'EM_ORCAMENTO' });
+    expect(await world.prisma.projetoOrcamento.findUnique({ where: { id: orcamento.id } })).toMatchObject({
+      status: 'RASCUNHO', versao: orcamento.versao, aprovadoEm: null, aprovadoPorId: null
+    });
+
+    const aprovado = await world.projetosService.aprovarOrcamento(aprovacao, admin);
+    expect(aprovado).toMatchObject({ status: 'APROVADO', aprovadoPorId: admin.sub, versao: orcamento.versao + 1 });
+    expect(aprovado.aprovadoEm).toBeInstanceOf(Date);
+    expect(await world.projetosService.projeto(projeto.id, admin)).toMatchObject({ situacao: 'RASCUNHO' });
+    expect(await world.projetosService.orcamentoProjetos(admin)).not.toEqual(expect.arrayContaining([expect.objectContaining({ id: projeto.id })]));
+    expect(await world.prisma.projetoEvento.findFirst({ where: { projetoId: projeto.id, entidade: 'PROJETO', evento: 'CICLO_ALTERADO' } })).toMatchObject({
+      dados: JSON.stringify({ situacaoAnterior: 'EM_ORCAMENTO', situacao: 'RASCUNHO', orcamentoId: orcamento.id })
+    });
+    await expect(world.projetosService.aprovarOrcamento(aprovacao, admin)).rejects.toThrow('outra pessoa');
+    const reabertoFinanceiro = await world.projetosService.reabrirOrcamento({ ...aprovacao, versao: aprovado.versao }, admin);
+    expect(reabertoFinanceiro.status).toBe('RASCUNHO');
+    expect(await world.projetosService.projeto(projeto.id, admin)).toMatchObject({ situacao: 'RASCUNHO' });
 
     const planejado = await world.projetosService.atualizarCiclo({
       projetoId: projeto.id,
@@ -3655,17 +3959,18 @@ describe('Fluxos integrados do backend', () => {
       ['cronograma-e-gantt', 50],
       ['comunicacao-do-projeto', 60],
       ['planejamento-de-recursos', 70],
+      ['equipes', 75],
       ['orcamento-do-projeto', 100],
       ['horas-do-projeto', 110],
       ['templates-de-projeto', 120],
       ['portfolio-de-projetos', 130]
     ]);
     expect(projetos.funcionalidades.filter((funcionalidade) => funcionalidade.ativo).map((funcionalidade) => funcionalidade.slug))
-      .toEqual(['cadastro-de-projetos', 'backlog-de-demandas', 'sprints', 'marcos-e-entregas', 'cronograma-e-gantt', 'comunicacao-do-projeto', 'planejamento-de-recursos', 'orcamento-do-projeto']);
+      .toEqual(['cadastro-de-projetos', 'backlog-de-demandas', 'sprints', 'marcos-e-entregas', 'cronograma-e-gantt', 'comunicacao-do-projeto', 'planejamento-de-recursos', 'equipes', 'orcamento-do-projeto']);
     const hubProjetos = expectDefined((await world.solucoesService.myHubNavigation(admin))
       .find((solucao) => solucao.slug === 'projetos'));
     expect(hubProjetos.funcionalidades.map((funcionalidade) => funcionalidade.slug))
-      .toEqual(['cadastro-de-projetos', 'backlog-de-demandas', 'sprints', 'marcos-e-entregas', 'cronograma-e-gantt', 'comunicacao-do-projeto', 'planejamento-de-recursos', 'orcamento-do-projeto']);
+      .toEqual(['cadastro-de-projetos', 'backlog-de-demandas', 'sprints', 'marcos-e-entregas', 'cronograma-e-gantt', 'comunicacao-do-projeto', 'planejamento-de-recursos', 'equipes', 'orcamento-do-projeto']);
     expect(cadastroProjetos.registryKey).toBe('projetos.cadastro-de-projetos');
     expect(cadastroProjetos.acoes.map((acao) => acao.chave)).toEqual(expect.arrayContaining([
       'visualizar',

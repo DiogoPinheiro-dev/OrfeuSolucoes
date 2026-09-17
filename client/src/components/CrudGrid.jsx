@@ -4,7 +4,7 @@ import { FaEdit, FaEye, FaPlus, FaTrashAlt } from "react-icons/fa";
 import { EmptyState, FeedbackMessage, LoadingState } from "./CrudFeedback";
 import "../styles/crudGrid.css";
 
-const CRUD_PAGE_SIZE = 5;
+export const CRUD_PAGE_SIZE = 5;
 
 export default function CrudGrid({
     title,
@@ -27,6 +27,8 @@ export default function CrudGrid({
     paginationConfig,
     paginationResetKey,
     toolbarActions,
+    toolbarLabel = "Ações do cadastro",
+    actionLabels = {},
     emptyMessage = "Nenhum registro encontrado.",
     error = null,
     onRetry,
@@ -174,10 +176,10 @@ export default function CrudGrid({
             {filters && <div className="crud-filters">{filters}</div>}
 
             {(showCreate || showEdit || showView || showDelete || toolbarActions) && (
-                <div className="crud-toolbar" role="toolbar" aria-label="Ações do cadastro">
-                    {showCreate && <button type="button" onClick={onCreate} {...actionProps("Incluir", actionReason("create", canCreate))}><FaPlus aria-hidden="true" /></button>}
-                    {showEdit && <button type="button" onClick={() => selectedRow && onEdit(selectedRow)} {...actionProps("Alterar", actionReason("edit", canEdit, true))}><FaEdit aria-hidden="true" /></button>}
-                    {showView && <button type="button" onClick={() => selectedRow && onView(selectedRow)} {...actionProps("Visualizar", actionReason("view", canView, true))}><FaEye aria-hidden="true" /></button>}
+                <div className="crud-toolbar" role="toolbar" aria-label={toolbarLabel}>
+                    {showCreate && <button type="button" onClick={onCreate} {...actionProps(actionLabels.create || "Incluir", actionReason("create", canCreate))}><FaPlus aria-hidden="true" /></button>}
+                    {showEdit && <button type="button" onClick={() => selectedRow && onEdit(selectedRow)} {...actionProps(actionLabels.edit || "Alterar", actionReason("edit", canEdit, true))}><FaEdit aria-hidden="true" /></button>}
+                    {showView && <button type="button" onClick={() => selectedRow && onView(selectedRow)} {...actionProps(actionLabels.view || "Visualizar", actionReason("view", canView, true))}><FaEye aria-hidden="true" /></button>}
                     {showDelete && <button type="button" onClick={() => onDelete(selectedIds)} {...actionProps(deleteLabel, actionReason("delete", canDelete))}>{deleteIcon || <FaTrashAlt aria-hidden="true" />}</button>}
                     {toolbarActions}
                 </div>

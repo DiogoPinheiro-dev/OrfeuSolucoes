@@ -637,6 +637,8 @@ export default function ResponsavelChamadoManagement({ permissions }) {
                 open={!!pendingDelete}
                 title="Desativar responsável"
                 message={`Deseja desativar ${pendingDelete?.label || "o responsável selecionado"}?`}
+                confirmLabel="Desativar"
+                variant="warning"
                 onCancel={() => setPendingDelete(null)}
                 onConfirm={confirmDelete}
                 loading={false}

@@ -112,19 +112,32 @@
   outline: 3px solid color-mix(in srgb, var(--button-primary-bg) 16%, transparent);
 }
 
-.backlog-toolbar .backlog-check {
+.backlog-management .backlog-toolbar .backlog-check-group {
   display: flex;
   flex: 0 1 auto;
+  flex-wrap: wrap;
   align-items: center;
-  min-width: max-content;
+  gap: 8px 18px;
   min-height: 42px;
-  gap: 8px;
-  color: var(--primary);
 }
 
-.backlog-toolbar .backlog-check input {
+.backlog-management .backlog-toolbar .backlog-check {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 0;
+  color: var(--primary);
+  font-size: 0.82rem;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.backlog-management .backlog-toolbar .backlog-check input {
   width: 18px;
   height: 18px;
+  min-height: 0;
   padding: 0;
   accent-color: var(--button-primary-bg);
 }
@@ -400,9 +413,9 @@
     flex: 1 1 100%;
   }
 
-  .backlog-toolbar .backlog-check {
+  .backlog-management .backlog-toolbar .backlog-check-group {
     flex: 1 1 100%;
-    min-width: 0;
+    min-height: 32px;
   }
 
   .backlog-pagination {

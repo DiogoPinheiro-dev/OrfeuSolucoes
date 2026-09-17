@@ -3,10 +3,13 @@ import { Link, Navigate, useParams } from "react-router-dom";
 
 import Footer from "../components/Footer";
 import Header from "../components/Header";
-import { canAccessSolution, getAreaAnchor, getSolutionBySlug } from "../auth/hubConfig";
+import { canAccessSolution, getSolutionBySlug, getWorkspaceEntries } from "../auth/hubConfig";
 import { useHubNavigation } from "../hooks/useHubNavigation";
 
 import "../styles/workspace.css";
+
+const entryDescription = (entry) => entry.description
+    || (entry.type === "group" ? entry.tabs.map((tab) => tab.label || tab.title).join(" · ") : "");
 
 export default function SolutionWorkspace() {
     const { slug } = useParams();
@@ -39,8 +42,8 @@ export default function SolutionWorkspace() {
         return <Navigate to="/hub" replace />;
     }
 
-    const workspacePanels = solution.areas || [];
-    const hasAreas = workspacePanels.length > 0;
+    const workspaceEntries = getWorkspaceEntries(solution);
+    const hasAreas = workspaceEntries.length > 0;
 
     return (
         <div className="page-wrapper workspace-page">
@@ -62,16 +65,16 @@ export default function SolutionWorkspace() {
 
                     {hasAreas ? (
                         <section className="workspace-grid">
-                            {workspacePanels.map((panel) => (
+                            {workspaceEntries.map((entry) => (
                                 <Link
-                                    className={`workspace-panel workspace-panel-link ${panel.wide ? "workspace-panel-wide" : ""}`}
-                                    to={`/hub/${solution.slug}/${panel.slug || getAreaAnchor(panel.title)}`}
-                                    key={panel.title}
+                                    className="workspace-panel workspace-panel-link"
+                                    to={entry.path}
+                                    key={entry.key}
                                 >
-                                    <span className="workspace-label">{panel.label}</span>
+                                    <span className="workspace-label">{entry.label}</span>
                                     <span className="workspace-panel-copy">
-                                        <h2>{panel.title}</h2>
-                                        <p>{panel.description}</p>
+                                        <h2>{entry.title}</h2>
+                                        <p>{entryDescription(entry)}</p>
                                     </span>
                                     <span className="workspace-panel-action">
                                         <ArrowUpRight size={18} aria-hidden="true" />

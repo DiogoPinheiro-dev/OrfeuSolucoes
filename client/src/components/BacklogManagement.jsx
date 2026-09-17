@@ -19,6 +19,7 @@ import "../styles/crudGrid.css";
 import "../styles/backlogManagement.css";
 import BacklogItemModal from "./BacklogItemModal";
 import { LoadingState } from "./CrudFeedback";
+import { CRUD_PAGE_SIZE } from "./CrudGrid";
 import { useConfirmAction } from "../hooks/useConfirmAction";
 import { useLatestRequest } from "../hooks/useLatestRequest";
 
@@ -67,20 +68,21 @@ function useDebouncedValue(value, delay = 350) {
     return debounced;
 }
 
-function applyLocalMove(rows, itemId, direction) {
+// A prioridade é global: o índice considera todas as páginas do backlog.
+const resolveMoveTarget = (index, total, direction) => {
+    if (direction === "TOPO") return 0;
+    if (direction === "FUNDO") return total - 1;
+    if (direction === "SUBIR") return Math.max(0, index - 1);
+    return Math.min(total - 1, index + 1);
+};
+
+function applyLocalMove(rows, itemId, targetIndex, offset) {
     const from = rows.findIndex((item) => item.id === itemId);
     if (from < 0) return rows;
-    const target = direction === "TOPO"
-        ? 0
-        : direction === "FUNDO"
-            ? rows.length - 1
-            : direction === "SUBIR"
-                ? Math.max(0, from - 1)
-                : Math.min(rows.length - 1, from + 1);
     const next = [...rows];
     const [moved] = next.splice(from, 1);
-    next.splice(target, 0, moved);
-    return next.map((item, index) => ({ ...item, ordemBacklog: index + 1 }));
+    next.splice(targetIndex, 0, moved);
+    return next.map((item, index) => ({ ...item, ordemBacklog: offset + index + 1 }));
 }
 
 export default function BacklogManagement() {
@@ -102,7 +104,7 @@ export default function BacklogManagement() {
     const [groupBy, setGroupBy] = useState("");
     const [page, setPage] = useState({
         pagina: 1,
-        limite: 100,
+        limite: CRUD_PAGE_SIZE,
         total: 0,
         totalPaginas: 0,
         backlogVersao: 0,
@@ -119,6 +121,8 @@ export default function BacklogManagement() {
     const [parentOptions, setParentOptions] = useState([]);
     const [parentOptionsLoading, setParentOptionsLoading] = useState(false);
     const [parentOptionsError, setParentOptionsError] = useState("");
+    const tableBodyRef = useRef(null);
+    const focusAfterLoad = useRef("");
 
     const selectedProject = projects.find((project) => project.id === projectId);
     const selectedItem = rows.find((item) => item.id === selectedId);
@@ -131,12 +135,9 @@ export default function BacklogManagement() {
         filters.responsavelId ||
         filters.incluirArquivados
     );
-    const reorderSafe = !projectArchived &&
-        !hasActiveFilters &&
-        !groupBy &&
-        page.pagina === 1 &&
-        page.totalPaginas <= 1 &&
-        page.permissoes?.podePriorizar === true;
+    const canPrioritize = !projectArchived && page.permissoes?.podePriorizar === true;
+    // A ordem é global; com filtros ou agrupamento as posições exibidas não representam o backlog.
+    const reorderSafe = canPrioritize && !hasActiveFilters && !groupBy;
 
     const loadProjects = useCallback(async () => {
         setLoadingProjects(true);
@@ -176,8 +177,13 @@ export default function BacklogManagement() {
                 status: filters.status || undefined,
                 prioridade: filters.prioridade || undefined,
                 responsavelId: filters.responsavelId || undefined,
-                incluirArquivados: filters.incluirArquivados
+                incluirArquivados: filters.incluirArquivados,
+                agruparPor: groupBy ? groupBy.toUpperCase() : undefined
             });
+            if (!result.items?.length && result.total > 0 && result.pagina > 1) {
+                setPage((current) => ({ ...current, pagina: Math.max(1, result.totalPaginas) }));
+                return;
+            }
             setRows(result.items || []);
             setSelectedId((current) =>
                 result.items?.some((item) => item.id === current) ? current : ""
@@ -189,7 +195,8 @@ export default function BacklogManagement() {
                 total: result.total,
                 totalPaginas: result.totalPaginas,
                 backlogVersao: result.backlogVersao,
-                permissoes: result.permissoes || {}
+                permissoes: result.permissoes || {},
+                grupos: result.grupos || []
             }));
         } catch (loadError) {
             setRows([]);
@@ -197,7 +204,7 @@ export default function BacklogManagement() {
         } finally {
             setLoading(false);
         }
-    }, [debouncedSearch, filters, page.limite, page.pagina, projectId]);
+    }, [debouncedSearch, filters, groupBy, page.limite, page.pagina, projectId]);
 
     useEffect(() => { loadProjects(); }, [loadProjects]);
     useEffect(() => { loadItems(); }, [loadItems]);
@@ -252,20 +259,35 @@ export default function BacklogManagement() {
         setPage((current) => ({ ...current, pagina: 1 }));
     };
 
+    // O servidor já entrega a página ordenada pelo grupo; os totais consideram o backlog filtrado inteiro.
     const groups = useMemo(() => {
         if (!groupBy) return [{ key: "todos", label: "", items: rows }];
-        const grouped = new Map();
+        const totais = page.grupos || [];
+        const offset = (page.pagina - 1) * page.limite;
+        const inicioDoGrupo = new Map();
+        totais.reduce((inicio, grupo) => {
+            inicioDoGrupo.set(grupo.valor, inicio);
+            return inicio + grupo.total;
+        }, 0);
+
+        const sections = [];
         for (const item of rows) {
             const key = item[groupBy] || "SEM_VALOR";
-            if (!grouped.has(key)) grouped.set(key, []);
-            grouped.get(key).push(item);
+            const current = sections[sections.length - 1];
+            if (current?.key === key) {
+                current.items.push(item);
+                continue;
+            }
+            sections.push({
+                key,
+                label: GROUP_LABELS[groupBy]?.[key] || key,
+                items: [item],
+                total: totais.find((grupo) => grupo.valor === key)?.total,
+                continuacao: (inicioDoGrupo.get(key) ?? offset) < offset
+            });
         }
-        return [...grouped.entries()].map(([key, items]) => ({
-            key,
-            label: GROUP_LABELS[groupBy]?.[key] || key,
-            items
-        }));
-    }, [groupBy, rows]);
+        return sections;
+    }, [groupBy, page.grupos, page.limite, page.pagina, rows]);
 
     const openCreate = () => {
         setModalError("");
@@ -370,20 +392,33 @@ export default function BacklogManagement() {
 
     const move = async (item, direction) => {
         if (!reorderSafe || movingId) return;
+        const offset = (page.pagina - 1) * page.limite;
+        const targetIndex = resolveMoveTarget(offset + rows.findIndex((row) => row.id === item.id), page.total, direction);
+        const targetPage = Math.floor(targetIndex / page.limite) + 1;
+        const samePage = targetPage === page.pagina;
         const previousRows = rows;
         const previousVersion = page.backlogVersao;
         setMovingId(item.id);
         setError("");
         setNotice("");
-        setRows(applyLocalMove(rows, item.id, direction));
+        if (samePage) {
+            setRows(applyLocalMove(rows, item.id, targetIndex - offset, offset));
+        }
         try {
             const result = await moverBacklogItem({
                 itemId: item.id,
                 backlogVersao: previousVersion,
                 direcao: direction
             });
-            setPage((current) => ({ ...current, backlogVersao: result.backlogVersao }));
-            await loadItems();
+            setSelectedId(item.id);
+            if (samePage) {
+                setPage((current) => ({ ...current, backlogVersao: result.backlogVersao }));
+                await loadItems();
+            } else {
+                // A demanda mudou de página: a lista acompanha o item e devolve o foco a ele.
+                focusAfterLoad.current = item.id;
+                setPage((current) => ({ ...current, backlogVersao: result.backlogVersao, pagina: targetPage }));
+            }
         } catch (moveError) {
             setRows(previousRows);
             setPage((current) => ({ ...current, backlogVersao: previousVersion }));
@@ -392,6 +427,12 @@ export default function BacklogManagement() {
             setMovingId("");
         }
     };
+
+    useEffect(() => {
+        if (!focusAfterLoad.current || loading) return;
+        tableBodyRef.current?.querySelector(`[data-item-id="${focusAfterLoad.current}"]`)?.focus();
+        focusAfterLoad.current = "";
+    }, [loading, rows]);
 
     const onRowKeyDown = (event, item) => {
         if (!event.altKey && event.key === "Enter") {
@@ -496,29 +537,37 @@ export default function BacklogManagement() {
                 </label>
                 <label>
                     Agrupar
-                    <select value={groupBy} onChange={(event) => setGroupBy(event.target.value)}>
+                    <select
+                        value={groupBy}
+                        onChange={(event) => {
+                            setGroupBy(event.target.value);
+                            setPage((current) => ({ ...current, pagina: 1 }));
+                        }}
+                    >
                         <option value="">Sem agrupamento</option>
                         <option value="status">Status</option>
                         <option value="tipo">Tipo</option>
                         <option value="prioridade">Prioridade</option>
                     </select>
                 </label>
-                <label className="backlog-check">
-                    <input
-                        type="checkbox"
-                        checked={filters.incluirArquivados}
-                        onChange={(event) => changeFilter("incluirArquivados", event.target.checked)}
-                    />
-                    Itens arquivados
-                </label>
-                <label className="backlog-check">
-                    <input
-                        type="checkbox"
-                        checked={includeArchivedProjects}
-                        onChange={(event) => setIncludeArchivedProjects(event.target.checked)}
-                    />
-                    Projetos arquivados
-                </label>
+                <div className="backlog-check-group">
+                    <label className="backlog-check">
+                        <input
+                            type="checkbox"
+                            checked={filters.incluirArquivados}
+                            onChange={(event) => changeFilter("incluirArquivados", event.target.checked)}
+                        />
+                        Itens arquivados
+                    </label>
+                    <label className="backlog-check">
+                        <input
+                            type="checkbox"
+                            checked={includeArchivedProjects}
+                            onChange={(event) => setIncludeArchivedProjects(event.target.checked)}
+                        />
+                        Projetos arquivados
+                    </label>
+                </div>
             </section>
 
             <div className="crud-toolbar" aria-label="Ações do backlog">
@@ -574,9 +623,9 @@ export default function BacklogManagement() {
                     Projeto arquivado: o backlog está disponível somente para consulta.
                 </div>
             )}
-            {!reorderSafe && projectId && rows.length > 1 && (
+            {canPrioritize && !reorderSafe && rows.length > 1 && (
                 <p className="backlog-reorder-help">
-                    Para priorizar, remova filtros e agrupamentos e exiba o backlog completo em uma única página.
+                    Para priorizar, remova os filtros e o agrupamento.
                 </p>
             )}
 
@@ -593,16 +642,19 @@ export default function BacklogManagement() {
                             <th scope="col">Estimativa</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody ref={tableBodyRef}>
                         {groups.flatMap((group) => [
                             groupBy ? (
                                 <tr className="backlog-group-row" key={`group-${group.key}`}>
-                                    <th colSpan="7" scope="rowgroup">{group.label} · {group.items.length}</th>
+                                    <th colSpan="7" scope="rowgroup">
+                                        {`${group.label} · ${group.total ?? group.items.length}${group.continuacao ? " (continuação)" : ""}`}
+                                    </th>
                                 </tr>
                             ) : null,
                             ...group.items.map((item) => (
                                 <tr
                                     key={item.id}
+                                    data-item-id={item.id}
                                     tabIndex={0}
                                     onClick={() => setSelectedId(item.id)}
                                     onDoubleClick={() => openItem(item, "view")}

@@ -18,9 +18,11 @@ No Hub, abra **Gerenciador de Projetos** e selecione **Backlog de demandas**. De
 
 A tela permite pesquisar e filtrar os itens. Conforme suas permissões efetivas, você pode incluir, alterar, visualizar e arquivar demandas.
 
+Pesquisa, filtros e agrupamento consideram todo o backlog do projeto, e não apenas a página exibida. Ao agrupar por status, tipo ou prioridade, as demandas são organizadas por grupo e depois paginadas de cinco em cinco; cada grupo mostra seu total no backlog filtrado, e um grupo que começou na página anterior é identificado como continuação.
+
 Os itens do backlog são a fonte única das atividades do projeto e substituem o antigo cadastro separado de tarefas de recursos. A responsabilidade é definida diretamente no item.
 
-Para alterar a prioridade, use a ação de priorização disponibilizada na tela. A nova ordem é salva com controle de versão. Se ocorrer uma falha, a interface restaura a ordem anterior.
+A lista exibe até cinco demandas por página. Para alterar a prioridade, use as setas da coluna **Ordem** ou a tecla Alt com as setas do teclado. A prioridade considera a ordem de todo o backlog, e não apenas a página exibida: quando uma demanda passa para outra página, a tela passa a exibir a página em que ela ficou. A nova ordem é salva com controle de versão. Se ocorrer uma falha, a interface restaura a ordem anterior.
 
 ## Permissões e estados protegidos
 

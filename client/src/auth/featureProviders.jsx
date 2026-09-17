@@ -34,6 +34,7 @@ export const FEATURE_PROVIDERS = Object.freeze({
     "projetos.planejamento-de-recursos": provider(() => import("../components/ProjectResourcePlanningManagement"), {
         aliases: ["projetos.recursos-do-projeto", "projetos.grade-de-capacitacao"]
     }),
+    "projetos.equipes": provider(() => import("../components/ProjectResourcePlanningManagement"), { props: { secao: "equipes" } }),
     "projetos.orcamento-do-projeto": provider(() => import("../components/ProjectBudgetManagement"))
 });
 

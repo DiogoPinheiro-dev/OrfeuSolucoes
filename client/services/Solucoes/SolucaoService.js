@@ -4,12 +4,15 @@ import { toServiceError } from "../graphql/serviceError";
 import {
     CREATE_SOLUCAO_MUTATION,
     CREATE_FUNCIONALIDADE_MUTATION,
+    CREATE_FUNCIONALIDADE_AGRUPAMENTO_MUTATION,
     DELETE_SOLUCAO_MUTATION,
     DELETE_FUNCIONALIDADE_MUTATION,
+    DELETE_FUNCIONALIDADE_AGRUPAMENTO_MUTATION,
     MY_HUB_NAVIGATION_QUERY,
     SOLUCOES_QUERY,
     UPDATE_SOLUCAO_MUTATION,
-    UPDATE_FUNCIONALIDADE_MUTATION
+    UPDATE_FUNCIONALIDADE_MUTATION,
+    UPDATE_FUNCIONALIDADE_AGRUPAMENTO_MUTATION
 } from "../graphql/operations";
 
 
@@ -150,3 +153,34 @@ export const deleteFuncionalidade = async (id) => {
         throw toServiceError(error);
     }
 };
+
+// Agrupamentos alteram somente a navegação; o Hub é recarregado após cada mudança.
+const mutateAgrupamento = async (mutation, variables, field) => {
+    try {
+        const response = await apolloClient.mutate({ mutation, variables });
+
+        notifyHubNavigationChanged();
+
+        return response?.data?.[field];
+    } catch (error) {
+        throw toServiceError(error);
+    }
+};
+
+export const createAgrupamento = (input) => mutateAgrupamento(
+    CREATE_FUNCIONALIDADE_AGRUPAMENTO_MUTATION,
+    { input: { ...input, solucaoId: Number(input.solucaoId) } },
+    "createFuncionalidadeAgrupamento"
+);
+
+export const updateAgrupamento = (input) => mutateAgrupamento(
+    UPDATE_FUNCIONALIDADE_AGRUPAMENTO_MUTATION,
+    { input: { ...input, id: Number(input.id) } },
+    "updateFuncionalidadeAgrupamento"
+);
+
+export const deleteAgrupamento = (id) => mutateAgrupamento(
+    DELETE_FUNCIONALIDADE_AGRUPAMENTO_MUTATION,
+    { id: Number(id) },
+    "deleteFuncionalidadeAgrupamento"
+);

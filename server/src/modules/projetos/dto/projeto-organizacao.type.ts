@@ -41,4 +41,5 @@ export class ProjetoOrganizacaoPainelType {
   @Field(() => [OrganizacaoRecursoType]) recursos!: OrganizacaoRecursoType[];
   @Field(() => [ProjetoRecursoProjetoType]) projetos!: ProjetoRecursoProjetoType[];
   @Field(() => ProjetoRecursoPermissoesType) permissoes!: ProjetoRecursoPermissoesType;
+  @Field(() => ProjetoRecursoPermissoesType) permissoesEquipes!: ProjetoRecursoPermissoesType;
 }

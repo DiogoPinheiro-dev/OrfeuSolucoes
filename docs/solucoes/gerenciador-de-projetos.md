@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-O Gerenciador de Projetos organiza o ciclo de vida, a execução, os compromissos, os recursos, a comunicação e o orçamento dos projetos da empresa ativa. A solução possui oito funcionalidades ativas e vinculadas a telas no Hub:
+O Gerenciador de Projetos organiza o ciclo de vida, a execução, os compromissos, os recursos, a comunicação e o orçamento dos projetos da empresa ativa. A solução possui nove funcionalidades ativas e vinculadas a telas no Hub:
 
 | Registry key | Tela |
 |---|---|
@@ -12,14 +12,21 @@ O Gerenciador de Projetos organiza o ciclo de vida, a execução, os compromisso
 | `projetos.marcos-e-entregas` | Marcos e entregas |
 | `projetos.cronograma-e-gantt` | Cronograma e Gantt |
 | `projetos.comunicacao-do-projeto` | Comunicação do projeto |
-| `projetos.planejamento-de-recursos` | Planejamento de recursos |
+| `projetos.planejamento-de-recursos` | Cadastro de recursos |
+| `projetos.equipes` | Cadastro de equipes |
 | `projetos.orcamento-do-projeto` | Orçamento do projeto |
 
 Cada tela é resolvida pelo `RegistryKey` recebido do backend. Empresa, funcionalidade e participação no projeto compõem o contexto de autorização das operações.
 
+No Hub, `Sprints`, `Marcos e entregas` e `Cronograma e Gantt` são apresentados como abas do agrupamento padrão **Execução do projeto**. Cada aba mantém a rota, as ações e as permissões da própria funcionalidade, e o usuário vê somente as abas autorizadas.
+
 ## Cadastro e ciclo do projeto
 
 O cadastro mantém chave, nome, objetivo, descrição, metodologia, situação, saúde, datas, responsável e equipe. As metodologias disponíveis são Scrum, Kanban, híbrida e outra. A situação pode ser rascunho, em orçamento, planejado, em andamento, pausado, concluído ou cancelado; a saúde registra projeto em dia, em risco ou atrasado.
+
+Todo novo projeto é criado em `EM_ORCAMENTO`. O cadastro não oferece seleção de situação inicial, e o backend rejeita outros estados na criação. Para passar a `RASCUNHO`, o orçamento precisa ser aprovado na tela de Orçamentos por usuário autorizado. Não é permitido avançar manualmente de `EM_ORCAMENTO` para rascunho ou planejado, inclusive como administrador.
+
+O cancelamento continua permitido. A retomada de um projeto cancelado, pelo responsável ou administrador, volta para `EM_ORCAMENTO` e limpa a data real de término, exigindo aprovação antes de avançar novamente. Os projetos existentes não têm seu ciclo modificado automaticamente por essa regra.
 
 A listagem possui pesquisa, filtros por metodologia, situação e saúde, paginação pelo servidor em páginas de até cinco projetos e opção de incluir projetos arquivados. A visualização apresenta os dados completos em modo somente leitura.
 
@@ -29,7 +36,7 @@ As ações dinâmicas `gerenciar_membros`, `alterar_status` e `reativar_projeto`
 
 O backlog reúne as demandas do projeto, seus responsáveis, prioridade, situação, estimativas e vínculos de planejamento. O seletor apresenta somente projetos no ciclo `RASCUNHO`. A tela oferece pesquisa e filtros e permite incluir, alterar, visualizar e arquivar itens conforme as permissões efetivas devolvidas pelo backend.
 
-A ação `priorizar` altera a ordem persistente dos itens. A priorização é enviada sobre uma versão conhecida do backlog e exige o conjunto completo da ordem aplicável; se a operação falhar, a interface restaura a ordem anterior. Projetos arquivados ficam em modo somente leitura.
+A ação `priorizar` altera a ordem persistente dos itens. A lista exibe até cinco itens por página, e a priorização é aplicada sobre a ordem completa do backlog: ao mover um item para outra página, a tela passa a exibir a página em que ele ficou. A operação é enviada sobre uma versão conhecida do backlog; se falhar, a interface restaura a ordem anterior. Filtros e agrupamento desativam a priorização. Projetos arquivados ficam em modo somente leitura.
 
 Itens do projeto substituem integralmente o antigo cadastro isolado de tarefas de recursos. A responsabilidade é atribuída diretamente ao item do backlog. Recursos comuns visualizam os próprios itens; recursos hierarquicamente superiores também visualizam itens de subordinados das equipes ativas vinculadas ao mesmo projeto. Pares, superiores, outras equipes e outros projetos permanecem fora desse escopo.
 
@@ -78,23 +85,25 @@ Eventos exibem o nome legível do registro envolvido e sua hierarquia de context
 
 Itens, comentários, dependências, eventos e anexos vinculados a itens seguem o mesmo filtro hierárquico. Consultas e operações diretas por identificador também validam esse escopo no backend.
 
-## Planejamento de recursos
+## Recursos e equipes
 
-Esta funcionalidade composta possui três abas principais endereçáveis pela URL:
+`Cadastro de recursos` e `Cadastro de equipes` são funcionalidades próprias, apresentadas como abas do agrupamento padrão **Recursos e equipes**. Recursos e capacitações são autorizados pela funcionalidade `projetos.planejamento-de-recursos`; equipes, pela funcionalidade `projetos.equipes`. Ao ser criada, a funcionalidade de equipes recebe exatamente o acesso dos grupos, os contratos das empresas e os responsáveis de atendimento da funcionalidade de recursos; depois disso, cada uma é administrada separadamente. Links antigos com o parâmetro `tab` são redirecionados para a funcionalidade correspondente, e o antigo planejamento abre o Backlog de demandas.
 
-1. `Recursos`, para vincular um usuário a um recurso e atribuir sua capacitação;
-2. `Equipes`, para agrupar recursos e vincular a equipe aos projetos atendidos;
-3. `Planejamento`, para trabalhar diretamente com os itens cadastrados no backlog.
+A consulta compartilhada respeita o acesso de cada funcionalidade: quem visualiza somente Recursos não recebe equipes nem projetos; quem visualiza somente Equipes recebe os recursos necessários à composição, mas não a lista de usuários candidatos nem a grade completa de capacitações. As permissões de alteração permanecem independentes.
 
 O cadastro de capacitações mantém o nível hierárquico ocupado pelo recurso na empresa, como gerente, supervisor, QA ou desenvolvedor. Números maiores representam níveis superiores. Recursos não são vinculados diretamente a tarefas, equipes ou projetos durante seu cadastro.
 
-As equipes materializam seus recursos nos projetos ativos preservando a origem do vínculo. Vínculos diretos e origens de equipes sobrepostas coexistem; retirar uma equipe não remove um recurso que ainda possua vínculo direto ou outra equipe de origem. A aba de planejamento reutiliza o backlog como fonte única dos itens do projeto.
+As equipes materializam seus recursos nos projetos ativos preservando a origem do vínculo. Vínculos diretos e origens de equipes sobrepostas coexistem; retirar uma equipe não remove um recurso que ainda possua vínculo direto ou outra equipe de origem. Os itens planejados do projeto são consultados e mantidos somente no Backlog de demandas, conforme as permissões dessa funcionalidade.
 
 ## Orçamento do projeto
 
 O seletor do orçamento apresenta somente projetos no ciclo `EM_ORCAMENTO`. O orçamento usa uma moeda de três letras e reúne categorias e custos. Custos podem ser fixos ou associados a recurso e, opcionalmente, a um item do backlog atribuído a esse recurso, com valores planejado, comprometido e realizado. A tela calcula variações, destaca estouros e preserva o histórico de taxas aplicado aos custos de recurso.
 
 As ações `visualizar_financeiro`, `gerenciar_financeiro` e `aprovar_orcamento` separam consulta, manutenção e aprovação. Sem a primeira, os valores financeiros não são devolvidos ao usuário. Um projeto sem orçamento permite criar o orçamento-base; enquanto estiver em rascunho, categorias e custos podem ser mantidos. Depois da aprovação, o orçamento fica bloqueado para alterações até ser reaberto por usuário autorizado.
+
+A aprovação de um projeto em `EM_ORCAMENTO` registra o orçamento aprovado e altera o ciclo do projeto para `RASCUNHO` na mesma transação, com registro de auditoria. Falhas ou conflitos impedem a gravação parcial. Após aprovar, a tela atualiza a lista e remove o projeto que deixou o ciclo de orçamento.
+
+Reabrir o orçamento para alteração preserva o ciclo atual do projeto. Aprovar novamente um orçamento de projeto que já esteja fora de `EM_ORCAMENTO` também preserva seu ciclo. Quando um projeto retorna a `EM_ORCAMENTO` com orçamento já aprovado, é necessário reabrir o orçamento e aprová-lo novamente para sair desse ciclo.
 
 ## Autorização, concorrência e auditoria
 
@@ -133,7 +142,7 @@ A cobertura automatizada do frontend inclui:
 - manutenção, alternância e arquivamento de marcos e entregas;
 - dependências, inconsistências, navegação e datas versionadas do cronograma;
 - atualizações, comentários, feed, detalhes de eventos e permissões da comunicação;
-- as três abas de recursos, equipes e planejamento baseado nos itens do backlog;
+- as funcionalidades de recursos e de equipes, suas permissões próprias e o redirecionamento dos links antigos com o parâmetro `tab`;
 - orçamento-base, categorias, custos, aprovação, seleção compartilhada e ocultação financeira.
 
 O backend possui cobertura de integração dos fluxos de projeto e uma suite E2E da borda GraphQL, incluindo jornada principal, paginação do feed, autenticação, contexto do usuário, filtros e negações de autorização. Os fluxos gerais de autenticação, rota protegida, empresa ativa e Hub também permanecem nas suites de regressão e E2E do frontend.

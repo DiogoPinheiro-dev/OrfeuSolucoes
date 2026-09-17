@@ -1,3 +1,28 @@
+/* Funcionalidade composta: cabeçalho, barra de abas principais e painel da aba ativa. */
+.feature-composite {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.feature-composite-header {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface-white);
+  box-shadow: var(--shadow-soft);
+}
+
+.feature-composite-header h2,
+.feature-composite-header p {
+  margin: 0;
+}
+
+.feature-composite-header p {
+  margin-top: 6px;
+  color: var(--muted);
+}
+
 .feature-tabs {
   display: flex;
   gap: 6px;
@@ -11,6 +36,7 @@
   padding: 12px 18px;
   border: 0;
   border-bottom: 3px solid transparent;
+  border-radius: 10px 10px 0 0;
   background: transparent;
   color: var(--muted);
   font: inherit;
@@ -29,7 +55,7 @@
 }
 
 .feature-tabs button.active {
-  border-bottom-color: var(--button-primary-border);
+  border-bottom-color: var(--button-primary-bg);
   color: var(--primary);
 }
 

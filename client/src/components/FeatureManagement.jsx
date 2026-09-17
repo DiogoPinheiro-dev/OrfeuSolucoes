@@ -27,6 +27,7 @@ import FormFieldError from "./FormFieldError";
 import CrudGrid from "./CrudGrid";
 import { CrudModal, CrudModalTabPanel, CrudModalTabs } from "./CrudModal";
 import CustomDropdown from "./CustomDropdown";
+import FeatureGroupManagement from "./FeatureGroupManagement";
 
 import "../styles/userManagement.css";
 
@@ -49,6 +50,8 @@ const initialForm = {
     providerVersion: 1,
     somenteAdminSistema: false,
     padraoSistema: false,
+    agrupamentoId: "",
+    ordemNoAgrupamento: "",
     acoes: [
         { localKey: "default-visualizar", chave: "visualizar", nome: "Visualizar", ordem: 10, ativo: true, acaoPadrao: true, descricao: "", configuracao: "" },
         { localKey: "default-incluir", chave: "incluir", nome: "Incluir", ordem: 20, ativo: true, acaoPadrao: true, descricao: "", configuracao: "" },
@@ -72,6 +75,8 @@ const normalizeFeatureForm = (feature) => ({
     ...feature,
     solucaoId: feature?.solucaoId ? String(feature.solucaoId) : "",
     ordem: feature?.ordem ?? 0,
+    agrupamentoId: feature?.agrupamentoId ? String(feature.agrupamentoId) : "",
+    ordemNoAgrupamento: feature?.ordemNoAgrupamento ?? "",
     acoes: feature?.acoes?.length
         ? feature.acoes.map((acao) => ({
             ...acao,
@@ -88,7 +93,8 @@ const flattenFeatures = (solucoes) =>
             ...funcionalidade,
             solucaoId: solucao.id,
             solucaoNome: solucao.nome,
-            solucaoSlug: solucao.slug
+            solucaoSlug: solucao.slug,
+            agrupamentoTitulo: (solucao.agrupamentos || []).find((grupo) => grupo.id === funcionalidade.agrupamentoId)?.titulo || null
         }))
     );
 
@@ -120,6 +126,8 @@ const normalizePayload = (form, selectedSolution) => ({
     providerKey: form.providerKey || null,
     providerVersion: form.providerKey ? Number(form.providerVersion) || 1 : null,
     somenteAdminSistema: !!form.somenteAdminSistema,
+    agrupamentoId: form.agrupamentoId ? Number(form.agrupamentoId) : null,
+    ordemNoAgrupamento: form.agrupamentoId && form.ordemNoAgrupamento !== "" ? Number(form.ordemNoAgrupamento) : null,
     acoes: form.acoes.map((acao) => ({
         ...(acao.id ? { id: Number(acao.id) } : {}),
         chave: acao.acaoPadrao ? normalizeIdentifier(acao.chave || acao.nome) : normalizeIdentifier(acao.nome),
@@ -228,7 +236,11 @@ export default function FeatureManagement({ permissions }) {
 
         setForm((current) => ({
             ...current,
-            [name]: type === "checkbox" ? checked : value
+            [name]: type === "checkbox" ? checked : value,
+            // O agrupamento pertence à solução; trocar a solução desfaz a associação anterior.
+            ...(name === "solucaoId" && String(value) !== String(current.solucaoId)
+                ? { agrupamentoId: "", ordemNoAgrupamento: "" }
+                : {})
         }));
     };
 
@@ -289,6 +301,8 @@ export default function FeatureManagement({ permissions }) {
                     await updateFuncionalidade({
                         id: form.id,
                         ordem: payload.ordem,
+                        agrupamentoId: payload.agrupamentoId,
+                        ordemNoAgrupamento: payload.ordemNoAgrupamento,
                         acoes: payload.acoes.filter((acao) => !acao.id)
                     });
                 } else {
@@ -335,7 +349,7 @@ export default function FeatureManagement({ permissions }) {
             setSelectedIds([]);
             await loadSolucoes();
         } catch (deleteError) {
-            setError(deleteError.message || "Não foi possível deletar a funcionalidade.");
+            setError(deleteError.message || "Não foi possível excluir a funcionalidade.");
         } finally {
             setGridBusy(false);
         }
@@ -426,6 +440,7 @@ export default function FeatureManagement({ permissions }) {
                         { key: "titulo", label: "Título", render: (feature) => feature.titulo || "-" },
                         { key: "slug", label: "Identificador", render: (feature) => feature.slug || "-" },
                         { key: "solucao", label: "Solução", render: (feature) => feature.solucaoNome || "-" },
+                        { key: "agrupamento", label: "Agrupamento", render: (feature) => feature.agrupamentoTitulo || "-" },
                         { key: "registryKey", label: "Rota", render: (feature) => feature.registryKey || "-" },
                         { key: "providerKey", label: "Implementação", render: (feature) => feature.providerKey || "-" },
                         { key: "statusPublicacao", label: "Publicação", render: (feature) => ({ RASCUNHO: "Rascunho", PUBLICADA: "Publicada", DESPUBLICADA: "Despublicada" }[feature.statusPublicacao] || feature.statusPublicacao || "-") },
@@ -480,6 +495,8 @@ export default function FeatureManagement({ permissions }) {
                     canDelete={canUseFeatureAction(currentUser, permissions, "excluir")}
                 />
 
+            <FeatureGroupManagement solucoes={solucoes} permissions={permissions} onChanged={loadSolucoes} />
+
             {modalMode && (
                 <CrudModal
                     mode={modalMode}
@@ -514,7 +531,7 @@ export default function FeatureManagement({ permissions }) {
 
                             <CrudModalTabPanel active={activeTab === "main"}>
                                     {standardFeatureLocked && (
-                                        <small>Esta funcionalidade é padrão do sistema. Apenas a ordem pode ser alterada; utilize a aba de ações para adicionar uma nova ação.</small>
+                                        <small>Esta funcionalidade é padrão do sistema. Apenas a ordem e o agrupamento podem ser alterados; utilize a aba de ações para adicionar uma nova ação.</small>
                                     )}
                                     <div className="user-form-field">
                                         <span className="user-form-field-label">
@@ -604,6 +621,41 @@ export default function FeatureManagement({ permissions }) {
                                             <label htmlFor="funcionalidade-ordem">Ordem</label>
                                         </span>
                                         <input id="funcionalidade-ordem" name="ordem" type="number" value={form.ordem ?? 0} onChange={handleChange} disabled={readonly || saving} />
+                                    </div>
+
+                                    <div className="user-form-field">
+                                        <span className="user-form-field-label">
+                                            <span>Agrupamento</span>
+                                        </span>
+                                        <CustomDropdown
+                                            name="agrupamentoId"
+                                            value={form.agrupamentoId || ""}
+                                            onChange={handleChange}
+                                            disabled={readonly || saving || !selectedSolution}
+                                            ariaLabel="Selecionar agrupamento da funcionalidade"
+                                            options={[
+                                                { value: "", label: "Sem agrupamento" },
+                                                ...(selectedSolution?.agrupamentos || []).map((grupo) => ({
+                                                    value: grupo.id,
+                                                    label: grupo.titulo
+                                                }))
+                                            ]}
+                                        />
+                                        <small>No Hub, as funcionalidades de um mesmo agrupamento aparecem como abas de uma única tela.</small>
+                                    </div>
+
+                                    <div className="user-form-field">
+                                        <span className="user-form-field-label">
+                                            <label htmlFor="funcionalidade-ordem-agrupamento">Ordem no agrupamento</label>
+                                        </span>
+                                        <input
+                                            id="funcionalidade-ordem-agrupamento"
+                                            name="ordemNoAgrupamento"
+                                            type="number"
+                                            value={form.ordemNoAgrupamento ?? ""}
+                                            onChange={handleChange}
+                                            disabled={readonly || saving || !form.agrupamentoId}
+                                        />
                                     </div>
                                     <section className="user-company-section" aria-label="Status da funcionalidade">
                                         <div className="user-permissions-grid">
@@ -714,7 +766,9 @@ export default function FeatureManagement({ permissions }) {
             <ConfirmDialog
                 open={!!pendingDelete}
                 title="Confirmar exclusão"
-                message={`Tem certeza que deseja deletar ${pendingDelete?.label || "a funcionalidade selecionada"}?`}
+                message={`Tem certeza de que deseja excluir ${pendingDelete?.label || "a funcionalidade selecionada"}?`}
+                confirmLabel="Excluir"
+                variant="destructive"
                 onCancel={() => setPendingDelete(null)}
                 onConfirm={confirmDelete}
                 loading={false}

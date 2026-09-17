@@ -33,6 +33,7 @@ const CODE_PROVIDERS: CatalogoCodeProvider[] = [
   'projetos.marcos-e-entregas',
   'projetos.cronograma-e-gantt',
   'projetos.comunicacao-do-projeto',
+  'projetos.equipes',
   'projetos.orcamento-do-projeto'
 ].map((key) => provider(key));
 

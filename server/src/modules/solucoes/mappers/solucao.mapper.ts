@@ -1,5 +1,6 @@
 import { SolucaoType } from '../dto/solucao.type';
 import { SolucaoRecord } from '../types/solucao-record.types';
+import { toFuncionalidadeAgrupamentoType } from './funcionalidade-agrupamento.mapper';
 import { toFuncionalidadeType } from './funcionalidade.mapper';
 
 export function toType(solucao: SolucaoRecord): SolucaoType {
@@ -17,6 +18,7 @@ export function toType(solucao: SolucaoRecord): SolucaoType {
     chaveTecnica: solucao.chaveTecnica ?? solucao.slug,
     statusPublicacao: solucao.statusPublicacao ?? 'PUBLICADA',
     revisaoCatalogo: solucao.revisaoCatalogo ?? 1,
-    funcionalidades: (solucao.funcionalidades ?? []).map((funcionalidade) => toFuncionalidadeType(funcionalidade))
+    funcionalidades: (solucao.funcionalidades ?? []).map((funcionalidade) => toFuncionalidadeType(funcionalidade)),
+    agrupamentos: (solucao.agrupamentos ?? []).map((agrupamento) => toFuncionalidadeAgrupamentoType(agrupamento))
   };
 }

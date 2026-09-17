@@ -15,6 +15,20 @@ export type SolucaoRecord = {
   revisaoCatalogo?: number;
   publicadoEm?: Date | null;
   funcionalidades?: FuncionalidadeRecord[];
+  agrupamentos?: FuncionalidadeAgrupamentoRecord[];
+};
+
+export type FuncionalidadeAgrupamentoRecord = {
+  id: number;
+  solucaoId: number;
+  slug: string;
+  titulo: string;
+  label?: string | null;
+  descricao?: string | null;
+  ordem: number;
+  ativo: boolean;
+  padraoSistema: boolean;
+  chaveTecnica?: string;
 };
 
 export type FuncionalidadeRecord = {
@@ -36,6 +50,8 @@ export type FuncionalidadeRecord = {
   statusPublicacao?: string;
   revisaoCatalogo?: number;
   publicadoEm?: Date | null;
+  agrupamentoId?: number | null;
+  ordemNoAgrupamento?: number | null;
   podeVisualizar?: boolean;
   podeIncluir?: boolean;
   podeAlterar?: boolean;

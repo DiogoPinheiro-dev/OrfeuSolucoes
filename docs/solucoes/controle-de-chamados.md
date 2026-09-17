@@ -79,11 +79,15 @@ O chamado expõe as situações `SEM_SLA`, `NO_PRAZO`, `PERTO_DO_VENCIMENTO`, `A
 
 ## Dashboard e relatórios
 
+No Hub, Dashboard e Relatórios são apresentados como abas do agrupamento padrão **Indicadores do atendimento**. Cada aba mantém a rota e as permissões da própria funcionalidade.
+
 O dashboard apresenta totais de chamados abertos, em atendimento, pendentes, resolvidos, arquivados e atrasados no SLA, além dos tempos médios de primeira resposta e resolução. Rankings agrupam os resultados por prioridade, categoria e atendente.
 
 Os relatórios permitem filtrar por período, atendente, categoria, prioridade, estado e situação de SLA. A consulta é paginada pelo servidor e os resultados podem ser exportados em CSV ou Excel. Se a consulta falhar, os filtros selecionados permanecem disponíveis para correção ou nova tentativa.
 
 ## Cadastros administrativos
+
+No Hub, categorias, tipos, prioridades, SLA, responsáveis e configuração de e-mail são apresentados como abas do agrupamento padrão **Configurações do atendimento**. Cada aba mantém a rota, as permissões e a documentação da própria funcionalidade. O usuário vê somente as abas autorizadas e, com acesso a apenas uma delas, a tela é apresentada sem barra de abas. O endereço `/hub/controle-de-chamados/configuracoes-do-atendimento` abre a primeira aba autorizada.
 
 Categorias, tipos, prioridades e regras de SLA seguem o padrão compartilhado de grade, modal e confirmação. As operações respeitam as permissões de visualizar, incluir, alterar e excluir da funcionalidade ativa. Como esses cadastros preservam o histórico, a interface usa “Desativar selecionados”, impede uma nova desativação do registro inativo e permite reativá-lo pela alteração do campo “Ativo”.
 

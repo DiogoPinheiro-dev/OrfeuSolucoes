@@ -279,6 +279,8 @@ export default function CategoriaChamadoManagement({ permissions }) {
                 open={!!pendingDelete}
                 title="Desativar categoria"
                 message={`Deseja desativar ${pendingDelete?.label || "a categoria selecionada"}? Os chamados existentes permanecem vinculados.`}
+                confirmLabel="Desativar"
+                variant="warning"
                 onCancel={() => setPendingDelete(null)}
                 onConfirm={confirmDelete}
                 loading={false}

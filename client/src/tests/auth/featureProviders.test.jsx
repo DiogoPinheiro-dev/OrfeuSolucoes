@@ -26,6 +26,13 @@ describe("manifesto de providers do Hub", () => {
             .toBe("projetos.planejamento-de-recursos");
     });
 
+    it("resolve Equipes como funcionalidade própria sobre a seção de equipes da tela de recursos", () => {
+        expect(resolveFeatureProvider("projetos.equipes", 1)).toMatchObject({
+            key: "projetos.equipes",
+            props: { secao: "equipes" }
+        });
+    });
+
     it("mantém chaves únicas no manifesto", () => {
         expect(new Set(FEATURE_PROVIDER_KEYS).size).toBe(FEATURE_PROVIDER_KEYS.length);
     });

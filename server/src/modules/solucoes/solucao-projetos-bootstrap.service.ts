@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { retryBootstrapAfterUniqueConflict } from '../../common/persistence/bootstrap-concurrency.util';
 import { PrismaService } from '../../prisma/prisma.service';
+import { PROJETOS_AGRUPAMENTOS_PADRAO } from './constants/agrupamento-definitions';
 import { PROJETO_FEATURE_DEFINITIONS } from './constants/projeto-feature-definitions';
 import { FuncionalidadeAcaoService } from './funcionalidade-acao.service';
+import { FuncionalidadeAgrupamentoService } from './funcionalidade-agrupamento.service';
 import { SolucaoAcessoService } from './solucao-acesso.service';
 import { FuncionalidadeRecord, SolucaoRecord } from './types/solucao-record.types';
 import { CatalogoBootstrapReconciliationService } from './catalogo-bootstrap-reconciliation.service';
@@ -13,7 +15,8 @@ export class SolucaoProjetosBootstrapService {
     private readonly prisma: PrismaService,
     private readonly funcionalidadeAcaoService: FuncionalidadeAcaoService,
     private readonly solucaoAcessoService: SolucaoAcessoService,
-    private readonly reconciliation: CatalogoBootstrapReconciliationService
+    private readonly reconciliation: CatalogoBootstrapReconciliationService,
+    private readonly agrupamentos: FuncionalidadeAgrupamentoService
   ) {}
 
   async ensureProjetosSolution(): Promise<void> {
@@ -62,8 +65,31 @@ export class SolucaoProjetosBootstrapService {
       await this.funcionalidadeAcaoService.syncFuncionalidadeAcoes(funcionalidade.id, feature.acoes, { preserveAdditionalActions: true });
 
       if (!existing) {
-        await this.solucaoAcessoService.syncNewFuncionalidadeAccess(funcionalidade);
+        await this.grantInitialAccess(solucao.id, funcionalidade, feature.copiarAcessoDe);
       }
+    }
+
+    for (const agrupamento of PROJETOS_AGRUPAMENTOS_PADRAO) {
+      await this.agrupamentos.ensureAgrupamentoPadrao(solucao.id, agrupamento);
+    }
+  }
+
+  /**
+   * Uma funcionalidade nova derivada de outra recebe exatamente o acesso da origem, sem ampliar o acesso de nenhum grupo.
+   * As demais seguem o acesso padrão da solução.
+   */
+  private async grantInitialAccess(solucaoId: number, funcionalidade: FuncionalidadeRecord, origemSlug?: string): Promise<void> {
+    if (!origemSlug) {
+      await this.solucaoAcessoService.syncNewFuncionalidadeAccess(funcionalidade);
+      return;
+    }
+
+    const origem = (await (this.prisma as never as { funcionalidade: { findUnique: Function } }).funcionalidade.findUnique({
+      where: { solucaoId_slug: { solucaoId, slug: origemSlug } },
+      select: { id: true }
+    })) as { id: number } | null;
+    if (origem) {
+      await this.solucaoAcessoService.copyFuncionalidadeAccess(origem.id, funcionalidade);
     }
   }
 }

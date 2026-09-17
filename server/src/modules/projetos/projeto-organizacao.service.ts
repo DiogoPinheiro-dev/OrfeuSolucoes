@@ -1,13 +1,14 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { JwtPayload } from '../auth/strategies/jwt-payload.type';
-import { ProjetoAcao } from './constants/projeto-operacional.constants';
+import { ProjetoAcao, ProjetoFuncionalidade } from './constants/projeto-operacional.constants';
 import { ExcluirCapacitacaoInput, ExcluirEquipeInput, SalvarCapacitacaoInput, SalvarEquipeInput } from './dto/projeto-organizacao.input';
 import { ProjetoRecursoAuthorizationService } from './projeto-recurso-authorization.service';
 import { ProjetoEquipeVinculoService } from './projeto-equipe-vinculo.service';
 
 const USER_SELECT = { id: true, nome: true, login: true, email: true };
 const PROJECT_SELECT = { id: true, chave: true, nome: true, arquivadoEm: true };
+const SEM_PERMISSOES = { podeIncluir: false, podeAlterar: false, podeExcluir: false };
 
 @Injectable()
 export class ProjetoOrganizacaoService {
@@ -17,17 +18,32 @@ export class ProjetoOrganizacaoService {
     private readonly vinculosEquipe: ProjetoEquipeVinculoService
   ) {}
 
+  /**
+   * Painel compartilhado por Recursos e Equipes: abre com a visualização de qualquer uma das duas
+   * e devolve somente os dados e as permissões de cada tela autorizada. Recursos e suas capacitações
+   * também servem como referência para a composição das equipes.
+   */
   async painel(user: JwtPayload) {
-    const empresaId = await this.authorization.empresa(user);
-    const [capacitacoes, equipes, recursos, candidatos, projetos, permissoes] = await Promise.all([
-      this.prisma.capacitacao.findMany({ where: { empresaId }, orderBy: [{ nivelHierarquico: 'desc' }, { nome: 'asc' }] }),
-      this.prisma.equipe.findMany({ where: { empresaId }, include: { recursos: { include: { recurso: { include: { usuario: { select: USER_SELECT }, capacitacao: true } } } }, projetos: { where: { ativo: true }, include: { projeto: { select: PROJECT_SELECT } } } }, orderBy: { nome: 'asc' } }),
+    const acesso = await this.authorization.acessoPainel(user);
+    const { empresaId } = acesso;
+    const [capacitacoes, equipes, recursos, candidatos, projetos, permissoes, permissoesEquipes] = await Promise.all([
+      acesso.recursos ? this.prisma.capacitacao.findMany({ where: { empresaId }, orderBy: [{ nivelHierarquico: 'desc' }, { nome: 'asc' }] }) : [],
+      acesso.equipes ? this.prisma.equipe.findMany({ where: { empresaId }, include: { recursos: { include: { recurso: { include: { usuario: { select: USER_SELECT }, capacitacao: true } } } }, projetos: { where: { ativo: true }, include: { projeto: { select: PROJECT_SELECT } } } }, orderBy: { nome: 'asc' } }) : [],
       this.prisma.recurso.findMany({ where: { empresaId }, include: { usuario: { select: USER_SELECT }, capacitacao: true }, orderBy: { criadoEm: 'asc' } }),
-      this.prisma.empresaUsuario.findMany({ where: { empresaId }, include: { usuario: { select: USER_SELECT } }, orderBy: { id: 'asc' } }),
-      this.prisma.projeto.findMany({ where: { empresaId }, select: PROJECT_SELECT, orderBy: [{ arquivadoEm: 'asc' }, { nome: 'asc' }] }),
-      this.authorization.permissoes(user)
+      acesso.recursos ? this.prisma.empresaUsuario.findMany({ where: { empresaId }, include: { usuario: { select: USER_SELECT } }, orderBy: { id: 'asc' } }) : [],
+      acesso.equipes ? this.prisma.projeto.findMany({ where: { empresaId }, select: PROJECT_SELECT, orderBy: [{ arquivadoEm: 'asc' }, { nome: 'asc' }] }) : [],
+      acesso.recursos ? this.authorization.permissoes(user) : Promise.resolve(SEM_PERMISSOES),
+      acesso.equipes ? this.authorization.permissoes(user, ProjetoFuncionalidade.EQUIPES) : Promise.resolve(SEM_PERMISSOES)
     ]);
-    return { capacitacoes, equipes: equipes.map((item) => this.equipe(item)), recursos: recursos.map((item) => this.recurso(item)), candidatos: candidatos.map((item) => item.usuario).sort((a, b) => (a.nome ?? a.login ?? a.email).localeCompare(b.nome ?? b.login ?? b.email)), projetos, permissoes };
+    return {
+      capacitacoes,
+      equipes: equipes.map((item) => this.equipe(item)),
+      recursos: recursos.map((item) => this.recurso(item)),
+      candidatos: candidatos.map((item) => item.usuario).sort((a, b) => (a.nome ?? a.login ?? a.email).localeCompare(b.nome ?? b.login ?? b.email)),
+      projetos,
+      permissoes,
+      permissoesEquipes
+    };
   }
 
   async salvarCapacitacao(input: SalvarCapacitacaoInput, user: JwtPayload) {
@@ -47,7 +63,7 @@ export class ProjetoOrganizacaoService {
   }
 
   async salvarEquipe(input: SalvarEquipeInput, user: JwtPayload) {
-    const empresaId = await this.authorization.empresa(user, input.id ? ProjetoAcao.ALTERAR : ProjetoAcao.INCLUIR);
+    const empresaId = await this.authorization.empresa(user, input.id ? ProjetoAcao.ALTERAR : ProjetoAcao.INCLUIR, ProjetoFuncionalidade.EQUIPES);
     const nome = input.nome.trim();
     if (!nome) throw new BadRequestException('Informe o nome da equipe.');
     await this.assertNomeEquipe(empresaId, nome, input.id);
@@ -89,7 +105,7 @@ export class ProjetoOrganizacaoService {
   }
 
   async excluirEquipe(input: ExcluirEquipeInput, user: JwtPayload) {
-    const empresaId = await this.authorization.empresa(user, ProjetoAcao.EXCLUIR);
+    const empresaId = await this.authorization.empresa(user, ProjetoAcao.EXCLUIR, ProjetoFuncionalidade.EQUIPES);
     const vinculos = await this.prisma.projetoEquipe.count({ where: { equipeId: input.id, empresaId, ativo: true } });
     if (vinculos) throw new BadRequestException('A equipe possui projetos vinculados e não pode ser excluída.');
     await this.prisma.$transaction(async (tx) => {

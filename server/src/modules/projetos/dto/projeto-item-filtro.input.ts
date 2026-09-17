@@ -1,4 +1,4 @@
-import { Field, InputType, Int } from '@nestjs/graphql';
+import { Field, InputType, Int, registerEnumType } from '@nestjs/graphql';
 import {
   IsBoolean,
   IsEnum,
@@ -9,11 +9,16 @@ import {
   Max,
   Min
 } from 'class-validator';
+import { ProjetoBacklogAgrupamento } from '../policies/projeto-backlog-agrupamento.policy';
 import {
   ProjetoItemPrioridade,
   ProjetoItemStatus,
   ProjetoItemTipo
 } from '../types/projeto-item.types';
+
+registerEnumType(ProjetoBacklogAgrupamento, {
+  name: 'ProjetoBacklogAgrupamento'
+});
 
 @InputType()
 export class ProjetoItemFiltroInput {
@@ -63,4 +68,9 @@ export class ProjetoItemFiltroInput {
   @IsOptional()
   @IsBoolean()
   incluirArquivados?: boolean;
+
+  @Field(() => ProjetoBacklogAgrupamento, { nullable: true })
+  @IsOptional()
+  @IsEnum(ProjetoBacklogAgrupamento)
+  agruparPor?: ProjetoBacklogAgrupamento | null;
 }

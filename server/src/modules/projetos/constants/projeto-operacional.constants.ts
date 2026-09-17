@@ -8,6 +8,7 @@ export const ProjetoFuncionalidade = {
   CRONOGRAMA: 'cronograma-e-gantt',
   COMUNICACAO: 'comunicacao-do-projeto',
   PLANEJAMENTO_RECURSOS: 'planejamento-de-recursos',
+  EQUIPES: 'equipes',
   ORCAMENTO: 'orcamento-do-projeto',
   HORAS: 'horas-do-projeto',
   TEMPLATES: 'templates-de-projeto',

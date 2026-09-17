@@ -75,7 +75,13 @@
     background: var(--surface-white);
     border: 1px solid var(--line);
     border-radius: 18px;
+    min-width: 0;
     padding: 1.25rem;
+}
+
+.chamado-form-grid,
+.chamado-form-grid > label {
+    min-width: 0;
 }
 
 .chamado-form label,
@@ -111,6 +117,14 @@
 .chamado-response-form textarea,
 .chamado-panel textarea {
     resize: vertical;
+}
+
+.chamado-form input:not([type="checkbox"]),
+.chamado-form select,
+.chamado-form textarea {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
 }
 
 .chamado-form-grid,
@@ -806,6 +820,7 @@
     flex-direction: column;
     gap: 0.75rem;
     margin: 0;
+    min-width: 0;
     padding: 1rem;
 }
 
@@ -876,7 +891,7 @@
     .chamado-acompanhantes-grid,
     .chamado-detail-grid,
     .chamado-meta {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
     }
 
     .chamados-header,
@@ -891,6 +906,13 @@
         justify-content: flex-start;
     }
 }
+
+@media (max-width: 480px) {
+    .chamado-form {
+        padding: 1rem;
+    }
+}
+
 .chamado-responsavel-modal {
     width: min(100%, 520px);
 }

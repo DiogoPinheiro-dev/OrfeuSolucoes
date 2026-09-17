@@ -71,15 +71,15 @@ const backlogPage = (items = [item, secondItem], permissoes = { podeCriar: true,
     items,
     total: items.length,
     pagina: 1,
-    limite: 100,
+    limite: 5,
     totalPaginas: items.length ? 1 : 0,
     backlogVersao: 7,
     permissoes
 });
 
-const renderBacklog = (entry = "/hub/projetos/backlog-de-demandas") => render(
+const renderBacklog = (entry = "/hub/projetos/backlog-de-demandas", props = {}) => render(
     <MemoryRouter initialEntries={[entry]}>
-        <BacklogManagement />
+        <BacklogManagement {...props} />
     </MemoryRouter>
 );
 
@@ -226,5 +226,79 @@ describe("Backlog de demandas", () => {
         renderBacklog();
         expect(await screen.findByRole("status")).toHaveTextContent("Projeto arquivado");
         expect(screen.getByRole("button", { name: "Incluir demanda" })).toBeDisabled();
+    });
+
+    const paginarNoServidor = (itens) => async ({ pagina = 1, limite }) => ({
+        ...backlogPage(itens.slice((pagina - 1) * limite, pagina * limite)),
+        pagina,
+        limite,
+        total: itens.length,
+        totalPaginas: Math.ceil(itens.length / limite)
+    });
+    const demandas = (quantidade) => Array.from({ length: quantidade }, (_, index) => ({
+        ...item,
+        id: `d${index + 1}`,
+        chave: `ORF-${index + 1}`,
+        titulo: `Demanda ${index + 1}`,
+        ordemBacklog: index + 1
+    }));
+
+    it("pagina o backlog de cinco em cinco e prioriza entre paginas acompanhando a demanda", async () => {
+        const user = userEvent.setup();
+        getBacklogItens.mockImplementation(paginarNoServidor(demandas(7)));
+        renderBacklog();
+
+        expect(await screen.findByRole("row", { name: /ORF-5, Demanda 5/ })).toBeInTheDocument();
+        expect(getBacklogItens).toHaveBeenCalledWith(expect.objectContaining({ pagina: 1, limite: 5 }));
+        expect(screen.queryByRole("row", { name: /ORF-6/ })).not.toBeInTheDocument();
+        expect(screen.getByText("7 demanda(s) · Página 1 de 2")).toBeInTheDocument();
+
+        await user.click(screen.getByRole("button", { name: "Próxima" }));
+        const sexta = await screen.findByRole("row", { name: /ORF-6, Demanda 6/ });
+        const subir = within(sexta).getByRole("button", { name: "Subir uma posição: ORF-6" });
+        expect(subir).toBeEnabled();
+        await user.click(subir);
+
+        await waitFor(() => expect(moverBacklogItem).toHaveBeenCalledWith({ itemId: "d6", backlogVersao: 7, direcao: "SUBIR" }));
+        await waitFor(() => expect(getBacklogItens).toHaveBeenLastCalledWith(expect.objectContaining({ pagina: 1, limite: 5 })));
+    });
+
+    it("volta para a ultima pagina valida quando a pagina atual fica vazia", async () => {
+        const user = userEvent.setup();
+        getBacklogItens.mockImplementation(paginarNoServidor(demandas(6)));
+        renderBacklog();
+        await screen.findByRole("row", { name: /ORF-1, Demanda 1/ });
+
+        getBacklogItens.mockImplementation(paginarNoServidor(demandas(5)));
+        await user.click(screen.getByRole("button", { name: "Próxima" }));
+
+        await waitFor(() => expect(getBacklogItens).toHaveBeenLastCalledWith(expect.objectContaining({ pagina: 1 })));
+        expect(await screen.findByRole("row", { name: /ORF-5, Demanda 5/ })).toBeInTheDocument();
+    });
+
+    it("agrupa o backlog inteiro no servidor, pagina de cinco em cinco e mostra os totais reais", async () => {
+        const user = userEvent.setup();
+        const agrupadas = [
+            ...demandas(6).map((demanda) => ({ ...demanda, status: "ABERTO" })),
+            { ...item, id: "d7", chave: "ORF-7", titulo: "Demanda 7", status: "EM_ANDAMENTO", ordemBacklog: 7 }
+        ];
+        getBacklogItens.mockImplementation(async (filtro) => ({
+            ...await paginarNoServidor(agrupadas)(filtro),
+            grupos: filtro.agruparPor === "STATUS" ? [{ valor: "ABERTO", total: 6 }, { valor: "EM_ANDAMENTO", total: 1 }] : []
+        }));
+        renderBacklog();
+        await screen.findByRole("row", { name: /ORF-1, Demanda 1/ });
+
+        await user.selectOptions(screen.getByRole("combobox", { name: "Agrupar" }), "status");
+
+        await waitFor(() => expect(getBacklogItens).toHaveBeenLastCalledWith(expect.objectContaining({ agruparPor: "STATUS", pagina: 1, limite: 5 })));
+        expect(await screen.findByText("Aberto · 6")).toBeInTheDocument();
+        expect(screen.getByText("Para priorizar, remova os filtros e o agrupamento.")).toBeInTheDocument();
+
+        await user.click(screen.getByRole("button", { name: "Próxima" }));
+
+        expect(await screen.findByText("Aberto · 6 (continuação)")).toBeInTheDocument();
+        expect(screen.getByText("Em andamento · 1")).toBeInTheDocument();
+        expect(getBacklogItens).toHaveBeenLastCalledWith(expect.objectContaining({ agruparPor: "STATUS", pagina: 2 }));
     });
 });

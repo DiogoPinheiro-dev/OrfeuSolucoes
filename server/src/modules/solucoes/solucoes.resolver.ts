@@ -3,10 +3,13 @@ import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
 import { JwtPayload } from '../auth/strategies/jwt-payload.type';
+import { CreateFuncionalidadeAgrupamentoInput } from './dto/create-funcionalidade-agrupamento.input';
 import { CreateFuncionalidadeInput } from './dto/create-funcionalidade.input';
 import { CreateSolucaoInput } from './dto/create-solucao.input';
+import { FuncionalidadeAgrupamentoType } from './dto/funcionalidade-agrupamento.type';
 import { FuncionalidadeType } from './dto/funcionalidade.type';
 import { SolucaoType } from './dto/solucao.type';
+import { UpdateFuncionalidadeAgrupamentoInput } from './dto/update-funcionalidade-agrupamento.input';
 import { UpdateFuncionalidadeInput } from './dto/update-funcionalidade.input';
 import { UpdateSolucaoInput } from './dto/update-solucao.input';
 import { assertSystemAdmin } from './policies/solucao-access.policy';
@@ -87,6 +90,36 @@ export class SolucoesResolver {
   ): Promise<boolean> {
     assertSystemAdmin(user);
     return this.solucoesService.removeFuncionalidadeAsAdmin(id, user);
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @Mutation(() => FuncionalidadeAgrupamentoType)
+  createFuncionalidadeAgrupamento(
+    @Args('input') input: CreateFuncionalidadeAgrupamentoInput,
+    @CurrentUser() user: JwtPayload
+  ): Promise<FuncionalidadeAgrupamentoType> {
+    assertSystemAdmin(user);
+    return this.solucoesService.createAgrupamentoAsAdmin(input, user);
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @Mutation(() => FuncionalidadeAgrupamentoType)
+  updateFuncionalidadeAgrupamento(
+    @Args('input') input: UpdateFuncionalidadeAgrupamentoInput,
+    @CurrentUser() user: JwtPayload
+  ): Promise<FuncionalidadeAgrupamentoType> {
+    assertSystemAdmin(user);
+    return this.solucoesService.updateAgrupamentoAsAdmin(input, user);
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @Mutation(() => Boolean)
+  deleteFuncionalidadeAgrupamento(
+    @Args('id', { type: () => Int }) id: number,
+    @CurrentUser() user: JwtPayload
+  ): Promise<boolean> {
+    assertSystemAdmin(user);
+    return this.solucoesService.removeAgrupamentoAsAdmin(id, user);
   }
 
 }

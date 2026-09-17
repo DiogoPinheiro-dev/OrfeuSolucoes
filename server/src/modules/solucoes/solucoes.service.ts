@@ -2,12 +2,16 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { JwtPayload } from '../auth/strategies/jwt-payload.type';
+import { CreateFuncionalidadeAgrupamentoInput } from './dto/create-funcionalidade-agrupamento.input';
 import { CreateFuncionalidadeInput } from './dto/create-funcionalidade.input';
 import { CreateSolucaoInput } from './dto/create-solucao.input';
+import { FuncionalidadeAgrupamentoType } from './dto/funcionalidade-agrupamento.type';
 import { FuncionalidadeType } from './dto/funcionalidade.type';
 import { SolucaoType } from './dto/solucao.type';
+import { UpdateFuncionalidadeAgrupamentoInput } from './dto/update-funcionalidade-agrupamento.input';
 import { UpdateFuncionalidadeInput } from './dto/update-funcionalidade.input';
 import { UpdateSolucaoInput } from './dto/update-solucao.input';
+import { FuncionalidadeAgrupamentoService } from './funcionalidade-agrupamento.service';
 import { HubNavigationService } from './hub-navigation.service';
 import { SolucaoAcessoService } from './solucao-acesso.service';
 import { SolucaoBootstrapService } from './solucao-bootstrap.service';
@@ -24,7 +28,8 @@ export class SolucoesService {
     private readonly solucaoBootstrapService: SolucaoBootstrapService,
     private readonly solucaoCatalogService: SolucaoCatalogService,
     private readonly hubNavigationService: HubNavigationService,
-    private readonly solucaoQueryService: SolucaoQueryService
+    private readonly solucaoQueryService: SolucaoQueryService,
+    private readonly funcionalidadeAgrupamentoService: FuncionalidadeAgrupamentoService
   ) {}
 
   async ensureDefaultChamadoConfiguracoesForEmpresa(empresaId: number, force = false): Promise<void> {
@@ -86,12 +91,27 @@ export class SolucoesService {
 
   async updateFuncionalidadeAsAdmin(input: UpdateFuncionalidadeInput, admin: JwtPayload): Promise<FuncionalidadeType> {
     assertSystemAdmin(admin);
-    return this.updateFuncionalidade(input);
+    return this.updateFuncionalidade(input, admin.sub);
   }
 
   async removeFuncionalidadeAsAdmin(id: number, admin: JwtPayload): Promise<boolean> {
     assertSystemAdmin(admin);
     return this.removeFuncionalidade(id);
+  }
+
+  async createAgrupamentoAsAdmin(input: CreateFuncionalidadeAgrupamentoInput, admin: JwtPayload): Promise<FuncionalidadeAgrupamentoType> {
+    assertSystemAdmin(admin);
+    return this.createAgrupamento(input, admin.sub);
+  }
+
+  async updateAgrupamentoAsAdmin(input: UpdateFuncionalidadeAgrupamentoInput, admin: JwtPayload): Promise<FuncionalidadeAgrupamentoType> {
+    assertSystemAdmin(admin);
+    return this.updateAgrupamento(input, admin.sub);
+  }
+
+  async removeAgrupamentoAsAdmin(id: number, admin: JwtPayload): Promise<boolean> {
+    assertSystemAdmin(admin);
+    return this.removeAgrupamento(id, admin.sub);
   }
 
   async findAll(): Promise<SolucaoType[]> {
@@ -114,12 +134,24 @@ export class SolucoesService {
     return this.solucaoCatalogService.createFuncionalidade(input);
   }
 
-  async updateFuncionalidade(input: UpdateFuncionalidadeInput): Promise<FuncionalidadeType> {
-    return this.solucaoCatalogService.updateFuncionalidade(input);
+  async updateFuncionalidade(input: UpdateFuncionalidadeInput, authorId?: string): Promise<FuncionalidadeType> {
+    return this.solucaoCatalogService.updateFuncionalidade(input, authorId);
   }
 
   async removeFuncionalidade(id: number): Promise<boolean> {
     return this.solucaoCatalogService.removeFuncionalidade(id);
+  }
+
+  async createAgrupamento(input: CreateFuncionalidadeAgrupamentoInput, authorId?: string): Promise<FuncionalidadeAgrupamentoType> {
+    return this.funcionalidadeAgrupamentoService.create(input, authorId);
+  }
+
+  async updateAgrupamento(input: UpdateFuncionalidadeAgrupamentoInput, authorId?: string): Promise<FuncionalidadeAgrupamentoType> {
+    return this.funcionalidadeAgrupamentoService.update(input, authorId);
+  }
+
+  async removeAgrupamento(id: number, authorId?: string): Promise<boolean> {
+    return this.funcionalidadeAgrupamentoService.remove(id, authorId);
   }
 
   async syncGroupAccess(

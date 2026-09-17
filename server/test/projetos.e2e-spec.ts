@@ -9,6 +9,9 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import * as request from 'supertest';
 import { GqlAuthGuard } from '../src/modules/auth/guards/gql-auth.guard';
 import { ProjetoComunicacaoResolver } from '../src/modules/projetos/projeto-comunicacao.resolver';
+import { ProjetoOrganizacaoResolver } from '../src/modules/projetos/projeto-organizacao.resolver';
+import { ProjetoOrganizacaoService } from '../src/modules/projetos/projeto-organizacao.service';
+import { ProjetoRecursoAuthorizationService } from '../src/modules/projetos/projeto-recurso-authorization.service';
 import { ProjetosResolver } from '../src/modules/projetos/projetos.resolver';
 import { ProjetosService } from '../src/modules/projetos/projetos.service';
 
@@ -96,6 +99,22 @@ describe('Projetos GraphQL e2e', () => {
   let adminToken: string;
   let memberToken: string;
   let project = buildProject() as ProjectFixture;
+  const organizationAccess = new Set<string>();
+  const organizationPrisma = {
+    capacitacao: { findMany: jest.fn().mockResolvedValue([{ id: 'cap-1' }]) },
+    equipe: { findMany: jest.fn().mockResolvedValue([{ id: 'equipe-1', recursos: [], projetos: [] }]) },
+    recurso: { findMany: jest.fn().mockResolvedValue([{ id: 'recurso-1', usuarioId: member.sub, usuario: userType(member) }]) },
+    empresaUsuario: { findMany: jest.fn().mockResolvedValue([{ usuario: userType(member) }]) },
+    projeto: { findMany: jest.fn().mockResolvedValue([{ id: 'projeto-1' }]) }
+  };
+  const organizationAuthorization = new ProjetoRecursoAuthorizationService({} as never, {
+    isSystemAdmin: () => false,
+    assertFeatureActionAccess: async (user: typeof member, feature: string) => {
+      if (!user.empresaId || !organizationAccess.has(feature)) throw new ForbiddenException('Acesso negado.');
+      return user.empresaId;
+    }
+  } as never);
+  const organizationService = new ProjetoOrganizacaoService(organizationPrisma as never, organizationAuthorization, {} as never);
 
   const service = {
     sugerirChave: jest.fn(),
@@ -126,6 +145,8 @@ describe('Projetos GraphQL e2e', () => {
       providers: [
         ProjetosResolver,
         ProjetoComunicacaoResolver,
+        ProjetoOrganizacaoResolver,
+        { provide: ProjetoOrganizacaoService, useValue: organizationService },
         GqlAuthGuard,
         ProjectTestJwtStrategy,
         { provide: ProjetosService, useValue: service }
@@ -146,6 +167,7 @@ describe('Projetos GraphQL e2e', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     project = buildProject() as ProjectFixture;
+    organizationAccess.clear();
     service.sugerirChave.mockResolvedValue('ORFEU');
     service.participantesDisponiveis.mockResolvedValue([userType(), userType(member)]);
     service.comunicacaoProjetos.mockResolvedValue([{ id: project.id, chave: project.chave, nome: project.nome, arquivadoEm: null }]);
@@ -221,6 +243,7 @@ describe('Projetos GraphQL e2e', () => {
       }
     `, { input: { chave: 'ORFEU', nome: 'Projeto Orfeu', metodologia: 'KANBAN', responsavelId: admin.sub, participantes: [] } }).expect(200);
     expect(created.body.errors).toBeUndefined();
+    expect(service.create).toHaveBeenCalledWith(expect.objectContaining({ situacao: 'EM_ORCAMENTO' }), expect.anything());
 
     const maintained = await gql(adminToken, `
       mutation Manter($dados: UpdateProjetoInput!, $equipe: UpdateProjetoEquipeInput!, $ciclo: AtualizarCicloProjetoInput!) {
@@ -322,5 +345,52 @@ describe('Projetos GraphQL e2e', () => {
     }).expect(200);
     expect(invalid.body.errors?.[0]?.extensions?.code).toBe('BAD_REQUEST');
     expect(service.projetos).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['planejamento-de-recursos', true, false],
+    ['equipes', false, true]
+  ] as const)('expõe dados e permissões próprios de %s pela consulta GraphQL de organização', async (feature, recursos, equipes) => {
+    organizationAccess.add(feature);
+    const response = await gql(memberToken, `{
+      projetoOrganizacao {
+        candidatos { id }
+        capacitacoes { id }
+        equipes { id }
+        recursos { id }
+        projetos { id }
+        permissoes { podeIncluir podeAlterar podeExcluir }
+        permissoesEquipes { podeIncluir podeAlterar podeExcluir }
+      }
+    }`).expect(200);
+
+    expect(response.body.errors).toBeUndefined();
+    expect(response.body.data.projetoOrganizacao).toEqual({
+      candidatos: recursos ? [{ id: member.sub }] : [],
+      capacitacoes: recursos ? [{ id: 'cap-1' }] : [],
+      equipes: equipes ? [{ id: 'equipe-1' }] : [],
+      recursos: [{ id: 'recurso-1' }],
+      projetos: equipes ? [{ id: 'projeto-1' }] : [],
+      permissoes: { podeIncluir: recursos, podeAlterar: recursos, podeExcluir: recursos },
+      permissoesEquipes: { podeIncluir: equipes, podeAlterar: equipes, podeExcluir: equipes }
+    });
+  });
+
+  it('nega consulta de organização sem sessão ou sem acesso às duas funcionalidades', async () => {
+    const query = '{ projetoOrganizacao { equipes { id } } }';
+    const unauthenticated = await request(app.getHttpServer()).post('/graphql').send({ query }).expect(200);
+    expect(unauthenticated.body.errors?.[0]?.extensions?.code).toBe('UNAUTHENTICATED');
+    const forbidden = await gql(memberToken, query).expect(200);
+    expect(forbidden.body.errors?.[0]?.extensions?.code).toBe('FORBIDDEN');
+    expect(organizationPrisma.equipe.findMany).not.toHaveBeenCalled();
+  });
+
+  it('nega mutação direta de Equipes a quem possui somente Recursos', async () => {
+    organizationAccess.add('planejamento-de-recursos');
+    const response = await gql(memberToken, `mutation {
+      salvarEquipe(input: { nome: "Equipe sem autorização", ativo: true, recursoIds: [], projetoIds: [] }) { id }
+    }`).expect(200);
+
+    expect(response.body.errors?.[0]?.extensions?.code).toBe('FORBIDDEN');
   });
 });

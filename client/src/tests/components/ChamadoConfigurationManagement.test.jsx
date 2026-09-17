@@ -142,7 +142,10 @@ describe("Configurações do Controle de Chamados", () => {
 
         await user.click(screen.getByRole("checkbox", { name: "Selecionar Incidente" }));
         await user.click(screen.getByRole("button", { name: "Desativar selecionados" }));
-        await user.click(screen.getByRole("button", { name: "OK" }));
+        const confirmacao = screen.getByRole("alertdialog");
+        expect(confirmacao).toHaveClass("confirm-dialog--warning");
+        expect(confirmacao).toHaveAccessibleDescription(/^Deseja desativar/);
+        await user.click(within(confirmacao).getByRole("button", { name: "Desativar" }));
         await waitFor(() => expect(deleteChamadoTipo).toHaveBeenCalledWith(1));
     }, 15000);
 
@@ -158,6 +161,21 @@ describe("Configurações do Controle de Chamados", () => {
 
         expect(await screen.findByRole("alert")).toHaveTextContent("Categoria já cadastrada.");
         expect(screen.getByRole("textbox", { name: /Nome/ })).toHaveAttribute("aria-invalid", "true");
+    });
+
+    it("desativa uma categoria somente após a confirmação de atenção", async () => {
+        const user = userEvent.setup();
+        render(<CategoriaChamadoManagement permissions={permissions} />);
+
+        await user.click(await screen.findByRole("checkbox", { name: "Selecionar Financeiro" }));
+        await user.click(screen.getByRole("button", { name: "Desativar selecionados" }));
+        const confirmacao = screen.getByRole("alertdialog", { name: "Desativar categoria" });
+        expect(confirmacao).toHaveClass("confirm-dialog--warning");
+        expect(confirmacao).toHaveAccessibleDescription("Deseja desativar Financeiro? Os chamados existentes permanecem vinculados.");
+        expect(deleteChamadoCategoria).not.toHaveBeenCalled();
+        await user.click(within(confirmacao).getByRole("button", { name: "Desativar" }));
+
+        await waitFor(() => expect(deleteChamadoCategoria).toHaveBeenCalledWith(categoria.id));
     });
 
     it("valida, visualiza e desativa uma regra de SLA", async () => {
@@ -179,7 +197,10 @@ describe("Configurações do Controle de Chamados", () => {
 
         await user.click(screen.getByRole("checkbox", { name: /Selecionar/ }));
         await user.click(screen.getByRole("button", { name: "Desativar selecionados" }));
-        await user.click(screen.getByRole("button", { name: "OK" }));
+        const confirmacao = screen.getByRole("alertdialog");
+        expect(confirmacao).toHaveClass("confirm-dialog--warning");
+        expect(confirmacao).toHaveAccessibleDescription(/^Deseja desativar/);
+        await user.click(within(confirmacao).getByRole("button", { name: "Desativar" }));
         await waitFor(() => expect(deleteChamadoSlaRegra).toHaveBeenCalledWith(4));
     });
 
@@ -240,7 +261,10 @@ describe("Configurações do Controle de Chamados", () => {
 
         await user.click(screen.getByRole("checkbox", { name: "Selecionar Atendente" }));
         await user.click(screen.getByRole("button", { name: "Desativar selecionados" }));
-        await user.click(screen.getByRole("button", { name: "OK" }));
+        const confirmacao = screen.getByRole("alertdialog");
+        expect(confirmacao).toHaveClass("confirm-dialog--warning");
+        expect(confirmacao).toHaveAccessibleDescription(/^Deseja desativar/);
+        await user.click(within(confirmacao).getByRole("button", { name: "Desativar" }));
         await waitFor(() => expect(deleteChamadoResponsavel).toHaveBeenCalledWith(6));
     }, 15000);
 

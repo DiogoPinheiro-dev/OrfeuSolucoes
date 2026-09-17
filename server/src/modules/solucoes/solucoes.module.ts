@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { FuncionalidadeAcaoService } from './funcionalidade-acao.service';
+import { FuncionalidadeAgrupamentoService } from './funcionalidade-agrupamento.service';
 import { FuncionalidadeAuthorizationService } from './funcionalidade-authorization.service';
 import { HubNavigationService } from './hub-navigation.service';
 import { SolucaoAcessoService } from './solucao-acesso.service';
@@ -21,7 +22,7 @@ import { CatalogoBootstrapReconciliationService } from './catalogo-bootstrap-rec
 
 @Module({
   imports: [PrismaModule],
-  providers: [CatalogoProviderRegistry, CatalogoActionConsumerRegistry, CatalogoBootstrapReconciliationService, CatalogoValidationService, CatalogoLifecycleService, CatalogoResolver, FuncionalidadeAcaoService, FuncionalidadeAuthorizationService, HubNavigationService, SolucaoAcessoService, SolucaoBootstrapService, SolucaoChamadosBootstrapService, SolucaoHorasBootstrapService, SolucaoProjetosBootstrapService, SolucaoCatalogService, SolucaoQueryService, SolucoesService, SolucoesResolver],
+  providers: [CatalogoProviderRegistry, CatalogoActionConsumerRegistry, CatalogoBootstrapReconciliationService, CatalogoValidationService, CatalogoLifecycleService, CatalogoResolver, FuncionalidadeAcaoService, FuncionalidadeAgrupamentoService, FuncionalidadeAuthorizationService, HubNavigationService, SolucaoAcessoService, SolucaoBootstrapService, SolucaoChamadosBootstrapService, SolucaoHorasBootstrapService, SolucaoProjetosBootstrapService, SolucaoCatalogService, SolucaoQueryService, SolucoesService, SolucoesResolver],
   exports: [CatalogoProviderRegistry, CatalogoValidationService, CatalogoLifecycleService, FuncionalidadeAcaoService, FuncionalidadeAuthorizationService, HubNavigationService, SolucaoAcessoService, SolucaoBootstrapService, SolucaoChamadosBootstrapService, SolucaoHorasBootstrapService, SolucaoProjetosBootstrapService, SolucaoCatalogService, SolucaoQueryService, SolucoesService]
 })
 export class SolucoesModule {}

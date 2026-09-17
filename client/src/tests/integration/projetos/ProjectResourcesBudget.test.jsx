@@ -27,7 +27,6 @@ vi.mock("../../../../services/Projetos/OrcamentoService", () => ({
 }));
 vi.mock("../../../components/ResourceRegistrationManagement", () => ({ default: () => <div>Cadastro operacional de recursos</div> }));
 vi.mock("../../../components/ProjectTeamManagement", () => ({ default: () => <div>Cadastro operacional de equipes</div> }));
-vi.mock("../../../components/BacklogManagement", () => ({ default: () => <div>Itens do projeto carregados</div> }));
 
 const project = { id: "p1", chave: "ORF", nome: "Orfeu Evolucao", arquivadoEm: null };
 const resource = { id: "r1", ativo: true, usuario: { id: "u1", nome: "Desenvolvedora" } };
@@ -77,26 +76,41 @@ afterEach(() => {
     vi.clearAllMocks();
 });
 
-describe("Planejamento de recursos", () => {
-    it("preserva as tres visoes especializadas sem o CRUD paralelo de tarefas", async () => {
-        const user = userEvent.setup();
+describe("Recursos e equipes", () => {
+    it("abre o cadastro de recursos sem abas internas", async () => {
         renderPlanning();
+
         expect(await screen.findByText("Cadastro operacional de recursos")).toBeInTheDocument();
-        await user.click(screen.getByRole("tab", { name: "Equipes" }));
-        expect(screen.getByText("Cadastro operacional de equipes")).toBeInTheDocument();
-        await user.click(screen.getByRole("tab", { name: "Planejamento" }));
-        expect(screen.getByText("Itens do projeto carregados")).toBeInTheDocument();
-        expect(screen.queryByRole("heading", { name: "Tarefas dos recursos" })).not.toBeInTheDocument();
-        expect(screen.getByLabelText("Localização atual")).toHaveTextContent("?tab=planejamento");
+        expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
+        expect(screen.queryByText("Cadastro operacional de equipes")).not.toBeInTheDocument();
     });
 
-    it("abre diretamente a aba indicada na URL", async () => {
-        renderPlanning("/hub/projetos/planejamento-de-recursos?tab=equipes");
+    it("apresenta a seção de equipes pelo provider de Equipes", async () => {
+        render(
+            <MemoryRouter initialEntries={["/hub/projetos/equipes"]}>
+                <ProjectResourcePlanningManagement secao="equipes" />
+            </MemoryRouter>
+        );
 
         expect(await screen.findByText("Cadastro operacional de equipes")).toBeInTheDocument();
-        expect(screen.getByRole("tab", { name: "Equipes" })).toHaveAttribute("aria-selected", "true");
+        expect(screen.queryByText("Cadastro operacional de recursos")).not.toBeInTheDocument();
     });
 
+    it.each([
+        ["equipes", "/hub/projetos/equipes"],
+        ["planejamento", "/hub/projetos/backlog-de-demandas"]
+    ])("redireciona o link antigo da aba %s para a funcionalidade correspondente", async (aba, destino) => {
+        renderPlanning(`/hub/projetos/planejamento-de-recursos?tab=${aba}`);
+
+        await waitFor(() => expect(screen.getByLabelText("Localização atual")).toHaveTextContent(destino));
+    });
+
+    it("ignora valores desconhecidos no parâmetro antigo", async () => {
+        renderPlanning("/hub/projetos/planejamento-de-recursos?tab=constructor");
+
+        expect(await screen.findByText("Cadastro operacional de recursos")).toBeInTheDocument();
+        expect(screen.getByLabelText("Localização atual")).toHaveTextContent("/hub/projetos/planejamento-de-recursos");
+    });
 });
 
 describe("Orcamento do projeto", () => {
@@ -106,7 +120,7 @@ describe("Orcamento do projeto", () => {
         render(<ProjectBudgetManagement />);
 
         expect(await screen.findByText("Nenhum projeto em orçamento")).toBeInTheDocument();
-        expect(screen.getByText(/Altere o ciclo de vida de um projeto para Em orçamento/)).toBeInTheDocument();
+        expect(screen.getByText(/Cadastre um projeto para iniciar o orçamento/)).toBeInTheDocument();
         expect(screen.queryByText(/não possui acesso aos dados financeiros/)).not.toBeInTheDocument();
         expect(getOrcamento).not.toHaveBeenCalled();
     });
@@ -164,6 +178,43 @@ describe("Orcamento do projeto", () => {
 
         await user.click(screen.getByRole("button", { name: /Aprovar or.amento/ }));
         await waitFor(() => expect(aprovarOrcamento).toHaveBeenCalledWith({ projetoId: "p1", id: "o1", versao: 4 }));
+    });
+
+    it("atualiza a lista após aprovar e remove os controles do projeto aprovado", async () => {
+        const user = userEvent.setup();
+        render(<ProjectBudgetManagement />);
+        const approve = await screen.findByRole("button", { name: "Aprovar orçamento" });
+        const initialLoads = getOrcamentoProjetos.mock.calls.length;
+        getOrcamentoProjetos.mockResolvedValue([]);
+        await user.click(approve);
+        expect(await screen.findByText("Orçamento aprovado. O projeto passou para Rascunho.")).toBeInTheDocument();
+        await waitFor(() => expect(getOrcamentoProjetos).toHaveBeenCalledTimes(initialLoads + 1));
+        expect(screen.queryByRole("option", { name: "ORF — Orfeu Evolucao" })).not.toBeInTheDocument();
+        expect(screen.queryByRole("button", { name: "Aprovar orçamento" })).not.toBeInTheDocument();
+        expect(screen.queryByText("Hospedagem")).not.toBeInTheDocument();
+    });
+
+    it("preserva o orçamento e informa falha quando a aprovação é rejeitada", async () => {
+        const user = userEvent.setup();
+        aprovarOrcamento.mockRejectedValueOnce(new Error("O orçamento foi alterado por outra pessoa."));
+        render(<ProjectBudgetManagement />);
+        const approve = await screen.findByRole("button", { name: "Aprovar orçamento" });
+        const initialLoads = getOrcamentoProjetos.mock.calls.length;
+        await user.click(approve);
+        expect(await screen.findByRole("alert")).toHaveTextContent("O orçamento foi alterado por outra pessoa.");
+        expect(screen.getByText("Hospedagem")).toBeInTheDocument();
+        expect(getOrcamentoProjetos).toHaveBeenCalledTimes(initialLoads);
+    });
+
+    it("mantém a aprovação concluída explícita quando falha a atualização da lista", async () => {
+        const user = userEvent.setup();
+        render(<ProjectBudgetManagement />);
+        const approve = await screen.findByRole("button", { name: "Aprovar orçamento" });
+        getOrcamentoProjetos.mockRejectedValueOnce(new Error("Falha de rede"));
+        await user.click(approve);
+        expect(await screen.findByRole("alert")).toHaveTextContent("A aprovação foi concluída");
+        expect(screen.getByText("Orçamento aprovado. O projeto passou para Rascunho.")).toBeInTheDocument();
+        expect(screen.queryByRole("button", { name: "Aprovar orçamento" })).not.toBeInTheDocument();
     });
 
     it("oferece somente itens do backlog atribuídos ao recurso no custo", async () => {

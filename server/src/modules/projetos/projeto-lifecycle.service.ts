@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { JwtPayload } from '../auth/strategies/jwt-payload.type';
 import { AtualizarCicloProjetoInput } from './dto/atualizar-ciclo-projeto.input';
@@ -64,14 +64,20 @@ export class ProjetoLifecycleService {
       if (input.situacao === ProjetoSituacao.CONCLUIDO || input.situacao === ProjetoSituacao.CANCELADO) {
         data.fimRealEm = new Date();
       } else if (
-        (situacaoAtual === ProjetoSituacao.CONCLUIDO || situacaoAtual === ProjetoSituacao.CANCELADO) &&
-        input.situacao === ProjetoSituacao.PLANEJADO
+        (situacaoAtual === ProjetoSituacao.CONCLUIDO && input.situacao === ProjetoSituacao.PLANEJADO) ||
+        (situacaoAtual === ProjetoSituacao.CANCELADO && input.situacao === ProjetoSituacao.EM_ORCAMENTO)
       ) {
         data.fimRealEm = null;
       }
     }
 
-    await this.prisma.projeto.update({ where: { id: projeto.id }, data });
+    const updated = await this.prisma.projeto.updateMany({
+      where: { id: projeto.id, empresaId, situacao: projeto.situacao, arquivadoEm: null },
+      data
+    });
+    if (updated.count !== 1) {
+      throw new ConflictException('O ciclo do projeto foi alterado por outra pessoa. Atualize os dados.');
+    }
     return this.queryService.findOne(projeto.id, user);
   }
 

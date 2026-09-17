@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -21,6 +22,9 @@ vi.mock("../../components/ChamadoCreate", () => ({
 vi.mock("../../components/ProjectResourcePlanningManagement", () => ({
     default: () => <div>Planejamento de recursos</div>
 }));
+vi.mock("../../components/CategoriaChamadoManagement", () => ({ default: ({ permissions }) => <div>Categorias:{permissions.title}</div> }));
+vi.mock("../../components/ChamadoConfiguracaoManagement", () => ({ default: ({ kind }) => <div>Configuração:{kind}</div> }));
+vi.mock("../../components/ChamadoDashboard", () => ({ default: () => <div>Dashboard</div> }));
 
 const solution = {
     id: 1,
@@ -39,6 +43,35 @@ const solution = {
         providerVersion: 1,
         podeVisualizar: true
     }]
+};
+
+const chamadosArea = (id, slug, label, title, groupId, groupOrder, order) => ({
+    id,
+    slug,
+    label,
+    title,
+    groupId,
+    groupOrder,
+    order,
+    registryKey: `controle-de-chamados.${slug}`,
+    providerKey: `controle-de-chamados.${slug}`,
+    providerVersion: 1,
+    podeVisualizar: true
+});
+
+const chamados = {
+    id: 3,
+    slug: "controle-de-chamados",
+    title: "Controle de Chamados",
+    description: "Atendimento por empresa",
+    eyebrow: "Atendimento",
+    groups: [{ id: 7, slug: "configuracoes-do-atendimento", title: "Configurações do atendimento", label: "Configurações", description: "Ajuste o atendimento da empresa.", order: 50 }],
+    areas: [
+        chamadosArea(30, "dashboard", "Dashboard", "Dashboard de chamados", null, null, 45),
+        chamadosArea(31, "tipos", "Tipos", "Tipos de chamados", 7, 2, 70),
+        chamadosArea(32, "prioridades", "Prioridades", "Prioridades de chamados", 7, 3, 80),
+        chamadosArea(33, "categorias", "Categorias", "Categorias de chamados", 7, 1, 50)
+    ]
 };
 
 function LocationProbe() {
@@ -169,5 +202,60 @@ describe("páginas do Hub", () => {
 
         expect(await screen.findByText("Formulário de chamado:indisponível")).toBeInTheDocument();
         expect(screen.getByText("/hub/controle-de-chamados/abrir-chamado")).toBeInTheDocument();
+    });
+});
+
+describe("funcionalidades agrupadas por abas", () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        useAuth.mockReturnValue({ user: { nome: "Administrador", empresa: { nome: "Empresa A" } } });
+        useHubNavigation.mockReturnValue({ loading: false, error: "", solutions: [chamados] });
+    });
+    afterEach(cleanup);
+
+    it("apresenta um único card para o agrupamento, apontando para a primeira aba", () => {
+        renderAt("/hub/controle-de-chamados");
+
+        expect(screen.getByRole("link", { name: /Configurações do atendimento/ })).toHaveAttribute("href", "/hub/controle-de-chamados/categorias");
+        expect(screen.getByRole("link", { name: /Dashboard de chamados/ })).toHaveAttribute("href", "/hub/controle-de-chamados/dashboard");
+        expect(screen.queryByRole("link", { name: /Tipos de chamados/ })).not.toBeInTheDocument();
+    });
+
+    it("abre a funcionalidade dentro das abas do agrupamento e troca de aba pela rota", async () => {
+        const user = userEvent.setup();
+        renderAt("/hub/controle-de-chamados/tipos");
+
+        const tablist = screen.getByRole("tablist", { name: "Seções de Configurações do atendimento" });
+        expect(within(tablist).getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Categorias", "Tipos", "Prioridades"]);
+        expect(within(tablist).getByRole("tab", { name: "Tipos" })).toHaveAttribute("aria-selected", "true");
+        expect(screen.getByRole("heading", { name: "Configurações do atendimento" })).toBeInTheDocument();
+        expect(await screen.findByText("Configuração:tipos")).toBeInTheDocument();
+
+        await user.click(within(tablist).getByRole("tab", { name: "Prioridades" }));
+
+        expect(await screen.findByText("/hub/controle-de-chamados/prioridades")).toBeInTheDocument();
+        expect(await screen.findByText("Configuração:prioridades")).toBeInTheDocument();
+        expect(screen.queryByText("Configuração:tipos")).not.toBeInTheDocument();
+    });
+
+    it("redireciona o endereço do agrupamento para a primeira aba autorizada", async () => {
+        renderAt("/hub/controle-de-chamados/configuracoes-do-atendimento");
+
+        expect(await screen.findByText("/hub/controle-de-chamados/categorias")).toBeInTheDocument();
+        expect(await screen.findByText("Categorias:Categorias de chamados")).toBeInTheDocument();
+    });
+
+    it("mostra somente as abas autorizadas e dispensa a barra quando resta uma", async () => {
+        useHubNavigation.mockReturnValue({
+            loading: false,
+            error: "",
+            solutions: [{ ...chamados, areas: chamados.areas.filter((area) => area.slug === "tipos" || area.slug === "dashboard") }]
+        });
+
+        renderAt("/hub/controle-de-chamados/tipos");
+
+        expect(await screen.findByText("Configuração:tipos")).toBeInTheDocument();
+        expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
+        expect(screen.queryByRole("heading", { name: "Configurações do atendimento" })).not.toBeInTheDocument();
     });
 });

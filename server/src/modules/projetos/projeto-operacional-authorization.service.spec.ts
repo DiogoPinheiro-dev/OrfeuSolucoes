@@ -70,4 +70,35 @@ describe('autorizações operacionais de projetos', () => {
     authorization.assertFeatureActionAccess.mockRejectedValueOnce(new Error('falha'));
     await expect(service.permissoes(user)).rejects.toThrow('falha');
   });
+
+  it.each([
+    [true, true],
+    [true, false],
+    [false, true],
+    [false, false]
+  ])('autoriza o painel com Recursos=%s e Equipes=%s', async (recursos, equipes) => {
+    const authorization = {
+      assertFeatureActionAccess: jest.fn(async (_user, funcionalidade, acao) => {
+        const permitido = funcionalidade === ProjetoFuncionalidade.EQUIPES ? equipes : recursos;
+        if (!permitido || acao !== ProjetoAcao.VISUALIZAR) throw new ForbiddenException('Acesso negado.');
+        return 7;
+      })
+    };
+    const service = new ProjetoRecursoAuthorizationService({} as never, authorization as never);
+
+    if (recursos || equipes) {
+      await expect(service.acessoPainel(user)).resolves.toEqual({ empresaId: 7, recursos, equipes });
+    } else {
+      await expect(service.acessoPainel(user)).rejects.toBeInstanceOf(ForbiddenException);
+    }
+  });
+
+  it('propaga falhas inesperadas da autorização do painel mesmo com acesso à outra funcionalidade', async () => {
+    const authorization = {
+      assertFeatureActionAccess: jest.fn().mockResolvedValueOnce(7).mockRejectedValueOnce(new Error('falha de consulta'))
+    };
+    const service = new ProjetoRecursoAuthorizationService({} as never, authorization as never);
+
+    await expect(service.acessoPainel(user)).rejects.toThrow('falha de consulta');
+  });
 });

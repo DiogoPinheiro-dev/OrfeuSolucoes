@@ -21,6 +21,8 @@ export function toFuncionalidadeType(funcionalidade: FuncionalidadeRecord): Func
     providerVersion: funcionalidade.providerVersion ?? null,
     statusPublicacao: funcionalidade.statusPublicacao ?? 'PUBLICADA',
     revisaoCatalogo: funcionalidade.revisaoCatalogo ?? 1,
+    agrupamentoId: funcionalidade.agrupamentoId ?? null,
+    ordemNoAgrupamento: funcionalidade.ordemNoAgrupamento ?? null,
     podeVisualizar: funcionalidade.podeVisualizar ?? true,
     podeIncluir: funcionalidade.podeIncluir ?? false,
     podeAlterar: funcionalidade.podeAlterar ?? false,

@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getEmpresas as getAuthEmpresas } from "../../../services/Auth/AuthService";
 import { createEmpresa, deleteEmpresa, getEmpresas, updateEmpresa } from "../../../services/Empresas/EmpresaService";
 import { createGrupoUsuario, deleteGrupoUsuario, getGruposUsuarios, updateGrupoUsuario } from "../../../services/GruposUsuarios/GrupoUsuarioService";
-import { createFuncionalidade, createSolucao, deleteFuncionalidade, deleteSolucao, getSolucoes, updateFuncionalidade, updateSolucao } from "../../../services/Solucoes/SolucaoService";
+import { createAgrupamento, createFuncionalidade, createSolucao, deleteAgrupamento, deleteFuncionalidade, deleteSolucao, getSolucoes, updateAgrupamento, updateFuncionalidade, updateSolucao } from "../../../services/Solucoes/SolucaoService";
 import {
     createActionDraft,
     createFeatureDraft,
@@ -36,8 +36,9 @@ vi.mock("../../../services/GruposUsuarios/GrupoUsuarioService", () => ({
     createGrupoUsuario: vi.fn(), deleteGrupoUsuario: vi.fn(), getGruposUsuarios: vi.fn(), updateGrupoUsuario: vi.fn()
 }));
 vi.mock("../../../services/Solucoes/SolucaoService", () => ({
-    createFuncionalidade: vi.fn(), createSolucao: vi.fn(), deleteFuncionalidade: vi.fn(), deleteSolucao: vi.fn(),
-    getSolucoes: vi.fn(), updateFuncionalidade: vi.fn(), updateSolucao: vi.fn()
+    createAgrupamento: vi.fn(), createFuncionalidade: vi.fn(), createSolucao: vi.fn(), deleteAgrupamento: vi.fn(),
+    deleteFuncionalidade: vi.fn(), deleteSolucao: vi.fn(), getSolucoes: vi.fn(), updateAgrupamento: vi.fn(),
+    updateFuncionalidade: vi.fn(), updateSolucao: vi.fn()
 }));
 vi.mock("../../../services/Solucoes/CatalogoService", () => ({
     createActionDraft: vi.fn(), createFeatureDraft: vi.fn(), getActionDraft: vi.fn(), getCatalogProviders: vi.fn(),
@@ -320,7 +321,10 @@ describe("CRUDs do Configurador", () => {
 
         await user.click(screen.getByRole("checkbox", { name: "Selecionar Configurador" }));
         await user.click(screen.getByRole("button", { name: "Excluir selecionados" }));
-        await user.click(screen.getByRole("button", { name: "OK" }));
+        const confirmacao = screen.getByRole("alertdialog", { name: "Confirmar exclusão" });
+        expect(confirmacao).toHaveClass("confirm-dialog--destructive");
+        expect(confirmacao).toHaveAccessibleDescription(/Tem certeza de que deseja excluir/);
+        await user.click(within(confirmacao).getByRole("button", { name: "Excluir" }));
         await waitFor(() => expect(deleteSolucao).toHaveBeenCalledWith(1));
     }, 15000);
 
@@ -359,6 +363,112 @@ describe("CRUDs do Configurador", () => {
         await waitFor(() => expect(updateFuncionalidade).toHaveBeenCalledWith(expect.objectContaining({ id: 11, ordem: 15 })));
     });
 
+    it("cadastra agrupamento na grade própria da tela de funcionalidades", async () => {
+        const user = userEvent.setup();
+        createAgrupamento.mockResolvedValue({ id: 5 });
+        render(<FeatureManagement permissions={permissions} />);
+        await screen.findByRole("cell", { name: "Rotina customizada" });
+        const initialLoadCount = getSolucoes.mock.calls.length;
+
+        const toolbar = screen.getByRole("toolbar", { name: "Ações dos agrupamentos" });
+        await user.click(within(toolbar).getByRole("button", { name: "Incluir agrupamento" }));
+        const dialog = screen.getByRole("dialog", { name: "Cadastro de agrupamento" });
+        await user.click(within(dialog).getByRole("button", { name: "Selecionar solução do agrupamento" }));
+        await user.click(screen.getByRole("option", { name: "Configurador" }));
+        await user.type(within(dialog).getByRole("textbox", { name: /T.tulo/ }), "Configurações");
+        await user.type(within(dialog).getByRole("textbox", { name: "Identificador" }), "configuracoes");
+        await user.click(within(dialog).getByRole("button", { name: "Salvar" }));
+
+        await waitFor(() => expect(createAgrupamento).toHaveBeenCalledWith({
+            solucaoId: 1,
+            slug: "configuracoes",
+            titulo: "Configurações",
+            label: null,
+            descricao: null,
+            ordem: 0,
+            ativo: true
+        }));
+        await waitFor(() => expect(getSolucoes).toHaveBeenCalledTimes(initialLoadCount + 1));
+    });
+
+    it("associa funcionalidade padrão a um agrupamento sem exigir alteração cadastral", async () => {
+        const user = userEvent.setup();
+        getSolucoes.mockResolvedValue([{
+            ...solution,
+            agrupamentos: [{ id: 5, solucaoId: 1, slug: "acesso", titulo: "Acesso", label: null, descricao: null, ordem: 10, ativo: true, padraoSistema: false }]
+        }, standardSolution]);
+        render(<FeatureManagement permissions={permissions} />);
+
+        await user.click(await screen.findByRole("button", { name: /Mostrar funcionalidades padrão/ }));
+        await user.click(await screen.findByRole("cell", { name: "Usuários" }));
+        await user.click(within(screen.getByRole("toolbar", { name: "Ações do cadastro" })).getByRole("button", { name: "Alterar" }));
+        const dialog = screen.getByRole("dialog", { name: "Cadastro de funcionalidade" });
+        expect(within(dialog).getByRole("textbox", { name: /T.tulo/ })).toBeDisabled();
+        await user.click(within(dialog).getByRole("button", { name: "Selecionar agrupamento da funcionalidade" }));
+        await user.click(screen.getByRole("option", { name: "Acesso" }));
+        await user.type(within(dialog).getByRole("spinbutton", { name: "Ordem no agrupamento" }), "2");
+        await user.click(within(dialog).getByRole("button", { name: "Salvar" }));
+
+        await waitFor(() => expect(updateFuncionalidade).toHaveBeenCalledWith(expect.objectContaining({
+            id: 11,
+            ordem: 1,
+            agrupamentoId: 5,
+            ordemNoAgrupamento: 2
+        })));
+        expect(updateFuncionalidade.mock.calls[0][0]).not.toHaveProperty("titulo");
+    });
+
+    it("personaliza agrupamento padrão e bloqueia sua exclusão", async () => {
+        const user = userEvent.setup();
+        updateAgrupamento.mockResolvedValue({ id: 5 });
+        getSolucoes.mockResolvedValue([{
+            ...solution,
+            agrupamentos: [{ id: 5, solucaoId: 1, slug: "acesso", titulo: "Acesso", label: null, descricao: null, ordem: 10, ativo: true, padraoSistema: true }]
+        }, standardSolution]);
+        render(<FeatureManagement permissions={permissions} />);
+
+        await user.click(await screen.findByRole("cell", { name: "Acesso" }));
+        expect(screen.getByRole("checkbox", { name: /^Selecionar Acesso\. Indisponível: Agrupamentos padrão/ })).toBeDisabled();
+        await user.click(within(screen.getByRole("toolbar", { name: "Ações dos agrupamentos" })).getByRole("button", { name: "Alterar agrupamento" }));
+        const dialog = screen.getByRole("dialog", { name: "Cadastro de agrupamento" });
+        expect(within(dialog).getByText(/pode ser personalizado ou desativado, mas não pode ser excluído/)).toBeInTheDocument();
+        expect(within(dialog).getByRole("textbox", { name: "Identificador" })).toBeDisabled();
+        const title = within(dialog).getByRole("textbox", { name: /T.tulo/ });
+        await user.clear(title);
+        await user.type(title, "Acessos do sistema");
+        await user.click(within(dialog).getByRole("checkbox", { name: "Ativo" }));
+        await user.click(within(dialog).getByRole("button", { name: "Salvar" }));
+
+        await waitFor(() => expect(updateAgrupamento).toHaveBeenCalledWith({
+            id: 5,
+            titulo: "Acessos do sistema",
+            label: null,
+            descricao: null,
+            ordem: 10,
+            ativo: false
+        }));
+    });
+
+    it("exclui agrupamento customizado somente após a confirmação destrutiva", async () => {
+        const user = userEvent.setup();
+        deleteAgrupamento.mockResolvedValue(true);
+        getSolucoes.mockResolvedValue([{
+            ...solution,
+            agrupamentos: [{ id: 7, solucaoId: 1, slug: "atalhos", titulo: "Atalhos", label: null, descricao: null, ordem: 20, ativo: true, padraoSistema: false }]
+        }, standardSolution]);
+        render(<FeatureManagement permissions={permissions} />);
+
+        await user.click(await screen.findByRole("checkbox", { name: "Selecionar Atalhos" }));
+        await user.click(within(screen.getByRole("toolbar", { name: "Ações dos agrupamentos" })).getByRole("button", { name: "Excluir agrupamentos selecionados" }));
+        const confirmacao = screen.getByRole("alertdialog", { name: "Confirmar exclusão" });
+        expect(confirmacao).toHaveClass("confirm-dialog--destructive");
+        expect(confirmacao).toHaveAccessibleDescription("Tem certeza de que deseja excluir o agrupamento Atalhos?");
+        expect(deleteAgrupamento).not.toHaveBeenCalled();
+        await user.click(within(confirmacao).getByRole("button", { name: "Excluir" }));
+
+        await waitFor(() => expect(deleteAgrupamento).toHaveBeenCalledWith(7));
+    });
+
     it("executa inclusão, alteração e exclusão de usuário", async () => {
         const user = userEvent.setup();
         render(<UserManagement permissions={permissions} />);
@@ -382,7 +492,10 @@ describe("CRUDs do Configurador", () => {
 
         await user.click(screen.getByRole("checkbox", { name: /Selecionar Usu/ }));
         await user.click(screen.getByRole("button", { name: "Excluir selecionados" }));
-        await user.click(screen.getByRole("button", { name: "OK" }));
+        const confirmacao = screen.getByRole("alertdialog", { name: "Confirmar exclusão" });
+        expect(confirmacao).toHaveClass("confirm-dialog--destructive");
+        expect(confirmacao).toHaveAccessibleDescription(/Tem certeza de que deseja excluir/);
+        await user.click(within(confirmacao).getByRole("button", { name: "Excluir" }));
         await waitFor(() => expect(deleteUser).toHaveBeenCalledWith("u1"));
     }, 15000);
 
@@ -406,7 +519,10 @@ describe("CRUDs do Configurador", () => {
 
         await user.click(screen.getByRole("checkbox", { name: "Selecionar Equipe" }));
         await user.click(screen.getByRole("button", { name: "Excluir selecionados" }));
-        await user.click(screen.getByRole("button", { name: "OK" }));
+        const confirmacao = screen.getByRole("alertdialog", { name: "Confirmar exclusão" });
+        expect(confirmacao).toHaveClass("confirm-dialog--destructive");
+        expect(confirmacao).toHaveAccessibleDescription(/Tem certeza de que deseja excluir/);
+        await user.click(within(confirmacao).getByRole("button", { name: "Excluir" }));
         await waitFor(() => expect(deleteGrupoUsuario).toHaveBeenCalledWith(2));
     }, 15000);
 
@@ -497,7 +613,10 @@ describe("CRUDs do Configurador", () => {
         deleteEmpresa.mockRejectedValueOnce(new Error("Empresa possui usuários vinculados."));
         await user.click(screen.getByRole("checkbox", { name: "Selecionar Empresa teste" }));
         await user.click(screen.getByRole("button", { name: "Excluir selecionados" }));
-        await user.click(screen.getByRole("button", { name: "OK" }));
+        const confirmacao = screen.getByRole("alertdialog", { name: "Confirmar exclusão" });
+        expect(confirmacao).toHaveClass("confirm-dialog--destructive");
+        expect(confirmacao).toHaveAccessibleDescription(/Tem certeza de que deseja excluir/);
+        await user.click(within(confirmacao).getByRole("button", { name: "Excluir" }));
         expect(await screen.findByRole("alert")).toHaveTextContent("Empresa possui usuários vinculados.");
     }, 15000);
 
@@ -534,7 +653,10 @@ describe("CRUDs do Configurador", () => {
 
         await user.click(screen.getByRole("checkbox", { name: "Selecionar Rotina customizada" }));
         await user.click(screen.getByRole("button", { name: "Excluir selecionados" }));
-        await user.click(screen.getByRole("button", { name: "OK" }));
+        const confirmacao = screen.getByRole("alertdialog", { name: "Confirmar exclusão" });
+        expect(confirmacao).toHaveClass("confirm-dialog--destructive");
+        expect(confirmacao).toHaveAccessibleDescription(/Tem certeza de que deseja excluir/);
+        await user.click(within(confirmacao).getByRole("button", { name: "Excluir" }));
         await waitFor(() => expect(deleteFuncionalidade).toHaveBeenCalledWith(12));
         await waitFor(() => expect(getSolucoes).toHaveBeenCalledTimes(initialLoadCount + 3));
     }, 15000);

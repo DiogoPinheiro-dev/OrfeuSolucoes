@@ -269,6 +269,68 @@ export class SolucaoAcessoService {
 
   }
 
+  /**
+   * Copia para uma funcionalidade recém-criada o acesso exato de outra: permissões dos grupos (inclusive das ações
+   * de mesma chave), contratos das empresas e responsáveis de atendimento. Nenhum grupo ou empresa recebe acesso
+   * que não possuía na origem.
+   */
+  async copyFuncionalidadeAccess(origemId: number, destino: FuncionalidadeRecord): Promise<void> {
+    await this.prisma.$transaction(async (db) => {
+      const [grupos, empresas, responsaveis, acoesOrigem, acoesDestino] = await Promise.all([
+        db.grupoFuncionalidade.findMany({ where: { funcionalidadeId: origemId } }),
+        db.empresaFuncionalidade.findMany({ where: { funcionalidadeId: origemId }, select: { empresaId: true } }),
+        db.chamadoResponsavelFuncionalidade.findMany({ where: { funcionalidadeId: origemId }, select: { responsavelSolucaoId: true, ativo: true } }),
+        db.funcionalidadeAcao.findMany({ where: { funcionalidadeId: origemId }, select: { id: true, chave: true } }),
+        db.funcionalidadeAcao.findMany({ where: { funcionalidadeId: destino.id }, select: { id: true, chave: true } })
+      ]);
+      const permissoesAcoes = acoesOrigem.length
+        ? await db.grupoFuncionalidadeAcao.findMany({ where: { funcionalidadeAcaoId: { in: acoesOrigem.map((acao) => acao.id) } } })
+        : [];
+      const chavePorAcaoOrigem = new Map(acoesOrigem.map((acao) => [acao.id, acao.chave]));
+      const acaoDestinoPorChave = new Map(acoesDestino.map((acao) => [acao.chave, acao.id]));
+
+      if (grupos.length) {
+        await db.grupoFuncionalidade.createMany({
+          data: grupos.map((grupo) => ({
+            grupoId: grupo.grupoId,
+            funcionalidadeId: destino.id,
+            podeVisualizar: grupo.podeVisualizar,
+            podeIncluir: grupo.podeIncluir,
+            podeAlterar: grupo.podeAlterar,
+            podeExcluir: grupo.podeExcluir
+          }))
+        });
+      }
+
+      const acoesCopiadas = permissoesAcoes.flatMap((permissao) => {
+        const funcionalidadeAcaoId = acaoDestinoPorChave.get(chavePorAcaoOrigem.get(permissao.funcionalidadeAcaoId) ?? '');
+        return funcionalidadeAcaoId ? [{ grupoId: permissao.grupoId, funcionalidadeAcaoId, permitido: permissao.permitido }] : [];
+      });
+      if (acoesCopiadas.length) {
+        await db.grupoFuncionalidadeAcao.createMany({ data: acoesCopiadas });
+      }
+
+      if (empresas.length) {
+        await db.empresaFuncionalidade.createMany({
+          data: empresas.map((empresa) => ({ empresaId: empresa.empresaId, funcionalidadeId: destino.id }))
+        });
+      }
+
+      if (responsaveis.length) {
+        await db.chamadoResponsavelFuncionalidade.createMany({
+          data: responsaveis.map((responsavel) => ({
+            responsavelSolucaoId: responsavel.responsavelSolucaoId,
+            funcionalidadeId: destino.id,
+            ativo: responsavel.ativo
+          }))
+        });
+      }
+    });
+
+    // Ações sem equivalente na origem recebem a permissão derivada das operações básicas copiadas.
+    await this.funcionalidadeAcaoService.syncMissingActionPermissionsForFeature(destino.id, true);
+  }
+
   async resyncFuncionalidadeAccess(funcionalidade: FuncionalidadeRecord): Promise<void> {
     await Promise.all([
       (this.prisma as never as { grupoFuncionalidadeAcao: { deleteMany: Function } }).grupoFuncionalidadeAcao.deleteMany({

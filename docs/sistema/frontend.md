@@ -6,7 +6,7 @@ O frontend é uma aplicação React servida pelo Vite. O roteamento fica em `cli
 
 As páginas de rota e as telas vinculadas às funcionalidades do Hub são carregadas sob demanda. O manifesto único em `client/src/auth/featureProviders.jsx` associa cada `providerKey` versionada ao seu loader lazy, às propriedades fixas da implementação e aos aliases históricos suportados. O `RegistryKey` permanece como identidade técnica para rota e documentação, sem depender do título apresentado ao usuário.
 
-A navegação recebida do backend preserva `providerKey` e `providerVersion`. A página da funcionalidade resolve diretamente esse contrato no manifesto; provider ausente ou incompatível não executa outra tela por aproximação. Links antigos de Recursos e Grade de capacitação são aliases explícitos do provider atual de Planejamento de recursos.
+A navegação recebida do backend preserva `providerKey` e `providerVersion`. A página da funcionalidade resolve diretamente esse contrato no manifesto; provider ausente ou incompatível não executa outra tela por aproximação. Links antigos de Recursos e Grade de capacitação são aliases explícitos do provider de Cadastro de recursos (`projetos.planejamento-de-recursos`).
 
 Os componentes React coordenam estado e apresentação. Operações Apollo, montagem de documentos GraphQL e conversão de erros permanecem em `client/services`.
 
@@ -58,10 +58,10 @@ Uma tela operacional mantém estrutura própria quando o `CrudGrid` não represe
 
 Exceções vigentes:
 
-- Backlog: hierarquia, agrupamento, priorização posicional e paginação no servidor;
+- Backlog: hierarquia, agrupamento, priorização posicional sobre a ordem completa e paginação no servidor em páginas de até cinco itens;
 - Cronograma: Gantt, dependências e tabela equivalente para acesso textual;
 - Relatórios de chamados: filtros analíticos, paginação e exportação;
-- Planejamento de recursos: única funcionalidade com navegação principal por abas (`Recursos`, `Equipes` e `Planejamento`), persistida no parâmetro `tab` da URL;
+- Funcionalidades agrupadas: agrupamentos do catálogo apresentam funcionalidades complementares como abas principais de uma única tela, com `FeatureTabs`; cada aba mantém a rota, o provider e as permissões da própria funcionalidade;
 - Orçamento: estrutura híbrida; categorias e custos usam `CrudGrid compact`, enquanto resumo, formulários e histórico de taxas permanecem especializados.
 
 Capacidade não faz parte do sistema e não deve ser apresentada como módulo, indicador ou contrato.

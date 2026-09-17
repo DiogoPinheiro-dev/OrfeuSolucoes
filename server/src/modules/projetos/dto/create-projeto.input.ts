@@ -55,7 +55,7 @@ export class CreateProjetoInput {
   @IsEnum(ProjetoMetodologia)
   metodologia!: ProjetoMetodologia;
 
-  @Field(() => ProjetoSituacao, { nullable: true, defaultValue: ProjetoSituacao.RASCUNHO })
+  @Field(() => ProjetoSituacao, { nullable: true, defaultValue: ProjetoSituacao.EM_ORCAMENTO })
   @IsOptional()
   @IsEnum(ProjetoSituacao)
   situacao?: ProjetoSituacao;

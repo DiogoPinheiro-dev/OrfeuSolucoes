@@ -436,7 +436,7 @@ export default function GroupManagement({ permissions }) {
             setSelectedIds([]);
             await loadGroups();
         } catch (deleteError) {
-            setError(deleteError.message || "Não foi possível deletar o grupo.");
+            setError(deleteError.message || "Não foi possível excluir o grupo.");
         } finally {
             setGridBusy(false);
         }
@@ -659,7 +659,9 @@ export default function GroupManagement({ permissions }) {
             <ConfirmDialog
                 open={!!pendingDelete}
                 title="Confirmar exclusão"
-                message={`Tem certeza que deseja deletar ${pendingDelete?.label || "o grupo selecionado"}?`}
+                message={`Tem certeza de que deseja excluir ${pendingDelete?.label || "o grupo selecionado"}?`}
+                confirmLabel="Excluir"
+                variant="destructive"
                 onCancel={() => setPendingDelete(null)}
                 onConfirm={confirmDelete}
                 loading={false}

@@ -35,7 +35,8 @@ export const FEATURE_COVERAGE_MATRIX = [
     feature("projetos.marcos-e-entregas", "projetos", "crud"),
     feature("projetos.cronograma-e-gantt", "projetos"),
     feature("projetos.comunicacao-do-projeto", "projetos"),
-    feature("projetos.planejamento-de-recursos", "projetos"),
+    feature("projetos.planejamento-de-recursos", "projetos", "crud"),
+    feature("projetos.equipes", "projetos", "crud"),
     feature("projetos.orcamento-do-projeto", "projetos")
 ];
 

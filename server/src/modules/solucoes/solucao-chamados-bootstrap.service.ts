@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { isPrismaUniqueConstraintViolation, retryBootstrapAfterUniqueConflict } from '../../common/persistence/bootstrap-concurrency.util';
 import { PrismaService } from '../../prisma/prisma.service';
+import { CHAMADOS_AGRUPAMENTOS_PADRAO } from './constants/agrupamento-definitions';
 import { DEFAULT_CHAMADO_PRIORIDADES, DEFAULT_CHAMADO_TIPOS } from './constants/solucao.constants';
 import { FuncionalidadeAcaoInput } from './dto/funcionalidade-acao.input';
 import { FuncionalidadeAcaoService } from './funcionalidade-acao.service';
+import { FuncionalidadeAgrupamentoService } from './funcionalidade-agrupamento.service';
 import { SolucaoAcessoService } from './solucao-acesso.service';
 import { FuncionalidadeRecord } from './types/solucao-record.types';
 
@@ -12,7 +14,8 @@ export class SolucaoChamadosBootstrapService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly funcionalidadeAcaoService: FuncionalidadeAcaoService,
-    private readonly solucaoAcessoService: SolucaoAcessoService
+    private readonly solucaoAcessoService: SolucaoAcessoService,
+    private readonly agrupamentos: FuncionalidadeAgrupamentoService
   ) {}
 
   async ensureDefaultChamadoConfiguracoesForEmpresa(empresaId: number, force = false): Promise<void> {
@@ -271,6 +274,8 @@ export class SolucaoChamadosBootstrapService {
               descricao: feature.descricao,
               ativo: true,
               registryKey: feature.registryKey,
+              providerKey: existing.providerKey ?? feature.registryKey,
+              providerVersion: existing.providerVersion ?? 1,
               somenteAdminSistema: false,
               padraoSistema: true
             }
@@ -285,6 +290,8 @@ export class SolucaoChamadosBootstrapService {
               ordem: feature.ordem,
               ativo: true,
               registryKey: feature.registryKey,
+              providerKey: feature.registryKey,
+              providerVersion: 1,
               somenteAdminSistema: false,
               padraoSistema: true
             }
@@ -295,6 +302,10 @@ export class SolucaoChamadosBootstrapService {
       if (!existing) {
         await this.solucaoAcessoService.syncNewFuncionalidadeAccess(funcionalidade);
       }
+    }
+
+    for (const agrupamento of CHAMADOS_AGRUPAMENTOS_PADRAO) {
+      await this.agrupamentos.ensureAgrupamentoPadrao(solucao.id, agrupamento);
     }
   }
 

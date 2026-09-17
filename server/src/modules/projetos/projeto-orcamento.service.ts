@@ -95,8 +95,35 @@ export class ProjetoOrcamentoService {
   }
 
   async aprovar(input: AprovarProjetoOrcamentoInput, user: JwtPayload) {
-    const contexto = await this.authorization.contexto(input.projetoId, user); await this.authorization.aprovarOrcamento(contexto, user);
-    return this.prisma.$transaction(async (tx) => { const record = await this.updateVersioned(tx.projetoOrcamento, input.id, input.versao, { status: ProjetoOrcamentoStatus.APROVADO, aprovadoEm: new Date(), aprovadoPorId: user.sub }, 'O orcamento', { projetoId: input.projetoId }); await this.audit(tx, contexto, user, 'ORCAMENTO', record.id, 'APROVADO', {}); return this.findFinanceiro(tx, input.projetoId); }).then((item) => this.financeiro(item));
+    const contexto = await this.authorization.contexto(input.projetoId, user);
+    await this.authorization.aprovarOrcamento(contexto, user);
+    return this.prisma.$transaction(async (tx) => {
+      const projeto = await tx.projeto.findFirst({
+        where: { id: input.projetoId, empresaId: contexto.empresaId, arquivadoEm: null },
+        select: { situacao: true }
+      });
+      if (!projeto) throw new ConflictException('O projeto foi arquivado ou não está mais disponível. Atualize os dados.');
+      if (projeto.situacao !== contexto.projeto.situacao) {
+        throw new ConflictException('O ciclo do projeto foi alterado por outra pessoa. Atualize os dados.');
+      }
+
+      const record = await this.updateVersioned(tx.projetoOrcamento, input.id, input.versao,
+        { status: ProjetoOrcamentoStatus.APROVADO, aprovadoEm: new Date(), aprovadoPorId: user.sub },
+        'O orçamento', { projetoId: input.projetoId, status: ProjetoOrcamentoStatus.RASCUNHO });
+
+      if (projeto.situacao === ProjetoSituacao.EM_ORCAMENTO) {
+        const updated = await tx.projeto.updateMany({
+          where: { id: input.projetoId, empresaId: contexto.empresaId, situacao: ProjetoSituacao.EM_ORCAMENTO, arquivadoEm: null },
+          data: { situacao: ProjetoSituacao.RASCUNHO }
+        });
+        if (updated.count !== 1) throw new ConflictException('O ciclo do projeto foi alterado por outra pessoa. Atualize os dados.');
+        await this.audit(tx, contexto, user, 'PROJETO', input.projetoId, 'CICLO_ALTERADO', {
+          situacaoAnterior: ProjetoSituacao.EM_ORCAMENTO, situacao: ProjetoSituacao.RASCUNHO, orcamentoId: record.id
+        });
+      }
+      await this.audit(tx, contexto, user, 'ORCAMENTO', record.id, 'APROVADO', {});
+      return this.findFinanceiro(tx, input.projetoId);
+    }).then((item) => this.financeiro(item));
   }
 
   async reabrir(input: AprovarProjetoOrcamentoInput, user: JwtPayload) {

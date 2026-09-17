@@ -118,7 +118,8 @@ describe("Cadastro de projetos", () => {
         await user.click(within(dialog).getByRole("button", { name: "Sugerir" }));
         await waitFor(() => expect(sugerirChaveProjeto).toHaveBeenCalledWith("Novo Projeto"));
         await user.click(within(dialog).getByRole("tab", { name: "Planejamento" }));
-        await user.selectOptions(within(dialog).getByRole("combobox", { name: "Status inicial" }), "EM_ORCAMENTO");
+        expect(within(dialog).queryByRole("combobox", { name: "Status inicial" })).not.toBeInTheDocument();
+        expect(within(dialog).getByText(/Novos projetos começam no ciclo Em orçamento/)).toBeInTheDocument();
         await user.type(within(dialog).getByLabelText(/Início previsto/), "2026-09-02");
         await user.type(within(dialog).getByLabelText(/Término previsto/), "2026-11-02");
         await user.click(within(dialog).getByRole("button", { name: "Salvar" }));
@@ -133,6 +134,20 @@ describe("Cadastro de projetos", () => {
             fimPrevistoEm: "2026-11-02"
         })));
         expect(await screen.findByRole("status")).toHaveTextContent("Projeto criado com sucesso.");
+    });
+
+    it("impede avanço manual de um projeto em orçamento e preserva o cancelamento", async () => {
+        const user = userEvent.setup();
+        getProjetos.mockResolvedValue(page([{ ...project, situacao: "EM_ORCAMENTO" }]));
+        render(<ProjectManagement permissions={permissions} />);
+        await user.click(await screen.findByRole("cell", { name: "Orfeu Evolucao" }));
+        await user.click(screen.getByRole("button", { name: "Alterar ciclo" }));
+        const dialog = screen.getByRole("dialog", { name: "Ciclo de ORF" });
+        const status = within(dialog).getByRole("combobox", { name: "Status" });
+        expect(within(status).getAllByRole("option").map((option) => option.value)).toEqual(["EM_ORCAMENTO", "CANCELADO"]);
+        await user.selectOptions(status, "CANCELADO");
+        await user.click(within(dialog).getByRole("button", { name: "Salvar" }));
+        await waitFor(() => expect(atualizarCicloProjeto).toHaveBeenCalledWith({ projetoId: "p1", situacao: "CANCELADO", saude: "EM_DIA" }));
     });
 
     it("abre visualizacao somente leitura com os dados completos", async () => {

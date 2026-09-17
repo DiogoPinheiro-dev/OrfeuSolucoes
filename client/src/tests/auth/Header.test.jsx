@@ -65,6 +65,26 @@ describe("Header autenticado", () => {
         expect(screen.getByRole("button", { name: "Minimizar menu do Hub" })).toBeInTheDocument();
     });
 
+    it("mostra o agrupamento como um único item do menu apontando para a primeira aba", () => {
+        useHubNavigation.mockReturnValue({ solutions: [{
+            slug: "controle-de-chamados",
+            title: "Controle de Chamados",
+            groups: [{ id: 7, slug: "configuracoes-do-atendimento", title: "Configurações do atendimento", order: 50 }],
+            areas: [
+                { id: 31, slug: "tipos", title: "Tipos de chamados", groupId: 7, groupOrder: 2, order: 70 },
+                { id: 33, slug: "categorias", title: "Categorias de chamados", groupId: 7, groupOrder: 1, order: 50 },
+                { id: 30, slug: "dashboard", title: "Dashboard de chamados", groupId: null, order: 45 }
+            ]
+        }] });
+
+        renderHeader("/hub/controle-de-chamados");
+
+        expect(screen.getByRole("link", { name: "Configurações do atendimento" }))
+            .toHaveAttribute("href", "/hub/controle-de-chamados/categorias");
+        expect(screen.getByRole("link", { name: "Dashboard de chamados" })).toBeInTheDocument();
+        expect(screen.queryByRole("link", { name: "Tipos de chamados" })).not.toBeInTheDocument();
+    });
+
     it("apresenta documentação como solução do Hub", () => {
         renderHeader("/hub");
 

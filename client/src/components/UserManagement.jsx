@@ -278,7 +278,7 @@ export default function UserManagement({ permissions }) {
             setSelectedIds([]);
             await loadUsers();
         } catch (deleteError) {
-            setError(deleteError.message || "Não foi possível deletar o usuário.");
+            setError(deleteError.message || "Não foi possível excluir o usuário.");
         } finally {
             setGridBusy(false);
         }
@@ -558,7 +558,9 @@ export default function UserManagement({ permissions }) {
             <ConfirmDialog
                 open={!!pendingDelete}
                 title="Confirmar exclusão"
-                message={`Tem certeza que deseja deletar ${pendingDelete?.label || "o usuário selecionado"}?`}
+                message={`Tem certeza de que deseja excluir ${pendingDelete?.label || "o usuário selecionado"}?`}
+                confirmLabel="Excluir"
+                variant="destructive"
                 onCancel={() => setPendingDelete(null)}
                 onConfirm={confirmDelete}
                 loading={false}

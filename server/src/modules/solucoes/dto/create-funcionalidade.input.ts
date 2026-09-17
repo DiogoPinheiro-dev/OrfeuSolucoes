@@ -57,6 +57,16 @@ export class CreateFuncionalidadeInput {
   @IsBoolean()
   somenteAdminSistema?: boolean;
 
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsInt()
+  agrupamentoId?: number | null;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsInt()
+  ordemNoAgrupamento?: number | null;
+
   @Field(() => [FuncionalidadeAcaoInput], { nullable: true })
   @IsOptional()
   @IsArray()

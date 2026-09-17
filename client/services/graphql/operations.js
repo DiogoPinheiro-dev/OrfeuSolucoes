@@ -557,6 +557,8 @@ export const SOLUCAO_FIELDS = gql`
       providerVersion
       statusPublicacao
       revisaoCatalogo
+      agrupamentoId
+      ordemNoAgrupamento
       podeVisualizar
       podeIncluir
       podeAlterar
@@ -574,6 +576,18 @@ export const SOLUCAO_FIELDS = gql`
         statusPublicacao
         permitido
       }
+    }
+    agrupamentos {
+      id
+      solucaoId
+      slug
+      titulo
+      label
+      descricao
+      ordem
+      ativo
+      padraoSistema
+      chaveTecnica
     }
   }
 `;
@@ -756,6 +770,46 @@ export const UPDATE_FUNCIONALIDADE_MUTATION = gql`
 export const DELETE_FUNCIONALIDADE_MUTATION = gql`
   mutation DeleteFuncionalidade($id: Int!) {
     deleteFuncionalidade(id: $id)
+  }
+`;
+
+export const CREATE_FUNCIONALIDADE_AGRUPAMENTO_MUTATION = gql`
+  mutation CreateFuncionalidadeAgrupamento($input: CreateFuncionalidadeAgrupamentoInput!) {
+    createFuncionalidadeAgrupamento(input: $input) {
+      id
+      solucaoId
+      slug
+      titulo
+      label
+      descricao
+      ordem
+      ativo
+      padraoSistema
+      chaveTecnica
+    }
+  }
+`;
+
+export const UPDATE_FUNCIONALIDADE_AGRUPAMENTO_MUTATION = gql`
+  mutation UpdateFuncionalidadeAgrupamento($input: UpdateFuncionalidadeAgrupamentoInput!) {
+    updateFuncionalidadeAgrupamento(input: $input) {
+      id
+      solucaoId
+      slug
+      titulo
+      label
+      descricao
+      ordem
+      ativo
+      padraoSistema
+      chaveTecnica
+    }
+  }
+`;
+
+export const DELETE_FUNCIONALIDADE_AGRUPAMENTO_MUTATION = gql`
+  mutation DeleteFuncionalidadeAgrupamento($id: Int!) {
+    deleteFuncionalidadeAgrupamento(id: $id)
   }
 `;
 
@@ -1595,6 +1649,7 @@ export const PROJETO_ITENS_QUERY = gql`
   query ProjetoItens($filtro: ProjetoItemFiltroInput!) {
     projetoItens(filtro: $filtro) {
       items { ...ProjetoItemFields }
+      grupos { valor total }
       total pagina limite totalPaginas backlogVersao
       permissoes {
         podeVisualizar podeCriar podeAlterar podeAlterarStatus
@@ -1771,6 +1826,7 @@ export const PROJETO_ORGANIZACAO_QUERY = gql`
       }
       projetos { id chave nome arquivadoEm }
       permissoes { podeIncluir podeAlterar podeExcluir }
+      permissoesEquipes { podeIncluir podeAlterar podeExcluir }
     }
   }
   ${PROJETO_RECURSO_USER_FIELDS}

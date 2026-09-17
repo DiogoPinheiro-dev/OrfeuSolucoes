@@ -867,6 +867,7 @@ model Solucao {
   publicadoEm         DateTime? @map("PublicadoEm")
 
   funcionalidades            Funcionalidade[]
+  agrupamentos               FuncionalidadeAgrupamento[]
   grupos                     GrupoSolucao[]
   empresas                   EmpresaSolucao[]
   chamadoResponsavelSolucoes ChamadoResponsavelSolucao[]
@@ -874,6 +875,28 @@ model Solucao {
   catalogoVersoes            CatalogoVersao[]
 
   @@map("Solucoes")
+}
+
+model FuncionalidadeAgrupamento {
+  id            Int      @id @default(autoincrement()) @map("Id")
+  solucaoId     Int      @map("SolucaoId")
+  slug          String   @map("Slug") @db.NVarChar(200)
+  titulo        String   @map("Titulo") @db.NVarChar(200)
+  label         String?  @map("Label") @db.NVarChar(200)
+  descricao     String?  @map("Descricao") @db.NVarChar(500)
+  ordem         Int      @default(0) @map("Ordem")
+  ativo         Boolean  @default(true) @map("Ativo")
+  padraoSistema Boolean  @default(false) @map("PadraoSistema")
+  chaveTecnica  String   @unique(map: "UX_FuncionalidadeAgrupamentos_ChaveTecnica") @default(uuid()) @map("ChaveTecnica") @db.NVarChar(200)
+  criadoEm      DateTime @default(now()) @map("CriadoEm")
+  atualizadoEm  DateTime @updatedAt @map("AtualizadoEm")
+
+  solucao         Solucao          @relation(fields: [solucaoId], references: [id], onDelete: Cascade, map: "FK_FuncionalidadeAgrupamentos_Solucoes")
+  funcionalidades Funcionalidade[]
+
+  @@unique([solucaoId, slug], map: "UX_FuncionalidadeAgrupamentos_SolucaoId_Slug")
+  @@unique([solucaoId, id], map: "UX_FuncionalidadeAgrupamentos_SolucaoId_Id")
+  @@map("FuncionalidadeAgrupamentos")
 }
 
 model Funcionalidade {
@@ -895,8 +918,11 @@ model Funcionalidade {
   statusPublicacao    String    @default("PUBLICADA") @map("StatusPublicacao") @db.NVarChar(20)
   revisaoCatalogo     Int       @default(1) @map("RevisaoCatalogo")
   publicadoEm         DateTime? @map("PublicadoEm")
+  agrupamentoId       Int?      @map("AgrupamentoId")
+  ordemNoAgrupamento  Int?      @map("OrdemNoAgrupamento")
 
   solucao                           Solucao                            @relation(fields: [solucaoId], references: [id], onDelete: Cascade)
+  agrupamento                       FuncionalidadeAgrupamento?         @relation(fields: [solucaoId, agrupamentoId], references: [solucaoId, id], onDelete: NoAction, onUpdate: NoAction, map: "FK_Funcionalidades_FuncionalidadeAgrupamentos")
   grupos                            GrupoFuncionalidade[]
   empresas                          EmpresaFuncionalidade[]
   acoes                             FuncionalidadeAcao[]
@@ -905,6 +931,7 @@ model Funcionalidade {
   catalogoVersoes                   CatalogoVersao[]
 
   @@unique([solucaoId, slug], map: "UX_Funcionalidades_SolucaoId_Slug")
+  @@index([solucaoId, agrupamentoId], map: "IX_Funcionalidades_SolucaoId_AgrupamentoId")
   @@map("Funcionalidades")
 }
 

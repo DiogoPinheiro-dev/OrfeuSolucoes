@@ -10,6 +10,12 @@ import {
 } from './dto/projeto-item.type';
 import { toProjetoItemType } from './mappers/projeto-item.mapper';
 import { toProjetoUsuarioType } from './mappers/projeto.mapper';
+import {
+  contarGrupos,
+  GrupoDoBacklog,
+  ordenarPorAgrupamento,
+  ProjetoBacklogAgrupamento
+} from './policies/projeto-backlog-agrupamento.policy';
 import { ProjetoItemAuthorizationService } from './projeto-item-authorization.service';
 import { ProjetoPeriodoService } from './projeto-periodo.service';
 import { ProjetoItemRecord } from './types/projeto-item.types';
@@ -19,6 +25,14 @@ export const PROJETO_ITEM_INCLUDE = {
   autor: { include: { grupo: true } },
   arquivadoPor: { include: { grupo: true } }
 };
+
+const ORDEM_DO_BACKLOG: Prisma.ProjetoItemOrderByWithRelationInput[] = [
+  { ordemBacklog: 'asc' },
+  { numero: 'asc' },
+  { id: 'asc' }
+];
+
+type PaginaDoBacklog = { total: number; records: unknown[]; grupos: GrupoDoBacklog[] };
 
 @Injectable()
 export class ProjetoItemQueryService {
@@ -65,26 +79,18 @@ export class ProjetoItemQueryService {
           }
         : {})
     };
-    const [total, records, permissoes] = await Promise.all([
-      this.prisma.projetoItem.count({ where }),
-      this.prisma.projetoItem.findMany({
-        where,
-        include: PROJETO_ITEM_INCLUDE,
-        orderBy: [
-          { ordemBacklog: 'asc' },
-          { numero: 'asc' },
-          { id: 'asc' }
-        ],
-        skip: (pagina - 1) * limite,
-        take: limite
-      }),
+    const [{ total, records, grupos }, permissoes] = await Promise.all([
+      filtro.agruparPor
+        ? this.findGroupedPage(where, pagina, limite, filtro.agruparPor)
+        : this.findOrderedPage(where, pagina, limite),
       this.authorization.effectivePermissions(user, contexto)
     ]);
 
     return {
-      items: (records as unknown as ProjetoItemRecord[]).map((item) =>
+      items: (records as ProjetoItemRecord[]).map((item) =>
         toProjetoItemType(item, permissoes)
       ),
+      grupos,
       total,
       pagina,
       limite,
@@ -189,5 +195,55 @@ export class ProjetoItemQueryService {
         ? toProjetoUsuarioType(evento.usuario as never)
         : null
     }));
+  }
+
+  private async findOrderedPage(
+    where: Prisma.ProjetoItemWhereInput,
+    pagina: number,
+    limite: number
+  ): Promise<PaginaDoBacklog> {
+    const [total, records] = await Promise.all([
+      this.prisma.projetoItem.count({ where }),
+      this.prisma.projetoItem.findMany({
+        where,
+        include: PROJETO_ITEM_INCLUDE,
+        orderBy: ORDEM_DO_BACKLOG,
+        skip: (pagina - 1) * limite,
+        take: limite
+      })
+    ]);
+
+    return { total, records, grupos: [] };
+  }
+
+  /** Agrupa o backlog filtrado inteiro antes de paginar, para que cada página continue a sequência dos grupos. */
+  private async findGroupedPage(
+    where: Prisma.ProjetoItemWhereInput,
+    pagina: number,
+    limite: number,
+    agrupamento: ProjetoBacklogAgrupamento
+  ): Promise<PaginaDoBacklog> {
+    const chaves = await this.prisma.projetoItem.findMany({
+      where,
+      select: { id: true, status: true, tipo: true, prioridade: true },
+      orderBy: ORDEM_DO_BACKLOG
+    });
+    const ordenados = ordenarPorAgrupamento(chaves, agrupamento);
+    const idsDaPagina = ordenados
+      .slice((pagina - 1) * limite, pagina * limite)
+      .map((item) => item.id);
+    const records = idsDaPagina.length
+      ? await this.prisma.projetoItem.findMany({
+          where: { ...where, id: { in: idsDaPagina } },
+          include: PROJETO_ITEM_INCLUDE
+        })
+      : [];
+    const porId = new Map(records.map((record) => [record.id, record]));
+
+    return {
+      total: ordenados.length,
+      records: idsDaPagina.map((id) => porId.get(id)).filter((record) => record !== undefined),
+      grupos: contarGrupos(ordenados, agrupamento)
+    };
   }
 }

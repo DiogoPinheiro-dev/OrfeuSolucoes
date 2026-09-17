@@ -334,6 +334,8 @@ export default function SlaChamadoManagement({ permissions }) {
                 open={!!pendingDelete}
                 title="Desativar regra de SLA"
                 message={`Deseja desativar ${pendingDelete?.label || "a regra selecionada"}? Chamados já abertos manterão os prazos calculados.`}
+                confirmLabel="Desativar"
+                variant="warning"
                 onCancel={() => setPendingDelete(null)}
                 onConfirm={confirmDelete}
                 loading={false}

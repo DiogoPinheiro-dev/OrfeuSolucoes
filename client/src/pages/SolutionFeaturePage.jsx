@@ -1,8 +1,17 @@
 import { lazy, Suspense } from "react";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 
 import { resolveFeatureProvider } from "../auth/featureProviders";
-import { canAccessSolution, getFeatureBySlug, getSolutionBySlug } from "../auth/hubConfig";
+import {
+    canAccessSolution,
+    getAreaGroup,
+    getFeatureBySlug,
+    getFeaturePath,
+    getGroupBySlug,
+    getGroupTabs,
+    getSolutionBySlug
+} from "../auth/hubConfig";
+import FeatureTabs, { FeatureTabPanel } from "../components/FeatureTabs";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
 import { useHubNavigation } from "../hooks/useHubNavigation";
@@ -21,6 +30,7 @@ function FeatureLoadingFallback() {
 
 export default function SolutionFeaturePage() {
     const { slug, areaSlug } = useParams();
+    const navigate = useNavigate();
     const { loading, solutions } = useHubNavigation();
     const solution = getSolutionBySlug(solutions, slug);
     const unavailableChamadoOpening = !solution
@@ -83,6 +93,13 @@ export default function SolutionFeaturePage() {
         return <Navigate to="/hub" replace />;
     }
 
+    // O endereço do agrupamento abre a primeira aba autorizada; cada aba mantém a rota da própria funcionalidade.
+    const requestedGroup = getGroupBySlug(solution, areaSlug);
+    const [firstGroupTab] = requestedGroup ? getGroupTabs(solution, requestedGroup.id) : [];
+    if (firstGroupTab) {
+        return <Navigate to={getFeaturePath(solution, firstGroupTab)} replace />;
+    }
+
     const directArea = getFeatureBySlug(solution, areaSlug);
     const routeProvider = directArea ? null : resolveFeatureProvider(`${solution.slug}.${areaSlug}`);
     const area = directArea || solution.areas.find((candidate) =>
@@ -96,6 +113,23 @@ export default function SolutionFeaturePage() {
 
     const provider = resolveFeatureProvider(area.providerKey, area.providerVersion);
     const FeatureComponent = provider?.loader;
+    const group = getAreaGroup(solution, area);
+    const tabPrefix = group ? `agrupamento-${group.slug}` : "";
+    const openGroupTab = (tabSlug) => {
+        const tab = group.tabs.find((item) => item.slug === tabSlug);
+        if (tab) navigate(getFeaturePath(solution, tab));
+    };
+    const featureContent = FeatureComponent ? (
+        <Suspense fallback={<FeatureLoadingFallback />}>
+            <FeatureComponent key={area.slug} permissions={area} {...provider.props} />
+        </Suspense>
+    ) : (
+        <section className="workspace-panel workspace-panel-wide">
+            <span className="workspace-label">{area.label}</span>
+            <h2>{area.title}</h2>
+            <p>Funcionalidade sem tela vinculada no momento.</p>
+        </section>
+    );
 
     return (
         <div className="page-wrapper workspace-page">
@@ -108,22 +142,32 @@ export default function SolutionFeaturePage() {
                         <span>/</span>
                         <Link to={`/hub/${solution.slug}`}>{solution.title}</Link>
                         <span>/</span>
-                        <strong>{area.title}</strong>
+                        <strong>{group?.title || area.title}</strong>
                     </div>
 
-                    <section className="workspace-feature-crud">
-                        {FeatureComponent ? (
-                            <Suspense fallback={<FeatureLoadingFallback />}>
-                                <FeatureComponent permissions={area} {...provider.props} />
-                            </Suspense>
-                        ) : (
-                            <section className="workspace-panel workspace-panel-wide">
-                                <span className="workspace-label">{area.label}</span>
-                                <h2>{area.title}</h2>
-                                <p>Funcionalidade sem tela vinculada no momento.</p>
-                            </section>
-                        )}
-                    </section>
+                    {group ? (
+                        <section className="feature-composite" aria-labelledby={`${tabPrefix}-titulo`}>
+                            <header className="feature-composite-header">
+                                {group.label && <span className="workspace-label">{group.label}</span>}
+                                <h2 id={`${tabPrefix}-titulo`}>{group.title}</h2>
+                                {group.description && <p>{group.description}</p>}
+                            </header>
+
+                            <FeatureTabs
+                                tabs={group.tabs.map((tab) => ({ key: tab.slug, label: tab.label || tab.title }))}
+                                activeKey={area.slug}
+                                onChange={openGroupTab}
+                                ariaLabel={`Seções de ${group.title}`}
+                                idPrefix={tabPrefix}
+                            />
+
+                            <FeatureTabPanel idPrefix={tabPrefix} tabKey={area.slug} activeKey={area.slug}>
+                                <div className="workspace-feature-crud">{featureContent}</div>
+                            </FeatureTabPanel>
+                        </section>
+                    ) : (
+                        <section className="workspace-feature-crud">{featureContent}</section>
+                    )}
                 </div>
             </main>
 

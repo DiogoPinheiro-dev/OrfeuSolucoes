@@ -1,58 +1,24 @@
-import { useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 
-import FeatureTabs, { FeatureTabPanel } from "./FeatureTabs";
-import BacklogManagement from "./BacklogManagement";
 import ProjectTeamManagement from "./ProjectTeamManagement";
 import ResourceRegistrationManagement from "./ResourceRegistrationManagement";
 import "../styles/crudGrid.css";
 import "../styles/projectResourcePlanning.css";
 
-const PLANNING_TABS = [
-  { key: "recursos", label: "Recursos" },
-  { key: "equipes", label: "Equipes" },
-  { key: "planejamento", label: "Planejamento" }
-];
+// Antes da divisão em funcionalidades próprias, as seções desta rota eram escolhidas pelo parâmetro "tab".
+const LEGACY_TAB_ROUTES = new Map([
+  ["equipes", "/hub/projetos/equipes"],
+  ["planejamento", "/hub/projetos/backlog-de-demandas"]
+]);
 
-export default function ProjectResourcePlanningManagement() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const requestedView = searchParams.get("tab");
-  const activeView = PLANNING_TABS.some((tab) => tab.key === requestedView)
-    ? requestedView
-    : "recursos";
+/** Recursos e Equipes são funcionalidades próprias; o agrupamento do catálogo apresenta as duas como abas. */
+export default function ProjectResourcePlanningManagement({ secao = "recursos" }) {
+  const [searchParams] = useSearchParams();
+  const legacyRoute = secao === "recursos" ? LEGACY_TAB_ROUTES.get(searchParams.get("tab")) : null;
 
-  useEffect(() => {
-    if (requestedView === activeView) return;
-    const next = new URLSearchParams(searchParams);
-    next.set("tab", activeView);
-    setSearchParams(next, { replace: true });
-  }, [activeView, requestedView, searchParams, setSearchParams]);
-
-  const selectActiveView = (view) => {
-    const next = new URLSearchParams(searchParams);
-    next.set("tab", view);
-    setSearchParams(next);
-  };
+  if (legacyRoute) return <Navigate to={legacyRoute} replace />;
 
   return <section className="resource-planning">
-    <header className="crud-grid resource-planning-header">
-      <div>
-        <span className="workspace-label">Organização operacional</span>
-        <h2>Recursos, equipes e planejamento</h2>
-        <p>Cadastre recursos, organize equipes e planeje os itens atribuídos no projeto.</p>
-      </div>
-    </header>
-
-    <FeatureTabs tabs={PLANNING_TABS} activeKey={activeView} onChange={selectActiveView} ariaLabel="Seções de recursos, equipes e planejamento" idPrefix="resource-planning" />
-
-    <FeatureTabPanel idPrefix="resource-planning" tabKey="recursos" activeKey={activeView}>
-      <ResourceRegistrationManagement />
-    </FeatureTabPanel>
-    <FeatureTabPanel idPrefix="resource-planning" tabKey="equipes" activeKey={activeView}>
-      <ProjectTeamManagement />
-    </FeatureTabPanel>
-    <FeatureTabPanel idPrefix="resource-planning" tabKey="planejamento" activeKey={activeView}>
-      <BacklogManagement />
-    </FeatureTabPanel>
+    {secao === "equipes" ? <ProjectTeamManagement /> : <ResourceRegistrationManagement />}
   </section>;
 }

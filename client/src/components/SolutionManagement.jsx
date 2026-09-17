@@ -361,6 +361,8 @@ export default function SolutionManagement({ permissions }) {
                 open={!!pendingDelete}
                 title="Confirmar exclusão"
                 message={`Tem certeza de que deseja excluir ${pendingDelete?.label || "a solução selecionada"}? As funcionalidades vinculadas também serão removidas.`}
+                confirmLabel="Excluir"
+                variant="destructive"
                 onCancel={() => setPendingDelete(null)}
                 onConfirm={confirmDelete}
                 loading={false}

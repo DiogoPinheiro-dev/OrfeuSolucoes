@@ -8,18 +8,36 @@ import { SolucaoType } from './dto/solucao.type';
 import { UpdateFuncionalidadeInput } from './dto/update-funcionalidade.input';
 import { UpdateSolucaoInput } from './dto/update-solucao.input';
 import { FuncionalidadeAcaoService } from './funcionalidade-acao.service';
+import { FuncionalidadeAgrupamentoService } from './funcionalidade-agrupamento.service';
 import { toFuncionalidadeType } from './mappers/funcionalidade.mapper';
 import { toType } from './mappers/solucao.mapper';
+import {
+  AssociacaoAgrupamento,
+  alteraAssociacaoAgrupamento,
+  resolverAssociacaoAgrupamento
+} from './policies/funcionalidade-agrupamento.policy';
 import { SolucaoAcessoService } from './solucao-acesso.service';
 import { FuncionalidadeRecord, SolucaoRecord } from './types/solucao-record.types';
 import { normalizeSlug } from './utils/slug.util';
+
+const hasCadastralChanges = (input: UpdateFuncionalidadeInput): boolean =>
+  input.solucaoId !== undefined || input.slug !== undefined || input.titulo !== undefined ||
+  input.label !== undefined || input.descricao !== undefined || input.ativo !== undefined ||
+  input.registryKey !== undefined || input.providerKey !== undefined || input.providerVersion !== undefined ||
+  input.somenteAdminSistema !== undefined;
+
+const associacaoDe = (funcionalidade: FuncionalidadeRecord): AssociacaoAgrupamento => ({
+  agrupamentoId: funcionalidade.agrupamentoId ?? null,
+  ordemNoAgrupamento: funcionalidade.ordemNoAgrupamento ?? null
+});
 
 @Injectable()
 export class SolucaoCatalogService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly funcionalidadeAcaoService: FuncionalidadeAcaoService,
-    private readonly solucaoAcessoService: SolucaoAcessoService
+    private readonly solucaoAcessoService: SolucaoAcessoService,
+    private readonly agrupamentos: FuncionalidadeAgrupamentoService
   ) {}
 
   async create(input: CreateSolucaoInput): Promise<SolucaoType> {
@@ -100,11 +118,15 @@ export class SolucaoCatalogService {
 
   async createFuncionalidade(input: CreateFuncionalidadeInput): Promise<FuncionalidadeType> {
     await this.ensureSolucao(input.solucaoId);
+    const slug = normalizeSlug(input.slug);
+    const associacao = resolverAssociacaoAgrupamento({ agrupamentoId: null, ordemNoAgrupamento: null }, input);
+    await this.agrupamentos.assertSlugDisponivel(input.solucaoId, slug);
+    await this.agrupamentos.assertAssociacaoValida(input.solucaoId, associacao.agrupamentoId);
 
     const created = (await (this.prisma as never as { funcionalidade: { create: Function } }).funcionalidade.create({
       data: {
         solucaoId: input.solucaoId,
-        slug: normalizeSlug(input.slug),
+        slug,
         titulo: input.titulo.trim(),
         label: input.label?.trim() || null,
         descricao: input.descricao?.trim() || null,
@@ -114,7 +136,8 @@ export class SolucaoCatalogService {
         somenteAdminSistema: input.somenteAdminSistema ?? false,
         statusPublicacao: 'RASCUNHO',
         providerKey: input.providerKey?.trim() || input.registryKey?.trim() || null,
-        providerVersion: input.providerVersion ?? ((input.providerKey?.trim() || input.registryKey?.trim()) ? 1 : null)
+        providerVersion: input.providerVersion ?? ((input.providerKey?.trim() || input.registryKey?.trim()) ? 1 : null),
+        ...associacao
       }
     })) as FuncionalidadeRecord;
 
@@ -123,29 +146,36 @@ export class SolucaoCatalogService {
     return toFuncionalidadeType(await this.findFuncionalidadeRecord(created.id));
   }
 
-  async updateFuncionalidade(input: UpdateFuncionalidadeInput): Promise<FuncionalidadeType> {
+  async updateFuncionalidade(input: UpdateFuncionalidadeInput, authorId?: string): Promise<FuncionalidadeType> {
     const existing = await this.ensureFuncionalidade(input.id);
+    const associacaoAtual = associacaoDe(existing);
+    const associacao = resolverAssociacaoAgrupamento(associacaoAtual, input);
 
     if (existing.statusPublicacao !== 'RASCUNHO') {
-      const orderOnly = input.ordem !== undefined && Object.keys(input).every((key) => key === 'id' || key === 'ordem');
-      if (orderOnly) {
-        await (this.prisma as never as { funcionalidade: { update: Function } }).funcionalidade.update({ where: { id: input.id }, data: { ordem: input.ordem } });
-        return toFuncionalidadeType(await this.findFuncionalidadeRecord(input.id));
+      if (hasCadastralChanges(input)) {
+        throw new BadRequestException('Crie e publique um rascunho versionado para alterar uma funcionalidade publicada.');
       }
-      const hasCadastralChanges = input.solucaoId !== undefined || input.slug !== undefined || input.titulo !== undefined ||
-        input.label !== undefined || input.descricao !== undefined || input.ativo !== undefined ||
-        input.registryKey !== undefined || input.providerKey !== undefined || input.providerVersion !== undefined ||
-        input.somenteAdminSistema !== undefined;
-      if (hasCadastralChanges) throw new BadRequestException('Crie e publique um rascunho versionado para alterar uma funcionalidade publicada.');
-      await this.funcionalidadeAcaoService.appendFuncionalidadeAcoes(input.id, input.acoes ?? []);
+      await this.updateOrganizacao(existing, input, associacao, authorId);
+      if (input.acoes != null) {
+        await this.funcionalidadeAcaoService.appendFuncionalidadeAcoes(input.id, input.acoes);
+      }
       return toFuncionalidadeType(await this.findFuncionalidadeRecord(input.id));
     }
 
+    const solucaoId = input.solucaoId ?? existing.solucaoId;
     if (input.solucaoId !== undefined) {
       await this.ensureSolucao(input.solucaoId);
     }
+    if (input.slug !== undefined || input.solucaoId !== undefined) {
+      const slug = input.slug !== undefined ? normalizeSlug(input.slug) : existing.slug;
+      await this.agrupamentos.assertSlugDisponivel(solucaoId, slug, { funcionalidadeId: existing.id });
+    }
+    const alteraAssociacao = alteraAssociacaoAgrupamento(input) || input.solucaoId !== undefined;
+    if (alteraAssociacao) {
+      await this.agrupamentos.assertAssociacaoValida(solucaoId, associacao.agrupamentoId);
+    }
 
-    const updated = (await (this.prisma as never as { funcionalidade: { update: Function } }).funcionalidade.update({
+    await (this.prisma as never as { funcionalidade: { update: Function } }).funcionalidade.update({
       where: { id: input.id },
       data: {
         ...(input.solucaoId !== undefined ? { solucaoId: input.solucaoId } : {}),
@@ -158,12 +188,16 @@ export class SolucaoCatalogService {
         ...(input.registryKey !== undefined ? { registryKey: input.registryKey?.trim() || null } : {}),
         ...(input.providerKey !== undefined ? { providerKey: input.providerKey?.trim() || null } : {}),
         ...(input.providerVersion !== undefined ? { providerVersion: input.providerVersion } : {}),
-        ...(input.somenteAdminSistema !== undefined ? { somenteAdminSistema: input.somenteAdminSistema } : {})
+        ...(input.somenteAdminSistema !== undefined ? { somenteAdminSistema: input.somenteAdminSistema } : {}),
+        ...(alteraAssociacao ? associacao : {})
       }
-    })) as FuncionalidadeRecord;
+    });
 
     if (input.acoes !== undefined) {
       await this.funcionalidadeAcaoService.syncFuncionalidadeAcoes(input.id, input.acoes, { includeDefaultActions: false });
+    }
+    if (alteraAssociacao) {
+      await this.agrupamentos.registrarAssociacao(input.id, associacaoAtual, associacao, authorId);
     }
 
     return toFuncionalidadeType(await this.findFuncionalidadeRecord(input.id));
@@ -181,6 +215,30 @@ export class SolucaoCatalogService {
 
     await (this.prisma as never as { funcionalidade: { delete: Function } }).funcionalidade.delete({ where: { id } });
     return true;
+  }
+
+  /** Ordem e agrupamento organizam a navegação e podem mudar sem um novo rascunho versionado. */
+  private async updateOrganizacao(
+    existing: FuncionalidadeRecord,
+    input: UpdateFuncionalidadeInput,
+    associacao: AssociacaoAgrupamento,
+    authorId?: string
+  ): Promise<void> {
+    const alteraAssociacao = alteraAssociacaoAgrupamento(input);
+    if (alteraAssociacao) {
+      await this.agrupamentos.assertAssociacaoValida(existing.solucaoId, associacao.agrupamentoId);
+    }
+
+    const data = {
+      ...(input.ordem != null ? { ordem: input.ordem } : {}),
+      ...(alteraAssociacao ? associacao : {})
+    };
+    if (!Object.keys(data).length) return;
+
+    await (this.prisma as never as { funcionalidade: { update: Function } }).funcionalidade.update({ where: { id: existing.id }, data });
+    if (alteraAssociacao) {
+      await this.agrupamentos.registrarAssociacao(existing.id, associacaoDe(existing), associacao, authorId);
+    }
   }
 
   private async ensureSolucao(id: number): Promise<SolucaoRecord> {

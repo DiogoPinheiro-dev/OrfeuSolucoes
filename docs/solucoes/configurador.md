@@ -61,9 +61,21 @@ Uma funcionalidade pertence a uma solução e define slug, título, rótulo, des
 
 O `RegistryKey` preserva a identidade técnica usada por rotas e documentação. A implementação executável é selecionada exclusivamente pelo `providerKey` versionado no manifesto frontend. Uma funcionalidade sem provider conhecido ou com versão incompatível não pode ser publicada; se um contrato inconsistente chegar defensivamente ao navegador, nenhuma tela alternativa é executada. O catálogo atual usa providers desenvolvidos em código; não existe construtor no-code nem renderer declarativo.
 
-Funcionalidades marcadas como padrão do sistema são protegidas contra alteração cadastral e exclusão; somente sua ordem pode ser alterada. Elas continuam visíveis para consulta, mas não podem ser marcadas nos checkboxes de exclusão. Funcionalidades personalizadas seguem as permissões recebidas para inclusão, alteração e exclusão.
+Funcionalidades marcadas como padrão do sistema são protegidas contra alteração cadastral e exclusão; somente sua ordem e seu agrupamento podem ser alterados. Elas continuam visíveis para consulta, mas não podem ser marcadas nos checkboxes de exclusão. Funcionalidades personalizadas seguem as permissões recebidas para inclusão, alteração e exclusão.
 
 As consultas e mutações de soluções reutilizam o mesmo fragmento GraphQL completo. Assim, uma atualização cadastral não substitui no cache as funcionalidades e ações já carregadas por objetos parciais.
+
+## Agrupamentos de funcionalidades
+
+Um agrupamento reúne funcionalidades complementares da mesma solução para que sejam apresentadas como abas de uma única tela. Ele possui identificador, título, rótulo, descrição, ordem e estado ativo. O identificador compartilha o espaço de rotas da solução: uma funcionalidade e um agrupamento não podem usar o mesmo valor, e o identificador não muda depois da criação.
+
+O agrupamento é apenas navegação. Cada funcionalidade associada mantém slug, rota, provider, documentação, ações e permissões próprios, e o backend continua autorizando cada operação pela funcionalidade correspondente. A navegação do Hub devolve somente agrupamentos ativos com ao menos uma funcionalidade visível ao usuário; funcionalidades sem permissão não aparecem como abas, e uma funcionalidade cujo agrupamento esteja oculto é apresentada isoladamente.
+
+Os agrupamentos são mantidos na grade **Agrupamentos** da tela **Cadastro de funcionalidades**. No cadastro de cada funcionalidade, os campos **Agrupamento** e **Ordem no agrupamento** definem a aba em que ela aparece e sua posição entre as demais abas. No Hub, o agrupamento ocupa um único item do workspace e do menu; cada aba mantém a rota da própria funcionalidade, e o endereço do agrupamento abre a primeira aba autorizada. Quando o usuário tem acesso a apenas uma funcionalidade do agrupamento, ela é apresentada isoladamente, sem barra de abas.
+
+A associação e a ordem dentro do agrupamento organizam a navegação e podem ser alteradas diretamente, inclusive em funcionalidades publicadas ou padrão do sistema, sem um novo rascunho versionado. O banco impede associar uma funcionalidade ao agrupamento de outra solução. Criação, alteração e exclusão de agrupamentos, assim como mudanças de associação, são registradas na auditoria do catálogo. Um agrupamento customizado só pode ser excluído depois de retiradas as suas funcionalidades.
+
+O produto fornece estes agrupamentos padrão: **Usuários e acessos** e **Catálogo do Hub**, no Configurador; **Indicadores do atendimento** e **Configurações do atendimento**, no Controle de Chamados; **Execução do projeto** e **Recursos e equipes**, no Gerenciador de Projetos. A inicialização do backend cria cada agrupamento padrão uma única vez e associa somente as funcionalidades da definição que ainda não pertencem a outro agrupamento; em uma base existente, as associações feitas pelo administrador são preservadas. Depois de criado, o agrupamento padrão nunca é regravado: título, rótulo, descrição, ordem, estado e composição podem ser personalizados. Ele não pode ser excluído; para apresentar suas funcionalidades separadamente, desative-o.
 
 ## Composição do acesso ao Hub
 

@@ -213,7 +213,7 @@ export default function CompanyManagement({ permissions }) {
             setSelectedIds([]);
             await loadEmpresas();
         } catch (deleteError) {
-            setError(deleteError.message || "Não foi possível deletar a empresa.");
+            setError(deleteError.message || "Não foi possível excluir a empresa.");
         } finally {
             setGridBusy(false);
         }
@@ -410,7 +410,9 @@ export default function CompanyManagement({ permissions }) {
             <ConfirmDialog
                 open={!!pendingDelete}
                 title="Confirmar exclusão"
-                message={`Tem certeza que deseja deletar a ${pendingDelete?.label || "empresa selecionada"}?`}
+                message={`Tem certeza de que deseja excluir ${pendingDelete?.label || "a empresa selecionada"}?`}
+                confirmLabel="Excluir"
+                variant="destructive"
                 onCancel={() => setPendingDelete(null)}
                 onConfirm={confirmDelete}
                 loading={false}

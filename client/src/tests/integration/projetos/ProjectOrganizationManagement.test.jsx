@@ -15,7 +15,15 @@ vi.mock("../../../../services/Projetos/OrganizacaoProjetoService", () => ({ excl
 const developer = { id: "00000000-0000-4000-8000-000000000001", nome: "Desenvolvedora", email: "dev@orfeu.local" };
 const resource = { id: "00000000-0000-4000-8000-000000000002", usuarioId: developer.id, usuario: developer, ativo: true, versao: 1, capacitacao: { id: "00000000-0000-4000-8000-000000000003", nome: "Desenvolvedor pleno", nivelHierarquico: 2, ativo: true, versao: 1 } };
 const project = { id: "00000000-0000-4000-8000-000000000004", chave: "ORF", nome: "Orfeu", arquivadoEm: null };
-const panel = { candidatos: [developer], recursos: [resource], capacitacoes: [resource.capacitacao], equipes: [], projetos: [project], permissoes: { podeIncluir: true, podeAlterar: true, podeExcluir: true } };
+const panel = {
+  candidatos: [developer],
+  recursos: [resource],
+  capacitacoes: [resource.capacitacao],
+  equipes: [],
+  projetos: [project],
+  permissoes: { podeIncluir: true, podeAlterar: true, podeExcluir: true },
+  permissoesEquipes: { podeIncluir: true, podeAlterar: true, podeExcluir: true }
+};
 
 beforeEach(() => {
   getProjetoOrganizacao.mockResolvedValue(panel);
@@ -68,5 +76,13 @@ describe("Organização de recursos e equipes", () => {
     await user.click(within(dialog).getByRole("checkbox", { name: /ORF/ }));
     await user.click(within(dialog).getByRole("button", { name: "Salvar" }));
     await waitFor(() => expect(salvarEquipe).toHaveBeenCalledWith(expect.objectContaining({ nome: "Produto", recursoIds: [resource.id], projetoIds: [project.id] })));
+  });
+
+  it("aplica em Equipes somente as permissões da própria funcionalidade", async () => {
+    getProjetoOrganizacao.mockResolvedValue({ ...panel, permissoesEquipes: { podeIncluir: false, podeAlterar: false, podeExcluir: false } });
+    render(<ProjectTeamManagement />);
+    await screen.findByRole("heading", { name: "Cadastro de equipes" });
+
+    expect(screen.getByRole("button", { name: /^Incluir\. Indisponível/ })).toBeDisabled();
   });
 });

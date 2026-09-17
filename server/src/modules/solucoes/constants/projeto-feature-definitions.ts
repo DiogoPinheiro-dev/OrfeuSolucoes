@@ -9,6 +9,8 @@ export type ProjetoFeatureDefinition = {
   registryKey: string;
   ativo: boolean;
   acoes?: FuncionalidadeAcaoInput[];
+  /** Na criação, copia o acesso de outra funcionalidade da solução em vez de conceder o acesso padrão. */
+  copiarAcessoDe?: string;
 };
 
 const action = (
@@ -107,12 +109,22 @@ export const PROJETO_FEATURE_DEFINITIONS: ProjetoFeatureDefinition[] = [
   },
   {
     slug: 'planejamento-de-recursos',
-    titulo: 'Recursos, equipes e planejamento',
-    label: 'Recursos e equipes',
-    descricao: 'Gerencie recursos, equipes e a atribuição dos itens do backlog.',
+    titulo: 'Cadastro de recursos',
+    label: 'Recursos',
+    descricao: 'Cadastre os recursos da empresa e a grade de capacitações usada no planejamento dos projetos.',
     ordem: 70,
     registryKey: 'projetos.planejamento-de-recursos',
     ativo: true
+  },
+  {
+    slug: 'equipes',
+    titulo: 'Cadastro de equipes',
+    label: 'Equipes',
+    descricao: 'Organize os recursos em equipes e vincule as equipes aos projetos atendidos.',
+    ordem: 75,
+    registryKey: 'projetos.equipes',
+    ativo: true,
+    copiarAcessoDe: 'planejamento-de-recursos'
   },
   {
     slug: 'orcamento-do-projeto',

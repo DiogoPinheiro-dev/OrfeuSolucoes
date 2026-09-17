@@ -4,12 +4,16 @@ import { ProjetoCustoTipo, ProjetoOrcamentoStatus } from './types/projeto-orcame
 import { ProjetoSituacao } from './types/projeto.types';
 
 const user = { sub: 'admin' } as never;
-const contexto = { empresaId: 7, projeto: { id: 'p1' } };
+const contexto = { empresaId: 7, projeto: { id: 'p1', situacao: ProjetoSituacao.EM_ORCAMENTO } };
 const financeiro = { id: 'o1', projetoId: 'p1', status: ProjetoOrcamentoStatus.RASCUNHO, moeda: 'BRL', categorias: [], custos: [] };
 
 const createService = () => {
   const prisma: any = {
-    projeto: { findMany: jest.fn() },
+    projeto: {
+      findMany: jest.fn(),
+      findFirst: jest.fn().mockResolvedValue({ situacao: ProjetoSituacao.EM_ORCAMENTO }),
+      updateMany: jest.fn().mockResolvedValue({ count: 1 })
+    },
     projetoRecurso: { findMany: jest.fn(), findFirst: jest.fn() },
     projetoItem: { findMany: jest.fn(), findFirst: jest.fn() },
     projetoOrcamento: { findUnique: jest.fn(), findFirst: jest.fn(), create: jest.fn(), updateMany: jest.fn() },
@@ -149,6 +153,17 @@ describe('ProjetoOrcamentoService', () => {
     approval.prisma.projetoOrcamento.findUnique.mockResolvedValueOnce({ ...financeiro, status: ProjetoOrcamentoStatus.APROVADO }).mockResolvedValueOnce({ ...financeiro, status: ProjetoOrcamentoStatus.APROVADO });
     await expect(approval.service.aprovar({ projetoId: 'p1', id: 'o1', versao: 1 } as never, user)).resolves.toMatchObject({ status: ProjetoOrcamentoStatus.APROVADO });
     expect(approval.auditoria.registrar).toHaveBeenCalledWith(approval.prisma, expect.objectContaining({ evento: 'APROVADO' }));
+    expect(approval.prisma.projeto.updateMany).toHaveBeenCalledWith({
+      where: { id: 'p1', empresaId: 7, situacao: ProjetoSituacao.EM_ORCAMENTO, arquivadoEm: null },
+      data: { situacao: ProjetoSituacao.RASCUNHO }
+    });
+    expect(approval.prisma.projetoOrcamento.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 'o1', versao: 1, projetoId: 'p1', status: ProjetoOrcamentoStatus.RASCUNHO }
+    }));
+    expect(approval.auditoria.registrar).toHaveBeenCalledWith(approval.prisma, expect.objectContaining({
+      entidade: 'PROJETO', evento: 'CICLO_ALTERADO',
+      dados: { situacaoAnterior: ProjetoSituacao.EM_ORCAMENTO, situacao: ProjetoSituacao.RASCUNHO, orcamentoId: 'o1' }
+    }));
 
     const deletion = createService();
     deletion.prisma.projetoOrcamento.findUnique.mockResolvedValue(financeiro);
@@ -173,5 +188,39 @@ describe('ProjetoOrcamentoService', () => {
     valid.prisma.projetoOrcamento.findUnique.mockResolvedValueOnce({ ...financeiro, status: ProjetoOrcamentoStatus.RASCUNHO }).mockResolvedValueOnce(financeiro);
     await expect(valid.service.reabrir({ projetoId: 'p1', id: 'o1', versao: 1 } as never, user)).resolves.toMatchObject({ totalPlanejado: '0.00' });
     expect(valid.auditoria.registrar).toHaveBeenCalledWith(valid.prisma, expect.objectContaining({ evento: 'REABERTO', dados: { statusAnterior: ProjetoOrcamentoStatus.APROVADO } }));
+    expect(valid.prisma.projeto.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('preserva o ciclo de projetos existentes fora de orçamento ao aprovar novamente', async () => {
+    const { prisma, authorization, service } = createService();
+    authorization.contexto.mockResolvedValue({ ...contexto, projeto: { id: 'p1', situacao: ProjetoSituacao.EM_ANDAMENTO } });
+    prisma.projeto.findFirst.mockResolvedValue({ situacao: ProjetoSituacao.EM_ANDAMENTO });
+    prisma.projetoOrcamento.updateMany.mockResolvedValue({ count: 1 });
+    prisma.projetoOrcamento.findUnique.mockResolvedValue({ ...financeiro, status: ProjetoOrcamentoStatus.APROVADO });
+    await service.aprovar({ projetoId: 'p1', id: 'o1', versao: 1 } as never, user);
+    expect(prisma.projeto.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('rejeita aprovação quando o projeto muda de ciclo durante a transação', async () => {
+    const { prisma, auditoria, service } = createService();
+    prisma.projetoOrcamento.updateMany.mockResolvedValue({ count: 1 });
+    prisma.projetoOrcamento.findUnique.mockResolvedValue(financeiro);
+    prisma.projeto.updateMany.mockResolvedValue({ count: 0 });
+    await expect(service.aprovar({ projetoId: 'p1', id: 'o1', versao: 1 } as never, user)).rejects.toBeInstanceOf(ConflictException);
+    expect(auditoria.registrar).not.toHaveBeenCalled();
+  });
+
+  it('não aprova um projeto arquivado após a autorização', async () => {
+    const { prisma, service } = createService();
+    prisma.projeto.findFirst.mockResolvedValue(null);
+    await expect(service.aprovar({ projetoId: 'p1', id: 'o1', versao: 1 } as never, user)).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.projetoOrcamento.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('rejeita aprovação se o projeto foi cancelado após a autorização', async () => {
+    const { prisma, service } = createService();
+    prisma.projeto.findFirst.mockResolvedValue({ situacao: ProjetoSituacao.CANCELADO });
+    await expect(service.aprovar({ projetoId: 'p1', id: 'o1', versao: 1 } as never, user)).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.projetoOrcamento.updateMany).not.toHaveBeenCalled();
   });
 });

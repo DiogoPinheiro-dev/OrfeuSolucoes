@@ -38,7 +38,7 @@ export class ProjetoCatalogService {
     const empresaId = await this.authorization.assertCreateAccess(user);
     const chave = normalizeProjetoKey(input.chave);
     const nome = normalizeRequiredName(input.nome);
-    const situacao = input.situacao ?? ProjetoSituacao.RASCUNHO;
+    const situacao = input.situacao ?? ProjetoSituacao.EM_ORCAMENTO;
     const saude = input.saude ?? ProjetoSaude.EM_DIA;
     validateProjetoDefaults(input.metodologia, situacao, saude);
     const inicioPrevistoEm = normalizeCalendarDate(input.inicioPrevistoEm);

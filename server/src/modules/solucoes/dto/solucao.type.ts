@@ -1,4 +1,5 @@
 import { Field, Int, ObjectType } from '@nestjs/graphql';
+import { FuncionalidadeAgrupamentoType } from './funcionalidade-agrupamento.type';
 import { FuncionalidadeType } from './funcionalidade.type';
 
 @ObjectType()
@@ -44,4 +45,7 @@ export class SolucaoType {
 
   @Field(() => [FuncionalidadeType])
   funcionalidades!: FuncionalidadeType[];
+
+  @Field(() => [FuncionalidadeAgrupamentoType])
+  agrupamentos!: FuncionalidadeAgrupamentoType[];
 }

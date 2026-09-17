@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { JwtPayload } from '../auth/strategies/jwt-payload.type';
 import { withAllPermissions, withPermissions } from './mappers/funcionalidade.mapper';
+import { restringirAgrupamentosVisiveis } from './policies/funcionalidade-agrupamento.policy';
 import { canAccessFeature, canAccessSolution, hasFullAccessGroup, isSystemAdmin } from './policies/solucao-access.policy';
 import { SolucaoAcessoService } from './solucao-acesso.service';
 import { SolucaoQueryService } from './solucao-query.service';
@@ -32,9 +33,8 @@ export class HubNavigationService {
         groupHasSolution: groupSolutionIds.has(solucao.id),
         companyHasSolution: companySolutionIds.has(solucao.id)
       }))
-      .map((solucao) => ({
-        ...solucao,
-        funcionalidades: solucao.funcionalidades
+      .map((solucao) => {
+        const funcionalidades = solucao.funcionalidades
           .filter((funcionalidade) => funcionalidade.statusPublicacao === 'PUBLICADA' && funcionalidade.ativo)
           .filter((funcionalidade) => canAccessFeature({
             systemAdminOnly: solucao.somenteAdminSistema || funcionalidade.somenteAdminSistema,
@@ -53,8 +53,10 @@ export class HubNavigationService {
             }
 
             return withPermissions(publishedFeature, groupFeaturePermissions.get(funcionalidade.id));
-          })
-      }));
+          });
+
+        return { ...solucao, ...restringirAgrupamentosVisiveis(solucao.agrupamentos, funcionalidades) };
+      });
   }
 
   async resolveAvailableSolutionSlugs(user: { padraoSistema?: boolean | null; grupo?: { id?: number | null } | null }, empresaId?: number | null): Promise<string[]> {

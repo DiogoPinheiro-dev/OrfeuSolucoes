@@ -16,7 +16,8 @@ export class SolucaoQueryService {
             acoes: { orderBy: [{ ordem: 'asc' }, { nome: 'asc' }] }
           },
           orderBy: [{ ordem: 'asc' }, { titulo: 'asc' }]
-        }
+        },
+        agrupamentos: { orderBy: [{ ordem: 'asc' }, { titulo: 'asc' }] }
       },
       orderBy: [{ ordem: 'asc' }, { nome: 'asc' }]
     })) as SolucaoRecord[];
