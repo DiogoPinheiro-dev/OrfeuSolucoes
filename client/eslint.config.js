@@ -10,9 +10,11 @@ export default defineConfig([
     files: ['**/*.{js,jsx}'],
     extends: [
       js.configs.recommended,
-      reactHooks.configs['recommended-latest'],
       reactRefresh.configs.vite,
     ],
+    plugins: {
+      'react-hooks': reactHooks,
+    },
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
@@ -23,7 +25,17 @@ export default defineConfig([
       },
     },
     rules: {
+      // React Compiler rules require a dedicated code migration beyond this tooling update.
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+    },
+  },
+  {
+    files: ['src/main.jsx'],
+    rules: {
+      // The application bootstrap owns lazy route components and intentionally exports nothing.
+      'react-refresh/only-export-components': 'off',
     },
   },
   {
