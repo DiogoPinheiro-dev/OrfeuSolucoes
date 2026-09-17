@@ -116,7 +116,7 @@ describe("cache e contagem de soluções no navegador", () => {
     cy.contains("button", "Salvar").click();
 
     cy.wait("@UpdateSolucao");
-    cy.get(".crud-table-wrap").scrollTo("right");
+    cy.get(".crud-table-wrap").scrollTo("right", { ensureScrollable: false });
     cy.contains("td", "1 ativa / 2 cadastradas").should("be.visible");
     cy.wrap(cacheWarnings).should("deep.equal", []);
     cy.screenshot("fase-4-contagem-funcionalidades");

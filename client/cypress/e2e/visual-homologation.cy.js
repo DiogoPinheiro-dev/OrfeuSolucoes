@@ -287,6 +287,7 @@ describe("navegação e layout com dados simulados", () => {
       }, (operacao) => operacoes.push(operacao));
       cy.contains(funcionalidade === recursos ? "Nenhum recurso cadastrado." : "Nenhuma equipe cadastrada.").should("be.visible");
       cy.get('[role="tablist"]').should("not.exist");
+      cy.wait("@ProjetoOrganizacao").its("response.statusCode").should("equal", 200);
       cy.then(() => { operacoes.length = 0; });
       cy.visit(`/hub/projetos/${funcionalidade === recursos ? equipes.slug : recursos.slug}`);
       cy.location("pathname").should("equal", "/hub/projetos");
