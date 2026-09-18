@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import type { Request, Response } from 'express';
-import * as request from 'supertest';
+import request from 'supertest';
 import { createFormValidationException } from '../src/common/exceptions/form-field.exception';
 import { HealthResolver } from '../src/health.resolver';
 import { GqlAuthGuard } from '../src/modules/auth/guards/gql-auth.guard';

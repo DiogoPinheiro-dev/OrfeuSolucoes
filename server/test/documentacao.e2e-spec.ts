@@ -6,7 +6,7 @@ import { PassportModule, PassportStrategy } from '@nestjs/passport';
 import { Test, TestingModule } from '@nestjs/testing';
 import type { Request, Response } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import * as request from 'supertest';
+import request from 'supertest';
 import { GqlAuthGuard } from '../src/modules/auth/guards/gql-auth.guard';
 import { DocumentacaoResolver } from '../src/modules/documentacao/documentacao.resolver';
 import { DocumentacaoService } from '../src/modules/documentacao/documentacao.service';
