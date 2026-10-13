@@ -11,11 +11,12 @@ describe('ProjetosService', () => {
   const catalog = dependency(); const equipe = dependency(); const lifecycle = dependency(); const key = dependency();
   const query = dependency(); const itemCatalog = dependency(); const itemQuery = dependency(); const backlog = dependency();
   const sprint = dependency(); const compromissos = dependency(); const cronograma = dependency(); const comunicacao = dependency();
-  const recurso = dependency(); const orcamento = dependency();
+  const recurso = dependency(); const orcamento = dependency(); const apontamento = dependency(); const apontamentoQuery = dependency();
   const service = new ProjetosService(
     authorization as never, catalog as never, equipe as never, lifecycle as never, key as never,
     query as never, itemCatalog as never, itemQuery as never, backlog as never, sprint as never,
-    compromissos as never, cronograma as never, comunicacao as never, recurso as never, orcamento as never
+    compromissos as never, cronograma as never, comunicacao as never, recurso as never, orcamento as never,
+    apontamento as never, apontamentoQuery as never
   );
 
   beforeEach(() => jest.clearAllMocks());
@@ -37,14 +38,17 @@ describe('ProjetosService', () => {
     ['excluirRecurso', recurso, 'excluirRecurso'], ['salvarOrcamento', orcamento, 'salvarOrcamento'],
     ['salvarOrcamentoCategoria', orcamento, 'salvarCategoria'], ['salvarCusto', orcamento, 'salvarCusto'],
     ['excluirOrcamentoCategoria', orcamento, 'excluirCategoria'], ['excluirCusto', orcamento, 'excluirCusto'],
-    ['aprovarOrcamento', orcamento, 'aprovar'], ['reabrirOrcamento', orcamento, 'reabrir']
+    ['aprovarOrcamento', orcamento, 'aprovar'], ['reabrirOrcamento', orcamento, 'reabrir'],
+    ['salvarApontamento', apontamento, 'salvar'], ['excluirApontamento', apontamento, 'excluir'],
+    ['descartarApontamento', apontamento, 'descartar'], ['enviarApontamentos', apontamento, 'enviar'],
+    ['recolherApontamento', apontamento, 'recolher']
   ] as const)('mantém a delegação de %s', (method, target, targetMethod) => {
     expect((service[method] as never as (value: never, actor: never) => unknown)(input, user)).toBe(result);
     expect(target[targetMethod]).toHaveBeenCalledWith(input, user);
   });
 
   it.each([
-    ['projetos', query, 'findPage'], ['itens', itemQuery, 'findPage']
+    ['projetos', query, 'findPage'], ['itens', itemQuery, 'findPage'], ['meusApontamentos', apontamentoQuery, 'meus']
   ] as const)('encaminha filtro e usuário em %s', (method, target, targetMethod) => {
     expect((service[method] as never as (actor: never, filter: never) => unknown)(user, input)).toBe(result);
     expect(target[targetMethod]).toHaveBeenCalledWith(user, input);
@@ -52,7 +56,8 @@ describe('ProjetosService', () => {
 
   it.each([
     ['participantesDisponiveis', query, 'participantesDisponiveis'], ['comunicacaoProjetos', comunicacao, 'projetos'],
-    ['recursosProjetos', recurso, 'projetos'], ['recursos', recurso, 'painel'], ['orcamentoProjetos', orcamento, 'projetos']
+    ['recursosProjetos', recurso, 'projetos'], ['recursos', recurso, 'painel'], ['orcamentoProjetos', orcamento, 'projetos'],
+    ['apontamentoProjetos', apontamentoQuery, 'projetos']
   ] as const)('encaminha o usuário em %s', (method, target, targetMethod) => {
     expect((service[method] as never as (actor: never) => unknown)(user)).toBe(result);
     expect(target[targetMethod]).toHaveBeenCalledWith(user);
@@ -75,5 +80,6 @@ describe('ProjetosService', () => {
     expect(service.archiveDependencia(input, user, true)).toBe(result); expect(cronograma.archiveDependencia).toHaveBeenCalledWith(input, user, true);
     expect(service.comunicacao('p1', user, input)).toBe(result); expect(comunicacao.painel).toHaveBeenCalledWith('p1', user, input);
     expect(service.orcamento('p1', user)).toBe(result); expect(orcamento.painel).toHaveBeenCalledWith('p1', user);
+    expect(service.apontamentoItens('p1', user)).toBe(result); expect(apontamentoQuery.itens).toHaveBeenCalledWith('p1', user);
   });
 });

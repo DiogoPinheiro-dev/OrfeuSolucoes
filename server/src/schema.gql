@@ -712,6 +712,10 @@ type EmpresaType {
   solucaoSlugs: [String!]!
 }
 
+input EnviarProjetoApontamentosInput {
+  apontamentos: [VersionarProjetoApontamentoInput!]!
+}
+
 type EquipeType {
   ativo: Boolean!
   descricao: String
@@ -883,6 +887,38 @@ input LoginInput {
   senha: String!
 }
 
+input MeusProjetoApontamentosFiltroInput {
+  """Último dia do período, no formato YYYY-MM-DD."""
+  fim: String!
+
+  """Primeiro dia do período, no formato YYYY-MM-DD."""
+  inicio: String!
+  limite: Int = 20
+  pagina: Int = 1
+  projetoId: String
+  status: ProjetoApontamentoStatus
+}
+
+type MeusProjetoApontamentosPageType {
+  items: [ProjetoApontamentoType!]!
+  limite: Int!
+  pagina: Int!
+  permissoes: ProjetoApontamentoPermissoesType!
+
+  """
+  Minutos por dia no período, em todos os projetos, para acompanhar o limite de 24 horas.
+  """
+  totaisPorDia: [ProjetoApontamentoTotalDiaType!]!
+
+  """Minutos por projeto no período."""
+  totaisPorProjeto: [ProjetoApontamentoTotalProjetoType!]!
+  total: Int!
+
+  """Minutos lançados no período, em todos os projetos e situações."""
+  totalMinutos: Int!
+  totalPaginas: Int!
+}
+
 input MoverProjetoItemBacklogInput {
   backlogVersao: Int!
   direcao: ProjetoBacklogDirecao!
@@ -947,12 +983,15 @@ type Mutation {
   deleteServico(id: Int!): Boolean!
   deleteSolucao(id: Int!): Boolean!
   deleteUser(id: String!): Boolean!
+  descartarProjetoApontamento(input: VersionarProjetoApontamentoInput!): Boolean!
   despublicarAcao(acaoId: Int!, motivo: String!): Boolean!
   despublicarFuncionalidade(funcionalidadeId: Int!, motivo: String!): Boolean!
   despublicarSolucao(motivo: String!, solucaoId: Int!): Boolean!
   encerrarChamado(id: String!, observacao: String): ChamadoType!
+  enviarProjetoApontamentos(input: EnviarProjetoApontamentosInput!): [ProjetoApontamentoType!]!
   excluirCapacitacao(input: ExcluirCapacitacaoInput!): Boolean!
   excluirEquipe(input: ExcluirEquipeInput!): Boolean!
+  excluirProjetoApontamento(input: VersionarProjetoApontamentoInput!): Boolean!
   excluirProjetoComentario(input: ExcluirProjetoComentarioInput!): ProjetoComentarioType!
   excluirProjetoCusto(input: ExcluirProjetoOrcamentoItemInput!): Boolean!
   excluirProjetoOrcamentoCategoria(input: ExcluirProjetoOrcamentoItemInput!): Boolean!
@@ -975,6 +1014,7 @@ type Mutation {
   reativarProjetoItem(input: VersionarProjetoItemInput!): ProjetoItemType!
   reativarProjetoItemDependencia(input: VersionarProjetoItemDependenciaInput!): ProjetoItemDependenciaType!
   reativarProjetoMarco(input: VersionarProjetoCompromissoInput!): ProjetoMarcoType!
+  recolherProjetoApontamento(input: VersionarProjetoApontamentoInput!): ProjetoApontamentoType!
   registerUser(input: RegisterUserInput!): UserType!
   removerItemProjetoSprint(input: AlterarEscopoProjetoSprintInput!): ProjetoSprintType!
   resolverChamado(id: String!, observacao: String): ChamadoType!
@@ -987,6 +1027,7 @@ type Mutation {
   restaurarVersaoSolucao(motivo: String!, versaoId: String!): CatalogoVersaoType!
   salvarCapacitacao(input: SalvarCapacitacaoInput!): CapacitacaoType!
   salvarEquipe(input: SalvarEquipeInput!): EquipeType!
+  salvarProjetoApontamento(input: SalvarProjetoApontamentoInput!): ProjetoApontamentoType!
   salvarProjetoCusto(input: SalvarProjetoCustoInput!): ProjetoCustoType!
   salvarProjetoOrcamento(input: SalvarProjetoOrcamentoInput!): ProjetoFinanceiroType!
   salvarProjetoOrcamentoCategoria(input: SalvarProjetoOrcamentoCategoriaInput!): ProjetoOrcamentoCategoriaType!
@@ -1038,6 +1079,85 @@ type ProjetoAnexoType {
   nomeOriginal: String!
   projetoId: String!
   tamanho: Int!
+}
+
+type ProjetoApontamentoAcoesType {
+  """
+  Por que o apontamento está somente para consulta, quando a causa não é a própria situação dele.
+  """
+  bloqueio: String
+  podeAlterar: Boolean!
+  podeDescartar: Boolean!
+  podeEnviar: Boolean!
+  podeExcluir: Boolean!
+  podeRecolher: Boolean!
+}
+
+type ProjetoApontamentoItemType {
+  chave: String!
+  id: String!
+  titulo: String!
+}
+
+type ProjetoApontamentoPermissoesType {
+  podeIncluir: Boolean!
+}
+
+type ProjetoApontamentoProjetoType {
+  arquivadoEm: DateTime
+  chave: String!
+  id: String!
+  nome: String!
+  situacao: ProjetoSituacao!
+}
+
+enum ProjetoApontamentoStatus {
+  APROVADO
+  ENVIADO
+  RASCUNHO
+  REJEITADO
+}
+
+type ProjetoApontamentoTotalDiaType {
+  """Dia, no formato YYYY-MM-DD."""
+  data: String!
+  minutos: Int!
+}
+
+type ProjetoApontamentoTotalProjetoType {
+  chave: String!
+  minutos: Int!
+  nome: String!
+  projetoId: String!
+}
+
+type ProjetoApontamentoType {
+  acoes: ProjetoApontamentoAcoesType!
+  atualizadoEm: DateTime!
+
+  """Mês de referência do apontamento, no formato YYYY-MM."""
+  competencia: String!
+  criadoEm: DateTime!
+
+  """Dia do trabalho, no formato YYYY-MM-DD."""
+  dataTrabalho: String!
+  decididoEm: DateTime
+  decididoPor: ProjetoUsuarioType
+  descricao: String!
+  enviadoEm: DateTime
+  faturavel: Boolean!
+  id: String!
+  item: ProjetoApontamentoItemType
+  itemId: String
+  minutos: Int!
+
+  """Último motivo de rejeição ou reabertura."""
+  motivo: String
+  projeto: ProjetoApontamentoProjetoType!
+  projetoId: String!
+  status: ProjetoApontamentoStatus!
+  usuarioId: String!
+  versao: Int!
 }
 
 type ProjetoAtualizacaoHistoricoType {
@@ -1800,12 +1920,15 @@ type Query {
   health: String!
   me: UserType!
   meusChamados(filtro: ChamadoFiltroInput): ChamadoPageType!
+  meusProjetoApontamentos(filtro: MeusProjetoApontamentosFiltroInput!): MeusProjetoApontamentosPageType!
   myHubNavigation: [SolucaoType!]!
   notificacoesChamado(limite: Int = 30): [ChamadoNotificacaoType!]!
   notificacoesChamadoNaoLidas: Int!
   opcoesAberturaChamado: ChamadoResponsavelOptionsType!
   prioridadesChamado(ativas: Boolean = true): [ChamadoPrioridadeType!]!
   projeto(id: String!): ProjetoType!
+  projetoApontamentoItens(projetoId: String!): [ProjetoApontamentoItemType!]!
+  projetoApontamentoProjetos: [ProjetoApontamentoProjetoType!]!
   projetoBacklogCandidatosPai(itemId: String, projetoId: String!): [ProjetoBacklogPaiCandidatoType!]!
   projetoBacklogProjetos(incluirArquivados: Boolean = false): [ProjetoBacklogProjetoType!]!
   projetoBacklogResponsaveis(projetoId: String!): [ProjetoUsuarioType!]!
@@ -1867,6 +1990,18 @@ input SalvarEquipeInput {
   nome: String!
   projetoIds: [String!]!
   recursoIds: [String!]!
+  versao: Int
+}
+
+input SalvarProjetoApontamentoInput {
+  """Dia do trabalho, no formato YYYY-MM-DD."""
+  data: String!
+  descricao: String!
+  faturavel: Boolean!
+  id: String
+  itemId: String
+  minutos: Int!
+  projetoId: String!
   versao: Int
 }
 
@@ -2228,6 +2363,11 @@ type UserType {
   podeExcluir: Boolean!
   podeIncluir: Boolean!
   podeVisualizar: Boolean!
+}
+
+input VersionarProjetoApontamentoInput {
+  id: String!
+  versao: Int!
 }
 
 input VersionarProjetoCompromissoInput {

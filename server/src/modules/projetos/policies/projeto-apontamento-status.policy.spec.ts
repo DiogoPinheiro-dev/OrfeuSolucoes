@@ -2,7 +2,10 @@ import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { ProjetoSituacao } from '../types/projeto.types';
 import { ProjetoApontamentoOperacao, ProjetoApontamentoStatus } from '../types/projeto-apontamento.types';
 import {
+  ProjetoApontamentoSituacaoDoAutor,
   ProjetoApontamentoTransicao,
+  permiteProjetoApontamentoTransicao,
+  resolveProjetoApontamentoAcoesDoAutor,
   resolveProjetoApontamentoTransicao
 } from './projeto-apontamento-status.policy';
 
@@ -18,6 +21,20 @@ const transicao = (dados: Partial<ProjetoApontamentoTransicao>): ProjetoApontame
   competenciaFechada: false,
   ...dados
 });
+
+const situacaoDoAutor = (dados: Partial<ProjetoApontamentoSituacaoDoAutor>): ProjetoApontamentoSituacaoDoAutor => ({
+  status: RASCUNHO,
+  competencia: '2026-10',
+  competenciaFechada: false,
+  situacaoProjeto: ProjetoSituacao.EM_ANDAMENTO,
+  projetoArquivado: false,
+  lancaNoProjeto: true,
+  podeAlterar: true,
+  podeExcluir: true,
+  ...dados
+});
+
+const nenhumaAcao = { podeAlterar: false, podeExcluir: false, podeDescartar: false, podeEnviar: false, podeRecolher: false };
 
 describe('ProjetoApontamentoStatusPolicy', () => {
   it('cria em rascunho e preserva rascunho ou rejeitado ao salvar', () => {
@@ -130,5 +147,64 @@ describe('ProjetoApontamentoStatusPolicy', () => {
         'O apontamento descartado está disponível somente para consulta.'
       );
     }
+  });
+
+  it('responde se a transicao e permitida sem lancar a recusa', () => {
+    expect(permiteProjetoApontamentoTransicao(transicao({ operacao: ENVIAR, status: RASCUNHO }))).toBe(true);
+    expect(permiteProjetoApontamentoTransicao(transicao({ operacao: ENVIAR, status: APROVADO }))).toBe(false);
+    expect(permiteProjetoApontamentoTransicao(transicao({ operacao: APROVAR, status: ENVIADO, atorEhAutor: true }))).toBe(false);
+  });
+
+  it.each([
+    [RASCUNHO, { podeAlterar: true, podeExcluir: true, podeEnviar: true }],
+    [REJEITADO, { podeAlterar: true, podeDescartar: true, podeEnviar: true }],
+    [ENVIADO, { podeRecolher: true }],
+    [APROVADO, {}]
+  ] as const)('oferece ao autor as acoes da tabela para um apontamento %s', (status, permitidas) => {
+    expect(resolveProjetoApontamentoAcoesDoAutor(situacaoDoAutor({ status }))).toEqual({
+      ...nenhumaAcao,
+      ...permitidas,
+      bloqueio: null
+    });
+  });
+
+  it('respeita as acoes alterar e excluir de Meus apontamentos', () => {
+    expect(resolveProjetoApontamentoAcoesDoAutor(situacaoDoAutor({ podeAlterar: false }))).toEqual({
+      ...nenhumaAcao,
+      podeExcluir: true,
+      bloqueio: null
+    });
+    expect(resolveProjetoApontamentoAcoesDoAutor(situacaoDoAutor({ status: REJEITADO, podeExcluir: false }))).toEqual({
+      ...nenhumaAcao,
+      podeAlterar: true,
+      podeEnviar: true,
+      bloqueio: null
+    });
+  });
+
+  it.each([
+    [{ projetoArquivado: true }, 'O projeto está arquivado, e o apontamento fica somente para consulta.'],
+    [{ lancaNoProjeto: false }, 'Você não participa mais deste projeto como responsável ou membro, e o apontamento fica somente para consulta.'],
+    [{ competenciaFechada: true }, 'A competência 10/2026 deste projeto está fechada.']
+  ] as const)('deixa o apontamento somente para consulta e explica o motivo', (dados, bloqueio) => {
+    expect(resolveProjetoApontamentoAcoesDoAutor(situacaoDoAutor({ status: REJEITADO, ...dados }))).toEqual({ ...nenhumaAcao, bloqueio });
+  });
+
+  it('fora dos ciclos elegiveis, ainda exclui rascunhos e descarta rejeitados e explica o congelamento', () => {
+    const congelamento = 'O projeto não está em Rascunho, Planejado ou Em andamento, então o apontamento não pode ser alterado, enviado nem recolhido.';
+    const situacaoProjeto = ProjetoSituacao.PAUSADO;
+
+    expect(resolveProjetoApontamentoAcoesDoAutor(situacaoDoAutor({ situacaoProjeto }))).toEqual({
+      ...nenhumaAcao, podeExcluir: true, bloqueio: congelamento
+    });
+    expect(resolveProjetoApontamentoAcoesDoAutor(situacaoDoAutor({ status: REJEITADO, situacaoProjeto }))).toEqual({
+      ...nenhumaAcao, podeDescartar: true, bloqueio: congelamento
+    });
+    expect(resolveProjetoApontamentoAcoesDoAutor(situacaoDoAutor({ status: ENVIADO, situacaoProjeto }))).toEqual({
+      ...nenhumaAcao, bloqueio: congelamento
+    });
+    expect(resolveProjetoApontamentoAcoesDoAutor(situacaoDoAutor({ status: APROVADO, situacaoProjeto }))).toEqual({
+      ...nenhumaAcao, bloqueio: null
+    });
   });
 });

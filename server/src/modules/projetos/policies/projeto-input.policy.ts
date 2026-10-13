@@ -65,6 +65,10 @@ export function normalizeCalendarDate(value?: string | null): Date | null {
   return date;
 }
 
+export function formatCalendarDate(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
 export function validatePlannedDates(inicio?: Date | null, fim?: Date | null): void {
   if (inicio && fim && inicio > fim) {
     throw new BadRequestException('A data prevista de inicio nao pode ser posterior a data prevista de termino.');

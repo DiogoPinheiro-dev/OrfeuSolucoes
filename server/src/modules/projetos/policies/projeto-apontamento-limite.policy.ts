@@ -2,6 +2,8 @@ import { BadRequestException } from '@nestjs/common';
 
 export const PROJETO_APONTAMENTO_MINUTOS_POR_DIA = 1440;
 
+export const PROJETO_APONTAMENTO_DESCRICAO_MAXIMA = 1000;
+
 export type ProjetoApontamentoDoDia = {
   id: string;
   minutos: number;
@@ -14,6 +16,20 @@ export function assertMinutosApontamento(minutos: number): number {
   }
 
   return minutos;
+}
+
+export function normalizeDescricaoApontamento(descricao: string): string {
+  const normalizada = (descricao ?? '').trim();
+
+  if (!normalizada) {
+    throw new BadRequestException('Informe a descrição do apontamento.');
+  }
+
+  if (normalizada.length > PROJETO_APONTAMENTO_DESCRICAO_MAXIMA) {
+    throw new BadRequestException('A descrição do apontamento pode ter até 1.000 caracteres.');
+  }
+
+  return normalizada;
 }
 
 /**

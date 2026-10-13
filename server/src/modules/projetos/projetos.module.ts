@@ -17,6 +17,11 @@ import { ProjetoComunicacaoController } from './projeto-comunicacao.controller';
 import { ProjetoComunicacaoResolver } from './projeto-comunicacao.resolver';
 import { ProjetoComunicacaoService } from './projeto-comunicacao.service';
 import { ProjetoFeedRegistroService } from './projeto-feed-registro.service';
+import { ProjetoApontamentoAuthorizationService } from './projeto-apontamento-authorization.service';
+import { ProjetoApontamentoPeriodoService } from './projeto-apontamento-periodo.service';
+import { ProjetoApontamentoQueryService } from './projeto-apontamento-query.service';
+import { ProjetoApontamentoResolver } from './projeto-apontamento.resolver';
+import { ProjetoApontamentoService } from './projeto-apontamento.service';
 import { ProjetoOrcamentoAuthorizationService } from './projeto-orcamento-authorization.service';
 import { ProjetoOrcamentoResolver } from './projeto-orcamento.resolver';
 import { ProjetoOrcamentoService } from './projeto-orcamento.service';
@@ -66,6 +71,10 @@ import { ProjetoRecursoHierarquiaService } from './projeto-recurso-hierarquia.se
     ProjetoRecursoHierarquiaService,
     ProjetoOrcamentoAuthorizationService,
     ProjetoOrcamentoService,
+    ProjetoApontamentoAuthorizationService,
+    ProjetoApontamentoPeriodoService,
+    ProjetoApontamentoQueryService,
+    ProjetoApontamentoService,
     ProjetoAnexoStorageService,
     ProjetoAuditoriaService,
     ProjetoIdempotenciaService,
@@ -88,6 +97,7 @@ import { ProjetoRecursoHierarquiaService } from './projeto-recurso-hierarquia.se
     ProjetoComunicacaoResolver,
     ProjetoRecursoResolver,
     ProjetoOrcamentoResolver,
+    ProjetoApontamentoResolver,
     ProjetoOrganizacaoResolver,
   ],
   exports: [
@@ -101,6 +111,9 @@ import { ProjetoRecursoHierarquiaService } from './projeto-recurso-hierarquia.se
     ProjetoRecursoService,
     ProjetoOrcamentoAuthorizationService,
     ProjetoOrcamentoService,
+    ProjetoApontamentoAuthorizationService,
+    ProjetoApontamentoQueryService,
+    ProjetoApontamentoService,
     ProjetoAuditoriaService,
     ProjetoCatalogService,
     ProjetoEquipeService,

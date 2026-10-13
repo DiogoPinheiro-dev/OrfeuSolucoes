@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PROJETOS_TIMEZONE_PADRAO } from './constants/projeto-operacional.constants';
-import { normalizeCalendarDate } from './policies/projeto-input.policy';
+import { formatCalendarDate, normalizeCalendarDate } from './policies/projeto-input.policy';
 
 export const PROJETO_PAGINACAO = {
   paginaInicial: 1,
@@ -91,7 +91,7 @@ export class ProjetoPeriodoService {
   }
 
   competenciaDaData(data: Date): string {
-    return data.toISOString().slice(0, 7);
+    return formatCalendarDate(data).slice(0, 7);
   }
 }
 

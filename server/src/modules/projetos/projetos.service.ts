@@ -72,6 +72,14 @@ import { ProjetoAtualizacaoType, ProjetoComentarioType, ProjetoComunicacaoPainel
 import { ProjetoComunicacaoService } from './projeto-comunicacao.service';
 import { AprovarProjetoOrcamentoInput, ExcluirProjetoOrcamentoItemInput, SalvarProjetoCustoInput, SalvarProjetoOrcamentoCategoriaInput, SalvarProjetoOrcamentoInput } from './dto/projeto-orcamento.input';
 import { ExcluirProjetoRecursoInput, SalvarProjetoRecursoInput } from './dto/projeto-recurso.input';
+import {
+  EnviarProjetoApontamentosInput,
+  MeusProjetoApontamentosFiltroInput,
+  SalvarProjetoApontamentoInput,
+  VersionarProjetoApontamentoInput
+} from './dto/projeto-apontamento.input';
+import { ProjetoApontamentoQueryService } from './projeto-apontamento-query.service';
+import { ProjetoApontamentoService } from './projeto-apontamento.service';
 import { ProjetoOrcamentoService } from './projeto-orcamento.service';
 import { ProjetoRecursoService } from './projeto-recurso.service';
 
@@ -92,7 +100,9 @@ export class ProjetosService {
     private readonly cronogramaService: ProjetoCronogramaService,
     private readonly comunicacaoService: ProjetoComunicacaoService,
     private readonly recursoService: ProjetoRecursoService,
-    private readonly orcamentoService: ProjetoOrcamentoService
+    private readonly orcamentoService: ProjetoOrcamentoService,
+    private readonly apontamentoService: ProjetoApontamentoService,
+    private readonly apontamentoQueryService: ProjetoApontamentoQueryService
   ) {}
 
   create(input: CreateProjetoInput, user: JwtPayload): Promise<ProjetoType> {
@@ -366,4 +376,12 @@ export class ProjetosService {
   excluirCusto(input: ExcluirProjetoOrcamentoItemInput, user: JwtPayload) { return this.orcamentoService.excluirCusto(input, user); }
   aprovarOrcamento(input: AprovarProjetoOrcamentoInput, user: JwtPayload) { return this.orcamentoService.aprovar(input, user); }
   reabrirOrcamento(input: AprovarProjetoOrcamentoInput, user: JwtPayload) { return this.orcamentoService.reabrir(input, user); }
+  apontamentoProjetos(user: JwtPayload) { return this.apontamentoQueryService.projetos(user); }
+  apontamentoItens(projetoId: string, user: JwtPayload) { return this.apontamentoQueryService.itens(projetoId, user); }
+  meusApontamentos(user: JwtPayload, filtro: MeusProjetoApontamentosFiltroInput) { return this.apontamentoQueryService.meus(user, filtro); }
+  salvarApontamento(input: SalvarProjetoApontamentoInput, user: JwtPayload) { return this.apontamentoService.salvar(input, user); }
+  excluirApontamento(input: VersionarProjetoApontamentoInput, user: JwtPayload) { return this.apontamentoService.excluir(input, user); }
+  descartarApontamento(input: VersionarProjetoApontamentoInput, user: JwtPayload) { return this.apontamentoService.descartar(input, user); }
+  enviarApontamentos(input: EnviarProjetoApontamentosInput, user: JwtPayload) { return this.apontamentoService.enviar(input, user); }
+  recolherApontamento(input: VersionarProjetoApontamentoInput, user: JwtPayload) { return this.apontamentoService.recolher(input, user); }
 }

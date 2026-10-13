@@ -12,6 +12,7 @@ export const ProjetoFuncionalidade = {
   PLANEJAMENTO_RECURSOS: 'planejamento-de-recursos',
   EQUIPES: 'equipes',
   ORCAMENTO: 'orcamento-do-projeto',
+  MEUS_APONTAMENTOS: 'meus-apontamentos',
   HORAS: 'horas-do-projeto',
   TEMPLATES: 'templates-de-projeto',
   PORTFOLIO: 'portfolio-de-projetos'

@@ -1,5 +1,9 @@
 import { BadRequestException } from '@nestjs/common';
-import { assertLimiteDiarioApontamentos, assertMinutosApontamento } from './projeto-apontamento-limite.policy';
+import {
+  assertLimiteDiarioApontamentos,
+  assertMinutosApontamento,
+  normalizeDescricaoApontamento
+} from './projeto-apontamento-limite.policy';
 
 describe('ProjetoApontamentoLimitePolicy', () => {
   it.each([1, 1439, 1440])('aceita %i minutos', (minutos) => {
@@ -31,5 +35,14 @@ describe('ProjetoApontamentoLimitePolicy', () => {
     expect(() =>
       assertLimiteDiarioApontamentos([{ id: 'b', minutos: 1440, arquivadoEm: new Date('2026-10-10T12:00:00Z') }], { minutos: 60 })
     ).not.toThrow();
+  });
+
+  it('exige descricao e aceita ate 1.000 caracteres sem os espacos das pontas', () => {
+    expect(normalizeDescricaoApontamento('  Reuniao de planejamento  ')).toBe('Reuniao de planejamento');
+    expect(normalizeDescricaoApontamento(` ${'a'.repeat(1000)} `)).toHaveLength(1000);
+    expect(() => normalizeDescricaoApontamento('   ')).toThrow(new BadRequestException('Informe a descrição do apontamento.'));
+    expect(() => normalizeDescricaoApontamento('a'.repeat(1001))).toThrow(
+      new BadRequestException('A descrição do apontamento pode ter até 1.000 caracteres.')
+    );
   });
 });
