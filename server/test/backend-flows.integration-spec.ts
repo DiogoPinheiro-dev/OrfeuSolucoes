@@ -186,7 +186,9 @@ type ModelName =
   | 'projetoOrcamento'
   | 'projetoOrcamentoCategoria'
   | 'projetoCusto'
-  | 'projetoCustoTaxaHistorico';
+  | 'projetoCustoTaxaHistorico'
+  | 'projetoApontamento'
+  | 'projetoApontamentoPeriodo';
 
 const MODELS: ModelName[] = [
   'usuario',
@@ -248,7 +250,9 @@ const MODELS: ModelName[] = [
   'projetoOrcamento',
   'projetoOrcamentoCategoria',
   'projetoCusto',
-  'projetoCustoTaxaHistorico'
+  'projetoCustoTaxaHistorico',
+  'projetoApontamento',
+  'projetoApontamentoPeriodo'
 ];
 
 const INTEGER_ID_MODELS = new Set<ModelName>([
@@ -513,6 +517,8 @@ class InMemoryPrismaService {
   public projetoOrcamentoCategoria = new InMemoryDelegate(this, 'projetoOrcamentoCategoria');
   public projetoCusto = new InMemoryDelegate(this, 'projetoCusto');
   public projetoCustoTaxaHistorico = new InMemoryDelegate(this, 'projetoCustoTaxaHistorico');
+  public projetoApontamento = new InMemoryDelegate(this, 'projetoApontamento');
+  public projetoApontamentoPeriodo = new InMemoryDelegate(this, 'projetoApontamentoPeriodo');
 
   async $transaction<T>(callback: (tx: this) => Promise<T>): Promise<T> {
     const dataSnapshot = Object.fromEntries(
@@ -1127,6 +1133,23 @@ class InMemoryPrismaService {
         return row.tarefaId ? this.data.projetoTarefa.find((tarefa) => tarefa.id === row.tarefaId) ?? null : null;
       case 'projetoCusto.taxas':
         return this.data.projetoCustoTaxaHistorico.filter((item) => item.custoId === row.id);
+      case 'projetoApontamento.projeto':
+      case 'projetoApontamentoPeriodo.projeto':
+        return this.data.projeto.find((projeto) => projeto.id === row.projetoId) ?? null;
+      case 'projetoApontamento.usuario':
+        return this.data.usuario.find((usuario) => usuario.id === row.usuarioId) ?? null;
+      case 'projetoApontamento.item':
+        return row.itemId ? this.data.projetoItem.find((item) => item.id === row.itemId) ?? null : null;
+      case 'projetoApontamento.decididoPor':
+        return row.decididoPorId ? this.data.usuario.find((usuario) => usuario.id === row.decididoPorId) ?? null : null;
+      case 'projetoApontamento.custo':
+        return row.custoId ? this.data.projetoCusto.find((custo) => custo.id === row.custoId) ?? null : null;
+      case 'projetoApontamento.taxaHistorico':
+        return row.taxaHistoricoId ? this.data.projetoCustoTaxaHistorico.find((taxa) => taxa.id === row.taxaHistoricoId) ?? null : null;
+      case 'projetoApontamentoPeriodo.fechadoPor':
+        return this.data.usuario.find((usuario) => usuario.id === row.fechadoPorId) ?? null;
+      case 'projetoApontamentoPeriodo.reabertoPor':
+        return row.reabertoPorId ? this.data.usuario.find((usuario) => usuario.id === row.reabertoPorId) ?? null : null;
       case 'projetoCustoTaxaHistorico.criadoPor':
         return this.data.usuario.find((usuario) => usuario.id === row.criadoPorId) ?? null;      case 'projetoSequencia.projeto':
       case 'projetoOperacaoIdempotente.projeto':
@@ -1268,6 +1291,15 @@ class InMemoryPrismaService {
       'projetoCusto.recurso': 'projetoRecurso',
       'projetoCusto.tarefa': 'projetoTarefa',
       'projetoCusto.taxas': 'projetoCustoTaxaHistorico',
+      'projetoApontamento.projeto': 'projeto',
+      'projetoApontamento.usuario': 'usuario',
+      'projetoApontamento.item': 'projetoItem',
+      'projetoApontamento.decididoPor': 'usuario',
+      'projetoApontamento.custo': 'projetoCusto',
+      'projetoApontamento.taxaHistorico': 'projetoCustoTaxaHistorico',
+      'projetoApontamentoPeriodo.projeto': 'projeto',
+      'projetoApontamentoPeriodo.fechadoPor': 'usuario',
+      'projetoApontamentoPeriodo.reabertoPor': 'usuario',
       'projetoCustoTaxaHistorico.criadoPor': 'usuario',      'projetoSequencia.projeto': 'projeto',
       'projetoOperacaoIdempotente.projeto': 'projeto',
       'projetoOperacaoIdempotente.empresa': 'empresa',
@@ -1528,6 +1560,14 @@ class InMemoryPrismaService {
         break;
       case 'projetoCustoTaxaHistorico':
         row.criadoEm = row.criadoEm ?? now;
+        break;
+      case 'projetoApontamento':
+        row.itemId = row.itemId ?? null; row.faturavel = row.faturavel ?? true; row.status = row.status ?? 'RASCUNHO'; row.enviadoEm = row.enviadoEm ?? null; row.decididoPorId = row.decididoPorId ?? null; row.decididoEm = row.decididoEm ?? null; row.motivo = row.motivo ?? null;
+        row.custoId = row.custoId ?? null; row.taxaHistoricoId = row.taxaHistoricoId ?? null; row.taxaHoraAplicada = row.taxaHoraAplicada ?? null; row.valorCusto = row.valorCusto ?? null; row.moeda = row.moeda ?? null; row.custoSituacao = row.custoSituacao ?? 'NAO_APLICAVEL';
+        row.arquivadoEm = row.arquivadoEm ?? null; row.arquivadoPorId = row.arquivadoPorId ?? null; row.versao = row.versao ?? 1; row.criadoEm = row.criadoEm ?? now; row.atualizadoEm = row.atualizadoEm ?? now;
+        break;
+      case 'projetoApontamentoPeriodo':
+        row.reabertoPorId = row.reabertoPorId ?? null; row.reabertoEm = row.reabertoEm ?? null; row.motivoReabertura = row.motivoReabertura ?? null; row.versao = row.versao ?? 1; row.criadoEm = row.criadoEm ?? now; row.atualizadoEm = row.atualizadoEm ?? now;
         break;
       case 'projetoSprintItem':
         row.retiradoPorId = row.retiradoPorId ?? null;
@@ -6812,6 +6852,66 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
     await expect(world.usersService.remove(semDependencias.id)).resolves.toBe(true);
     expect(world.prisma.data.usuario.some((item) => item.id === semDependencias.id)).toBe(false);
     expect(world.prisma.data.empresaUsuario.some((item) => item.usuarioId === semDependencias.id)).toBe(false);
+  });
+
+  it('impede excluir usuario com apontamentos de horas, decisoes ou competencias fechadas', async () => {
+    const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
+    const usuario = await world.usersService.create({
+      nome: 'Usuario com horas',
+      login: 'usuario.com.horas',
+      email: 'usuario.com.horas@orfeu.test',
+      senha: 'Senha@12345',
+      empresaIds: [empresaInicialId]
+    });
+    const projeto = await world.prisma.projeto.create({
+      data: { empresaId: empresaInicialId, chave: 'HRS', nome: 'Projeto com horas', responsavelId: admin.sub, criadoPorId: admin.sub }
+    });
+    const apontamento = await world.prisma.projetoApontamento.create({
+      data: {
+        empresaId: empresaInicialId,
+        projetoId: projeto.id,
+        usuarioId: usuario.id,
+        dataTrabalho: new Date('2026-10-09T00:00:00.000Z'),
+        minutos: 90,
+        descricao: 'Analise do escopo'
+      }
+    });
+    await world.prisma.projetoApontamento.create({
+      data: {
+        empresaId: empresaInicialId,
+        projetoId: projeto.id,
+        usuarioId: admin.sub,
+        dataTrabalho: new Date('2026-10-09T00:00:00.000Z'),
+        minutos: 60,
+        descricao: 'Revisao tecnica',
+        status: 'APROVADO',
+        decididoPorId: usuario.id,
+        decididoEm: new Date('2026-10-10T12:00:00.000Z')
+      }
+    });
+    await world.prisma.projetoApontamentoPeriodo.create({
+      data: {
+        empresaId: empresaInicialId,
+        projetoId: projeto.id,
+        competencia: '2026-09',
+        situacao: 'FECHADO',
+        fechadoPorId: usuario.id,
+        fechadoEm: new Date('2026-10-01T12:00:00.000Z')
+      }
+    });
+
+    expect(apontamento).toMatchObject({
+      itemId: null,
+      faturavel: true,
+      status: 'RASCUNHO',
+      custoSituacao: 'NAO_APLICAVEL',
+      arquivadoEm: null,
+      versao: 1
+    });
+    await expect(world.usersService.remove(usuario.id)).rejects.toThrow(
+      '1 apontamento de horas; 1 decisão sobre apontamento de horas; 1 competência de horas fechada ou reaberta'
+    );
+    expect(world.prisma.data.usuario.some((item) => item.id === usuario.id)).toBe(true);
   });
 
 });

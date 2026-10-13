@@ -30,6 +30,8 @@ type DependencyClient = Pick<
   | 'projetoOrcamento'
   | 'projetoCusto'
   | 'projetoCustoTaxaHistorico'
+  | 'projetoApontamento'
+  | 'projetoApontamentoPeriodo'
 >;
 
 type UserDependency = {
@@ -78,7 +80,10 @@ const DEPENDENCIES: DependencyDefinition[] = [
   { singular: 'cadastro como recurso', plural: 'cadastros como recursos', count: (db, id) => db.recurso.count({ where: { usuarioId: id } }) },
   { singular: 'aprovacao de orcamento', plural: 'aprovacoes de orcamentos', count: (db, id) => db.projetoOrcamento.count({ where: { aprovadoPorId: id } }) },
   { singular: 'custo de projeto', plural: 'custos de projetos', count: (db, id) => db.projetoCusto.count({ where: { criadoPorId: id } }) },
-  { singular: 'historico de taxa de custo', plural: 'historicos de taxas de custos', count: (db, id) => db.projetoCustoTaxaHistorico.count({ where: { criadoPorId: id } }) }
+  { singular: 'historico de taxa de custo', plural: 'historicos de taxas de custos', count: (db, id) => db.projetoCustoTaxaHistorico.count({ where: { criadoPorId: id } }) },
+  { singular: 'apontamento de horas', plural: 'apontamentos de horas', count: (db, id) => db.projetoApontamento.count({ where: { OR: [{ usuarioId: id }, { arquivadoPorId: id }] } }) },
+  { singular: 'decisão sobre apontamento de horas', plural: 'decisões sobre apontamentos de horas', count: (db, id) => db.projetoApontamento.count({ where: { decididoPorId: id } }) },
+  { singular: 'competência de horas fechada ou reaberta', plural: 'competências de horas fechadas ou reabertas', count: (db, id) => db.projetoApontamentoPeriodo.count({ where: { OR: [{ fechadoPorId: id }, { reabertoPorId: id }] } }) }
 ];
 
 @Injectable()

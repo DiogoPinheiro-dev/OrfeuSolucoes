@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { JwtPayload } from '../auth/strategies/jwt-payload.type';
 import { AprovarProjetoOrcamentoInput, ExcluirProjetoOrcamentoItemInput, SalvarProjetoCustoInput, SalvarProjetoOrcamentoCategoriaInput, SalvarProjetoOrcamentoInput } from './dto/projeto-orcamento.input';
+import { calcularValorPorMinutos, normalizeProjetoDinheiro } from './policies/projeto-dinheiro.policy';
 import { ProjetoAuditoriaService } from './projeto-auditoria.service';
 import { ProjetoOrcamentoAuthorizationService, ProjetoOrcamentoContexto } from './projeto-orcamento-authorization.service';
 import { ProjetoCustoTipo, ProjetoOrcamentoStatus } from './types/projeto-orcamento.types';
@@ -55,7 +56,7 @@ export class ProjetoOrcamentoService {
     const contexto = await this.authorization.contexto(input.projetoId, user); await this.authorization.gerenciarFinanceiro(contexto, user);
     const orcamento = await this.orcamentoRascunho(input.projetoId);
     return this.prisma.$transaction(async (tx) => {
-      const data = { nome: input.nome.trim(), valorPlanejado: this.money(input.valorPlanejado), valorComprometido: this.money(input.valorComprometido), valorRealizado: this.money(input.valorRealizado) };
+      const data = { nome: input.nome.trim(), valorPlanejado: normalizeProjetoDinheiro(input.valorPlanejado), valorComprometido: normalizeProjetoDinheiro(input.valorComprometido), valorRealizado: normalizeProjetoDinheiro(input.valorRealizado) };
       const record = input.id ? await this.updateVersioned(tx.projetoOrcamentoCategoria, input.id, input.versao, data, 'O cadastro da categoria', { orcamentoId: orcamento.id }) : await tx.projetoOrcamentoCategoria.create({ data: { ...data, empresaId: contexto.empresaId, projetoId: input.projetoId, orcamentoId: orcamento.id } });
       await this.audit(tx, contexto, user, 'ORCAMENTO_CATEGORIA', record.id, input.id ? 'ALTERADA' : 'CRIADA', data); return record;
     }).then((item) => this.categoria(item));
@@ -70,10 +71,10 @@ export class ProjetoOrcamentoService {
       await this.assertRecurso(input.projetoId, input.recursoId, input.id);
       if (input.itemId) await this.assertItem(contexto, input.recursoId, input.itemId, input.id);
     }
-    const taxa = input.tipo === ProjetoCustoTipo.RECURSO ? this.money(input.taxaHora!, 4) : null;
-    const planejado = input.tipo === ProjetoCustoTipo.RECURSO ? new Prisma.Decimal(input.quantidadeMinutos!).div(60).mul(taxa!).toDecimalPlaces(2).toFixed(2) : this.money(input.valorPlanejado);
+    const taxa = input.tipo === ProjetoCustoTipo.RECURSO ? normalizeProjetoDinheiro(input.taxaHora!, 4) : null;
+    const planejado = input.tipo === ProjetoCustoTipo.RECURSO ? calcularValorPorMinutos(input.quantidadeMinutos!, taxa!) : normalizeProjetoDinheiro(input.valorPlanejado);
     return this.prisma.$transaction(async (tx) => {
-      const data = { categoriaId: input.categoriaId || null, tipo: input.tipo, descricao: input.descricao.trim(), recursoId: input.tipo === ProjetoCustoTipo.RECURSO ? input.recursoId : null, itemId: input.tipo === ProjetoCustoTipo.RECURSO ? input.itemId || null : null, quantidadeMinutos: input.tipo === ProjetoCustoTipo.RECURSO ? input.quantidadeMinutos : null, taxaHora: taxa, valorPlanejado: planejado, valorComprometido: this.money(input.valorComprometido), valorRealizado: this.money(input.valorRealizado) };
+      const data = { categoriaId: input.categoriaId || null, tipo: input.tipo, descricao: input.descricao.trim(), recursoId: input.tipo === ProjetoCustoTipo.RECURSO ? input.recursoId : null, itemId: input.tipo === ProjetoCustoTipo.RECURSO ? input.itemId || null : null, quantidadeMinutos: input.tipo === ProjetoCustoTipo.RECURSO ? input.quantidadeMinutos : null, taxaHora: taxa, valorPlanejado: planejado, valorComprometido: normalizeProjetoDinheiro(input.valorComprometido), valorRealizado: normalizeProjetoDinheiro(input.valorRealizado) };
       const anterior = input.id ? await tx.projetoCusto.findUnique({ where: { id: input.id } }) : null;
       const record = input.id ? await this.updateVersioned(tx.projetoCusto, input.id, input.versao, data, 'O custo', { orcamentoId: orcamento.id }) : await tx.projetoCusto.create({ data: { ...data, empresaId: contexto.empresaId, projetoId: input.projetoId, orcamentoId: orcamento.id, criadoPorId: user.sub } });
       if (taxa && (!anterior?.taxaHora || !new Prisma.Decimal(anterior.taxaHora).equals(taxa))) await tx.projetoCustoTaxaHistorico.create({ data: { custoId: record.id, taxaHora: taxa, criadoPorId: user.sub } });
@@ -152,7 +153,6 @@ export class ProjetoOrcamentoService {
   private async orcamentoRascunho(projetoId: string) { const item = await this.prisma.projetoOrcamento.findUnique({ where: { projetoId } }); if (!item) throw new BadRequestException('Cadastre o orcamento-base antes desta operacao.'); this.assertDraft(item); return item; }
   private assertDraft(item: any) { if (item?.status === ProjetoOrcamentoStatus.APROVADO) throw new BadRequestException('O orcamento aprovado nao pode ser alterado.'); }
   private async assertCategoria(orcamentoId: string, id: string) { if (!await this.prisma.projetoOrcamentoCategoria.findFirst({ where: { id, orcamentoId } })) throw new BadRequestException('Categoria financeira invalida.'); }
-  private money(value: string, scale = 2) { try { const decimal = new Prisma.Decimal(value); if (decimal.isNegative()) throw new Error(); return decimal.toDecimalPlaces(scale, Prisma.Decimal.ROUND_HALF_UP).toFixed(scale); } catch { throw new BadRequestException('Valor monetario invalido.'); } }
   private user(item: any) { return { id: item.id, nome: item.nome ?? null, login: item.login ?? null, email: item.email }; }
   private recurso(item: any) { return { id: item.id, cadastroRecursoId: item.recursoId, usuarioId: item.cadastro.usuarioId, ativo: item.ativo && item.cadastro.ativo, versao: item.versao, usuario: this.user(item.cadastro.usuario) }; }
   private async updateVersioned(model: any, id: string, versao: number | null | undefined, data: any, label: string, scope: Record<string, unknown> = {}) { if (!versao) throw new BadRequestException('Informe a versao para alterar o registro.'); const result = await model.updateMany({ where: { id, versao, ...scope }, data: { ...data, versao: { increment: 1 } } }); if (result.count !== 1) throw new ConflictException(`${label} foi alterado por outra pessoa. Atualize os dados.`); const record = await model.findUnique({ where: { id } }); if (!record) throw new NotFoundException(`${label} nao foi encontrado.`); return record; }

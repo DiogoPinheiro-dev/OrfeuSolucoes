@@ -1,4 +1,5 @@
 import { isIP } from 'node:net';
+import { PROJETOS_TIMEZONE_PADRAO } from '../modules/projetos/constants/projeto-operacional.constants';
 
 type RawConfig = Record<string, unknown>;
 
@@ -53,6 +54,18 @@ const enumKey = <T extends string>(
     throw new Error(
       `Environment variable "${key}" must be one of: ${allowedValues.join(', ')}.`
     );
+  }
+
+  return value;
+};
+
+const timeZoneKeyWithDefault = (config: RawConfig, key: string, defaultValue: string): string => {
+  const value = optionalStringKey(config, key) ?? defaultValue;
+
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: value });
+  } catch {
+    throw new Error(`Environment variable "${key}" must be a valid IANA time zone.`);
   }
 
   return value;
@@ -152,6 +165,7 @@ export const validateEnv = (config: RawConfig): RawConfig => {
     AUTH_RATE_LIMIT_BLOCK_SECONDS: authRateLimitBlockSeconds,
     AUTH_RATE_LIMIT_MAX_BUCKETS: authRateLimitMaxBuckets,
     AUTH_REGISTRATION_MAX_ATTEMPTS: authRegistrationMaxAttempts,
-    AUTH_REGISTRATION_WINDOW_SECONDS: authRegistrationWindowSeconds
+    AUTH_REGISTRATION_WINDOW_SECONDS: authRegistrationWindowSeconds,
+    PROJETOS_TIMEZONE: timeZoneKeyWithDefault(config, 'PROJETOS_TIMEZONE', PROJETOS_TIMEZONE_PADRAO)
   };
 };

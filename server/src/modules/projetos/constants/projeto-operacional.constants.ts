@@ -1,5 +1,7 @@
 export const PROJETOS_SOLUTION_SLUG = 'projetos';
 
+export const PROJETOS_TIMEZONE_PADRAO = 'America/Sao_Paulo';
+
 export const ProjetoFuncionalidade = {
   CADASTRO: 'cadastro-de-projetos',
   BACKLOG: 'backlog-de-demandas',

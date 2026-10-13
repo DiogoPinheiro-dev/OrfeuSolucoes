@@ -83,4 +83,11 @@ describe('validateEnv', () => {
     expect(() => validateEnv({ ...baseConfig, TRUST_PROXY: '*' })).toThrow('TRUST_PROXY');
     expect(() => validateEnv({ ...baseConfig, TRUST_PROXY: '1' })).toThrow('TRUST_PROXY');
   });
+
+  it('usa o fuso de Sao Paulo nos projetos e aceita apenas fusos IANA validos', () => {
+    expect(validateEnv(baseConfig).PROJETOS_TIMEZONE).toBe('America/Sao_Paulo');
+    expect(validateEnv({ ...baseConfig, PROJETOS_TIMEZONE: 'America/Manaus' }).PROJETOS_TIMEZONE).toBe('America/Manaus');
+    expect(() => validateEnv({ ...baseConfig, PROJETOS_TIMEZONE: 'Brasil/Planalto' })).toThrow('PROJETOS_TIMEZONE');
+    expect(() => validateEnv({ ...baseConfig, PROJETOS_TIMEZONE: '' })).toThrow('PROJETOS_TIMEZONE');
+  });
 });
