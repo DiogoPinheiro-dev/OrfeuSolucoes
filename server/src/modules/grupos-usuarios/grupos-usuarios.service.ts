@@ -29,8 +29,8 @@ export class GruposUsuariosService {
     return this.grupoUsuarioCatalog.create(input);
   }
 
-  update(input: UpdateGrupoUsuarioInput): Promise<GrupoUsuarioType> {
-    return this.grupoUsuarioCatalog.update(input);
+  update(input: UpdateGrupoUsuarioInput, actingUserId?: string): Promise<GrupoUsuarioType> {
+    return this.grupoUsuarioCatalog.update(input, actingUserId);
   }
 
   remove(id: number): Promise<boolean> {

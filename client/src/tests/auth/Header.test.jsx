@@ -59,10 +59,14 @@ describe("Header autenticado", () => {
     });
 
     it("expõe solução ativa, funcionalidade e controle acessível da barra lateral", () => {
-        renderHeader();
+        const { container } = renderHeader();
         expect(screen.getAllByText("Configurador").length).toBeGreaterThan(0);
         expect(screen.getByRole("link", { name: "Usuários" })).toHaveAttribute("href", "/hub/configurador/usuarios");
         expect(screen.getByRole("button", { name: "Minimizar menu do Hub" })).toBeInTheDocument();
+        const persistentHeader = container.querySelector(".hub-sidebar-persistent-header");
+        expect(persistentHeader).toContainElement(persistentHeader.querySelector(".header-brand-row"));
+        expect(persistentHeader).toContainElement(persistentHeader.querySelector(".hub-sidebar-user-card"));
+        expect(container.querySelector(".nav-links .hub-sidebar-user-card")).not.toBeInTheDocument();
     });
 
     it("mostra o agrupamento como um único item do menu apontando para a primeira aba", () => {

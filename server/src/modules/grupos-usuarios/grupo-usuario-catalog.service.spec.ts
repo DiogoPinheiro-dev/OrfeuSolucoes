@@ -57,15 +57,15 @@ describe('GrupoUsuarioCatalogService session consistency', () => {
     return { service, prisma, solucoes, tx };
   }
 
-  it('altera o grupo e revoga seus usuarios na mesma transacao', async () => {
+  it('preserva a sessao do administrador que altera o grupo e revoga os demais usuarios', async () => {
     const { service, prisma, tx } = buildService();
 
-    await service.update({ id: current.id, acessoEcommerce: false });
+    await service.update({ id: current.id, acessoEcommerce: false }, 'admin-1');
 
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     expect(tx.grupoUsuario.update).toHaveBeenCalled();
     expect(tx.usuario.updateMany).toHaveBeenCalledWith({
-      where: { grupoId: current.id },
+      where: { grupoId: current.id, id: { not: 'admin-1' } },
       data: { sessaoVersao: { increment: 1 } }
     });
     expect(prisma.grupoUsuario.update).not.toHaveBeenCalled();
@@ -86,10 +86,21 @@ describe('GrupoUsuarioCatalogService session consistency', () => {
     );
   });
 
+  it('revoga todos os usuarios quando a alteracao nao possui autor autenticado', async () => {
+    const { service, tx } = buildService();
+
+    await service.update({ id: current.id, acessoEcommerce: false });
+
+    expect(tx.usuario.updateMany).toHaveBeenCalledWith({
+      where: { grupoId: current.id },
+      data: { sessaoVersao: { increment: 1 } }
+    });
+  });
+
   it('propaga falha de revogacao dentro da transacao sem concluir o update', async () => {
     const { service, prisma } = buildService({ revokeError: new Error('falha ao revogar') });
 
-    await expect(service.update({ id: current.id, acessoEcommerce: false }))
+    await expect(service.update({ id: current.id, acessoEcommerce: false }, 'admin-1'))
       .rejects.toThrow('falha ao revogar');
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
   });

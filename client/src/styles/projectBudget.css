@@ -10,13 +10,8 @@
 .budget-feedback.success { background: var(--success-soft); color: var(--success-text); }
 .budget-readonly { background: var(--warning-bg); color: var(--warning-text); }
 .budget-tabs { display: flex; gap: 8px; padding: 12px 18px; border-block: 1px solid var(--line); background: var(--surface-soft); }
-.budget-tabs button, .budget-create-controls button, .budget-finance-heading button, .budget-maintenance-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; padding: 9px 13px; border: 1px solid var(--button-secondary-border); border-radius: 9px; background: var(--button-secondary-bg); color: var(--primary); cursor: pointer; font-weight: 400; }
-.budget-tabs button.active, .budget-create-controls button, .budget-finance-heading button, .budget-maintenance-actions button:not(.secondary) { border-color: var(--button-primary-border); background: var(--button-primary-bg); color: var(--button-primary-text); }
-.budget-maintenance-actions { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 14px 18px; border-top: 1px solid var(--line); background: var(--surface-soft); }
-.budget-maintenance-actions > div:first-child { display: grid; gap: 4px; }
-.budget-maintenance-actions strong { font-weight: 700; }
-.budget-maintenance-actions span { color: var(--muted); font-size: .88rem; line-height: 1.45; }
-.budget-maintenance-actions > div:last-child { display: flex; gap: 8px; flex-wrap: wrap; }
+.budget-tabs button, .budget-create-controls button, .budget-finance-heading button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; padding: 9px 13px; border: 1px solid var(--button-secondary-border); border-radius: 9px; background: var(--button-secondary-bg); color: var(--primary); cursor: pointer; font-weight: 400; }
+.budget-tabs button.active, .budget-create-controls button, .budget-finance-heading button { border-color: var(--button-primary-border); background: var(--button-primary-bg); color: var(--button-primary-text); }
 .budget-section { padding: 18px; border-top: 1px solid var(--line); }
 .budget-section > h3 { margin: 0 0 12px; font-weight: 400; }
 .budget-cards, .budget-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
@@ -66,4 +61,4 @@
 .budget-delete-modal .crud-modal-actions button.danger { border-color: var(--danger-text); background: var(--danger-text); color: var(--button-primary-text); }
 .budget-delete-modal .crud-modal-actions button.secondary { border-color: var(--button-secondary-border); background: var(--button-secondary-bg); color: var(--primary); }
 .budget-delete-error { padding: 11px 13px; border: 1px solid color-mix(in srgb, var(--danger-text) 30%, var(--line)); border-radius: 10px; background: var(--danger-bg); color: var(--danger-text); }
-@media (max-width: 760px) { .budget-header { align-items: stretch; flex-direction: column; } .budget-header > label { flex: none; } .budget-tabs { overflow-x: auto; } .budget-finance-heading, .budget-maintenance-actions { align-items: stretch; flex-direction: column; } .budget-maintenance-actions > div:last-child { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); } }@media (max-width: 520px) { .budget-history-modal, .budget-delete-modal, .budget-edit-modal { padding: 16px; }.budget-edit-grid { grid-template-columns: 1fr; }.budget-history-list article { grid-template-columns: 1fr; }.budget-history-list article small, .budget-resource-help { grid-column: auto; } .budget-maintenance-actions > div:last-child { grid-template-columns: 1fr; } }
+@media (max-width: 760px) { .budget-header { align-items: stretch; flex-direction: column; } .budget-header > label { flex: none; } .budget-tabs { overflow-x: auto; } .budget-finance-heading { align-items: stretch; flex-direction: column; } }@media (max-width: 520px) { .budget-history-modal, .budget-delete-modal, .budget-edit-modal { padding: 16px; }.budget-edit-grid { grid-template-columns: 1fr; }.budget-history-list article { grid-template-columns: 1fr; }.budget-history-list article small, .budget-resource-help { grid-column: auto; } }

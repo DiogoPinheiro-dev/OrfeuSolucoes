@@ -160,6 +160,31 @@ export default function Header() {
             {renderLogoutButton()}
         </div>
     );
+    const brandRow = (
+        <div className="header-brand-row">
+            <Link to="/" className="header-brand text-decoration-none" aria-label="Orfeu Soluções">
+                <img src={logo} alt="Orfeu Soluções" className="brand-logo" />
+            </Link>
+
+            {isHubView && isAuthenticated && <ChamadoNotifications />}
+
+            {isHubView && (
+                <button
+                    type="button"
+                    className="hub-sidebar-toggle"
+                    onClick={toggleHubSidebar}
+                    aria-label={isHubSidebarCollapsed ? "Expandir menu do Hub" : "Minimizar menu do Hub"}
+                    title={isHubSidebarCollapsed ? "Expandir menu" : "Minimizar menu"}
+                >
+                    {isHubSidebarCollapsed ? (
+                        <PanelLeftOpen size={20} strokeWidth={2} aria-hidden="true" />
+                    ) : (
+                        <PanelLeftClose size={20} strokeWidth={2} aria-hidden="true" />
+                    )}
+                </button>
+            )}
+        </div>
+    );
     useEffect(() => {
         document.body.classList.toggle("hub-sidebar-collapsed", isHubView && isHubSidebarCollapsed);
 
@@ -225,29 +250,16 @@ export default function Header() {
     return (
         <div className={`site-header ${isHubView ? "site-header--hub-sidebar" : ""} ${isHubView && isHubSidebarCollapsed ? "site-header--hub-collapsed" : ""} ${isPinned ? "site-header--pinned" : "site-header--overlay"} ${open ? "site-header--menu-open" : ""}`}>
             <header className="header-main py-3 mb-4" role="navigation" aria-label="Navegação principal">
-                <div className="header-brand-row">
-                    <Link to="/" className="header-brand text-decoration-none" aria-label="Orfeu Soluções">
-                        <img src={logo} alt="Orfeu Soluções" className="brand-logo" />
-                    </Link>
-
-                    {isHubView && isAuthenticated && <ChamadoNotifications />}
-
-                    {isHubView && (
-                        <button
-                            type="button"
-                            className="hub-sidebar-toggle"
-                            onClick={toggleHubSidebar}
-                            aria-label={isHubSidebarCollapsed ? "Expandir menu do Hub" : "Minimizar menu do Hub"}
-                            title={isHubSidebarCollapsed ? "Expandir menu" : "Minimizar menu"}
-                        >
-                            {isHubSidebarCollapsed ? (
-                                <PanelLeftOpen size={20} strokeWidth={2} aria-hidden="true" />
-                            ) : (
-                                <PanelLeftClose size={20} strokeWidth={2} aria-hidden="true" />
-                            )}
-                        </button>
-                    )}
-                </div>
+                {isHubView ? (
+                    <div className="hub-sidebar-persistent-header">
+                        {brandRow}
+                        {isAuthenticated && (
+                            <div className="hub-sidebar-user-card">
+                                {userCard}
+                            </div>
+                        )}
+                    </div>
+                ) : brandRow}
 
                 {isHubView && isAuthenticated && (
                     <div className="mobile-hub-profile">
@@ -267,11 +279,6 @@ export default function Header() {
                 <ul className={`nav-links list-unstyled mb-0 ${open ? "open" : ""}`}>
                     {isHubView ? (
                         <>
-                            {isAuthenticated && (
-                                <li className="hub-sidebar-user-card">
-                                    {userCard}
-                                </li>
-                            )}
                             <li>
                                 <Link className={hubLinkClass("/hub")} to="/hub" onClick={closeMenu}>
                                     Hub

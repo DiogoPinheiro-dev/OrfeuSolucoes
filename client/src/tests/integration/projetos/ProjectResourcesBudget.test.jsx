@@ -130,6 +130,11 @@ describe("Orcamento do projeto", () => {
         render(<ProjectBudgetManagement />);
 
         const categoriesGrid = (await screen.findByRole("heading", { name: "Categorias" })).closest("section");
+        const costsGrid = screen.getByRole("heading", { name: "Custos" }).closest("section");
+        expect(within(categoriesGrid).getByRole("toolbar", { name: "Ações das categorias" })).toContainElement(within(categoriesGrid).getByRole("button", { name: "Nova categoria" }));
+        expect(within(categoriesGrid).queryByRole("button", { name: "Novo custo" })).not.toBeInTheDocument();
+        expect(within(costsGrid).getByRole("toolbar", { name: "Ações dos custos" })).toContainElement(within(costsGrid).getByRole("button", { name: "Novo custo" }));
+        expect(within(costsGrid).queryByRole("button", { name: "Nova categoria" })).not.toBeInTheDocument();
         await user.click(within(categoriesGrid).getByRole("row", { name: /Infraestrutura/ }));
         await user.click(within(categoriesGrid).getByRole("button", { name: "Alterar" }));
         expect(screen.getByRole("dialog", { name: "Alterar categoria" })).toBeInTheDocument();

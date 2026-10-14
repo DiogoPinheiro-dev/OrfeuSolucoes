@@ -19,6 +19,10 @@ describe('GrupoUsuarioBootstrapService security', () => {
     } as ConfigService;
   }
 
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('recusa criar a base com uma credencial previsivel ou ausente', async () => {
     const transaction = jest.fn();
     const prisma: Record<string, any> = {
@@ -139,20 +143,45 @@ describe('GrupoUsuarioBootstrapService security', () => {
     expect(solutionService.ensureHorasSolutionUnavailable).toHaveBeenCalled();
   });
 
-  it('repete a sincronizacao dos acessos do administrador apos conflito concorrente', async () => {
+  it('preserva metadados e acessos personalizados em uma instalacao existente', async () => {
     const prisma: Record<string, any> = {
       grupoUsuario: {
         count: jest.fn().mockResolvedValue(1),
-        findFirst: jest.fn().mockResolvedValue({ id: 1 }),
-        update: jest.fn().mockResolvedValue(undefined)
+        update: jest.fn()
       },
       usuario: {
         count: jest.fn().mockResolvedValue(1),
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
+      empresa: { count: jest.fn().mockResolvedValue(1) },
+      $transaction: jest.fn(async (callback: (tx: unknown) => Promise<void>) => callback(prisma))
+    };
+
+    await new GrupoUsuarioBootstrapService(prisma as never, solutionService as never, config())
+      .ensureInitialSetup();
+
+    expect(prisma.grupoUsuario.update).not.toHaveBeenCalled();
+    expect(solutionService.syncGroupAccess).not.toHaveBeenCalled();
+  });
+
+  it('repete a sincronizacao dos acessos do administrador apos conflito concorrente', async () => {
+    const prisma: Record<string, any> = {
+      grupoUsuario: {
+        count: jest.fn().mockResolvedValue(0),
+        create: jest.fn().mockResolvedValue({ id: 1 })
+      },
+      usuario: {
+        count: jest.fn().mockResolvedValue(0),
+        create: jest.fn().mockResolvedValue({ id: '11111111-1111-4111-8111-111111111111' }),
         findFirst: jest.fn()
           .mockResolvedValueOnce(null)
           .mockResolvedValue({ grupoId: 1 })
       },
-      empresa: { count: jest.fn().mockResolvedValue(1) },
+      empresa: {
+        count: jest.fn().mockResolvedValue(1),
+        findMany: jest.fn().mockResolvedValue([{ id: 1 }])
+      },
+      empresaUsuario: { createMany: jest.fn().mockResolvedValue({ count: 1 }) },
       $transaction: jest.fn(async (callback: (tx: unknown) => Promise<void>) => callback(prisma))
     };
     const concurrentSolutionService = {
@@ -170,7 +199,7 @@ describe('GrupoUsuarioBootstrapService security', () => {
         .mockResolvedValueOnce(undefined)
     };
 
-    await expect(new GrupoUsuarioBootstrapService(prisma as never, concurrentSolutionService as never, config())
+    await expect(new GrupoUsuarioBootstrapService(prisma as never, concurrentSolutionService as never, config('Admin@Seguro2026!'))
       .ensureInitialSetup()).resolves.toBeUndefined();
 
     expect(concurrentSolutionService.syncGroupAccess).toHaveBeenCalledTimes(3);

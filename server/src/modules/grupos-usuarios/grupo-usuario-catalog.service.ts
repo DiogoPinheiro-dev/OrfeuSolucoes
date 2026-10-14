@@ -78,7 +78,7 @@ export class GrupoUsuarioCatalogService {
     return this.toType(created);
   }
 
-  async update(input: UpdateGrupoUsuarioInput): Promise<GrupoUsuarioType> {
+  async update(input: UpdateGrupoUsuarioInput, actingUserId?: string): Promise<GrupoUsuarioType> {
     const current = (await (this.prisma as never as { grupoUsuario: { findUnique: Function } }).grupoUsuario.findUnique({
       where: { id: input.id }
     })) as GrupoUsuarioRecord | null;
@@ -135,7 +135,10 @@ export class GrupoUsuarioCatalogService {
       }
 
       await tx.usuario.updateMany({
-        where: { grupoId: input.id },
+        where: {
+          grupoId: input.id,
+          ...(actingUserId ? { id: { not: actingUserId } } : {})
+        },
         data: { sessaoVersao: { increment: 1 } }
       });
 

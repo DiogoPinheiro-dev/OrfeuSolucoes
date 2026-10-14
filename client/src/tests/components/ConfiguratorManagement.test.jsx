@@ -526,6 +526,28 @@ describe("CRUDs do Configurador", () => {
         await waitFor(() => expect(deleteGrupoUsuario).toHaveBeenCalledWith(2));
     }, 15000);
 
+    it("permite alterar os acessos do grupo Administradores sem tratar o padrão como somente leitura", async () => {
+        const user = userEvent.setup();
+        render(<GroupManagement permissions={permissions} />);
+
+        await user.click(await screen.findByRole("cell", { name: "Administradores" }));
+        await user.click(screen.getByRole("button", { name: "Alterar" }));
+        await user.click(screen.getByRole("tab", { name: "Soluções" }));
+
+        const configurador = screen.getByRole("checkbox", { name: "Configurador" });
+        expect(configurador).toBeChecked();
+        expect(configurador).toBeEnabled();
+        await user.click(configurador);
+        await user.click(screen.getByRole("button", { name: "Salvar" }));
+
+        await waitFor(() => expect(updateGrupoUsuario).toHaveBeenCalledWith(expect.objectContaining({
+            id: group.id,
+            solucaoIds: [],
+            funcionalidadeIds: [],
+            funcionalidadePermissoes: []
+        })));
+    });
+
     it("identifica cada permissão pelo nome da ação e da rotina", async () => {
         const user = userEvent.setup();
         render(<GroupManagement permissions={permissions} />);

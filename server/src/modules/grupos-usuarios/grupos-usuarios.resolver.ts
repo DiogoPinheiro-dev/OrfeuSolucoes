@@ -37,7 +37,7 @@ export class GruposUsuariosResolver {
     @CurrentUser() user: JwtPayload
   ): Promise<GrupoUsuarioType> {
     assertSystemAdmin(user);
-    return this.gruposUsuariosService.update(input);
+    return this.gruposUsuariosService.update(input, user.sub);
   }
 
   @UseGuards(GqlAuthGuard)

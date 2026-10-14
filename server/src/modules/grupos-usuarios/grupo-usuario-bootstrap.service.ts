@@ -117,32 +117,14 @@ export class GrupoUsuarioBootstrapService {
     }
 
     await this.ensureInitialAdminPasswordPolicy();
-    await this.ensureInitialAdminGroupMetadata();
     await this.solucoesService.ensureDocumentationSolution();
     await this.solucoesService.ensureDefaultConfiguradorFeatures();
     await this.solucoesService.ensureControleChamadosSolution();
     await this.solucoesService.ensureProjetosSolution();
     await this.solucoesService.ensureHorasSolutionUnavailable();
-    await retryBootstrapAfterUniqueConflict(() => this.ensureInitialAdminSolutionAccess());
-  }
-
-  private async ensureInitialAdminGroupMetadata(): Promise<void> {
-    const grupo = await (this.prisma as never as { grupoUsuario: { findFirst: Function } }).grupoUsuario.findFirst({
-      where: { padraoSistema: true },
-      select: { id: true }
-    }) as { id: number } | null;
-
-    if (!grupo) {
-      return;
+    if (shouldCreateInitialAdmin) {
+      await retryBootstrapAfterUniqueConflict(() => this.ensureInitialAdminSolutionAccess());
     }
-
-    await (this.prisma as never as { grupoUsuario: { update: Function } }).grupoUsuario.update({
-      where: { id: grupo.id },
-      data: {
-        nome: 'Administradores',
-        descricao: 'Grupo inicial com acesso a todas as soluções.'
-      }
-    });
   }
 
   private async ensureInitialAdminPasswordPolicy(): Promise<void> {

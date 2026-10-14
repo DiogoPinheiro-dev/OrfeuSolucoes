@@ -85,6 +85,67 @@ const respostasOrganizacao = {
   ProjetoBacklogProjetos: { projetoBacklogProjetos: [] },
 };
 
+const respostasHeaderRolavel = {
+  ...respostasOrganizacao,
+  MyHubNavigation: {
+    myHubNavigation: Array.from({ length: 12 }, (_, index) => ({
+      ...navegacaoHub[0],
+      id: 200 + index,
+      slug: `solucao-${index + 1}`,
+      nome: `Solução ${index + 1}`,
+      ordem: index + 1,
+      funcionalidades: [],
+    })),
+  },
+};
+
+const orcamento = {
+  ...recursos,
+  id: 34,
+  slug: "orcamento-do-projeto",
+  titulo: "Orçamento do projeto",
+  label: "Orçamento",
+  descricao: "Gerencie categorias, custos e aprovação financeira.",
+  agrupamentoId: null,
+  ordemNoAgrupamento: null,
+  registryKey: "projetos.orcamento-do-projeto",
+  providerKey: "projetos.orcamento-do-projeto",
+};
+
+const respostasOrcamento = {
+  Me: { me: { ...usuarioAutenticado, login: "admin", availableSolutions: ["projetos"] } },
+  MyHubNavigation: { myHubNavigation: [{ ...navegacaoHub[0], funcionalidades: [orcamento] }] },
+  ChamadoNotificacoes: { notificacoesChamado: [], notificacoesChamadoNaoLidas: 0 },
+  ProjetoOrcamentoProjetos: {
+    projetoOrcamentoProjetos: [{ id: "projeto-1", chave: "ORF", nome: "Orfeu", arquivadoEm: null }],
+  },
+  ProjetoOrcamento: {
+    projetoOrcamento: {
+      recursos: [],
+      itens: [],
+      financeiro: {
+        id: "orcamento-1", moeda: "BRL", status: "RASCUNHO", versao: 1, aprovadoEm: null,
+        totalPlanejado: "6000.00", totalComprometido: "4500.00", totalRealizado: "3200.00",
+        variacao: "2800.00", totalRealizadoHoras: "0.00", totalRealizadoConsolidado: "3200.00",
+        variacaoConsolidada: "2800.00", apontamentosSemCusto: 0,
+        categorias: [{
+          id: "categoria-1", nome: "Infraestrutura", valorPlanejado: "6000.00",
+          valorComprometido: "4500.00", valorRealizado: "3200.00", valorRealizadoHoras: "0.00",
+          variacao: "2800.00", versao: 1,
+        }],
+        custos: [{
+          id: "custo-1", categoriaId: "categoria-1", tipo: "FIXO", descricao: "Hospedagem",
+          recursoId: null, itemId: null, quantidadeMinutos: null, taxaHora: null,
+          valorPlanejado: "6000.00", valorComprometido: "4500.00", valorRealizado: "3200.00",
+          minutosAprovados: 0, valorRealizadoHoras: "0.00", versao: 1,
+          recurso: null, item: null, taxas: [],
+        }],
+      },
+      permissoes: { podeVisualizarFinanceiro: true, podeGerenciarFinanceiro: true, podeAprovarOrcamento: true },
+    },
+  },
+};
+
 
 const gruposFase5 = [
   {
@@ -169,6 +230,16 @@ const respostasGrupo = (grupo) => ({
   AtendentesDisponiveis: { atendentesDisponiveis: [] },
 });
 
+const respostasSessaoExpiradaGrupos = {
+  ...respostasGrupo(gruposFase5[1]),
+  GruposUsuarios: {
+    errors: [{
+      message: "Sessao invalida ou revogada.",
+      extensions: { code: "UNAUTHENTICATED", originalError: { statusCode: 401 } },
+    }],
+  },
+};
+
 const assertSemOverflowHorizontal = () => {
   cy.document().then((document) => {
     cy.wrap(document.documentElement.scrollWidth).should("be.lte", document.documentElement.clientWidth + 1);
@@ -243,6 +314,59 @@ describe("navegação e layout com dados simulados", () => {
       assertSemOverflowHorizontal();
       cy.screenshot(`homologacao-equipes-${label}`, { capture: "viewport" });
     });
+
+    it(`mantém cada inclusão na grade financeira correspondente em ${label}`, () => {
+      cy.viewport(width, height);
+      cy.visitAuthenticated("/hub/projetos/orcamento-do-projeto", respostasOrcamento);
+
+      cy.contains(".budget-section h2", "Categorias").closest(".budget-section").within(() => {
+        cy.get('[role="toolbar"][aria-label="Ações das categorias"]').should("be.visible");
+        cy.get('button[aria-label="Nova categoria"]').should("be.visible");
+        cy.get('button[aria-label="Novo custo"]').should("not.exist");
+      });
+      cy.contains(".budget-section h2", "Custos").closest(".budget-section").within(() => {
+        cy.get('[role="toolbar"][aria-label="Ações dos custos"]').should("be.visible");
+        cy.get('button[aria-label="Novo custo"]').should("be.visible");
+        cy.get('button[aria-label="Nova categoria"]').should("not.exist");
+      });
+      cy.get(".budget-maintenance-actions").should("not.exist");
+      assertSemOverflowHorizontal();
+      cy.screenshot(`homologacao-orcamento-acoes-${label}`, { capture: "fullPage" });
+    });
+
+    it(`mantém a ação do aviso de sessão no padrão visual em ${label}`, () => {
+      cy.viewport(width, height);
+      cy.visitAuthenticated("/hub/configurador/cadastro-de-grupos", respostasSessaoExpiradaGrupos);
+
+      cy.get('[role="alert"]').should("be.visible").within(() => {
+        cy.contains("Sua sessão expirou. Entre novamente para continuar.").should("be.visible");
+        cy.contains("button", "Tentar novamente")
+          .should("be.visible")
+          .and("have.css", "display", "inline-flex")
+          .and("have.css", "min-height", "38px")
+          .and("have.css", "border-radius", "9px");
+      });
+      assertSemOverflowHorizontal();
+      cy.screenshot(`homologacao-feedback-sessao-${label}`, { capture: "viewport" });
+    });
+  });
+
+  it("mantém os controles e o perfil visíveis durante a rolagem da barra lateral", () => {
+    cy.viewport(1440, 600);
+    cy.visitAuthenticated("/hub", respostasHeaderRolavel);
+
+    cy.get(".site-header--hub-sidebar .nav-links").then(($menu) => {
+      cy.wrap($menu[0].scrollHeight).should("be.gt", $menu[0].clientHeight);
+    });
+    cy.get(".site-header--hub-sidebar .nav-links").scrollTo("bottom");
+
+    cy.get(".hub-sidebar-persistent-header").should("be.visible").then(($header) => {
+      const bounds = $header[0].getBoundingClientRect();
+      cy.wrap(bounds.top).should("be.gte", 0);
+      cy.wrap(bounds.bottom).should("be.lt", 600);
+    });
+    cy.get(".hub-sidebar-persistent-header .hub-user-card").should("be.visible");
+    cy.screenshot("homologacao-header-sticky-desktop", { capture: "viewport" });
   });
 
   it("preserva abas na URL, teclado, histórico e recarga", () => {

@@ -48,6 +48,30 @@
 .crud-feedback-state-action {
   align-self: center;
 }
+.crud-feedback-state-action > button:not(.button-standard) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid var(--button-secondary-border);
+  border-radius: 9px;
+  background: var(--button-secondary-bg);
+  color: var(--button-secondary-text);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+.crud-feedback-state-action > button:not(.button-standard):hover,
+.crud-feedback-state-action > button:not(.button-standard):focus-visible {
+  border-color: var(--accent-green);
+  background: var(--surface-white);
+  color: var(--accent-green);
+}
+.crud-feedback-state-action > button:not(.button-standard):disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
 .crud-feedback-state-dismiss {
   display: grid;
   place-items: center;
