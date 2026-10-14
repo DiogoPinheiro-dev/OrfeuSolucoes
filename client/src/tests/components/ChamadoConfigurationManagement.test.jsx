@@ -204,6 +204,20 @@ describe("Configurações do Controle de Chamados", () => {
         await waitFor(() => expect(deleteChamadoSlaRegra).toHaveBeenCalledWith(4));
     });
 
+    it.each([
+        ["categorias", "Categorias de chamados", () => <CategoriaChamadoManagement permissions={permissions} />],
+        ["tipos", "Tipos de chamados", () => <ChamadoConfiguracaoManagement kind="tipos" permissions={permissions} />],
+        ["prioridades", "Prioridades de chamados", () => <ChamadoConfiguracaoManagement kind="prioridades" permissions={permissions} />],
+        ["SLA", "Regras de SLA", () => <SlaChamadoManagement permissions={permissions} />],
+        ["responsáveis", "Cadastro de responsáveis", () => <ResponsavelChamadoManagement permissions={permissions} />]
+    ])("identifica a grade de %s como parte do Controle de Chamados", async (_kind, title, renderComponent) => {
+        render(renderComponent());
+
+        const heading = await screen.findByRole("heading", { name: title });
+        expect(within(heading.parentElement).getByText("Controle de Chamados")).toBeInTheDocument();
+        expect(screen.queryByText("Configurador")).not.toBeInTheDocument();
+    });
+
     it("bloqueia todas as ações sem permissão", async () => {
         useAuth.mockReturnValue({ user: { login: "usuario", grupo: {} } });
         render(<ChamadoConfiguracaoManagement kind="prioridades" permissions={{ podeVisualizar: true, podeIncluir: false, podeAlterar: false, podeExcluir: false }} />);
@@ -217,6 +231,9 @@ describe("Configurações do Controle de Chamados", () => {
         const user = userEvent.setup();
         render(<GoogleEmailManagement permissions={permissions} />);
         await screen.findByText(/avisos@teste\.local/);
+        expect(screen.getByText("avisos@teste.local · Gmail pessoal · Aguardando autorização · Ativa")).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Conectar Google" })).toBeInTheDocument();
+        expect(screen.queryByText("Envio de e-mail interrompido")).not.toBeInTheDocument();
 
         await user.type(screen.getByPlaceholderText("Nome da conta"), "Suporte");
         await user.type(screen.getByPlaceholderText("notificacoes@empresa.com"), "suporte@teste.local");
@@ -235,6 +252,27 @@ describe("Configurações do Controle de Chamados", () => {
         await user.click(within(dialog).getByRole("button", { name: "Desativar" }));
         await waitFor(() => expect(deleteGoogleEmailConta).toHaveBeenCalledWith(5));
     }, 15000);
+
+    it("avisa quando a autorização da conta principal venceu no Google", async () => {
+        getGoogleEmailContas.mockResolvedValue([{ ...emailAccount, principal: true, conectado: false, conectadoEm: "2026-10-07T10:00:00.000Z" }]);
+        render(<GoogleEmailManagement permissions={permissions} />);
+
+        expect(await screen.findByText("avisos@teste.local · Gmail pessoal · Autorização vencida · Ativa")).toBeInTheDocument();
+        const aviso = screen.getByRole("status");
+        expect(aviso).toHaveTextContent("Envio de e-mail interrompido");
+        expect(aviso).toHaveTextContent("A autorização da conta principal avisos@teste.local venceu ou foi revogada no Google. Use Reconectar para autorizar de novo.");
+        expect(screen.getByRole("button", { name: "Reconectar" })).toBeInTheDocument();
+    });
+
+    it("orienta a pedir a reconexão a quem não pode alterar a conta", async () => {
+        useAuth.mockReturnValue({ user: { login: "usuario", grupo: {} } });
+        getGoogleEmailContas.mockResolvedValue([{ ...emailAccount, principal: true, conectado: false, conectadoEm: "2026-10-07T10:00:00.000Z" }]);
+        render(<GoogleEmailManagement permissions={{ podeVisualizar: true, podeIncluir: false, podeAlterar: false, podeExcluir: false }} />);
+
+        expect(await screen.findByText("avisos@teste.local · Gmail pessoal · Autorização vencida · Ativa")).toBeInTheDocument();
+        expect(screen.getByRole("status")).toHaveTextContent("Peça a quem administra a integração para reconectar a conta.");
+        expect(screen.queryByRole("button", { name: "Reconectar" })).not.toBeInTheDocument();
+    });
 
     it("preserva validação, CRUD e modo somente leitura de responsáveis", async () => {
         const user = userEvent.setup();
@@ -329,5 +367,25 @@ describe("Configurações do Controle de Chamados", () => {
         await user.click(screen.getByRole("button", { name: "Salvar" }));
 
         await waitFor(() => expect(updateChamadoResponsavel).toHaveBeenCalledWith(expect.objectContaining({ id: 6, ativo: true })));
+    });
+
+    it.each([
+        ["categorias", "Financeiro", updateChamadoCategoria, () => <CategoriaChamadoManagement permissions={permissions} />],
+        ["tipos", "Incidente", updateChamadoTipo, () => <ChamadoConfiguracaoManagement kind="tipos" permissions={permissions} />],
+        ["prioridades", "Alta", updateChamadoPrioridade, () => <ChamadoConfiguracaoManagement kind="prioridades" permissions={permissions} />],
+        ["SLA", "Alta", updateChamadoSlaRegra, () => <SlaChamadoManagement permissions={permissions} />],
+        ["responsáveis", "Atendente", updateChamadoResponsavel, () => <ResponsavelChamadoManagement permissions={permissions} />]
+    ])("mostra no feedback do modal a recusa do backend sem campo associado em %s", async (_kind, rowName, update, renderComponent) => {
+        const user = userEvent.setup();
+        update.mockRejectedValueOnce(new Error("O serviço recusou a alteração. Tente novamente em instantes."));
+        render(renderComponent());
+
+        await user.click(await screen.findByRole("cell", { name: rowName }));
+        await user.click(screen.getByRole("button", { name: "Alterar" }));
+        await user.click(screen.getByRole("button", { name: "Salvar" }));
+
+        const alerta = await within(screen.getByRole("dialog")).findByRole("alert");
+        expect(alerta).toHaveTextContent("O serviço recusou a alteração. Tente novamente em instantes.");
+        expect(alerta).toHaveClass("crud-feedback-state--error");
     });
 });

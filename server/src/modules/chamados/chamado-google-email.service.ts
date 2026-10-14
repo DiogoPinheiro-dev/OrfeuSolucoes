@@ -240,7 +240,7 @@ export class ChamadoGoogleEmailService {
     }
   }
 
-  private async accessToken(conta: { refreshTokenCriptografado: string | null }): Promise<string> {
+  private async accessToken(conta: { id: number; refreshTokenCriptografado: string | null }): Promise<string> {
     if (!conta.refreshTokenCriptografado) throw new BadRequestException('Conta Google nao conectada.');
     const params = new URLSearchParams({
       client_id: this.requiredConfig('GOOGLE_OAUTH_CLIENT_ID'),
@@ -254,8 +254,20 @@ export class ChamadoGoogleEmailService {
       body: params
     });
     const token = (await response.json()) as TokenResponse;
+    if (token.error === 'invalid_grant') await this.desconectar(conta.id, conta.refreshTokenCriptografado);
     if (!response.ok || !token.access_token) throw new BadRequestException(token.error_description || 'Nao foi possivel renovar o acesso a conta Google.');
     return token.access_token;
+  }
+
+  // A Google responde invalid_grant quando a autorização venceu ou foi revogada, e só uma nova conexão gera outro token.
+  // Falhas de rede ou de credencial do app não desconectam. A troca vale só para o token que falhou, para não apagar
+  // uma reconexão feita nesse meio-tempo; o conectadoEm fica como registro da última autorização.
+  private async desconectar(id: number, refreshTokenCriptografado: string): Promise<void> {
+    const { count } = await this.prisma.googleEmailConta.updateMany({
+      where: { id, refreshTokenCriptografado },
+      data: { refreshTokenCriptografado: null }
+    });
+    if (count) this.logger.warn('Conta Google ' + id + ' desconectada: a autorizacao venceu ou foi revogada na Google.');
   }
 
   private async exchangeCode(code: string): Promise<TokenResponse> {

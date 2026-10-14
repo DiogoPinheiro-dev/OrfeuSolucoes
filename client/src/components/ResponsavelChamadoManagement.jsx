@@ -459,6 +459,7 @@ export default function ResponsavelChamadoManagement({ permissions }) {
                 <LoadingState message="Carregando responsáveis..." />
             ) : (
                 <CrudGrid
+                    kicker="Controle de Chamados"
                     title="Cadastro de responsáveis"
                     columns={[
                         { key: "tipo", label: "Tipo", render: (responsavel) => tipoLabel(responsavel.tipo) },
@@ -502,6 +503,7 @@ export default function ResponsavelChamadoManagement({ permissions }) {
                     ariaLabel="Responsável por atendimento"
                     onClose={closeModal}
                     onSubmit={handleSubmit}
+                    generalError={formError}
                     actions={(
                         <>
                             <button type="button" onClick={closeModal}>Fechar</button>
@@ -513,7 +515,6 @@ export default function ResponsavelChamadoManagement({ permissions }) {
                         </>
                     )}
                 >
-                    {formError && <div className="crud-error" role="alert">{formError}</div>}
                     <label>
                         <span>Tipo de responsável</span>
                         <select name="tipo" value={form.tipo} onChange={handleTipoChange} disabled={alvoDisabled} required>

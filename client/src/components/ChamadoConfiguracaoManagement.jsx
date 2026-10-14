@@ -242,6 +242,7 @@ export default function ChamadoConfiguracaoManagement({ permissions, kind }) {
                 <LoadingState message={settings.loading} />
             ) : (
                 <CrudGrid
+                    kicker="Controle de Chamados"
                     title={settings.title}
                     columns={[
                         { key: "ordem", label: "Ordem", render: (item) => item.ordem ?? 0 },                        { key: "nome", label: "Nome", render: (item) => item.nome || "-" },
@@ -283,6 +284,7 @@ export default function ChamadoConfiguracaoManagement({ permissions, kind }) {
                     ariaLabel={settings.singular}
                     onClose={closeModal}
                     onSubmit={handleSubmit}
+                    generalError={formError}
                     actions={(
                         <>
                             <button type="button" onClick={closeModal}>Fechar</button>
@@ -294,8 +296,6 @@ export default function ChamadoConfiguracaoManagement({ permissions, kind }) {
                         </>
                     )}
                 >
-
-                    {formError && <div className="crud-error" role="alert">{formError}</div>}
                     <label>
                         <span>Nome <FormFieldError formId={formId} field="nome" errors={fieldErrors} /></span>
                         <input name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || saving} {...fieldErrorProps("nome")} />

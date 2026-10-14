@@ -65,6 +65,36 @@
 .crud-modal-form {
   min-width: 0;
 }
+/* user-form é o formClassName padrão do CrudModal; o estilo base fica aqui para valer em qualquer tela. */
+.user-form {
+  display: grid;
+  gap: 14px;
+  padding: 20px 22px 22px;
+}
+.user-form label {
+  display: grid;
+  gap: 8px;
+  color: var(--primary);
+}
+.user-form small {
+  color: var(--muted);
+}
+.user-form input,
+.user-form select,
+.user-form textarea {
+  width: 100%;
+  padding: 12px 13px;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-white);
+  color: var(--primary);
+}
+.user-form input:disabled,
+.user-form select:disabled,
+.user-form textarea:disabled {
+  background: var(--surface-soft);
+  color: var(--muted);
+}
 .crud-modal-error {
   margin: 14px 22px 0;
   padding: 11px 13px;

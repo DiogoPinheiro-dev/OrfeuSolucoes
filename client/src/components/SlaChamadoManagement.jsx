@@ -235,6 +235,7 @@ export default function SlaChamadoManagement({ permissions }) {
                 <LoadingState message="Carregando regras de SLA..." />
             ) : (
                 <CrudGrid
+                    kicker="Controle de Chamados"
                     title="Regras de SLA"
                     columns={[
                         { key: "prioridadeNome", label: "Prioridade", render: (regra) => regra.prioridadeNome || "-" },
@@ -279,6 +280,7 @@ export default function SlaChamadoManagement({ permissions }) {
                     ariaLabel="Regra de SLA"
                     onClose={closeModal}
                     onSubmit={handleSubmit}
+                    generalError={formError}
                     actions={(
                         <>
                             <button type="button" onClick={closeModal}>Fechar</button>
@@ -290,7 +292,6 @@ export default function SlaChamadoManagement({ permissions }) {
                         </>
                     )}
                 >
-                    {formError && <div className="crud-error" role="alert">{formError}</div>}
                     <label>
                         <span>Prioridade <FormFieldError formId={SLA_FORM_ID} field="prioridadeId" errors={fieldErrors} /></span>
                         <select name="prioridadeId" value={form.prioridadeId || ""} onChange={handleChange} disabled={readonly || saving} {...fieldErrorProps("prioridadeId")}>

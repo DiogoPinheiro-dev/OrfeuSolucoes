@@ -206,6 +206,7 @@ export default function CategoriaChamadoManagement({ permissions }) {
                 <LoadingState message="Carregando categorias..." />
             ) : (
                 <CrudGrid
+                    kicker="Controle de Chamados"
                     title="Categorias de chamados"
                     columns={[
                         { key: "nome", label: "Nome", render: (categoria) => categoria.nome || "-" },
@@ -246,6 +247,7 @@ export default function CategoriaChamadoManagement({ permissions }) {
                     ariaLabel="Categoria de chamado"
                     onClose={closeModal}
                     onSubmit={handleSubmit}
+                    generalError={formError}
                     actions={(
                         <>
                             <button type="button" onClick={closeModal}>Fechar</button>
@@ -257,7 +259,6 @@ export default function CategoriaChamadoManagement({ permissions }) {
                         </>
                     )}
                 >
-                    {formError && <div className="crud-error" role="alert">{formError}</div>}
                     <label>
                         <span>Nome <FormFieldError formId={CATEGORY_FORM_ID} field="nome" errors={fieldErrors} /></span>
                         <input name="nome" value={form.nome || ""} onChange={handleChange} disabled={readonly || saving} {...fieldErrorProps("nome")} />

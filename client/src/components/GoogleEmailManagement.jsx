@@ -22,6 +22,13 @@ const emptyAccount = {
   principal: false
 };
 
+// Sem token, mas com conectadoEm: a conta já foi autorizada e o backend a desconectou quando o Google recusou a renovação.
+const authorizationExpired = (account) => !account.conectado && Boolean(account.conectadoEm);
+const connectionLabel = (account) => {
+  if (account.conectado) return "Conectada";
+  return authorizationExpired(account) ? "Autorização vencida" : "Aguardando autorização";
+};
+
 export default function GoogleEmailManagement({ permissions }) {
   const { requestConfirmation, confirmationDialog } = useConfirmAction();
   const { user } = useAuth();
@@ -35,6 +42,7 @@ export default function GoogleEmailManagement({ permissions }) {
   const canCreate = canUseFeatureAction(user, permissions, "incluir");
   const canEdit = canUseFeatureAction(user, permissions, "alterar");
   const canDelete = canUseFeatureAction(user, permissions, "excluir");
+  const expiredPrimary = accounts.find((account) => account.principal && account.ativo && authorizationExpired(account));
 
   const load = async () => {
     setLoading(true);
@@ -118,6 +126,12 @@ export default function GoogleEmailManagement({ permissions }) {
   return (
     <div className="email-solution-management">
       {error && <FeedbackMessage type="error" compact>{error}</FeedbackMessage>}
+      {expiredPrimary && (
+        <FeedbackMessage type="warning" title="Envio de e-mail interrompido" compact>
+          A autorização da conta principal {expiredPrimary.emailGoogle} venceu ou foi revogada no Google.
+          {canEdit ? " Use Reconectar para autorizar de novo." : " Peça a quem administra a integração para reconectar a conta."}
+        </FeedbackMessage>
+      )}
 
       <section className="workspace-panel workspace-panel-wide">
         <span className="workspace-label">Controle de Chamados</span>
@@ -191,8 +205,8 @@ export default function GoogleEmailManagement({ permissions }) {
               <div>
                 <strong>{item.nome}{item.principal ? " - Principal" : ""}</strong>
                 <span>
-                  {item.emailGoogle} ? {item.tipo === "GMAIL" ? "Gmail pessoal" : "Workspace"} ?{" "}
-                  {item.conectado ? "Conectada" : "Aguardando autorizacao"} ?{" "}
+                  {item.emailGoogle} · {item.tipo === "GMAIL" ? "Gmail pessoal" : "Google Workspace"} ·{" "}
+                  {connectionLabel(item)} ·{" "}
                   {item.ativo ? "Ativa" : "Inativa"}
                 </span>
               </div>
@@ -203,7 +217,7 @@ export default function GoogleEmailManagement({ permissions }) {
                       Editar
                     </button>
                     <button className="button-standard" type="button" onClick={() => connect(item.id)}>
-                      {item.conectado ? "Reconectar" : "Conectar Google"}
+                      {item.conectado || authorizationExpired(item) ? "Reconectar" : "Conectar Google"}
                     </button>
                     {!item.principal && (
                       <button
