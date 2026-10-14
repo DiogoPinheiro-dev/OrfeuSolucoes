@@ -37,7 +37,9 @@ export const FEATURE_COVERAGE_MATRIX = [
     feature("projetos.comunicacao-do-projeto", "projetos"),
     feature("projetos.planejamento-de-recursos", "projetos", "crud"),
     feature("projetos.equipes", "projetos", "crud"),
-    feature("projetos.orcamento-do-projeto", "projetos")
+    feature("projetos.orcamento-do-projeto", "projetos"),
+    feature("projetos.meus-apontamentos", "projetos", "crud"),
+    feature("projetos.horas-do-projeto", "projetos")
 ];
 
 export const CROSS_CUTTING_COVERAGE_MATRIX = [

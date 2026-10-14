@@ -1846,8 +1846,9 @@ export const PROJETO_ORCAMENTO_QUERY = gql`
       itens { id chave titulo estimativaMinutos responsavelId arquivado }
       financeiro {
         id moeda status versao totalPlanejado totalComprometido totalRealizado variacao aprovadoEm
-        categorias { id nome valorPlanejado valorComprometido valorRealizado variacao versao }
-        custos { id categoriaId tipo descricao recursoId itemId quantidadeMinutos taxaHora valorPlanejado valorComprometido valorRealizado versao recurso { id cadastroRecursoId usuarioId ativo versao usuario { ...ProjetoRecursoUserFields } } item { id chave titulo estimativaMinutos responsavelId arquivado } taxas { id taxaHora criadoEm criadoPor { ...ProjetoRecursoUserFields } } }
+        totalRealizadoHoras totalRealizadoConsolidado variacaoConsolidada apontamentosSemCusto
+        categorias { id nome valorPlanejado valorComprometido valorRealizado valorRealizadoHoras variacao versao }
+        custos { id categoriaId tipo descricao recursoId itemId quantidadeMinutos taxaHora valorPlanejado valorComprometido valorRealizado minutosAprovados valorRealizadoHoras versao recurso { id cadastroRecursoId usuarioId ativo versao usuario { ...ProjetoRecursoUserFields } } item { id chave titulo estimativaMinutos responsavelId arquivado } taxas { id taxaHora criadoEm criadoPor { ...ProjetoRecursoUserFields } } }
       }
       permissoes { podeVisualizarFinanceiro podeGerenciarFinanceiro podeAprovarOrcamento }
     }
@@ -1860,6 +1861,96 @@ export const EXCLUIR_PROJETO_ORCAMENTO_CATEGORIA_MUTATION = gql`mutation Excluir
 export const EXCLUIR_PROJETO_CUSTO_MUTATION = gql`mutation ExcluirProjetoCusto($input: ExcluirProjetoOrcamentoItemInput!) { excluirProjetoCusto(input: $input) }`;
 export const APROVAR_PROJETO_ORCAMENTO_MUTATION = gql`mutation AprovarProjetoOrcamento($input: AprovarProjetoOrcamentoInput!) { aprovarProjetoOrcamento(input: $input) { id status versao } }`;
 export const REABRIR_PROJETO_ORCAMENTO_MUTATION = gql`mutation ReabrirProjetoOrcamento($input: AprovarProjetoOrcamentoInput!) { reabrirProjetoOrcamento(input: $input) { id status versao } }`;
+
+const PROJETO_APONTAMENTO_PROJETO_FIELDS = gql`fragment ProjetoApontamentoProjetoFields on ProjetoApontamentoProjetoType { id chave nome situacao arquivadoEm }`;
+const PROJETO_APONTAMENTO_ITEM_FIELDS = gql`fragment ProjetoApontamentoItemFields on ProjetoApontamentoItemType { id chave titulo }`;
+const PROJETO_APONTAMENTO_FIELDS = gql`
+  ${PROJETO_RECURSO_USER_FIELDS}
+  ${PROJETO_APONTAMENTO_PROJETO_FIELDS}
+  ${PROJETO_APONTAMENTO_ITEM_FIELDS}
+  fragment ProjetoApontamentoFields on ProjetoApontamentoType {
+    id projetoId usuarioId itemId dataTrabalho competencia minutos descricao faturavel status motivo versao enviadoEm decididoEm
+    projeto { ...ProjetoApontamentoProjetoFields }
+    item { ...ProjetoApontamentoItemFields }
+    decididoPor { ...ProjetoRecursoUserFields }
+    acoes { podeAlterar podeEnviar podeRecolher podeExcluir podeDescartar bloqueio }
+  }
+`;
+const PROJETO_HORAS_APONTAMENTO_FIELDS = gql`
+  ${PROJETO_RECURSO_USER_FIELDS}
+  ${PROJETO_APONTAMENTO_ITEM_FIELDS}
+  fragment ProjetoHorasApontamentoFields on ProjetoHorasApontamentoType {
+    id projetoId usuarioId itemId dataTrabalho competencia minutos descricao faturavel status motivo versao enviadoEm decididoEm
+    usuario { ...ProjetoRecursoUserFields }
+    item { ...ProjetoApontamentoItemFields }
+    decididoPor { ...ProjetoRecursoUserFields }
+    acoes { podeAprovar podeRejeitar podeReabrir bloqueio }
+    custo { situacao custoId taxaHoraAplicada valorCusto moeda }
+  }
+`;
+const PROJETO_APONTAMENTO_COMPETENCIA_FIELDS = gql`
+  ${PROJETO_RECURSO_USER_FIELDS}
+  fragment ProjetoApontamentoCompetenciaFields on ProjetoApontamentoCompetenciaType {
+    competencia fechada situacao versao fechadoEm reabertoEm motivoReabertura minutos enviadosPendentes podeFechar podeReabrir bloqueio
+    fechadoPor { ...ProjetoRecursoUserFields }
+    reabertoPor { ...ProjetoRecursoUserFields }
+  }
+`;
+export const PROJETO_APONTAMENTO_PROJETOS_QUERY = gql`
+  ${PROJETO_APONTAMENTO_PROJETO_FIELDS}
+  query ProjetoApontamentoProjetos { projetoApontamentoProjetos { ...ProjetoApontamentoProjetoFields } }
+`;
+export const PROJETO_APONTAMENTO_ITENS_QUERY = gql`
+  ${PROJETO_APONTAMENTO_ITEM_FIELDS}
+  query ProjetoApontamentoItens($projetoId: String!) { projetoApontamentoItens(projetoId: $projetoId) { ...ProjetoApontamentoItemFields } }
+`;
+export const MEUS_PROJETO_APONTAMENTOS_QUERY = gql`
+  ${PROJETO_APONTAMENTO_FIELDS}
+  query MeusProjetoApontamentos($filtro: MeusProjetoApontamentosFiltroInput!) {
+    meusProjetoApontamentos(filtro: $filtro) {
+      items { ...ProjetoApontamentoFields }
+      total pagina limite totalPaginas totalMinutos
+      totaisPorDia { data minutos }
+      totaisPorProjeto { projetoId chave nome minutos }
+      permissoes { podeIncluir }
+    }
+  }
+`;
+export const SALVAR_PROJETO_APONTAMENTO_MUTATION = gql`mutation SalvarProjetoApontamento($input: SalvarProjetoApontamentoInput!) { salvarProjetoApontamento(input: $input) { id status versao } }`;
+export const EXCLUIR_PROJETO_APONTAMENTO_MUTATION = gql`mutation ExcluirProjetoApontamento($input: VersionarProjetoApontamentoInput!) { excluirProjetoApontamento(input: $input) }`;
+export const DESCARTAR_PROJETO_APONTAMENTO_MUTATION = gql`mutation DescartarProjetoApontamento($input: VersionarProjetoApontamentoInput!) { descartarProjetoApontamento(input: $input) }`;
+export const ENVIAR_PROJETO_APONTAMENTOS_MUTATION = gql`mutation EnviarProjetoApontamentos($input: EnviarProjetoApontamentosInput!) { enviarProjetoApontamentos(input: $input) { id status versao } }`;
+export const RECOLHER_PROJETO_APONTAMENTO_MUTATION = gql`mutation RecolherProjetoApontamento($input: VersionarProjetoApontamentoInput!) { recolherProjetoApontamento(input: $input) { id status versao } }`;
+export const PROJETO_HORAS_PROJETOS_QUERY = gql`
+  ${PROJETO_APONTAMENTO_PROJETO_FIELDS}
+  query ProjetoHorasProjetos($incluirArquivados: Boolean) { projetoHorasProjetos(incluirArquivados: $incluirArquivados) { ...ProjetoApontamentoProjetoFields } }
+`;
+export const PROJETO_HORAS_QUERY = gql`
+  ${PROJETO_HORAS_APONTAMENTO_FIELDS}
+  ${PROJETO_APONTAMENTO_COMPETENCIA_FIELDS}
+  query ProjetoHoras($filtro: ProjetoHorasFiltroInput!) {
+    projetoHoras(filtro: $filtro) {
+      items { ...ProjetoHorasApontamentoFields }
+      total pagina limite totalPaginas totalMinutos
+      totaisPorUsuario { minutos usuario { ...ProjetoRecursoUserFields } }
+      totaisPorItem { minutos item { ...ProjetoApontamentoItemFields } }
+      competencias { ...ProjetoApontamentoCompetenciaFields }
+      permissoes { podeAprovar podeReabrir podeFecharPeriodo podeVisualizarFinanceiro podeGerenciarFinanceiro }
+      financeiro {
+        moeda totalCusto apontamentosSemCusto
+        custosPorUsuario { minutos valor usuario { ...ProjetoRecursoUserFields } }
+        custosPorItem { minutos valor item { ...ProjetoApontamentoItemFields } }
+        linhas { custoId descricao quantidadeMinutos taxaHora valorPlanejado minutosAprovados valorRealizadoHoras usuario { ...ProjetoRecursoUserFields } item { ...ProjetoApontamentoItemFields } }
+      }
+    }
+  }
+`;
+export const APROVAR_PROJETO_APONTAMENTOS_MUTATION = gql`mutation AprovarProjetoApontamentos($input: AprovarProjetoApontamentosInput!) { aprovarProjetoApontamentos(input: $input) { id status versao } }`;
+export const REJEITAR_PROJETO_APONTAMENTOS_MUTATION = gql`mutation RejeitarProjetoApontamentos($input: RejeitarProjetoApontamentosInput!) { rejeitarProjetoApontamentos(input: $input) { id status versao } }`;
+export const REABRIR_PROJETO_APONTAMENTO_MUTATION = gql`mutation ReabrirProjetoApontamento($input: ReabrirProjetoApontamentoInput!) { reabrirProjetoApontamento(input: $input) { id status versao } }`;
+export const FECHAR_PROJETO_APONTAMENTO_PERIODO_MUTATION = gql`mutation FecharProjetoApontamentoPeriodo($input: FecharProjetoApontamentoPeriodoInput!) { fecharProjetoApontamentoPeriodo(input: $input) { competencia fechada versao } }`;
+export const REABRIR_PROJETO_APONTAMENTO_PERIODO_MUTATION = gql`mutation ReabrirProjetoApontamentoPeriodo($input: ReabrirProjetoApontamentoPeriodoInput!) { reabrirProjetoApontamentoPeriodo(input: $input) { competencia fechada versao } }`;
+export const RECALCULAR_CUSTO_PROJETO_APONTAMENTOS_MUTATION = gql`mutation RecalcularCustoProjetoApontamentos($input: RecalcularCustoProjetoApontamentosInput!) { recalcularCustoProjetoApontamentos(input: $input) { calculados pendentes } }`;
 
 const PROJETO_SPRINT_ITEM_FIELDS = gql`
   fragment ProjetoSprintItemFields on ProjetoSprintItemType {

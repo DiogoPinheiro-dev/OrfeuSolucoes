@@ -34,7 +34,9 @@ const CODE_PROVIDERS: CatalogoCodeProvider[] = [
   'projetos.cronograma-e-gantt',
   'projetos.comunicacao-do-projeto',
   'projetos.equipes',
-  'projetos.orcamento-do-projeto'
+  'projetos.orcamento-do-projeto',
+  'projetos.meus-apontamentos',
+  'projetos.horas-do-projeto'
 ].map((key) => provider(key));
 
 CODE_PROVIDERS.push(provider('projetos.planejamento-de-recursos', [

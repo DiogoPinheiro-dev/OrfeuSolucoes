@@ -64,7 +64,14 @@ export class ServiceError extends Error {
     }
 }
 
-export const toServiceError = (error, fallback = DEFAULT_MESSAGE, { context } = {}) => {
+// Uma regra de negócio recusada pelo backend (400 sem erro de campo ou 409) explica o que fazer, como o limite
+// diário de horas. O serviço que precisa dessa explicação pede preserveBusinessMessage; erros de coerção do
+// GraphQL, sem exceção de domínio, e permissão negada continuam com a mensagem genérica.
+const keepsDomainMessage = ({ type, originalError, fieldErrors, preserveBusinessMessage }) => preserveBusinessMessage
+    && Boolean(originalError)
+    && (type === "conflict" || (type === "validation" && Object.keys(fieldErrors).length === 0));
+
+export const toServiceError = (error, fallback = DEFAULT_MESSAGE, { context, preserveBusinessMessage = false } = {}) => {
     if (error instanceof ServiceError) return error;
 
     const graphQLError = firstGraphQLError(error);
@@ -74,7 +81,8 @@ export const toServiceError = (error, fallback = DEFAULT_MESSAGE, { context } = 
     const type = classifyError({ error, graphQLError, originalError, fieldErrors, context });
     const rawMessage = originalError?.message ?? graphQLError?.message;
     const businessMessage = Array.isArray(rawMessage) ? rawMessage.join(" ") : rawMessage;
-    const message = type === "unknown" && isSafeBusinessMessage(businessMessage)
+    const showsBusinessMessage = type === "unknown" || keepsDomainMessage({ type, originalError, fieldErrors, preserveBusinessMessage });
+    const message = showsBusinessMessage && isSafeBusinessMessage(businessMessage)
         ? businessMessage
         : ERROR_MESSAGES[type] || fallback;
 

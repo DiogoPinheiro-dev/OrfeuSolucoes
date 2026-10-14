@@ -230,6 +230,90 @@ describe("Orcamento do projeto", () => {
         expect(within(costForm).getByText("Somente itens do backlog atribuídos ao recurso selecionado.")).toBeInTheDocument();
     });
 
+    const resourceCost = (overrides = {}) => ({
+        id: "k2", versao: 2, tipo: "RECURSO", descricao: "Desenvolvimento", categoriaId: "c1", recursoId: "pr1", itemId: null,
+        recurso: budgetPanel.recursos[0], item: null, quantidadeMinutos: 6000, taxaHora: "120.0000", valorPlanejado: "12000.00",
+        valorComprometido: "0.00", valorRealizado: "300.00", minutosAprovados: 0, valorRealizadoHoras: "0.00", taxas: [], ...overrides
+    });
+    const panelWithResourceCost = (cost, financeOverrides = {}) => ({
+        ...budgetPanel,
+        financeiro: { ...finance, custos: [cost], ...financeOverrides }
+    });
+
+    it("separa o realizado manual do realizado por horas e avisa sobre a mão de obra e o custo pendente", async () => {
+        getOrcamento.mockResolvedValue(panelWithResourceCost(resourceCost({ minutosAprovados: 90, valorRealizadoHoras: "180.00" }), {
+            totalRealizadoHoras: "180.00", totalRealizadoConsolidado: "4180.00", variacaoConsolidada: "5820.00", apontamentosSemCusto: 1,
+            categorias: [{ ...category, valorRealizadoHoras: "180.00" }]
+        }));
+        render(<ProjectBudgetManagement />);
+
+        expect(await screen.findByText("Realizado por horas", { selector: ".budget-summary span" })).toBeInTheDocument();
+        expect(screen.getByText("Realizado manual", { selector: ".budget-summary span" }).closest("article")).toHaveTextContent("R$ 4.000,00");
+        expect(screen.getByText("Realizado por horas", { selector: ".budget-summary span" }).closest("article")).toHaveTextContent("R$ 180,00");
+        expect(screen.getByText("Variação consolidada").closest("article")).toHaveTextContent("R$ 5.820,00");
+        expect(screen.getByText(/Não lance a mesma mão de obra também no realizado manual das categorias/)).toBeInTheDocument();
+        expect(screen.getByText("1 apontamento aprovado está sem custo calculado. Confira as taxas e recalcule em Horas do projeto.")).toBeInTheDocument();
+        expect(screen.getByRole("row", { name: /Desenvolvimento/ })).toHaveTextContent("1,5 h");
+        const categoriesGrid = screen.getByRole("heading", { name: "Categorias" }).closest("section");
+        expect(within(categoriesGrid).getByRole("row", { name: /Infraestrutura/ })).toHaveTextContent("R$ 180,00");
+    });
+
+    it("mantém o realizado do custo de recurso como ajuste legado e envia o valor gravado", async () => {
+        const user = userEvent.setup();
+        getOrcamento.mockResolvedValue(panelWithResourceCost(resourceCost()));
+        render(<ProjectBudgetManagement />);
+
+        const costsGrid = (await screen.findByRole("heading", { name: "Custos" })).closest("section");
+        await user.click(within(costsGrid).getByRole("row", { name: /Desenvolvimento/ }));
+        await user.click(within(costsGrid).getByRole("button", { name: "Alterar" }));
+        const costForm = screen.getByRole("dialog", { name: "Alterar custo" });
+        const legacy = within(costForm).getByRole("spinbutton", { name: /Realizado \(ajuste legado\)/ });
+        expect(legacy).toBeDisabled();
+        expect(legacy).toHaveValue(300);
+        expect(within(costForm).getByRole("combobox", { name: "Tipo" })).toBeEnabled();
+        await user.click(within(costForm).getByRole("button", { name: "Salvar alterações" }));
+
+        await waitFor(() => expect(salvarCustoProjeto).toHaveBeenCalledWith(expect.objectContaining({ id: "k2", versao: 2, tipo: "RECURSO", valorRealizado: "300.00" })));
+    });
+
+    it("cria o custo de recurso com realizado zero mesmo depois de digitar o realizado como fixo", async () => {
+        const user = userEvent.setup();
+        render(<ProjectBudgetManagement />);
+
+        await user.click(await screen.findByRole("button", { name: "Novo custo" }));
+        const costForm = screen.getByRole("dialog", { name: "Novo custo" });
+        const realized = within(costForm).getAllByRole("spinbutton").at(-1);
+        await user.clear(realized);
+        await user.type(realized, "750");
+        await user.selectOptions(within(costForm).getByRole("combobox", { name: "Tipo" }), "RECURSO");
+        expect(within(costForm).getByRole("spinbutton", { name: /Realizado \(ajuste legado\)/ })).toHaveValue(0);
+        await user.type(within(costForm).getByRole("textbox", { name: /Descri/ }), "Desenvolvimento");
+        await user.selectOptions(within(costForm).getByRole("combobox", { name: "Recurso cadastrado" }), "pr1");
+        await user.type(within(costForm).getByRole("spinbutton", { name: "Horas planejadas" }), "10");
+        await user.type(within(costForm).getByRole("spinbutton", { name: "Taxa/hora" }), "120");
+        await user.click(within(costForm).getByRole("button", { name: "Adicionar custo" }));
+
+        await waitFor(() => expect(salvarCustoProjeto).toHaveBeenCalledWith(expect.objectContaining({ tipo: "RECURSO", recursoId: "pr1", quantidadeMinutos: 600, valorRealizado: "0" })));
+    });
+
+    it("não troca tipo, recurso ou item nem exclui o custo com horas aprovadas", async () => {
+        const user = userEvent.setup();
+        getOrcamento.mockResolvedValue(panelWithResourceCost(resourceCost({ minutosAprovados: 90, valorRealizadoHoras: "180.00" })));
+        render(<ProjectBudgetManagement />);
+
+        const costsGrid = (await screen.findByRole("heading", { name: "Custos" })).closest("section");
+        expect(within(costsGrid).getByRole("checkbox", { name: /^Selecionar Desenvolvimento\. Indisponível: O custo tem horas aprovadas ligadas a ele/ })).toBeDisabled();
+        await user.click(within(costsGrid).getByRole("row", { name: /Desenvolvimento/ }));
+        await user.click(within(costsGrid).getByRole("button", { name: "Alterar" }));
+        const costForm = screen.getByRole("dialog", { name: "Alterar custo" });
+
+        expect(within(costForm).getByText(/Este custo tem 1,5 h aprovadas ligadas a ele/)).toBeInTheDocument();
+        expect(within(costForm).getByRole("combobox", { name: "Tipo" })).toBeDisabled();
+        expect(within(costForm).getByRole("combobox", { name: "Recurso cadastrado" })).toBeDisabled();
+        expect(within(costForm).getByRole("combobox", { name: /Item do projeto/ })).toBeDisabled();
+        expect(within(costForm).getByRole("textbox", { name: /Descri/ })).toBeEnabled();
+    });
+
     it("oculta dados financeiros e manutencao quando o backend nega acesso", async () => {
         getOrcamento.mockResolvedValue({ ...budgetPanel, permissoes: { podeVisualizarFinanceiro: false } });
         render(<ProjectBudgetManagement />);

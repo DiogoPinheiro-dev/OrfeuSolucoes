@@ -35,7 +35,9 @@ export const FEATURE_PROVIDERS = Object.freeze({
         aliases: ["projetos.recursos-do-projeto", "projetos.grade-de-capacitacao"]
     }),
     "projetos.equipes": provider(() => import("../components/ProjectResourcePlanningManagement"), { props: { secao: "equipes" } }),
-    "projetos.orcamento-do-projeto": provider(() => import("../components/ProjectBudgetManagement"))
+    "projetos.orcamento-do-projeto": provider(() => import("../components/ProjectBudgetManagement")),
+    "projetos.meus-apontamentos": provider(() => import("../components/ProjectTimeEntryManagement")),
+    "projetos.horas-do-projeto": provider(() => import("../components/ProjectHoursManagement"))
 });
 
 const PROVIDER_ALIASES = new Map(

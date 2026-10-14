@@ -1,0 +1,120 @@
+/* Meus apontamentos e Horas do projeto: resumo, totais, competências e custo, escopados pela classe raiz. */
+.project-hours-screen { display: grid; gap: 16px; min-width: 0; color: var(--primary); }
+
+.project-hours-screen .project-hours-header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.project-hours-screen .project-hours-header > div:first-child { flex: 1 1 320px; min-width: 0; }
+.project-hours-screen .project-hours-header h2 { margin: 0; }
+.project-hours-screen .project-hours-header p { margin: 6px 0 0; color: var(--muted); line-height: 1.5; }
+.project-hours-screen .project-hours-header-controls { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+.project-hours-screen .project-hours-header-controls > label:not(.project-hours-check) { display: grid; flex: 1 1 280px; gap: 6px; min-width: min(100%, 240px); color: var(--muted); font-size: .84rem; }
+
+.project-hours-screen select,
+.project-hours-screen textarea,
+.project-hours-screen input:not([type="checkbox"]) { width: 100%; min-height: 42px; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface-white); color: var(--primary); font: inherit; }
+.project-hours-screen textarea { min-height: 96px; resize: vertical; line-height: 1.5; }
+.project-hours-screen :where(select, textarea, input):disabled { background: var(--surface-muted); color: var(--muted); cursor: not-allowed; }
+.project-hours-screen .project-hours-check { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; color: var(--primary); }
+.project-hours-screen .project-hours-check input { width: 18px; height: 18px; accent-color: var(--button-primary-bg); }
+
+.project-hours-screen .project-hours-period { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.project-hours-screen .project-hours-period-mode { display: inline-flex; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
+.project-hours-screen .project-hours-period-mode button { min-height: 34px; padding: 6px 14px; border: 1px solid transparent; border-radius: 9px; background: transparent; color: var(--primary); cursor: pointer; }
+.project-hours-screen .project-hours-period-mode button[aria-pressed="true"] { border-color: var(--button-primary-border); background: var(--button-primary-bg); color: var(--button-primary-text); font-weight: 700; }
+.project-hours-screen .project-hours-period-nav { display: inline-flex; align-items: center; gap: 8px; }
+.project-hours-screen .project-hours-period-nav strong { min-width: 186px; font-weight: 700; text-align: center; }
+.project-hours-screen .project-hours-icon-button,
+.project-hours-screen .project-hours-secondary-button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 38px; border: 1px solid var(--button-secondary-border); border-radius: 10px; background: var(--button-secondary-bg); color: var(--primary); cursor: pointer; }
+.project-hours-screen .project-hours-icon-button { width: 38px; padding: 0; }
+.project-hours-screen .project-hours-icon-button svg { width: 18px; height: 18px; }
+.project-hours-screen .project-hours-secondary-button { padding: 8px 14px; }
+.project-hours-screen :where(.project-hours-period-mode button, .project-hours-icon-button, .project-hours-secondary-button):hover:not(:disabled) { border-color: var(--line-strong); background: var(--button-soft-hover-bg); }
+.project-hours-screen .project-hours-period-mode button[aria-pressed="true"]:hover { background: var(--button-primary-hover-bg); color: var(--button-primary-hover-text); }
+
+.project-hours-screen .project-hours-panel { display: grid; gap: 14px; padding: 18px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface-white); box-shadow: var(--shadow-soft); }
+.project-hours-screen .project-hours-panel > header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.project-hours-screen .project-hours-panel h3 { margin: 0; font-size: 1.05rem; }
+.project-hours-screen .project-hours-panel h4 { margin: 0 0 8px; color: var(--muted); font-size: .76rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.project-hours-screen .project-hours-filters { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); align-items: end; }
+.project-hours-screen .project-hours-filters label { display: grid; gap: 6px; min-width: 0; color: var(--muted); font-size: .82rem; }
+.project-hours-screen .project-hours-summary { display: grid; grid-template-columns: minmax(150px, 210px) minmax(0, 1fr) minmax(220px, 300px); gap: 16px; }
+.project-hours-screen .project-hours-total { display: grid; align-content: start; gap: 6px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
+.project-hours-screen .project-hours-total span { color: var(--muted); font-size: .84rem; }
+.project-hours-screen .project-hours-total strong { font-size: 1.6rem; font-weight: 400; font-variant-numeric: tabular-nums; }
+.project-hours-screen .project-hours-days { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
+.project-hours-screen .project-hours-day { display: grid; align-content: start; gap: 4px; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
+.project-hours-screen .project-hours-day span { color: var(--muted); font-size: .8rem; }
+.project-hours-screen .project-hours-day strong { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.project-hours-screen .project-hours-day small { color: var(--warning-text); font-size: .76rem; line-height: 1.3; }
+.project-hours-screen .project-hours-day--alerta { border-color: color-mix(in srgb, var(--warning-text) 30%, var(--line)); background: var(--warning-bg); }
+.project-hours-screen .project-hours-day--limite { border-color: color-mix(in srgb, var(--danger-text) 30%, var(--line)); background: var(--danger-bg); }
+.project-hours-screen .project-hours-day--limite small { color: var(--danger-text); }
+.project-hours-screen .project-hours-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.project-hours-screen .project-hours-list li { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 8px 10px; border-radius: 10px; background: var(--surface-soft); }
+.project-hours-screen .project-hours-list li > span { min-width: 0; overflow-wrap: anywhere; }
+.project-hours-screen .project-hours-list li > strong { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.project-hours-screen .project-hours-empty-note { margin: 0; color: var(--muted); line-height: 1.5; }
+
+.project-hours-screen .project-hours-status { display: inline-flex; align-items: center; min-height: 26px; padding: 5px 10px; border: 1px solid transparent; border-radius: 999px; font-size: .82rem; line-height: 1; white-space: nowrap; }
+.project-hours-screen .project-hours-status--rascunho { border-color: var(--status-neutral-border); background: var(--status-neutral-bg); color: var(--status-neutral-text); }
+.project-hours-screen .project-hours-status--enviado { border-color: var(--status-info-border); background: var(--status-info-bg); color: var(--status-info-text); }
+.project-hours-screen .project-hours-status--aprovado { border-color: var(--status-success-border); background: var(--status-success-bg); color: var(--status-success-text); }
+.project-hours-screen .project-hours-status--rejeitado { border-color: var(--status-danger-border); background: var(--status-danger-bg); color: var(--status-danger-text); }
+.project-hours-screen .project-hours-situacao { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.project-hours-screen .project-hours-readonly-tag { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-size: .78rem; white-space: nowrap; }
+.project-hours-screen .project-hours-readonly-tag svg { width: 13px; height: 13px; }
+.project-hours-screen .project-hours-text-cell { display: -webkit-box; max-width: 320px; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow-wrap: anywhere; white-space: normal; }
+.project-hours-screen .project-hours-cost-pending { color: var(--warning-text); font-weight: 700; }
+
+.project-hours-screen .crud-filters label:not(.project-hours-check) { display: grid; flex: 1 1 180px; gap: 6px; min-width: min(100%, 180px); color: var(--muted); font-size: .82rem; }
+.project-hours-screen .crud-toolbar .project-hours-toolbar-action { flex: 0 0 auto; width: auto; min-width: 0; padding: 0 16px; font-weight: 700; white-space: nowrap; }
+.project-hours-screen .crud-toolbar .project-hours-toolbar-action--danger { border-color: var(--danger-text); background: var(--danger-bg); color: var(--danger-text); }
+.project-hours-screen .crud-toolbar .project-hours-toolbar-action--danger:hover:not(:disabled),
+.project-hours-screen .crud-toolbar .project-hours-toolbar-action--danger:focus-visible { background: var(--danger-text); color: var(--button-primary-text); }
+
+.project-hours-screen .project-hours-competencias { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
+.project-hours-screen .project-hours-competencia { display: grid; align-content: start; gap: 8px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-soft); }
+.project-hours-screen .project-hours-competencia--fechada { border-color: var(--line-strong); background: var(--surface-muted); }
+.project-hours-screen .project-hours-competencia > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.project-hours-screen .project-hours-competencia > header strong { font-size: 1.05rem; }
+.project-hours-screen .project-hours-competencia p { margin: 0; color: var(--muted); font-size: .84rem; line-height: 1.45; overflow-wrap: anywhere; }
+.project-hours-screen .project-hours-competencia-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.project-hours-screen .project-hours-competencia-state { display: inline-flex; align-items: center; gap: 5px; font-size: .82rem; font-weight: 700; }
+.project-hours-screen .project-hours-competencia-state svg { width: 14px; height: 14px; }
+.project-hours-screen .project-hours-finance { display: grid; grid-template-columns: minmax(150px, 210px) repeat(2, minmax(0, 1fr)); gap: 16px; }
+
+.project-hours-screen .project-hours-form { display: grid; gap: 16px; padding: 20px 22px 22px; }
+.project-hours-screen .project-hours-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.project-hours-screen .project-hours-form label:not(.project-hours-check) { display: grid; align-content: start; gap: 7px; font-size: .9rem; }
+.project-hours-screen .project-hours-form .project-hours-wide { grid-column: 1 / -1; }
+.project-hours-screen .project-hours-form small { color: var(--muted); font-size: .78rem; line-height: 1.35; }
+.project-hours-screen .project-hours-form > p { margin: 0; color: var(--muted); line-height: 1.5; }
+.project-hours-screen .project-hours-form .crud-modal-actions { padding-top: 14px; border-top: 1px solid var(--line); }
+.project-hours-screen .project-hours-form .crud-modal-actions button.danger { border-color: var(--danger-text); background: var(--danger-text); color: var(--button-primary-text); }
+.project-hours-screen .project-hours-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; }
+.project-hours-screen .project-hours-details > div { display: grid; gap: 4px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); }
+.project-hours-screen .project-hours-details > div.project-hours-wide { grid-column: 1 / -1; }
+.project-hours-screen .project-hours-details dt { color: var(--muted); font-size: .8rem; }
+.project-hours-screen .project-hours-details dd { margin: 0; line-height: 1.45; overflow-wrap: anywhere; white-space: pre-line; }
+
+@media (max-width: 900px) {
+  .project-hours-screen .project-hours-summary,
+  .project-hours-screen .project-hours-finance { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 760px) {
+  .project-hours-screen .project-hours-header { align-items: stretch; flex-direction: column; }
+  .project-hours-screen .project-hours-header > div:first-child,
+  .project-hours-screen .project-hours-header-controls > label:not(.project-hours-check) { flex: none; }
+  .project-hours-screen .project-hours-header-controls { align-items: stretch; flex-direction: column; }
+  .project-hours-screen .project-hours-period { align-items: stretch; flex-direction: column; }
+  .project-hours-screen .project-hours-period-nav { justify-content: space-between; }
+  .project-hours-screen .project-hours-period-nav strong { min-width: 0; }
+  .project-hours-screen .crud-toolbar .project-hours-toolbar-action { flex: 1 1 auto; }
+}
+
+@media (max-width: 560px) {
+  .project-hours-screen .project-hours-panel { padding: 14px; }
+  .project-hours-screen .project-hours-form { padding: 16px; }
+  .project-hours-screen .project-hours-form-grid,
+  .project-hours-screen .project-hours-details { grid-template-columns: minmax(0, 1fr); }
+}

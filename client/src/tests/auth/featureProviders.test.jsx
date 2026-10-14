@@ -33,6 +33,12 @@ describe("manifesto de providers do Hub", () => {
         });
     });
 
+    it("resolve as telas do controle de horas pela chave estável do catálogo", () => {
+        expect(resolveFeatureProvider("projetos.meus-apontamentos", 1)).toMatchObject({ key: "projetos.meus-apontamentos", version: 1 });
+        expect(resolveFeatureProvider("projetos.horas-do-projeto", 1)).toMatchObject({ key: "projetos.horas-do-projeto", version: 1 });
+        expect(resolveFeatureProvider("horas.registro-de-horas", 1)).toBeNull();
+    });
+
     it("mantém chaves únicas no manifesto", () => {
         expect(new Set(FEATURE_PROVIDER_KEYS).size).toBe(FEATURE_PROVIDER_KEYS.length);
     });

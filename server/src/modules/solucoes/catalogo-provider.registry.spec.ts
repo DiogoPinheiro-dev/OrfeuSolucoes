@@ -12,6 +12,15 @@ describe('CatalogoProviderRegistry', () => {
     ]));
   });
 
+  it('registra as telas do controle de horas sem alias para as chaves da solução horas', () => {
+    const registry = new CatalogoProviderRegistry();
+
+    expect(registry.isCompatible('projetos.meus-apontamentos', 1)).toBe(true);
+    expect(registry.isCompatible('projetos.horas-do-projeto', 1)).toBe(true);
+    expect(registry.find('horas.registro-de-horas')).toBeNull();
+    expect(registry.find('horas.aprovacao-de-apontamentos')).toBeNull();
+  });
+
   it('preserva aliases históricos sem duplicá-los na lista administrativa', () => {
     const registry = new CatalogoProviderRegistry();
 
