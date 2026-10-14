@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException, HttpException } from '@nestjs/common';
 import { ProjetoSituacao } from '../types/projeto.types';
 import { ProjetoApontamentoOperacao, ProjetoApontamentoStatus } from '../types/projeto-apontamento.types';
+import { formatCompetencia } from './projeto-input.policy';
 
 const { RASCUNHO, ENVIADO, APROVADO, REJEITADO } = ProjetoApontamentoStatus;
 
@@ -54,6 +55,8 @@ const REGRAS: Record<ProjetoApontamentoOperacao, RegraOperacao> = {
   }
 };
 
+const PROJETO_ARQUIVADO = 'O projeto está arquivado, e o apontamento fica somente para consulta.';
+
 const DESCRICAO_STATUS: Record<ProjetoApontamentoStatus, string> = {
   [RASCUNHO]: 'em rascunho',
   [ENVIADO]: 'enviado',
@@ -68,6 +71,8 @@ export type ProjetoApontamentoTransicao = {
   atorEhAutor: boolean;
   situacaoProjeto: ProjetoSituacao;
   competenciaFechada: boolean;
+  /** Mês do apontamento (YYYY-MM); quando informado, a recusa por competência fechada nomeia o mês. */
+  competencia?: string;
 };
 
 /** Só a exclusão remove o apontamento; as demais operações terminam numa situação. */
@@ -148,6 +153,59 @@ export function resolveProjetoApontamentoAcoesDoAutor(situacao: ProjetoApontamen
   };
 }
 
+export type ProjetoApontamentoSituacaoDoGestor = {
+  status: ProjetoApontamentoStatus;
+  competencia: string;
+  competenciaFechada: boolean;
+  situacaoProjeto: ProjetoSituacao;
+  projetoArquivado: boolean;
+  atorEhAutor: boolean;
+  podeAprovarHoras: boolean;
+  podeReabrirHoras: boolean;
+};
+
+export type ProjetoApontamentoAcoesDoGestor = {
+  podeAprovar: boolean;
+  podeRejeitar: boolean;
+  podeReabrir: boolean;
+  bloqueio: string | null;
+};
+
+/**
+ * O que quem gerencia as horas pode decidir sobre um apontamento do próprio escopo, pela mesma tabela de
+ * transições, e o motivo quando nenhuma das decisões que a pessoa teria para aquela situação é possível.
+ */
+export function resolveProjetoApontamentoAcoesDoGestor(situacao: ProjetoApontamentoSituacaoDoGestor): ProjetoApontamentoAcoesDoGestor {
+  if (situacao.projetoArquivado) {
+    return { podeAprovar: false, podeRejeitar: false, podeReabrir: false, bloqueio: PROJETO_ARQUIVADO };
+  }
+
+  const avaliar = (operacao: ProjetoApontamentoOperacao, acaoPermitida: boolean): AvaliacaoDaTransicao | null =>
+    acaoPermitida && REGRAS[operacao].origem.includes(situacao.status)
+      ? avaliarTransicao({
+          operacao,
+          status: situacao.status,
+          descartado: false,
+          atorEhAutor: situacao.atorEhAutor,
+          situacaoProjeto: situacao.situacaoProjeto,
+          competenciaFechada: situacao.competenciaFechada,
+          competencia: situacao.competencia
+        })
+      : null;
+  const permitida = (avaliacao: AvaliacaoDaTransicao | null): boolean => avaliacao?.permitida === true;
+  const aprovar = avaliar(ProjetoApontamentoOperacao.APROVAR, situacao.podeAprovarHoras);
+  const rejeitar = avaliar(ProjetoApontamentoOperacao.REJEITAR, situacao.podeAprovarHoras);
+  const reabrir = avaliar(ProjetoApontamentoOperacao.REABRIR, situacao.podeReabrirHoras);
+  const disponiveis = [aprovar, rejeitar, reabrir].filter((avaliacao): avaliacao is AvaliacaoDaTransicao => avaliacao !== null);
+
+  return {
+    podeAprovar: permitida(aprovar),
+    podeRejeitar: permitida(rejeitar),
+    podeReabrir: permitida(reabrir),
+    bloqueio: disponiveis.length > 0 && !disponiveis.some(permitida) ? primeiraRecusa(disponiveis) : null
+  };
+}
+
 type AvaliacaoDaTransicao =
   | { permitida: true; destino: ProjetoApontamentoStatus | null }
   | { permitida: false; recusa: HttpException };
@@ -171,7 +229,7 @@ function avaliarTransicao(transicao: ProjetoApontamentoTransicao): AvaliacaoDaTr
   }
 
   if (regra.ator === 'OUTRO' && atorEhAutor) {
-    return recusar(new ForbiddenException(`Ninguém pode ${regra.verbo} o próprio apontamento.`));
+    return recusar(new ForbiddenException(`Você não pode ${regra.verbo} os próprios apontamentos.`));
   }
 
   if (regra.exigeCicloElegivel && !PROJETO_APONTAMENTO_CICLOS_ELEGIVEIS.includes(situacaoProjeto)) {
@@ -181,7 +239,9 @@ function avaliarTransicao(transicao: ProjetoApontamentoTransicao): AvaliacaoDaTr
   }
 
   if (regra.bloqueadaPorCompetenciaFechada && competenciaFechada) {
-    return recusar(new BadRequestException('A competência deste apontamento está fechada.'));
+    return recusar(new BadRequestException(transicao.competencia
+      ? descreverCompetenciaFechada(transicao.competencia)
+      : 'A competência deste apontamento está fechada.'));
   }
 
   if (regra.destino === 'REMOVIDO') return { permitida: true, destino: null };
@@ -191,7 +251,7 @@ function avaliarTransicao(transicao: ProjetoApontamentoTransicao): AvaliacaoDaTr
 
 function motivoDeConsulta(situacao: ProjetoApontamentoSituacaoDoAutor): string | null {
   if (situacao.projetoArquivado) {
-    return 'O projeto está arquivado, e o apontamento fica somente para consulta.';
+    return PROJETO_ARQUIVADO;
   }
 
   if (!situacao.lancaNoProjeto) {
@@ -199,8 +259,7 @@ function motivoDeConsulta(situacao: ProjetoApontamentoSituacaoDoAutor): string |
   }
 
   if (situacao.competenciaFechada) {
-    const [ano, mes] = situacao.competencia.split('-');
-    return `A competência ${mes}/${ano} deste projeto está fechada.`;
+    return descreverCompetenciaFechada(situacao.competencia);
   }
 
   const dependeDoCiclo = OPERACOES_DO_AUTOR.some((operacao) =>
@@ -211,4 +270,12 @@ function motivoDeConsulta(situacao: ProjetoApontamentoSituacaoDoAutor): string |
   }
 
   return null;
+}
+
+function primeiraRecusa(avaliacoes: readonly AvaliacaoDaTransicao[]): string | null {
+  return avaliacoes.flatMap((avaliacao) => (avaliacao.permitida ? [] : [avaliacao.recusa.message]))[0] ?? null;
+}
+
+function descreverCompetenciaFechada(competencia: string): string {
+  return `A competência ${formatCompetencia(competencia)} deste projeto está fechada.`;
 }

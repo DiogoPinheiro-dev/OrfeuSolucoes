@@ -2,10 +2,13 @@ import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { ProjetoSituacao } from '../types/projeto.types';
 import { ProjetoApontamentoOperacao, ProjetoApontamentoStatus } from '../types/projeto-apontamento.types';
 import {
+  ProjetoApontamentoAcoesDoGestor,
   ProjetoApontamentoSituacaoDoAutor,
+  ProjetoApontamentoSituacaoDoGestor,
   ProjetoApontamentoTransicao,
   permiteProjetoApontamentoTransicao,
   resolveProjetoApontamentoAcoesDoAutor,
+  resolveProjetoApontamentoAcoesDoGestor,
   resolveProjetoApontamentoTransicao
 } from './projeto-apontamento-status.policy';
 
@@ -35,6 +38,20 @@ const situacaoDoAutor = (dados: Partial<ProjetoApontamentoSituacaoDoAutor>): Pro
 });
 
 const nenhumaAcao = { podeAlterar: false, podeExcluir: false, podeDescartar: false, podeEnviar: false, podeRecolher: false };
+
+const situacaoDoGestor = (dados: Partial<ProjetoApontamentoSituacaoDoGestor>): ProjetoApontamentoSituacaoDoGestor => ({
+  status: ENVIADO,
+  competencia: '2026-09',
+  competenciaFechada: false,
+  situacaoProjeto: ProjetoSituacao.EM_ANDAMENTO,
+  projetoArquivado: false,
+  atorEhAutor: false,
+  podeAprovarHoras: true,
+  podeReabrirHoras: true,
+  ...dados
+});
+
+const nenhumaDecisao = { podeAprovar: false, podeRejeitar: false, podeReabrir: false };
 
 describe('ProjetoApontamentoStatusPolicy', () => {
   it('cria em rascunho e preserva rascunho ou rejeitado ao salvar', () => {
@@ -73,11 +90,11 @@ describe('ProjetoApontamentoStatusPolicy', () => {
   });
 
   it.each([
-    [APROVAR, ENVIADO],
-    [REJEITAR, ENVIADO]
-  ])('rejeita %s quando o ator e o autor', (operacao, status) => {
+    [APROVAR, ENVIADO, 'Você não pode aprovar os próprios apontamentos.'],
+    [REJEITAR, ENVIADO, 'Você não pode rejeitar os próprios apontamentos.']
+  ])('rejeita %s quando o ator e o autor', (operacao, status, mensagem) => {
     expect(() => resolveProjetoApontamentoTransicao(transicao({ operacao, status, atorEhAutor: true }))).toThrow(
-      ForbiddenException
+      new ForbiddenException(mensagem)
     );
   });
 
@@ -133,6 +150,12 @@ describe('ProjetoApontamentoStatusPolicy', () => {
     expect(() =>
       resolveProjetoApontamentoTransicao(transicao({ operacao, status, atorEhAutor, competenciaFechada: true }))
     ).toThrow('A competência deste apontamento está fechada.');
+  });
+
+  it('nomeia o mes da competencia fechada quando a transicao informa a competencia', () => {
+    expect(() => resolveProjetoApontamentoTransicao(transicao({
+      operacao: REABRIR, status: APROVADO, atorEhAutor: false, competenciaFechada: true, competencia: '2026-09'
+    }))).toThrow(new BadRequestException('A competência 09/2026 deste projeto está fechada.'));
   });
 
   it('nao bloqueia a rejeicao por competencia, porque o fechamento exige nenhum enviado pendente', () => {
@@ -206,5 +229,30 @@ describe('ProjetoApontamentoStatusPolicy', () => {
     expect(resolveProjetoApontamentoAcoesDoAutor(situacaoDoAutor({ status: APROVADO, situacaoProjeto }))).toEqual({
       ...nenhumaAcao, bloqueio: null
     });
+  });
+
+  const casosDoGestor: Array<[string, Partial<ProjetoApontamentoSituacaoDoGestor>, Partial<ProjetoApontamentoAcoesDoGestor>]> = [
+    ['enviado de outra pessoa', {}, { podeAprovar: true, podeRejeitar: true, bloqueio: null }],
+    ['enviado fora dos ciclos elegiveis', { situacaoProjeto: ProjetoSituacao.CONCLUIDO }, { podeAprovar: true, podeRejeitar: true, bloqueio: null }],
+    ['enviado em competencia fechada', { competenciaFechada: true }, { podeRejeitar: true, bloqueio: null }],
+    ['enviado da propria pessoa', { atorEhAutor: true }, { bloqueio: 'Você não pode aprovar os próprios apontamentos.' }],
+    ['enviado sem aprovar_horas', { podeAprovarHoras: false }, { bloqueio: null }],
+    ['aprovado de outra pessoa', { status: APROVADO }, { podeReabrir: true, bloqueio: null }],
+    ['aprovado da propria pessoa', { status: APROVADO, atorEhAutor: true }, { podeReabrir: true, bloqueio: null }],
+    ['aprovado em competencia fechada', { status: APROVADO, competenciaFechada: true }, { bloqueio: 'A competência 09/2026 deste projeto está fechada.' }],
+    [
+      'aprovado fora dos ciclos elegiveis',
+      { status: APROVADO, situacaoProjeto: ProjetoSituacao.PAUSADO },
+      { bloqueio: 'Para reabrir o apontamento, o projeto precisa estar em Rascunho, Planejado ou Em andamento.' }
+    ],
+    ['aprovado sem reabrir_horas', { status: APROVADO, podeReabrirHoras: false }, { bloqueio: null }],
+    ['em rascunho', { status: RASCUNHO }, { bloqueio: null }],
+    ['rejeitado', { status: REJEITADO }, { bloqueio: null }],
+    ['de projeto arquivado', { projetoArquivado: true }, { bloqueio: 'O projeto está arquivado, e o apontamento fica somente para consulta.' }],
+    ['em rascunho de projeto arquivado', { status: RASCUNHO, projetoArquivado: true }, { bloqueio: 'O projeto está arquivado, e o apontamento fica somente para consulta.' }]
+  ];
+
+  it.each(casosDoGestor)('oferece a quem gerencia as decisoes da tabela para um apontamento %s', (_caso, dados, esperado) => {
+    expect(resolveProjetoApontamentoAcoesDoGestor(situacaoDoGestor(dados))).toEqual({ ...nenhumaDecisao, ...esperado });
   });
 });

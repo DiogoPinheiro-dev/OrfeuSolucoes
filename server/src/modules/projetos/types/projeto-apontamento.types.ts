@@ -1,4 +1,5 @@
 import { registerEnumType } from '@nestjs/graphql';
+import { Prisma } from '@prisma/client';
 import { ProjetoUsuarioRecord } from './projeto.types';
 
 export enum ProjetoApontamentoStatus {
@@ -50,6 +51,12 @@ export type ProjetoApontamentoRecord = {
   decididoPorId?: string | null;
   decididoEm?: Date | null;
   motivo?: string | null;
+  custoId?: string | null;
+  taxaHistoricoId?: string | null;
+  taxaHoraAplicada?: Prisma.Decimal.Value | null;
+  valorCusto?: Prisma.Decimal.Value | null;
+  moeda?: string | null;
+  custoSituacao?: string;
   arquivadoEm?: Date | null;
   arquivadoPorId?: string | null;
   versao: number;
@@ -69,4 +76,31 @@ export type ProjetoApontamentoDetalheRecord = ProjetoApontamentoRecord & {
   };
   item?: { id: string; chave: string; titulo: string } | null;
   decididoPor?: ProjetoUsuarioRecord | null;
+};
+
+/** Apontamento com o autor, na visão de gestão de Horas do projeto. */
+export type ProjetoHorasApontamentoRecord = ProjetoApontamentoRecord & {
+  usuario: ProjetoUsuarioRecord;
+  item?: { id: string; chave: string; titulo: string } | null;
+  decididoPor?: ProjetoUsuarioRecord | null;
+};
+
+/** Custo congelado no apontamento aprovado, ou a situação que impediu o cálculo. */
+export type ProjetoApontamentoCusto = {
+  custoSituacao: ProjetoApontamentoCustoSituacao;
+  custoId: string | null;
+  taxaHistoricoId: string | null;
+  taxaHoraAplicada: string | null;
+  valorCusto: string | null;
+  moeda: string | null;
+};
+
+/** O que um apontamento fora da aprovação guarda de custo: nada calculado. */
+export const PROJETO_APONTAMENTO_SEM_CUSTO: ProjetoApontamentoCusto = {
+  custoSituacao: ProjetoApontamentoCustoSituacao.NAO_APLICAVEL,
+  custoId: null,
+  taxaHistoricoId: null,
+  taxaHoraAplicada: null,
+  valorCusto: null,
+  moeda: null
 };

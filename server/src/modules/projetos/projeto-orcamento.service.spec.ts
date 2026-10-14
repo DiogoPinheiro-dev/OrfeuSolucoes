@@ -19,7 +19,8 @@ const createService = () => {
     projetoOrcamento: { findUnique: jest.fn(), findFirst: jest.fn(), create: jest.fn(), updateMany: jest.fn() },
     projetoOrcamentoCategoria: { count: jest.fn(), findFirst: jest.fn(), create: jest.fn(), updateMany: jest.fn(), findUnique: jest.fn(), deleteMany: jest.fn() },
     projetoCusto: { count: jest.fn(), findFirst: jest.fn(), findUnique: jest.fn(), create: jest.fn(), updateMany: jest.fn(), deleteMany: jest.fn() },
-    projetoCustoTaxaHistorico: { create: jest.fn() }
+    projetoCustoTaxaHistorico: { create: jest.fn() },
+    projetoApontamento: { findMany: jest.fn().mockResolvedValue([]), count: jest.fn().mockResolvedValue(0) }
   };
   prisma.$transaction = jest.fn((callback) => callback(prisma));
   const authorization = {
@@ -222,5 +223,74 @@ describe('ProjetoOrcamentoService', () => {
     prisma.projeto.findFirst.mockResolvedValue({ situacao: ProjetoSituacao.CANCELADO });
     await expect(service.aprovar({ projetoId: 'p1', id: 'o1', versao: 1 } as never, user)).rejects.toBeInstanceOf(ConflictException);
     expect(prisma.projetoOrcamento.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('soma no realizado por horas o custo congelado das horas aprovadas, sem tocar o realizado manual', async () => {
+    const { prisma, authorization, service } = createService();
+    authorization.permissoes.mockResolvedValue({ podeVisualizarFinanceiro: true });
+    prisma.projetoRecurso.findMany.mockResolvedValue([]);
+    prisma.projetoItem.findMany.mockResolvedValue([]);
+    prisma.projetoOrcamento.findUnique.mockResolvedValue({
+      ...financeiro,
+      categorias: [{ id: 'c1', nome: 'Mão de obra', valorPlanejado: '500', valorComprometido: '0', valorRealizado: '40' }],
+      custos: [
+        { id: 'cost1', categoriaId: 'c1', tipo: ProjetoCustoTipo.RECURSO, taxaHora: '120', valorPlanejado: '240', valorComprometido: '0', valorRealizado: '15', recurso: null, item: null, taxas: [] },
+        { id: 'cost2', categoriaId: null, tipo: ProjetoCustoTipo.RECURSO, taxaHora: '90', valorPlanejado: '90', valorComprometido: '0', valorRealizado: '0', recurso: null, item: null, taxas: [] }
+      ]
+    });
+    prisma.projetoApontamento.findMany.mockResolvedValue([
+      { custoId: 'cost1', minutos: 90, valorCusto: '180.00', custoSituacao: 'CALCULADO' },
+      { custoId: 'cost2', minutos: 30, valorCusto: '45.00', custoSituacao: 'CALCULADO' },
+      { custoId: null, minutos: 60, valorCusto: null, custoSituacao: 'SEM_TAXA' }
+    ]);
+
+    const painel = await service.painel('p1', user);
+
+    expect(prisma.projetoApontamento.findMany).toHaveBeenCalledWith({
+      where: { projetoId: 'p1', status: 'APROVADO' },
+      select: { custoId: true, minutos: true, valorCusto: true, custoSituacao: true }
+    });
+    expect(painel.financeiro).toMatchObject({
+      totalPlanejado: '500.00',
+      totalRealizado: '40.00',
+      variacao: '460.00',
+      totalRealizadoHoras: '225.00',
+      totalRealizadoConsolidado: '265.00',
+      variacaoConsolidada: '235.00',
+      apontamentosSemCusto: 1,
+      categorias: [expect.objectContaining({ valorRealizado: '40.00', valorRealizadoHoras: '180.00' })],
+      custos: [
+        expect.objectContaining({ id: 'cost1', valorRealizado: '15.00', minutosAprovados: 90, valorRealizadoHoras: '180.00' }),
+        expect.objectContaining({ id: 'cost2', valorRealizado: '0.00', minutosAprovados: 30, valorRealizadoHoras: '45.00' })
+      ]
+    });
+  });
+
+  it('devolve a categoria com o realizado das horas aprovadas nas linhas dela', async () => {
+    const { prisma, service } = createService();
+    prisma.projetoOrcamento.findUnique.mockResolvedValue(financeiro);
+    prisma.projetoOrcamentoCategoria.updateMany.mockResolvedValue({ count: 1 });
+    prisma.projetoOrcamentoCategoria.findUnique.mockResolvedValue({ id: 'c1', nome: 'Mão de obra', valorPlanejado: '500', valorComprometido: '0', valorRealizado: '40' });
+    prisma.projetoApontamento.findMany.mockResolvedValue([{ custoId: 'cost1', minutos: 90, valorCusto: '180.00', custoSituacao: 'CALCULADO' }]);
+
+    await expect(service.salvarCategoria({
+      projetoId: 'p1', id: 'c1', versao: 1, nome: 'Mão de obra', valorPlanejado: '500', valorComprometido: '0', valorRealizado: '40'
+    } as never, user)).resolves.toMatchObject({ valorRealizado: '40.00', valorRealizadoHoras: '180.00', variacao: '460.00' });
+    expect(prisma.projetoApontamento.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { projetoId: 'p1', custo: { categoriaId: 'c1' }, status: 'APROVADO' }
+    }));
+  });
+
+  it('bloqueia a exclusao do custo usado por horas aprovadas antes de apagar', async () => {
+    const { prisma, service } = createService();
+    prisma.projetoOrcamento.findUnique.mockResolvedValue(financeiro);
+    prisma.projetoCusto.findFirst.mockResolvedValue({ id: 'cost1', descricao: 'Análise', categoriaId: null });
+    prisma.projetoApontamento.count.mockResolvedValue(2);
+
+    await expect(service.excluirCusto({ projetoId: 'p1', id: 'cost1', versao: 1 } as never, user)).rejects.toThrow(
+      new BadRequestException('O custo tem 2 apontamento(s) aprovado(s) ligado(s) a ele e não pode ser excluído. Reabra esses apontamentos antes de excluir o custo.')
+    );
+    expect(prisma.projetoApontamento.count).toHaveBeenCalledWith({ where: { custoId: 'cost1' } });
+    expect(prisma.projetoCusto.deleteMany).not.toHaveBeenCalled();
   });
 });

@@ -24,7 +24,7 @@ import {
 import { PROJETO_PAGINACAO } from '../projeto-periodo.service';
 import { ProjetoApontamentoStatus } from '../types/projeto-apontamento.types';
 
-const DATA_DE_CALENDARIO = /^\d{4}-\d{2}-\d{2}$/;
+export const DATA_DE_CALENDARIO = /^\d{4}-\d{2}-\d{2}$/;
 
 @InputType()
 export class SalvarProjetoApontamentoInput {

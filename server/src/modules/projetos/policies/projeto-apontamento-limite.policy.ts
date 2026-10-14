@@ -4,6 +4,10 @@ export const PROJETO_APONTAMENTO_MINUTOS_POR_DIA = 1440;
 
 export const PROJETO_APONTAMENTO_DESCRICAO_MAXIMA = 1000;
 
+export const PROJETO_APONTAMENTO_MOTIVO_MINIMO = 5;
+
+export const PROJETO_APONTAMENTO_MOTIVO_MAXIMO = 500;
+
 export type ProjetoApontamentoDoDia = {
   id: string;
   minutos: number;
@@ -30,6 +34,17 @@ export function normalizeDescricaoApontamento(descricao: string): string {
   }
 
   return normalizada;
+}
+
+/** Motivo de rejeição, de reabertura de apontamento ou de reabertura de competência, visível para o autor. */
+export function normalizeMotivoApontamento(motivo: string): string {
+  const normalizado = (motivo ?? '').trim();
+
+  if (normalizado.length < PROJETO_APONTAMENTO_MOTIVO_MINIMO || normalizado.length > PROJETO_APONTAMENTO_MOTIVO_MAXIMO) {
+    throw new BadRequestException('Informe um motivo com 5 a 500 caracteres.');
+  }
+
+  return normalizado;
 }
 
 /**

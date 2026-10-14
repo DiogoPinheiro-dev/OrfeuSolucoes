@@ -12,11 +12,13 @@ describe('ProjetosService', () => {
   const query = dependency(); const itemCatalog = dependency(); const itemQuery = dependency(); const backlog = dependency();
   const sprint = dependency(); const compromissos = dependency(); const cronograma = dependency(); const comunicacao = dependency();
   const recurso = dependency(); const orcamento = dependency(); const apontamento = dependency(); const apontamentoQuery = dependency();
+  const horasQuery = dependency(); const aprovacao = dependency(); const competencias = dependency(); const custoDasHoras = dependency();
   const service = new ProjetosService(
     authorization as never, catalog as never, equipe as never, lifecycle as never, key as never,
     query as never, itemCatalog as never, itemQuery as never, backlog as never, sprint as never,
     compromissos as never, cronograma as never, comunicacao as never, recurso as never, orcamento as never,
-    apontamento as never, apontamentoQuery as never
+    apontamento as never, apontamentoQuery as never, horasQuery as never, aprovacao as never, competencias as never,
+    custoDasHoras as never
   );
 
   beforeEach(() => jest.clearAllMocks());
@@ -41,7 +43,10 @@ describe('ProjetosService', () => {
     ['aprovarOrcamento', orcamento, 'aprovar'], ['reabrirOrcamento', orcamento, 'reabrir'],
     ['salvarApontamento', apontamento, 'salvar'], ['excluirApontamento', apontamento, 'excluir'],
     ['descartarApontamento', apontamento, 'descartar'], ['enviarApontamentos', apontamento, 'enviar'],
-    ['recolherApontamento', apontamento, 'recolher']
+    ['recolherApontamento', apontamento, 'recolher'], ['horas', horasQuery, 'painel'],
+    ['aprovarApontamentos', aprovacao, 'aprovar'], ['rejeitarApontamentos', aprovacao, 'rejeitar'],
+    ['reabrirApontamento', aprovacao, 'reabrir'], ['fecharPeriodoDeApontamentos', competencias, 'fechar'],
+    ['reabrirPeriodoDeApontamentos', competencias, 'reabrir'], ['recalcularCustoDosApontamentos', custoDasHoras, 'recalcular']
   ] as const)('mantém a delegação de %s', (method, target, targetMethod) => {
     expect((service[method] as never as (value: never, actor: never) => unknown)(input, user)).toBe(result);
     expect(target[targetMethod]).toHaveBeenCalledWith(input, user);
@@ -81,5 +86,6 @@ describe('ProjetosService', () => {
     expect(service.comunicacao('p1', user, input)).toBe(result); expect(comunicacao.painel).toHaveBeenCalledWith('p1', user, input);
     expect(service.orcamento('p1', user)).toBe(result); expect(orcamento.painel).toHaveBeenCalledWith('p1', user);
     expect(service.apontamentoItens('p1', user)).toBe(result); expect(apontamentoQuery.itens).toHaveBeenCalledWith('p1', user);
+    expect(service.horasProjetos(user, true)).toBe(result); expect(horasQuery.projetos).toHaveBeenCalledWith(user, true);
   });
 });

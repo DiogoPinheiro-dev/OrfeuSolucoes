@@ -78,8 +78,21 @@ import {
   SalvarProjetoApontamentoInput,
   VersionarProjetoApontamentoInput
 } from './dto/projeto-apontamento.input';
+import {
+  AprovarProjetoApontamentosInput,
+  FecharProjetoApontamentoPeriodoInput,
+  ProjetoHorasFiltroInput,
+  ReabrirProjetoApontamentoInput,
+  ReabrirProjetoApontamentoPeriodoInput,
+  RecalcularCustoProjetoApontamentosInput,
+  RejeitarProjetoApontamentosInput
+} from './dto/projeto-horas.input';
+import { ProjetoApontamentoAprovacaoService } from './projeto-apontamento-aprovacao.service';
+import { ProjetoApontamentoCustoService } from './projeto-apontamento-custo.service';
+import { ProjetoApontamentoPeriodoService } from './projeto-apontamento-periodo.service';
 import { ProjetoApontamentoQueryService } from './projeto-apontamento-query.service';
 import { ProjetoApontamentoService } from './projeto-apontamento.service';
+import { ProjetoHorasQueryService } from './projeto-horas-query.service';
 import { ProjetoOrcamentoService } from './projeto-orcamento.service';
 import { ProjetoRecursoService } from './projeto-recurso.service';
 
@@ -102,7 +115,11 @@ export class ProjetosService {
     private readonly recursoService: ProjetoRecursoService,
     private readonly orcamentoService: ProjetoOrcamentoService,
     private readonly apontamentoService: ProjetoApontamentoService,
-    private readonly apontamentoQueryService: ProjetoApontamentoQueryService
+    private readonly apontamentoQueryService: ProjetoApontamentoQueryService,
+    private readonly horasQueryService: ProjetoHorasQueryService,
+    private readonly aprovacaoService: ProjetoApontamentoAprovacaoService,
+    private readonly apontamentoPeriodoService: ProjetoApontamentoPeriodoService,
+    private readonly apontamentoCustoService: ProjetoApontamentoCustoService
   ) {}
 
   create(input: CreateProjetoInput, user: JwtPayload): Promise<ProjetoType> {
@@ -384,4 +401,12 @@ export class ProjetosService {
   descartarApontamento(input: VersionarProjetoApontamentoInput, user: JwtPayload) { return this.apontamentoService.descartar(input, user); }
   enviarApontamentos(input: EnviarProjetoApontamentosInput, user: JwtPayload) { return this.apontamentoService.enviar(input, user); }
   recolherApontamento(input: VersionarProjetoApontamentoInput, user: JwtPayload) { return this.apontamentoService.recolher(input, user); }
+  horasProjetos(user: JwtPayload, incluirArquivados: boolean) { return this.horasQueryService.projetos(user, incluirArquivados); }
+  horas(filtro: ProjetoHorasFiltroInput, user: JwtPayload) { return this.horasQueryService.painel(filtro, user); }
+  aprovarApontamentos(input: AprovarProjetoApontamentosInput, user: JwtPayload) { return this.aprovacaoService.aprovar(input, user); }
+  rejeitarApontamentos(input: RejeitarProjetoApontamentosInput, user: JwtPayload) { return this.aprovacaoService.rejeitar(input, user); }
+  reabrirApontamento(input: ReabrirProjetoApontamentoInput, user: JwtPayload) { return this.aprovacaoService.reabrir(input, user); }
+  fecharPeriodoDeApontamentos(input: FecharProjetoApontamentoPeriodoInput, user: JwtPayload) { return this.apontamentoPeriodoService.fechar(input, user); }
+  reabrirPeriodoDeApontamentos(input: ReabrirProjetoApontamentoPeriodoInput, user: JwtPayload) { return this.apontamentoPeriodoService.reabrir(input, user); }
+  recalcularCustoDosApontamentos(input: RecalcularCustoProjetoApontamentosInput, user: JwtPayload) { return this.apontamentoCustoService.recalcular(input, user); }
 }

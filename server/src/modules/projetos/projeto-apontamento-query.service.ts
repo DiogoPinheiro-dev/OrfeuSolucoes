@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { JwtPayload } from '../auth/strategies/jwt-payload.type';
@@ -12,7 +12,6 @@ import {
 } from './dto/projeto-apontamento.type';
 import { toProjetoApontamentoType, totalizarApontamentosDoPeriodo } from './mappers/projeto-apontamento.mapper';
 import { resolveProjetoApontamentoAcoesDoAutor } from './policies/projeto-apontamento-status.policy';
-import { normalizeCalendarDate } from './policies/projeto-input.policy';
 import {
   ProjetoApontamentoAuthorizationService,
   ProjetoApontamentoPermissoesDoAutor
@@ -22,8 +21,6 @@ import { ProjetoPeriodoService } from './projeto-periodo.service';
 import { ProjetoApontamentoDetalheRecord, ProjetoApontamentoStatus } from './types/projeto-apontamento.types';
 import { ProjetoPapel, ProjetoSituacao } from './types/projeto.types';
 
-const PERIODO_MAXIMO_EM_DIAS = 366;
-const UM_DIA_EM_MS = 24 * 60 * 60 * 1000;
 const ORDEM_DOS_APONTAMENTOS: Prisma.ProjetoApontamentoOrderByWithRelationInput[] = [
   { dataTrabalho: 'desc' },
   { criadoEm: 'desc' },
@@ -64,7 +61,7 @@ export class ProjetoApontamentoQueryService {
   /** Página dos próprios apontamentos. Os totais cobrem o período inteiro, de todos os projetos, sem os demais filtros. */
   async meus(user: JwtPayload, filtro: MeusProjetoApontamentosFiltroInput): Promise<MeusProjetoApontamentosPageType> {
     const empresaId = await this.authorization.assertAcaoDoAutor(user, ProjetoAcao.VISUALIZAR);
-    const { inicio, fim } = this.periodoConsultado(filtro);
+    const { inicio, fim } = this.periodo.periodoDeConsulta(filtro.inicio, filtro.fim);
     const { pagina, limite } = this.periodo.normalizePaginacao(filtro.pagina, filtro.limite);
     const doPeriodo: Prisma.ProjetoApontamentoWhereInput = {
       empresaId,
@@ -163,21 +160,5 @@ export class ProjetoApontamentoQueryService {
 
       return toProjetoApontamentoType(apontamento, competencia, acoes);
     });
-  }
-
-  private periodoConsultado(filtro: MeusProjetoApontamentosFiltroInput): { inicio: Date; fim: Date } {
-    const inicio = normalizeCalendarDate(filtro.inicio);
-    const fim = normalizeCalendarDate(filtro.fim);
-
-    if (!inicio || !fim) {
-      throw new BadRequestException('Informe o primeiro e o último dia do período.');
-    }
-
-    this.periodo.assertPeriodoValido(inicio, fim);
-    if ((fim.getTime() - inicio.getTime()) / UM_DIA_EM_MS + 1 > PERIODO_MAXIMO_EM_DIAS) {
-      throw new BadRequestException(`Consulte no máximo ${PERIODO_MAXIMO_EM_DIAS} dias por vez.`);
-    }
-
-    return { inicio, fim };
   }
 }

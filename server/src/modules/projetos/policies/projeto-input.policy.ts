@@ -69,6 +69,12 @@ export function formatCalendarDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
+/** Competência YYYY-MM no formato de leitura MM/AAAA. */
+export function formatCompetencia(competencia: string): string {
+  const [ano, mes] = competencia.split('-');
+  return `${mes}/${ano}`;
+}
+
 export function validatePlannedDates(inicio?: Date | null, fim?: Date | null): void {
   if (inicio && fim && inicio > fim) {
     throw new BadRequestException('A data prevista de inicio nao pode ser posterior a data prevista de termino.');

@@ -30,6 +30,16 @@ input AlterarStatusProjetoItemInput {
   versao: Int!
 }
 
+input AprovarProjetoApontamentosInput {
+  apontamentos: [VersionarProjetoApontamentoInput!]!
+
+  """
+  Chave gerada pela tela; repetir o mesmo lote com ela não decide os apontamentos de novo.
+  """
+  chaveIdempotencia: String!
+  projetoId: String!
+}
+
 input AprovarProjetoOrcamentoInput {
   id: String!
   projetoId: String!
@@ -752,6 +762,12 @@ input ExcluirProjetoRecursoInput {
   versao: Int!
 }
 
+input FecharProjetoApontamentoPeriodoInput {
+  """Mês de referência, no formato YYYY-MM."""
+  competencia: String!
+  projetoId: String!
+}
+
 input FuncionalidadeAcaoInput {
   acaoPadrao: Boolean = false
   ativo: Boolean = true
@@ -931,6 +947,7 @@ type Mutation {
   alterarPrioridadeChamado(input: AlterarPrioridadeChamadoInput!): ChamadoType!
   alterarStatusChamado(input: AlterarStatusChamadoInput!): ChamadoType!
   alterarStatusProjetoItem(input: AlterarStatusProjetoItemInput!): ProjetoItemType!
+  aprovarProjetoApontamentos(input: AprovarProjetoApontamentosInput!): [ProjetoHorasApontamentoType!]!
   aprovarProjetoOrcamento(input: AprovarProjetoOrcamentoInput!): ProjetoFinanceiroType!
   arquivarChamado(id: String!, observacao: String): ChamadoType!
   arquivarProjeto(id: String!): ProjetoType!
@@ -996,6 +1013,7 @@ type Mutation {
   excluirProjetoCusto(input: ExcluirProjetoOrcamentoItemInput!): Boolean!
   excluirProjetoOrcamentoCategoria(input: ExcluirProjetoOrcamentoItemInput!): Boolean!
   excluirProjetoRecurso(input: ExcluirProjetoRecursoInput!): Boolean!
+  fecharProjetoApontamentoPeriodo(input: FecharProjetoApontamentoPeriodoInput!): ProjetoApontamentoCompetenciaType!
   iniciarProjetoSprint(input: TransicionarProjetoSprintInput!): ProjetoSprintType!
   liberarAtendimentoChamado(id: String!): ChamadoType!
   login(input: LoginInput!): AuthPayloadType!
@@ -1008,14 +1026,18 @@ type Mutation {
   publicarRascunhoFuncionalidade(motivo: String, revisaoEsperada: Int!, versaoId: String!): CatalogoVersaoType!
   publicarRascunhoSolucao(motivo: String, revisaoEsperada: Int!, versaoId: String!): CatalogoVersaoType!
   reabrirChamado(id: String!, observacao: String): ChamadoType!
+  reabrirProjetoApontamento(input: ReabrirProjetoApontamentoInput!): ProjetoHorasApontamentoType!
+  reabrirProjetoApontamentoPeriodo(input: ReabrirProjetoApontamentoPeriodoInput!): ProjetoApontamentoCompetenciaType!
   reabrirProjetoOrcamento(input: AprovarProjetoOrcamentoInput!): ProjetoFinanceiroType!
   reativarProjeto(id: String!): ProjetoType!
   reativarProjetoEntrega(input: VersionarProjetoCompromissoInput!): ProjetoEntregaType!
   reativarProjetoItem(input: VersionarProjetoItemInput!): ProjetoItemType!
   reativarProjetoItemDependencia(input: VersionarProjetoItemDependenciaInput!): ProjetoItemDependenciaType!
   reativarProjetoMarco(input: VersionarProjetoCompromissoInput!): ProjetoMarcoType!
+  recalcularCustoProjetoApontamentos(input: RecalcularCustoProjetoApontamentosInput!): ProjetoApontamentoRecalculoType!
   recolherProjetoApontamento(input: VersionarProjetoApontamentoInput!): ProjetoApontamentoType!
   registerUser(input: RegisterUserInput!): UserType!
+  rejeitarProjetoApontamentos(input: RejeitarProjetoApontamentosInput!): [ProjetoHorasApontamentoType!]!
   removerItemProjetoSprint(input: AlterarEscopoProjetoSprintInput!): ProjetoSprintType!
   resolverChamado(id: String!, observacao: String): ChamadoType!
   responderChamado(input: ResponderChamadoInput!): ChamadoType!
@@ -1093,10 +1115,62 @@ type ProjetoApontamentoAcoesType {
   podeRecolher: Boolean!
 }
 
+type ProjetoApontamentoCompetenciaType {
+  """Por que a competência ainda não pode ser fechada."""
+  bloqueio: String
+
+  """Mês de referência, no formato YYYY-MM."""
+  competencia: String!
+
+  """
+  Apontamentos enviados aguardando decisão no mês, no escopo de quem consulta.
+  """
+  enviadosPendentes: Int!
+
+  """Competência sem registro está aberta."""
+  fechada: Boolean!
+  fechadoEm: DateTime
+  fechadoPor: ProjetoUsuarioType
+
+  """Minutos lançados no mês, no escopo de quem consulta."""
+  minutos: Int!
+  motivoReabertura: String
+  podeFechar: Boolean!
+  podeReabrir: Boolean!
+  reabertoEm: DateTime
+  reabertoPor: ProjetoUsuarioType
+  situacao: ProjetoApontamentoPeriodoSituacao
+
+  """Versão do registro da competência, exigida para reabri-la."""
+  versao: Int
+}
+
+enum ProjetoApontamentoCustoSituacao {
+  CALCULADO
+  NAO_APLICAVEL
+  SEM_TAXA
+  TAXA_AMBIGUA
+}
+
+"""Custo congelado na aprovação do apontamento."""
+type ProjetoApontamentoCustoType {
+  """Linha de custo do orçamento usada no cálculo."""
+  custoId: String
+  moeda: String
+  situacao: ProjetoApontamentoCustoSituacao!
+  taxaHoraAplicada: String
+  valorCusto: String
+}
+
 type ProjetoApontamentoItemType {
   chave: String!
   id: String!
   titulo: String!
+}
+
+enum ProjetoApontamentoPeriodoSituacao {
+  FECHADO
+  REABERTO
 }
 
 type ProjetoApontamentoPermissoesType {
@@ -1109,6 +1183,14 @@ type ProjetoApontamentoProjetoType {
   id: String!
   nome: String!
   situacao: ProjetoSituacao!
+}
+
+type ProjetoApontamentoRecalculoType {
+  """Apontamentos que passaram a ter custo calculado."""
+  calculados: Int!
+
+  """Apontamentos aprovados que continuam sem custo calculado."""
+  pendentes: Int!
 }
 
 enum ProjetoApontamentoStatus {
@@ -1384,6 +1466,9 @@ type ProjetoCustoType {
   id: String!
   item: ProjetoCustoItemResumoType
   itemId: String
+
+  """Minutos das horas aprovadas ligadas à linha."""
+  minutosAprovados: Int!
   quantidadeMinutos: Int
   recurso: ProjetoRecursoResumoType
   recursoId: String
@@ -1392,7 +1477,14 @@ type ProjetoCustoType {
   tipo: ProjetoCustoTipo!
   valorComprometido: String!
   valorPlanejado: String!
+
+  """
+  Realizado manual. Em custos de recurso, é um ajuste legado que não pode mais ser alterado.
+  """
   valorRealizado: String!
+
+  """Custo congelado das horas aprovadas ligadas à linha."""
+  valorRealizadoHoras: String!
   versao: Int!
 }
 
@@ -1462,6 +1554,10 @@ input ProjetoFiltroInput {
 }
 
 type ProjetoFinanceiroType {
+  """
+  Apontamentos aprovados sem custo calculado, por falta de taxa ou por taxa ambígua.
+  """
+  apontamentosSemCusto: Int!
   aprovadoEm: DateTime
   categorias: [ProjetoOrcamentoCategoriaType!]!
   custos: [ProjetoCustoType!]!
@@ -1471,8 +1567,166 @@ type ProjetoFinanceiroType {
   totalComprometido: String!
   totalPlanejado: String!
   totalRealizado: String!
+
+  """Realizado manual das categorias mais o custo das horas aprovadas."""
+  totalRealizadoConsolidado: String!
+
+  """Custo das horas aprovadas do projeto."""
+  totalRealizadoHoras: String!
   variacao: String!
+
+  """Planejado menos o realizado consolidado."""
+  variacaoConsolidada: String!
   versao: Int!
+}
+
+type ProjetoHorasAcoesType {
+  """
+  Por que nenhuma das decisões que a pessoa teria para este apontamento pode ser tomada.
+  """
+  bloqueio: String
+  podeAprovar: Boolean!
+  podeReabrir: Boolean!
+  podeRejeitar: Boolean!
+}
+
+type ProjetoHorasApontamentoType {
+  acoes: ProjetoHorasAcoesType!
+  atualizadoEm: DateTime!
+
+  """Mês de referência do apontamento, no formato YYYY-MM."""
+  competencia: String!
+  criadoEm: DateTime!
+
+  """Nulo para quem não tem visualizar_financeiro no Orçamento do projeto."""
+  custo: ProjetoApontamentoCustoType
+
+  """Dia do trabalho, no formato YYYY-MM-DD."""
+  dataTrabalho: String!
+  decididoEm: DateTime
+  decididoPor: ProjetoUsuarioType
+  descricao: String!
+  enviadoEm: DateTime
+  faturavel: Boolean!
+  id: String!
+  item: ProjetoApontamentoItemType
+  itemId: String
+  minutos: Int!
+
+  """Último motivo de rejeição ou reabertura."""
+  motivo: String
+  projetoId: String!
+  status: ProjetoApontamentoStatus!
+
+  """Autor do apontamento."""
+  usuario: ProjetoUsuarioType!
+  usuarioId: String!
+  versao: Int!
+}
+
+type ProjetoHorasCustoItemType {
+  """Nulo reúne os apontamentos sem item."""
+  item: ProjetoApontamentoItemType
+
+  """Minutos aprovados com custo calculado."""
+  minutos: Int!
+  valor: String!
+}
+
+type ProjetoHorasCustoUsuarioType {
+  """Minutos aprovados com custo calculado."""
+  minutos: Int!
+  usuario: ProjetoUsuarioType!
+  valor: String!
+}
+
+input ProjetoHorasFiltroInput {
+  faturavel: Boolean
+
+  """Último dia do período, no formato YYYY-MM-DD."""
+  fim: String!
+
+  """Primeiro dia do período, no formato YYYY-MM-DD."""
+  inicio: String!
+  itemId: String
+  limite: Int = 20
+  pagina: Int = 1
+  projetoId: String!
+  status: ProjetoApontamentoStatus
+  usuarioId: String
+}
+
+type ProjetoHorasFinanceiroType {
+  """
+  Apontamentos aprovados do projeto sem custo, por falta de taxa ou por taxa ambígua.
+  """
+  apontamentosSemCusto: Int!
+  custosPorItem: [ProjetoHorasCustoItemType!]!
+  custosPorUsuario: [ProjetoHorasCustoUsuarioType!]!
+  linhas: [ProjetoHorasLinhaCustoType!]!
+
+  """Moeda do orçamento do projeto."""
+  moeda: String
+
+  """Custo das horas aprovadas no período e nos filtros consultados."""
+  totalCusto: String!
+}
+
+"""
+Linha de custo de recurso do orçamento, com o realizado pelas horas aprovadas ligadas a ela.
+"""
+type ProjetoHorasLinhaCustoType {
+  custoId: String!
+  descricao: String!
+  item: ProjetoApontamentoItemType
+  minutosAprovados: Int!
+
+  """Minutos planejados na linha."""
+  quantidadeMinutos: Int
+  taxaHora: String
+
+  """Pessoa do recurso da linha."""
+  usuario: ProjetoUsuarioType
+  valorPlanejado: String!
+  valorRealizadoHoras: String!
+}
+
+type ProjetoHorasPageType {
+  """Competências alcançadas pelo período."""
+  competencias: [ProjetoApontamentoCompetenciaType!]!
+
+  """Nulo para quem não tem visualizar_financeiro no Orçamento do projeto."""
+  financeiro: ProjetoHorasFinanceiroType
+  items: [ProjetoHorasApontamentoType!]!
+  limite: Int!
+  pagina: Int!
+  permissoes: ProjetoHorasPermissoesType!
+  totaisPorItem: [ProjetoHorasTotalItemType!]!
+  totaisPorUsuario: [ProjetoHorasTotalUsuarioType!]!
+  total: Int!
+
+  """Minutos no período, nos filtros e no escopo de quem consulta."""
+  totalMinutos: Int!
+  totalPaginas: Int!
+}
+
+type ProjetoHorasPermissoesType {
+  podeAprovar: Boolean!
+  podeFecharPeriodo: Boolean!
+  podeGerenciarFinanceiro: Boolean!
+  podeReabrir: Boolean!
+  podeVisualizarFinanceiro: Boolean!
+}
+
+type ProjetoHorasTotalItemType {
+  """Nulo reúne os apontamentos sem item."""
+  item: ProjetoApontamentoItemType
+  minutos: Int!
+}
+
+type ProjetoHorasTotalUsuarioType {
+  minutos: Int!
+  usuario: ProjetoUsuarioType!
 }
 
 type ProjetoItemDependenciaType {
@@ -1654,6 +1908,9 @@ type ProjetoOrcamentoCategoriaType {
   valorComprometido: String!
   valorPlanejado: String!
   valorRealizado: String!
+
+  """Custo das horas aprovadas ligadas às linhas de custo da categoria."""
+  valorRealizadoHoras: String!
   variacao: String!
   versao: Int!
 }
@@ -1935,6 +2192,8 @@ type Query {
   projetoComunicacao(feed: ProjetoComunicacaoFeedFiltroInput, projetoId: String!): ProjetoComunicacaoPainelType!
   projetoComunicacaoProjetos: [ProjetoComunicacaoProjetoType!]!
   projetoCronograma(filtro: ProjetoCronogramaFiltroInput!): ProjetoCronogramaPainelType!
+  projetoHoras(filtro: ProjetoHorasFiltroInput!): ProjetoHorasPageType!
+  projetoHorasProjetos(incluirArquivados: Boolean = false): [ProjetoApontamentoProjetoType!]!
   projetoItem(id: String!): ProjetoItemType!
   projetoItemHistorico(id: String!): [ProjetoItemHistoricoType!]!
   projetoItens(filtro: ProjetoItemFiltroInput!): ProjetoItemPageType!
@@ -1962,11 +2221,47 @@ type Query {
   validarRascunhoFuncionalidade(versaoId: String!): [CatalogoValidationIssueType!]!
 }
 
+input ReabrirProjetoApontamentoInput {
+  id: String!
+
+  """Motivo da reabertura, visível para o autor."""
+  motivo: String!
+  projetoId: String!
+  versao: Int!
+}
+
+input ReabrirProjetoApontamentoPeriodoInput {
+  """Mês de referência, no formato YYYY-MM."""
+  competencia: String!
+
+  """Motivo da reabertura da competência."""
+  motivo: String!
+  projetoId: String!
+  versao: Int!
+}
+
+input RecalcularCustoProjetoApontamentosInput {
+  projetoId: String!
+}
+
 input RegisterUserInput {
   email: String!
   login: String
   nome: String
   senha: String!
+}
+
+input RejeitarProjetoApontamentosInput {
+  apontamentos: [VersionarProjetoApontamentoInput!]!
+
+  """
+  Chave gerada pela tela; repetir o mesmo lote com ela não decide os apontamentos de novo.
+  """
+  chaveIdempotencia: String!
+
+  """Motivo da rejeição, visível para o autor."""
+  motivo: String!
+  projetoId: String!
 }
 
 input ResponderChamadoInput {

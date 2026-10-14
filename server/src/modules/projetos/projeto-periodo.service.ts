@@ -9,6 +9,8 @@ export const PROJETO_PAGINACAO = {
 } as const;
 
 const COMPETENCIA = /^\d{4}-(0[1-9]|1[0-2])$/;
+const PERIODO_DE_CONSULTA_MAXIMO_EM_DIAS = 366;
+const UM_DIA_EM_MS = 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class ProjetoPeriodoService {
@@ -92,6 +94,48 @@ export class ProjetoPeriodoService {
 
   competenciaDaData(data: Date): string {
     return formatCalendarDate(data).slice(0, 7);
+  }
+
+  /** Competência do dia de hoje no fuso operacional. */
+  competenciaAtual(agora: Date = new Date()): string {
+    return this.hojeOperacional(agora).slice(0, 7);
+  }
+
+  /** Primeiro dia da competência e primeiro dia da seguinte, para filtrar por faixa de datas. */
+  limitesDaCompetencia(competencia: string): { inicio: Date; fimExclusivo: Date } {
+    const [ano, mes] = this.normalizeCompetencia(competencia).split('-').map(Number) as [number, number];
+
+    return { inicio: new Date(Date.UTC(ano, mes - 1, 1)), fimExclusivo: new Date(Date.UTC(ano, mes, 1)) };
+  }
+
+  /** Competências (YYYY-MM) alcançadas pelo período, em ordem. */
+  competenciasDoPeriodo(inicio: Date, fim: Date): string[] {
+    const competencias: string[] = [];
+    let mes = new Date(Date.UTC(inicio.getUTCFullYear(), inicio.getUTCMonth(), 1));
+
+    while (mes.getTime() <= fim.getTime()) {
+      competencias.push(this.competenciaDaData(mes));
+      mes = new Date(Date.UTC(mes.getUTCFullYear(), mes.getUTCMonth() + 1, 1));
+    }
+
+    return competencias;
+  }
+
+  /** Período de uma consulta de horas: os dois dias obrigatórios, em ordem e com no máximo 366 dias. */
+  periodoDeConsulta(inicioInformado: string, fimInformado: string): { inicio: Date; fim: Date } {
+    const inicio = normalizeCalendarDate(inicioInformado);
+    const fim = normalizeCalendarDate(fimInformado);
+
+    if (!inicio || !fim) {
+      throw new BadRequestException('Informe o primeiro e o último dia do período.');
+    }
+
+    this.assertPeriodoValido(inicio, fim);
+    if ((fim.getTime() - inicio.getTime()) / UM_DIA_EM_MS + 1 > PERIODO_DE_CONSULTA_MAXIMO_EM_DIAS) {
+      throw new BadRequestException(`Consulte no máximo ${PERIODO_DE_CONSULTA_MAXIMO_EM_DIAS} dias por vez.`);
+    }
+
+    return { inicio, fim };
   }
 }
 

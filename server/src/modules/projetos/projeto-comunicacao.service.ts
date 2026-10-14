@@ -29,6 +29,12 @@ const COMENTARIO_INCLUDE = {
 
 type AnyRecord = Record<string, any>;
 
+/**
+ * Horas de pessoas e competências ficam na trilha de Horas do projeto, com o escopo hierárquico e o acesso financeiro
+ * dela; o feed é visto por todos os participantes e não pode expor minutos, descrições nem custos dos apontamentos.
+ */
+const ENTIDADES_FORA_DO_FEED = ['APONTAMENTO', 'APONTAMENTO_PERIODO'] as const;
+
 @Injectable()
 export class ProjetoComunicacaoService {
   private readonly companyStorageQuotaBytes = readStorageQuotaBytes(
@@ -106,6 +112,7 @@ export class ProjetoComunicacaoService {
       empresaId: contexto.empresaId,
       AND: [
         filtroEventos,
+        { entidade: { notIn: [...ENTIDADES_FORA_DO_FEED] } },
         {
           OR: [
             { NOT: { entidade: { in: ['ATUALIZACAO', 'COMENTARIO'] } } },

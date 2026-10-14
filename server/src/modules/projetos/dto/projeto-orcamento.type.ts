@@ -37,6 +37,7 @@ export class ProjetoOrcamentoCategoriaType {
   @Field() valorPlanejado!: string;
   @Field() valorComprometido!: string;
   @Field() valorRealizado!: string;
+  @Field({ description: 'Custo das horas aprovadas ligadas às linhas de custo da categoria.' }) valorRealizadoHoras!: string;
   @Field() variacao!: string;
   @Field(() => Int) versao!: number;
 }
@@ -61,7 +62,9 @@ export class ProjetoCustoType {
   @Field(() => String, { nullable: true }) taxaHora?: string | null;
   @Field() valorPlanejado!: string;
   @Field() valorComprometido!: string;
-  @Field() valorRealizado!: string;
+  @Field({ description: 'Realizado manual. Em custos de recurso, é um ajuste legado que não pode mais ser alterado.' }) valorRealizado!: string;
+  @Field(() => Int, { description: 'Minutos das horas aprovadas ligadas à linha.' }) minutosAprovados!: number;
+  @Field({ description: 'Custo congelado das horas aprovadas ligadas à linha.' }) valorRealizadoHoras!: string;
   @Field(() => Int) versao!: number;
   @Field(() => ProjetoRecursoResumoType, { nullable: true }) recurso?: ProjetoRecursoResumoType | null;
   @Field(() => ProjetoCustoItemResumoType, { nullable: true }) item?: ProjetoCustoItemResumoType | null;
@@ -78,6 +81,10 @@ export class ProjetoFinanceiroType {
   @Field() totalComprometido!: string;
   @Field() totalRealizado!: string;
   @Field() variacao!: string;
+  @Field({ description: 'Custo das horas aprovadas do projeto.' }) totalRealizadoHoras!: string;
+  @Field({ description: 'Realizado manual das categorias mais o custo das horas aprovadas.' }) totalRealizadoConsolidado!: string;
+  @Field({ description: 'Planejado menos o realizado consolidado.' }) variacaoConsolidada!: string;
+  @Field(() => Int, { description: 'Apontamentos aprovados sem custo calculado, por falta de taxa ou por taxa ambígua.' }) apontamentosSemCusto!: number;
   @Field(() => Date, { nullable: true }) aprovadoEm?: Date | null;
   @Field(() => [ProjetoOrcamentoCategoriaType]) categorias!: ProjetoOrcamentoCategoriaType[];
   @Field(() => [ProjetoCustoType]) custos!: ProjetoCustoType[];

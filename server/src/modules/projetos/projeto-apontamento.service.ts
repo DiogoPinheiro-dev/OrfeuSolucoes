@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { runSerializableTransaction } from '../../common/persistence/serializable-transaction.util';
 import { PrismaService } from '../../prisma/prisma.service';
 import { JwtPayload } from '../auth/strategies/jwt-payload.type';
 import { ProjetoAcao } from './constants/projeto-operacional.constants';
@@ -334,14 +335,11 @@ export class ProjetoApontamentoService {
    * Transação serializável: a soma diária e a competência são lidas e gravadas sem corrida. Quando o SQL Server
    * escolhe esta transação como vítima de um impasse, a pessoa recebe um conflito em vez de um erro genérico.
    */
-  private async emTransacao<T>(operacao: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
-    try {
-      return await this.prisma.$transaction(operacao, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
-    } catch (error) {
-      if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2034') {
-        throw new ConflictException('Outra operação alterou os seus apontamentos ao mesmo tempo. Atualize os dados e tente de novo.');
-      }
-      throw error;
-    }
+  private emTransacao<T>(operacao: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+    return runSerializableTransaction(
+      this.prisma,
+      operacao,
+      'Outra operação alterou os seus apontamentos ao mesmo tempo. Atualize os dados e tente de novo.'
+    );
   }
 }

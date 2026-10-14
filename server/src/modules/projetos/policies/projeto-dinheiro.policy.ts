@@ -18,3 +18,8 @@ export function calcularValorPorMinutos(minutos: number, taxaHora: Prisma.Decima
     .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP)
     .toFixed(2);
 }
+
+/** Decimal gravado no formato do orçamento, com as casas informadas, ou nulo quando não há valor. */
+export function formatarDecimal(valor: Prisma.Decimal.Value | null | undefined, casas: number): string | null {
+  return valor === null || valor === undefined ? null : new Prisma.Decimal(valor).toFixed(casas);
+}

@@ -16,6 +16,7 @@ import { ProjetoApontamentoResolver } from '../src/modules/projetos/projeto-apon
 import { ProjetoApontamentoService } from '../src/modules/projetos/projeto-apontamento.service';
 import { ProjetoAuditoriaService } from '../src/modules/projetos/projeto-auditoria.service';
 import { ProjetoAuthorizationService } from '../src/modules/projetos/projeto-authorization.service';
+import { ProjetoOrcamentoAuthorizationService } from '../src/modules/projetos/projeto-orcamento-authorization.service';
 import { ProjetoPeriodoService } from '../src/modules/projetos/projeto-periodo.service';
 import { ProjetoRecursoAuthorizationService } from '../src/modules/projetos/projeto-recurso-authorization.service';
 import { ProjetoRecursoHierarquiaService } from '../src/modules/projetos/projeto-recurso-hierarquia.service';
@@ -197,9 +198,11 @@ describe('Meus apontamentos GraphQL e2e', () => {
     const autorizacao = new ProjetoApontamentoAuthorizationService(
       persistencia,
       projetoAuthorization,
-      new ProjetoRecursoHierarquiaService(persistencia, new ProjetoRecursoAuthorizationService(persistencia, projetoAuthorization))
+      new ProjetoRecursoHierarquiaService(persistencia, new ProjetoRecursoAuthorizationService(persistencia, projetoAuthorization)),
+      new ProjetoOrcamentoAuthorizationService(persistencia, projetoAuthorization)
     );
-    const periodos = new ProjetoApontamentoPeriodoService(persistencia, periodo);
+    const auditoria = new ProjetoAuditoriaService();
+    const periodos = new ProjetoApontamentoPeriodoService(persistencia, periodo, autorizacao, auditoria);
     const consultas = new ProjetoApontamentoQueryService(persistencia, autorizacao, periodo, periodos);
     const apontamentoService = new ProjetoApontamentoService(
       persistencia,
@@ -207,14 +210,15 @@ describe('Meus apontamentos GraphQL e2e', () => {
       consultas,
       periodo,
       periodos,
-      new ProjetoAuditoriaService()
+      auditoria
     );
     const naoUsado = {} as never;
     const projetosService = new ProjetosService(
       naoUsado, naoUsado, naoUsado, naoUsado, naoUsado, naoUsado, naoUsado, naoUsado,
       naoUsado, naoUsado, naoUsado, naoUsado, naoUsado, naoUsado, naoUsado,
       apontamentoService,
-      consultas
+      consultas,
+      naoUsado, naoUsado, naoUsado, naoUsado
     );
 
     const fixture = await Test.createTestingModule({

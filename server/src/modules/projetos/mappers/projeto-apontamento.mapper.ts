@@ -1,11 +1,13 @@
 import {
   ProjetoApontamentoAcoesType,
+  ProjetoApontamentoBaseType,
   ProjetoApontamentoTotalDiaType,
   ProjetoApontamentoTotalProjetoType,
   ProjetoApontamentoType
 } from '../dto/projeto-apontamento.type';
 import { formatCalendarDate } from '../policies/projeto-input.policy';
-import { ProjetoApontamentoDetalheRecord, ProjetoApontamentoStatus } from '../types/projeto-apontamento.types';
+import { ProjetoApontamentoDetalheRecord, ProjetoApontamentoRecord, ProjetoApontamentoStatus } from '../types/projeto-apontamento.types';
+import { ProjetoUsuarioRecord } from '../types/projeto.types';
 import { ProjetoSituacao } from '../types/projeto.types';
 import { toProjetoUsuarioType } from './projeto.mapper';
 
@@ -21,21 +23,17 @@ export type ProjetoApontamentoTotais = {
   totaisPorProjeto: ProjetoApontamentoTotalProjetoType[];
 };
 
-export function toProjetoApontamentoType(
-  apontamento: ProjetoApontamentoDetalheRecord,
-  competencia: string,
-  acoes: ProjetoApontamentoAcoesType
-): ProjetoApontamentoType {
+/** Campos que o autor e quem gerencia as horas veem igualmente em cada apontamento. */
+export function camposDoApontamento(
+  apontamento: ProjetoApontamentoRecord & {
+    item?: { id: string; chave: string; titulo: string } | null;
+    decididoPor?: ProjetoUsuarioRecord | null;
+  },
+  competencia: string
+): ProjetoApontamentoBaseType {
   return {
     id: apontamento.id,
     projetoId: apontamento.projetoId,
-    projeto: {
-      id: apontamento.projeto.id,
-      chave: apontamento.projeto.chave,
-      nome: apontamento.projeto.nome,
-      situacao: apontamento.projeto.situacao as ProjetoSituacao,
-      arquivadoEm: apontamento.projeto.arquivadoEm ?? null
-    },
     usuarioId: apontamento.usuarioId,
     itemId: apontamento.itemId ?? null,
     item: apontamento.item
@@ -53,7 +51,24 @@ export function toProjetoApontamentoType(
     motivo: apontamento.motivo ?? null,
     versao: apontamento.versao,
     criadoEm: apontamento.criadoEm,
-    atualizadoEm: apontamento.atualizadoEm,
+    atualizadoEm: apontamento.atualizadoEm
+  };
+}
+
+export function toProjetoApontamentoType(
+  apontamento: ProjetoApontamentoDetalheRecord,
+  competencia: string,
+  acoes: ProjetoApontamentoAcoesType
+): ProjetoApontamentoType {
+  return {
+    ...camposDoApontamento(apontamento, competencia),
+    projeto: {
+      id: apontamento.projeto.id,
+      chave: apontamento.projeto.chave,
+      nome: apontamento.projeto.nome,
+      situacao: apontamento.projeto.situacao as ProjetoSituacao,
+      arquivadoEm: apontamento.projeto.arquivadoEm ?? null
+    },
     acoes
   };
 }

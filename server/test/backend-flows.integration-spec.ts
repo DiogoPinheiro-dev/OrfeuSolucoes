@@ -49,14 +49,20 @@ import { GrupoUsuarioBootstrapService } from '../src/modules/grupos-usuarios/gru
 import { GrupoUsuarioCatalogService } from '../src/modules/grupos-usuarios/grupo-usuario-catalog.service';
 import { GrupoUsuarioPermissaoService } from '../src/modules/grupos-usuarios/grupo-usuario-permissao.service';
 import { GruposUsuariosService } from '../src/modules/grupos-usuarios/grupos-usuarios.service';
+import { ProjetoApontamentoAprovacaoService } from '../src/modules/projetos/projeto-apontamento-aprovacao.service';
 import { ProjetoApontamentoAuthorizationService } from '../src/modules/projetos/projeto-apontamento-authorization.service';
+import { ProjetoApontamentoCustoService } from '../src/modules/projetos/projeto-apontamento-custo.service';
 import { ProjetoApontamentoPeriodoService } from '../src/modules/projetos/projeto-apontamento-periodo.service';
 import { ProjetoApontamentoQueryService } from '../src/modules/projetos/projeto-apontamento-query.service';
 import { ProjetoApontamentoService } from '../src/modules/projetos/projeto-apontamento.service';
+import { ProjetoHorasQueryService } from '../src/modules/projetos/projeto-horas-query.service';
 import { ProjetoAuthorizationService } from '../src/modules/projetos/projeto-authorization.service';
 import { ProjetoBacklogService } from '../src/modules/projetos/projeto-backlog.service';
 import { ProjetoBacklogDirecao } from '../src/modules/projetos/dto/mover-projeto-item-backlog.input';
 import { SalvarProjetoApontamentoInput } from '../src/modules/projetos/dto/projeto-apontamento.input';
+import { ProjetoHorasFiltroInput, ReabrirProjetoApontamentoInput } from '../src/modules/projetos/dto/projeto-horas.input';
+import { SalvarProjetoCustoInput } from '../src/modules/projetos/dto/projeto-orcamento.input';
+import { ProjetoCustoTipo } from '../src/modules/projetos/types/projeto-orcamento.types';
 import { ProjetoFuncionalidade } from '../src/modules/projetos/constants/projeto-operacional.constants';
 import { ProjetoAuditoriaService } from '../src/modules/projetos/projeto-auditoria.service';
 import { ProjetoCatalogService } from '../src/modules/projetos/projeto-catalog.service';
@@ -194,7 +200,11 @@ type ModelName =
   | 'projetoCusto'
   | 'projetoCustoTaxaHistorico'
   | 'projetoApontamento'
-  | 'projetoApontamentoPeriodo';
+  | 'projetoApontamentoPeriodo'
+  | 'capacitacao'
+  | 'equipe'
+  | 'equipeRecurso'
+  | 'projetoEquipe';
 
 const MODELS: ModelName[] = [
   'usuario',
@@ -258,7 +268,11 @@ const MODELS: ModelName[] = [
   'projetoCusto',
   'projetoCustoTaxaHistorico',
   'projetoApontamento',
-  'projetoApontamentoPeriodo'
+  'projetoApontamentoPeriodo',
+  'capacitacao',
+  'equipe',
+  'equipeRecurso',
+  'projetoEquipe'
 ];
 
 const INTEGER_ID_MODELS = new Set<ModelName>([
@@ -305,7 +319,8 @@ const COMPOSITE_KEYS: Record<string, string[]> = {
   projetoId_namespace: ['projetoId', 'namespace'],
   projetoId_usuarioId_operacao_chave: ['projetoId', 'usuarioId', 'operacao', 'chave'],
   projetoId_numero: ['projetoId', 'numero'],
-  projetoId_chave: ['projetoId', 'chave']
+  projetoId_chave: ['projetoId', 'chave'],
+  projetoId_competencia: ['projetoId', 'competencia']
 };
 
 class InMemoryDelegate {
@@ -525,6 +540,10 @@ class InMemoryPrismaService {
   public projetoCustoTaxaHistorico = new InMemoryDelegate(this, 'projetoCustoTaxaHistorico');
   public projetoApontamento = new InMemoryDelegate(this, 'projetoApontamento');
   public projetoApontamentoPeriodo = new InMemoryDelegate(this, 'projetoApontamentoPeriodo');
+  public capacitacao = new InMemoryDelegate(this, 'capacitacao');
+  public equipe = new InMemoryDelegate(this, 'equipe');
+  public equipeRecurso = new InMemoryDelegate(this, 'equipeRecurso');
+  public projetoEquipe = new InMemoryDelegate(this, 'projetoEquipe');
 
   async $transaction<T>(callback: (tx: this) => Promise<T>): Promise<T> {
     const dataSnapshot = Object.fromEntries(
@@ -766,6 +785,12 @@ class InMemoryPrismaService {
                 row.operacao === candidate.operacao &&
                 row.chave === candidate.chave
               )
+              : model === 'projetoApontamentoPeriodo'
+              ? this.data.projetoApontamentoPeriodo.find((row) =>
+                  row !== current &&
+                  row.projetoId === candidate.projetoId &&
+                  row.competencia === candidate.competencia
+                )
               : model === 'projetoItem'
               ? this.data.projetoItem.find((row) =>
                   row !== current &&
@@ -1167,6 +1192,16 @@ class InMemoryPrismaService {
         return row.usuarioId ? this.data.usuario.find((usuario) => usuario.id === row.usuarioId) ?? null : null;
       case 'projetoOperacaoIdempotente.usuario':
         return this.data.usuario.find((usuario) => usuario.id === row.usuarioId) ?? null;
+      case 'projetoCusto.item':
+        return row.itemId ? this.data.projetoItem.find((item) => item.id === row.itemId) ?? null : null;
+      case 'recurso.capacitacao':
+        return row.capacitacaoId ? this.data.capacitacao.find((capacitacao) => capacitacao.id === row.capacitacaoId) ?? null : null;
+      case 'equipeRecurso.equipe':
+        return this.data.equipe.find((equipe) => equipe.id === row.equipeId) ?? null;
+      case 'equipeRecurso.recurso':
+        return this.data.recurso.find((recurso) => recurso.id === row.recursoId) ?? null;
+      case 'equipe.projetos':
+        return this.data.projetoEquipe.filter((vinculo) => vinculo.equipeId === row.id);
       default:
         return undefined;
     }
@@ -1306,6 +1341,11 @@ class InMemoryPrismaService {
       'projetoApontamentoPeriodo.projeto': 'projeto',
       'projetoApontamentoPeriodo.fechadoPor': 'usuario',
       'projetoApontamentoPeriodo.reabertoPor': 'usuario',
+      'projetoCusto.item': 'projetoItem',
+      'recurso.capacitacao': 'capacitacao',
+      'equipeRecurso.equipe': 'equipe',
+      'equipeRecurso.recurso': 'recurso',
+      'equipe.projetos': 'projetoEquipe',
       'projetoCustoTaxaHistorico.criadoPor': 'usuario',      'projetoSequencia.projeto': 'projeto',
       'projetoOperacaoIdempotente.projeto': 'projeto',
       'projetoOperacaoIdempotente.empresa': 'empresa',
@@ -1562,7 +1602,7 @@ class InMemoryPrismaService {
         row.valorPlanejado = row.valorPlanejado ?? '0.00'; row.valorComprometido = row.valorComprometido ?? '0.00'; row.valorRealizado = row.valorRealizado ?? '0.00'; row.versao = row.versao ?? 1; row.criadoEm = row.criadoEm ?? now; row.atualizadoEm = row.atualizadoEm ?? now;
         break;
       case 'projetoCusto':
-        row.categoriaId = row.categoriaId ?? null; row.recursoId = row.recursoId ?? null; row.tarefaId = row.tarefaId ?? null; row.quantidadeMinutos = row.quantidadeMinutos ?? null; row.taxaHora = row.taxaHora ?? null; row.valorPlanejado = row.valorPlanejado ?? '0.00'; row.valorComprometido = row.valorComprometido ?? '0.00'; row.valorRealizado = row.valorRealizado ?? '0.00'; row.versao = row.versao ?? 1; row.criadoEm = row.criadoEm ?? now; row.atualizadoEm = row.atualizadoEm ?? now;
+        row.categoriaId = row.categoriaId ?? null; row.recursoId = row.recursoId ?? null; row.itemId = row.itemId ?? null; row.tarefaId = row.tarefaId ?? null; row.quantidadeMinutos = row.quantidadeMinutos ?? null; row.taxaHora = row.taxaHora ?? null; row.valorPlanejado = row.valorPlanejado ?? '0.00'; row.valorComprometido = row.valorComprometido ?? '0.00'; row.valorRealizado = row.valorRealizado ?? '0.00'; row.versao = row.versao ?? 1; row.criadoEm = row.criadoEm ?? now; row.atualizadoEm = row.atualizadoEm ?? now;
         break;
       case 'projetoCustoTaxaHistorico':
         row.criadoEm = row.criadoEm ?? now;
@@ -1574,6 +1614,16 @@ class InMemoryPrismaService {
         break;
       case 'projetoApontamentoPeriodo':
         row.reabertoPorId = row.reabertoPorId ?? null; row.reabertoEm = row.reabertoEm ?? null; row.motivoReabertura = row.motivoReabertura ?? null; row.versao = row.versao ?? 1; row.criadoEm = row.criadoEm ?? now; row.atualizadoEm = row.atualizadoEm ?? now;
+        break;
+      case 'capacitacao':
+      case 'equipe':
+        row.descricao = row.descricao ?? null; row.ativo = row.ativo ?? true; row.versao = row.versao ?? 1; row.criadoEm = row.criadoEm ?? now; row.atualizadoEm = row.atualizadoEm ?? now;
+        break;
+      case 'projetoEquipe':
+        row.ativo = row.ativo ?? true; row.versao = row.versao ?? 1; row.criadoEm = row.criadoEm ?? now; row.atualizadoEm = row.atualizadoEm ?? now;
+        break;
+      case 'equipeRecurso':
+        row.criadoEm = row.criadoEm ?? now;
         break;
       case 'projetoSprintItem':
         row.retiradoPorId = row.retiradoPorId ?? null;
@@ -1897,9 +1947,15 @@ function createWorld(): TestWorld {
   const projetoApontamentoAuthorizationService = new ProjetoApontamentoAuthorizationService(
     prismaService,
     projetoAuthorizationService,
-    projetoRecursoHierarquiaService
+    projetoRecursoHierarquiaService,
+    projetoOrcamentoAuthorizationService
   );
-  const projetoApontamentoPeriodoService = new ProjetoApontamentoPeriodoService(prismaService, projetoPeriodoService);
+  const projetoApontamentoPeriodoService = new ProjetoApontamentoPeriodoService(
+    prismaService,
+    projetoPeriodoService,
+    projetoApontamentoAuthorizationService,
+    projetoAuditoriaService
+  );
   const projetoApontamentoQueryService = new ProjetoApontamentoQueryService(
     prismaService,
     projetoApontamentoAuthorizationService,
@@ -1912,6 +1968,27 @@ function createWorld(): TestWorld {
     projetoApontamentoQueryService,
     projetoPeriodoService,
     projetoApontamentoPeriodoService,
+    projetoAuditoriaService
+  );
+  const projetoHorasQueryService = new ProjetoHorasQueryService(
+    prismaService,
+    projetoApontamentoAuthorizationService,
+    projetoPeriodoService,
+    projetoApontamentoPeriodoService
+  );
+  const projetoApontamentoCustoService = new ProjetoApontamentoCustoService(
+    prismaService,
+    projetoApontamentoAuthorizationService,
+    projetoPeriodoService,
+    projetoAuditoriaService
+  );
+  const projetoApontamentoAprovacaoService = new ProjetoApontamentoAprovacaoService(
+    prismaService,
+    projetoApontamentoAuthorizationService,
+    projetoHorasQueryService,
+    projetoApontamentoPeriodoService,
+    projetoApontamentoCustoService,
+    projetoIdempotenciaService,
     projetoAuditoriaService
   );
 
@@ -1932,7 +2009,11 @@ function createWorld(): TestWorld {
     projetoRecursoService,
     projetoOrcamentoService,
     projetoApontamentoService,
-    projetoApontamentoQueryService
+    projetoApontamentoQueryService,
+    projetoHorasQueryService,
+    projetoApontamentoAprovacaoService,
+    projetoApontamentoPeriodoService,
+    projetoApontamentoCustoService
   );
   const chamadoAuthorizationService = new ChamadoAuthorizationService(prismaService, funcionalidadeAuthorizationService);
   const chamadoRelatorioService = new ChamadoRelatorioService(prismaService, chamadoAuthorizationService);
@@ -2236,6 +2317,204 @@ async function prepararMeusApontamentos() {
 }
 
 const SEM_ACOES_DO_AUTOR = { podeAlterar: false, podeExcluir: false, podeDescartar: false, podeEnviar: false, podeRecolher: false };
+
+async function prepararHorasDoProjeto() {
+  const base = await prepararMeusApontamentos();
+  const { world, admin, empresaInicialId, criarPessoa } = base;
+  const projetosSolucao = expectDefined((await world.solucoesService.findAll()).find((solucao) => solucao.slug === 'projetos'));
+  const funcionalidade = (slug: string) => expectDefined(projetosSolucao.funcionalidades.find((item) => item.slug === slug));
+  const meusApontamentos = funcionalidade('meus-apontamentos');
+  const horas = funcionalidade('horas-do-projeto');
+  const orcamento = funcionalidade('orcamento-do-projeto');
+  const comunicacao = funcionalidade('comunicacao-do-projeto');
+  // A publicação de Horas do projeto e a ação fechar_periodo chegam na fase 17.5; aqui são simuladas no banco em memória.
+  await world.prisma.funcionalidade.update({ where: { id: horas.id }, data: { ativo: true, statusPublicacao: 'PUBLICADA' } });
+  await world.prisma.funcionalidadeAcao.create({
+    data: { funcionalidadeId: horas.id, chave: 'fechar_periodo', nome: 'Fechar período', ordem: 80, ativo: true, statusPublicacao: 'PUBLICADA' }
+  });
+  await world.solucoesService.syncCompanyAccess(
+    empresaInicialId,
+    [projetosSolucao.id],
+    [meusApontamentos.id, horas.id, orcamento.id, comunicacao.id]
+  );
+  const permissao = async (funcionalidadeId: number, acoes?: readonly string[]) => {
+    const atualizada = expectDefined((await world.solucoesService.findAll()).find((solucao) => solucao.slug === 'projetos'))
+      .funcionalidades.find((item) => item.id === funcionalidadeId);
+    const completa = buildPermissionForFeature(expectDefined(atualizada));
+    return acoes
+      ? { ...completa, acoes: completa.acoes.map((acao) => ({ ...acao, permitido: acoes.includes(acao.chave) })) }
+      : completa;
+  };
+  const criarGrupo = async (nome: string, permissoes: Array<Awaited<ReturnType<typeof permissao>>>) => {
+    const grupo = await world.prisma.grupoUsuario.create({ data: { nome } });
+    await world.solucoesService.syncGroupAccess(grupo.id, [projetosSolucao.id], permissoes.map((item) => item.funcionalidadeId), permissoes);
+    return grupo.id as number;
+  };
+  const gestaoComFinanceiro = await criarGrupo('Gestao de horas com financeiro', [
+    await permissao(meusApontamentos.id),
+    await permissao(horas.id),
+    await permissao(orcamento.id)
+  ]);
+  const gestaoSemFinanceiro = await criarGrupo('Gestao de horas sem financeiro', [
+    await permissao(meusApontamentos.id),
+    await permissao(horas.id, ['visualizar', 'aprovar_horas', 'reabrir_horas', 'fechar_periodo']),
+    await permissao(orcamento.id, ['visualizar'])
+  ]);
+
+  const responsavel = await criarPessoa('gestora.horas', gestaoComFinanceiro);
+  const superior = await criarPessoa('coordenador.horas', gestaoSemFinanceiro);
+  const subordinado = await criarPessoa('analista.horas', gestaoSemFinanceiro);
+  const par = await criarPessoa('outro.coordenador.horas', gestaoSemFinanceiro);
+  const observador = await criarPessoa('observadora.horas', gestaoSemFinanceiro);
+  const projeto = await world.prisma.projeto.create({
+    data: {
+      empresaId: empresaInicialId,
+      chave: 'GHR',
+      nome: 'Projeto com gestao de horas',
+      situacao: ProjetoSituacao.EM_ANDAMENTO,
+      responsavelId: responsavel.id,
+      criadoPorId: admin.sub,
+      membros: {
+        create: [
+          { usuarioId: superior.id, papel: ProjetoPapel.MEMBRO },
+          { usuarioId: subordinado.id, papel: ProjetoPapel.MEMBRO },
+          { usuarioId: par.id, papel: ProjetoPapel.MEMBRO },
+          { usuarioId: observador.id, papel: ProjetoPapel.OBSERVADOR }
+        ]
+      }
+    }
+  });
+
+  // Hierarquia: o coordenador e o outro coordenador estão no mesmo nível; o analista é subordinado dos dois.
+  const coordenacao = await world.prisma.capacitacao.create({ data: { empresaId: empresaInicialId, nome: 'Coordenação', nivelHierarquico: 3 } });
+  const analise = await world.prisma.capacitacao.create({ data: { empresaId: empresaInicialId, nome: 'Análise', nivelHierarquico: 1 } });
+  const equipe = await world.prisma.equipe.create({ data: { empresaId: empresaInicialId, nome: 'Squad de horas' } });
+  await world.prisma.projetoEquipe.create({ data: { empresaId: empresaInicialId, projetoId: projeto.id, equipeId: equipe.id } });
+  const recursoNoProjeto = async (usuarioId: string, capacitacaoId: string) => {
+    const recurso = await world.prisma.recurso.create({ data: { empresaId: empresaInicialId, usuarioId, capacitacaoId } });
+    await world.prisma.equipeRecurso.create({ data: { empresaId: empresaInicialId, equipeId: equipe.id, recursoId: recurso.id } });
+    return world.prisma.projetoRecurso.create({ data: { empresaId: empresaInicialId, projetoId: projeto.id, recursoId: recurso.id } });
+  };
+  const vinculoDoSuperior = await recursoNoProjeto(superior.id, coordenacao.id);
+  const vinculoDoSubordinado = await recursoNoProjeto(subordinado.id, analise.id);
+  const vinculoDoPar = await recursoNoProjeto(par.id, coordenacao.id);
+  const itemDoSubordinado = await world.prisma.projetoItem.create({
+    data: {
+      empresaId: empresaInicialId,
+      projetoId: projeto.id,
+      numero: 1,
+      chave: 'GHR-1',
+      tipo: ProjetoItemTipo.TAREFA,
+      titulo: 'Preparar a entrega',
+      autorId: admin.sub,
+      responsavelId: subordinado.id
+    }
+  });
+
+  const lancarEEnviar = async (pessoa: { payload: JwtPayload }, dados: Partial<SalvarProjetoApontamentoInput> = {}) => {
+    const salvo = await world.projetosService.salvarApontamento({
+      projetoId: projeto.id,
+      data: '2026-09-15',
+      minutos: 90,
+      descricao: 'Desenvolvimento da entrega',
+      faturavel: true,
+      ...dados
+    }, pessoa.payload);
+    const [enviado] = await world.projetosService.enviarApontamentos({ apontamentos: [{ id: salvo.id, versao: salvo.versao }] }, pessoa.payload);
+    return expectDefined(enviado);
+  };
+  const versoes = (...apontamentos: Array<{ id: string; versao: number }>) => apontamentos.map(({ id, versao }) => ({ id, versao }));
+  let lote = 0;
+  const decidir = (
+    operacao: 'aprovarApontamentos' | 'rejeitarApontamentos',
+    pessoa: JwtPayload,
+    apontamentos: Array<{ id: string; versao: number }>,
+    extras: { chaveIdempotencia?: string; motivo?: string } = {}
+  ) => operacao === 'aprovarApontamentos'
+    ? world.projetosService.aprovarApontamentos({ projetoId: projeto.id, apontamentos, chaveIdempotencia: extras.chaveIdempotencia ?? `lote-${++lote}` }, pessoa)
+    : world.projetosService.rejeitarApontamentos({
+        projetoId: projeto.id,
+        apontamentos,
+        chaveIdempotencia: extras.chaveIdempotencia ?? `lote-${++lote}`,
+        motivo: extras.motivo ?? 'Descreva melhor a entrega.'
+      }, pessoa);
+  const horasDe = (pessoa: JwtPayload, filtro: Partial<ProjetoHorasFiltroInput> = {}) =>
+    world.projetosService.horas({ projetoId: projeto.id, inicio: '2026-08-01', fim: '2026-09-30', ...filtro }, pessoa);
+  const apontamentoGravado = (id: string) => expectDefined(world.prisma.data.projetoApontamento.find((apontamento) => apontamento.id === id));
+
+  return {
+    ...base,
+    projeto,
+    pessoas: { responsavel, superior, subordinado, par, observador },
+    vinculos: { superior: vinculoDoSuperior, subordinado: vinculoDoSubordinado, par: vinculoDoPar },
+    itemDoSubordinado,
+    lancarEEnviar,
+    versoes,
+    decidir,
+    horasDe,
+    apontamentoGravado
+  };
+}
+
+const SEM_DECISAO = { podeAprovar: false, podeRejeitar: false, podeReabrir: false };
+
+async function prepararCustoDasHoras() {
+  const horas = await prepararHorasDoProjeto();
+  const { world, empresaInicialId, projeto, pessoas, vinculos, itemDoSubordinado } = horas;
+  const orcamento = await world.prisma.projetoOrcamento.create({
+    data: { empresaId: empresaInicialId, projetoId: projeto.id, moeda: 'BRL', status: 'APROVADO' }
+  });
+  const categoria = await world.prisma.projetoOrcamentoCategoria.create({
+    data: {
+      empresaId: empresaInicialId,
+      projetoId: projeto.id,
+      orcamentoId: orcamento.id,
+      nome: 'Mão de obra',
+      valorPlanejado: '1000.00',
+      valorRealizado: '100.00'
+    }
+  });
+  const linhaDeCusto = (descricao: string, dados: AnyRecord) => world.prisma.projetoCusto.create({
+    data: {
+      empresaId: empresaInicialId,
+      projetoId: projeto.id,
+      orcamentoId: orcamento.id,
+      tipo: 'RECURSO',
+      descricao,
+      criadoPorId: pessoas.responsavel.id,
+      ...dados
+    }
+  });
+  const taxa = (custoId: string, taxaHora: string, criadoEm: string) => world.prisma.projetoCustoTaxaHistorico.create({
+    data: { custoId, taxaHora, criadoPorId: pessoas.responsavel.id, criadoEm: new Date(criadoEm) }
+  });
+  const geral = await linhaDeCusto('Análise geral', {
+    recursoId: vinculos.subordinado.id, categoriaId: categoria.id, quantidadeMinutos: 600, taxaHora: '133.3333', valorPlanejado: '1333.33'
+  });
+  const doItem = await linhaDeCusto('Análise da entrega', {
+    recursoId: vinculos.subordinado.id,
+    itemId: itemDoSubordinado.id,
+    categoriaId: categoria.id,
+    quantidadeMinutos: 120,
+    taxaHora: '97.5000',
+    valorPlanejado: '195.00'
+  });
+  // Duas linhas gerais para o mesmo recurso deixam a taxa ambígua; linhas sem histórico usam a taxa atual delas.
+  const coordenacaoGeral = await linhaDeCusto('Coordenação geral', {
+    recursoId: vinculos.par.id, quantidadeMinutos: 60, taxaHora: '150.0000', valorPlanejado: '150.00'
+  });
+  const coordenacaoDeApoio = await linhaDeCusto('Coordenação de apoio', {
+    recursoId: vinculos.par.id, quantidadeMinutos: 60, taxaHora: '160.0000', valorPlanejado: '160.00'
+  });
+  const taxas = {
+    primeiraGeral: await taxa(geral.id, '120.0000', '2026-09-01T12:00:00.000Z'),
+    // 22h do dia 15 em São Paulo: vale para o trabalho do dia 15, mas não para o do dia 14.
+    segundaGeral: await taxa(geral.id, '133.3333', '2026-09-16T01:00:00.000Z'),
+    doItem: await taxa(doItem.id, '97.5000', '2026-09-01T12:00:00.000Z')
+  };
+
+  return { ...horas, orcamento, categoria, linhas: { geral, doItem, coordenacaoGeral, coordenacaoDeApoio }, taxas, linhaDeCusto, taxa };
+}
 
 describe('Fluxos integrados do backend', () => {
   it('cadastra, publica e utiliza uma funcionalidade customizada sem perde-la no bootstrap', async () => {
@@ -7413,5 +7692,539 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
     } finally {
       world.prisma.$transaction = transacaoOriginal;
     }
+  });
+
+  it('nega Horas do projeto a todos enquanto a funcionalidade nao estiver publicada', async () => {
+    const { world, admin, criarProjeto } = await prepararMeusApontamentos();
+    const projeto = await criarProjeto('NPB');
+
+    await expect(world.projetosService.horasProjetos(admin, false)).rejects.toThrow('sem permissao');
+    await expect(world.projetosService.horas({ projetoId: projeto.id, inicio: '2026-09-01', fim: '2026-09-30' }, admin))
+      .rejects.toThrow('sem permissao');
+    await expect(world.projetosService.aprovarApontamentos({
+      projetoId: projeto.id, apontamentos: [{ id: randomUUID(), versao: 1 }], chaveIdempotencia: 'lote-sem-publicacao'
+    }, admin)).rejects.toThrow('sem permissao');
+    await expect(world.projetosService.fecharPeriodoDeApontamentos({ projetoId: projeto.id, competencia: '2026-09' }, admin))
+      .rejects.toThrow('sem permissao');
+  });
+
+  it('aprova e rejeita em lote no escopo de quem decide, sem autoaprovacao, tudo ou nada e com idempotencia', async () => {
+    const {
+      world, admin, empresaInicialId, membro, projeto, pessoas, lancarEEnviar, versoes, decidir, horasDe, apontamentoGravado, eventosDeApontamento
+    } = await prepararHorasDoProjeto();
+    const { responsavel, superior, subordinado, par, observador } = pessoas;
+    const doSubordinado = await lancarEEnviar(subordinado, { data: '2026-09-14' });
+    const segundoDoSubordinado = await lancarEEnviar(subordinado, { data: '2026-09-15', minutos: 37 });
+    const doPar = await lancarEEnviar(par, { data: '2026-09-15', minutos: 60 });
+    const doSuperior = await lancarEEnviar(superior, { data: '2026-09-16', minutos: 45 });
+    const doResponsavel = await lancarEEnviar(responsavel, { data: '2026-09-16', minutos: 30 });
+    const idsDa = (pagina: { items: Array<{ id: string }> }) => pagina.items.map((item) => item.id).sort();
+    const todos = [doSubordinado, segundoDoSubordinado, doPar, doSuperior, doResponsavel].map((apontamento) => apontamento.id).sort();
+
+    expect(idsDa(await horasDe(responsavel.payload))).toEqual(todos);
+    expect(idsDa(await horasDe(admin))).toEqual(todos);
+    expect(idsDa(await horasDe(superior.payload))).toEqual([doSubordinado.id, segundoDoSubordinado.id, doSuperior.id].sort());
+    expect(idsDa(await horasDe(observador.payload))).toEqual([]);
+    await expect(horasDe(membro.payload)).rejects.toThrow('sem permissao');
+    const daCoordenacao = await horasDe(superior.payload);
+    expect(daCoordenacao.permissoes).toEqual({
+      podeAprovar: true, podeReabrir: true, podeFecharPeriodo: false, podeVisualizarFinanceiro: false, podeGerenciarFinanceiro: false
+    });
+    expect(daCoordenacao.items.find((item) => item.id === doSubordinado.id)).toMatchObject({
+      usuario: { id: subordinado.id },
+      acoes: { podeAprovar: true, podeRejeitar: true, podeReabrir: false, bloqueio: null },
+      custo: null
+    });
+    expect(daCoordenacao.items.find((item) => item.id === doSuperior.id)?.acoes)
+      .toEqual({ ...SEM_DECISAO, bloqueio: 'Você não pode aprovar os próprios apontamentos.' });
+    expect((await horasDe(responsavel.payload)).permissoes).toEqual({
+      podeAprovar: true, podeReabrir: true, podeFecharPeriodo: true, podeVisualizarFinanceiro: true, podeGerenciarFinanceiro: true
+    });
+
+    const proprio = 'Você não pode aprovar os próprios apontamentos.';
+    await expect(decidir('aprovarApontamentos', superior.payload, versoes(doSuperior))).rejects.toThrow(proprio);
+    await expect(decidir('aprovarApontamentos', responsavel.payload, versoes(doResponsavel))).rejects.toThrow(proprio);
+    const doAdministrador = await world.prisma.projetoApontamento.create({
+      data: {
+        empresaId: empresaInicialId,
+        projetoId: projeto.id,
+        usuarioId: admin.sub,
+        dataTrabalho: new Date('2026-09-17T00:00:00.000Z'),
+        minutos: 20,
+        descricao: 'Revisão do administrador',
+        status: 'ENVIADO'
+      }
+    });
+    await expect(decidir('aprovarApontamentos', admin, [{ id: doAdministrador.id, versao: doAdministrador.versao }])).rejects.toThrow(proprio);
+    const naoEncontrado = 'Apontamento não encontrado.';
+    await expect(decidir('aprovarApontamentos', superior.payload, versoes(doPar))).rejects.toThrow(naoEncontrado);
+    await expect(decidir('aprovarApontamentos', superior.payload, versoes(doResponsavel))).rejects.toThrow(naoEncontrado);
+    await expect(decidir('aprovarApontamentos', observador.payload, versoes(doSubordinado))).rejects.toThrow(naoEncontrado);
+
+    const [aprovadoPelaCoordenacao] = await decidir('aprovarApontamentos', superior.payload, versoes(doSubordinado));
+    expect(aprovadoPelaCoordenacao).toMatchObject({
+      id: doSubordinado.id,
+      status: ProjetoApontamentoStatus.APROVADO,
+      versao: doSubordinado.versao + 1,
+      decididoPor: { id: superior.id },
+      usuario: { id: subordinado.id },
+      acoes: { podeAprovar: false, podeRejeitar: false, podeReabrir: true, bloqueio: null },
+      custo: null
+    });
+    expect(aprovadoPelaCoordenacao?.decididoEm).toBeInstanceOf(Date);
+    await expect(decidir('aprovarApontamentos', responsavel.payload, versoes(doSuperior))).resolves.toEqual([
+      expect.objectContaining({ status: ProjetoApontamentoStatus.APROVADO, decididoPor: expect.objectContaining({ id: responsavel.id }) })
+    ]);
+    // As horas do responsável ficam com um superior ou com o administrador do sistema.
+    await expect(decidir('aprovarApontamentos', admin, versoes(doResponsavel))).resolves.toEqual([
+      expect.objectContaining({ status: ProjetoApontamentoStatus.APROVADO, decididoPor: expect.objectContaining({ id: admin.sub }) })
+    ]);
+    expect(eventosDeApontamento().filter((evento) => evento.entidadeId === doSubordinado.id && evento.evento === 'APROVADO')).toEqual([{
+      entidadeId: doSubordinado.id,
+      evento: 'APROVADO',
+      usuarioId: superior.id,
+      dados: {
+        statusAnterior: 'ENVIADO',
+        custo: { custoSituacao: 'SEM_TAXA', custoId: null, taxaHistoricoId: null, taxaHoraAplicada: null, valorCusto: null, moeda: null }
+      }
+    }]);
+
+    const eventosAntes = eventosDeApontamento().length;
+    await expect(decidir('aprovarApontamentos', responsavel.payload, [
+      { id: segundoDoSubordinado.id, versao: segundoDoSubordinado.versao },
+      { id: doPar.id, versao: doPar.versao + 1 }
+    ], { chaveIdempotencia: 'lote-com-versao-antiga' })).rejects.toThrow('O apontamento foi alterado em outra tela ou por outra pessoa. Atualize os dados.');
+    expect(apontamentoGravado(segundoDoSubordinado.id)).toMatchObject({
+      status: 'ENVIADO', versao: segundoDoSubordinado.versao, decididoPorId: null, custoSituacao: 'NAO_APLICAVEL'
+    });
+    expect(eventosDeApontamento()).toHaveLength(eventosAntes);
+    expect(world.prisma.data.projetoOperacaoIdempotente.some((operacao) => operacao.chave === 'lote-com-versao-antiga')).toBe(false);
+
+    const lote = { chaveIdempotencia: 'lote-do-dia-15' };
+    const primeiraVez = await decidir('aprovarApontamentos', responsavel.payload, versoes(segundoDoSubordinado, doPar), lote);
+    expect(primeiraVez.map((apontamento) => [apontamento.id, apontamento.status])).toEqual([
+      [segundoDoSubordinado.id, ProjetoApontamentoStatus.APROVADO],
+      [doPar.id, ProjetoApontamentoStatus.APROVADO]
+    ]);
+    const decisoes = eventosDeApontamento().filter((evento) => evento.evento === 'APROVADO').length;
+    await expect(decidir('aprovarApontamentos', responsavel.payload, versoes(doPar, segundoDoSubordinado), lote)).resolves.toEqual(primeiraVez);
+    expect(eventosDeApontamento().filter((evento) => evento.evento === 'APROVADO')).toHaveLength(decisoes);
+    await expect(decidir('aprovarApontamentos', responsavel.payload, versoes(doSubordinado), lote))
+      .rejects.toThrow('A chave de idempotencia ja foi usada com outra requisicao.');
+    await expect(decidir('aprovarApontamentos', responsavel.payload, versoes(...primeiraVez)))
+      .rejects.toThrow('Não é possível aprovar um apontamento aprovado.');
+
+    const paraRevisar = await lancarEEnviar(par, { data: '2026-09-18', minutos: 25 });
+    await expect(decidir('rejeitarApontamentos', responsavel.payload, versoes(paraRevisar), { motivo: ' curt ' }))
+      .rejects.toThrow('Informe um motivo com 5 a 500 caracteres.');
+    await expect(decidir('rejeitarApontamentos', par.payload, versoes(paraRevisar)))
+      .rejects.toThrow('Você não pode rejeitar os próprios apontamentos.');
+    const [rejeitado] = await decidir('rejeitarApontamentos', responsavel.payload, versoes(paraRevisar), {
+      motivo: '  Informe a entrega revisada.  '
+    });
+    expect(rejeitado).toMatchObject({
+      status: ProjetoApontamentoStatus.REJEITADO,
+      motivo: 'Informe a entrega revisada.',
+      decididoPor: { id: responsavel.id },
+      custo: { situacao: 'NAO_APLICAVEL', valorCusto: null }
+    });
+    const doAutor = await world.projetosService.meusApontamentos(par.payload, { inicio: '2026-09-18', fim: '2026-09-18' });
+    expect(doAutor.items).toEqual([expect.objectContaining({
+      id: paraRevisar.id,
+      status: ProjetoApontamentoStatus.REJEITADO,
+      motivo: 'Informe a entrega revisada.',
+      acoes: expect.objectContaining({ podeAlterar: true, podeEnviar: true, podeDescartar: true })
+    })]);
+    expect(eventosDeApontamento().filter((evento) => evento.entidadeId === paraRevisar.id && evento.evento === 'REJEITADO')).toEqual([{
+      entidadeId: paraRevisar.id,
+      evento: 'REJEITADO',
+      usuarioId: responsavel.id,
+      dados: { statusAnterior: 'ENVIADO', motivo: 'Informe a entrega revisada.' }
+    }]);
+
+    const pendente = await lancarEEnviar(subordinado, { data: '2026-09-19', minutos: 15 });
+    await world.prisma.projeto.update({ where: { id: projeto.id }, data: { arquivadoEm: new Date(), arquivadoPorId: admin.sub } });
+    await expect(decidir('aprovarApontamentos', responsavel.payload, versoes(pendente))).rejects.toThrow('somente para consulta');
+    const arquivado = await horasDe(responsavel.payload);
+    expect(arquivado.permissoes).toEqual({
+      podeAprovar: false, podeReabrir: false, podeFecharPeriodo: false, podeVisualizarFinanceiro: true, podeGerenciarFinanceiro: false
+    });
+    expect(arquivado.items.find((item) => item.id === pendente.id)?.acoes)
+      .toEqual({ ...SEM_DECISAO, bloqueio: 'O projeto está arquivado, e o apontamento fica somente para consulta.' });
+    expect((await world.projetosService.horasProjetos(responsavel.payload, false)).map((item) => item.id)).not.toContain(projeto.id);
+    expect((await world.projetosService.horasProjetos(responsavel.payload, true)).map((item) => item.id)).toContain(projeto.id);
+  });
+
+  it('congela o custo das horas aprovadas pela taxa do dia e soma o realizado por horas no orcamento', async () => {
+    const {
+      world, admin, projeto, pessoas, linhas, taxas, itemDoSubordinado, categoria, lancarEEnviar, versoes, decidir, horasDe, apontamentoGravado
+    } = await prepararCustoDasHoras();
+    const { responsavel, superior, subordinado, par } = pessoas;
+    const diaQuatorze = await lancarEEnviar(subordinado, { data: '2026-09-14', minutos: 90 });
+    const diaQuinze = await lancarEEnviar(subordinado, { data: '2026-09-15', minutos: 37 });
+    const noItem = await lancarEEnviar(subordinado, { data: '2026-09-15', minutos: 50, itemId: itemDoSubordinado.id });
+    const antesDaPrimeiraTaxa = await lancarEEnviar(subordinado, { data: '2026-08-20', minutos: 60 });
+    const ambiguo = await lancarEEnviar(par, { data: '2026-09-15', minutos: 60 });
+    const semLinha = await lancarEEnviar(superior, { data: '2026-09-16', minutos: 45, faturavel: false });
+    const semRecurso = await lancarEEnviar(responsavel, { data: '2026-09-16', minutos: 30 });
+    const semCusto = (situacao: string) => ({ situacao, custoId: null, taxaHoraAplicada: null, valorCusto: null, moeda: null });
+
+    const aprovados = await decidir('aprovarApontamentos', responsavel.payload, versoes(diaQuatorze, diaQuinze, noItem, antesDaPrimeiraTaxa, ambiguo, semLinha));
+    expect(aprovados.map((apontamento) => [apontamento.id, apontamento.custo])).toEqual([
+      [diaQuatorze.id, { situacao: 'CALCULADO', custoId: linhas.geral.id, taxaHoraAplicada: '120.0000', valorCusto: '180.00', moeda: 'BRL' }],
+      [diaQuinze.id, { situacao: 'CALCULADO', custoId: linhas.geral.id, taxaHoraAplicada: '133.3333', valorCusto: '82.22', moeda: 'BRL' }],
+      [noItem.id, { situacao: 'CALCULADO', custoId: linhas.doItem.id, taxaHoraAplicada: '97.5000', valorCusto: '81.25', moeda: 'BRL' }],
+      [antesDaPrimeiraTaxa.id, { situacao: 'CALCULADO', custoId: linhas.geral.id, taxaHoraAplicada: '120.0000', valorCusto: '120.00', moeda: 'BRL' }],
+      [ambiguo.id, semCusto('TAXA_AMBIGUA')],
+      [semLinha.id, semCusto('SEM_TAXA')]
+    ]);
+    await expect(decidir('aprovarApontamentos', admin, versoes(semRecurso))).resolves.toEqual([
+      expect.objectContaining({ custo: semCusto('SEM_TAXA') })
+    ]);
+    expect([diaQuatorze, diaQuinze, noItem, antesDaPrimeiraTaxa].map(({ id }) => apontamentoGravado(id).taxaHistoricoId))
+      .toEqual([taxas.primeiraGeral.id, taxas.segundaGeral.id, taxas.doItem.id, taxas.primeiraGeral.id]);
+
+    const pagina = await horasDe(responsavel.payload);
+    expect(pagina).toMatchObject({
+      totalMinutos: 372,
+      totaisPorUsuario: [
+        { usuario: { id: subordinado.id }, minutos: 237 },
+        { usuario: { id: superior.id }, minutos: 45 },
+        { usuario: { id: responsavel.id }, minutos: 30 },
+        { usuario: { id: par.id }, minutos: 60 }
+      ],
+      totaisPorItem: [
+        { item: { id: itemDoSubordinado.id, chave: 'GHR-1' }, minutos: 50 },
+        { item: null, minutos: 322 }
+      ]
+    });
+    expect(pagina.financeiro).toEqual({
+      moeda: 'BRL',
+      totalCusto: '463.47',
+      custosPorUsuario: [{ usuario: expect.objectContaining({ id: subordinado.id }), minutos: 237, valor: '463.47' }],
+      custosPorItem: [
+        { item: { id: itemDoSubordinado.id, chave: 'GHR-1', titulo: 'Preparar a entrega' }, minutos: 50, valor: '81.25' },
+        { item: null, minutos: 187, valor: '382.22' }
+      ],
+      linhas: [
+        expect.objectContaining({ custoId: linhas.doItem.id, usuario: expect.objectContaining({ id: subordinado.id }), item: expect.objectContaining({ chave: 'GHR-1' }), quantidadeMinutos: 120, taxaHora: '97.5000', valorPlanejado: '195.00', minutosAprovados: 50, valorRealizadoHoras: '81.25' }),
+        expect.objectContaining({ custoId: linhas.geral.id, item: null, valorPlanejado: '1333.33', minutosAprovados: 187, valorRealizadoHoras: '382.22' }),
+        expect.objectContaining({ custoId: linhas.coordenacaoDeApoio.id, usuario: expect.objectContaining({ id: par.id }), minutosAprovados: 0, valorRealizadoHoras: '0.00' }),
+        expect.objectContaining({ custoId: linhas.coordenacaoGeral.id, minutosAprovados: 0, valorRealizadoHoras: '0.00' })
+      ],
+      apontamentosSemCusto: 3
+    });
+    expect((await horasDe(responsavel.payload, { inicio: '2026-09-01' })).financeiro).toMatchObject({ totalCusto: '343.47', apontamentosSemCusto: 3 });
+    const idsDa = (filtrada: { items: Array<{ id: string }> }) => filtrada.items.map((item) => item.id).sort();
+    expect(idsDa(await horasDe(responsavel.payload, { usuarioId: subordinado.id })))
+      .toEqual([diaQuatorze.id, diaQuinze.id, noItem.id, antesDaPrimeiraTaxa.id].sort());
+    expect(idsDa(await horasDe(responsavel.payload, { itemId: itemDoSubordinado.id }))).toEqual([noItem.id]);
+    expect(idsDa(await horasDe(responsavel.payload, { status: ProjetoApontamentoStatus.APROVADO, usuarioId: par.id }))).toEqual([ambiguo.id]);
+    expect(idsDa(await horasDe(responsavel.payload, { status: ProjetoApontamentoStatus.ENVIADO }))).toEqual([]);
+    expect(await horasDe(responsavel.payload, { faturavel: false })).toMatchObject({
+      total: 1, totalMinutos: 45, items: [{ id: semLinha.id, faturavel: false }], financeiro: { totalCusto: '0.00', custosPorUsuario: [] }
+    });
+    // Filtrar por alguém de fora do escopo não revela os apontamentos dessa pessoa.
+    expect(await horasDe(superior.payload, { usuarioId: par.id })).toMatchObject({ total: 0, items: [], totaisPorUsuario: [] });
+    const segundaPagina = await horasDe(responsavel.payload, { pagina: 2, limite: 5 });
+    expect(segundaPagina).toMatchObject({ total: 7, pagina: 2, limite: 5, totalPaginas: 2, totalMinutos: 372 });
+    expect(segundaPagina.items.map((item) => item.id)).toEqual([diaQuatorze.id, antesDaPrimeiraTaxa.id]);
+
+    const semAcessoFinanceiro = await horasDe(superior.payload);
+    expect(semAcessoFinanceiro.financeiro).toBeNull();
+    expect(semAcessoFinanceiro.items.map((item) => item.custo)).toEqual(semAcessoFinanceiro.items.map(() => null));
+
+    const financeiro = expectDefined((await world.projetosService.orcamento(projeto.id, responsavel.payload)).financeiro);
+    expect(financeiro).toMatchObject({
+      totalPlanejado: '1000.00',
+      totalRealizado: '100.00',
+      variacao: '900.00',
+      totalRealizadoHoras: '463.47',
+      totalRealizadoConsolidado: '563.47',
+      variacaoConsolidada: '436.53',
+      apontamentosSemCusto: 3
+    });
+    expect(financeiro.categorias).toEqual([expect.objectContaining({ id: categoria.id, valorRealizado: '100.00', valorRealizadoHoras: '463.47' })]);
+    expect(financeiro.custos.map((custo: AnyRecord) => [custo.descricao, custo.minutosAprovados, custo.valorRealizadoHoras])).toEqual([
+      ['Análise da entrega', 50, '81.25'],
+      ['Análise geral', 187, '382.22'],
+      ['Coordenação de apoio', 0, '0.00'],
+      ['Coordenação geral', 0, '0.00']
+    ]);
+    expect((await world.projetosService.orcamento(projeto.id, superior.payload)).financeiro).toBeNull();
+  });
+
+  it('reabre o aprovado removendo o custo e recalcula so os custos pendentes de forma idempotente', async () => {
+    const {
+      world, admin, empresaInicialId, projeto, pessoas, vinculos, orcamento, linhas, taxas, linhaDeCusto, taxa,
+      lancarEEnviar, versoes, decidir, horasDe, apontamentoGravado, eventosDeApontamento
+    } = await prepararCustoDasHoras();
+    const { responsavel, superior, subordinado, par, observador } = pessoas;
+    const calculado = await lancarEEnviar(subordinado, { data: '2026-09-14', minutos: 90 });
+    const ambiguo = await lancarEEnviar(par, { data: '2026-09-15', minutos: 60 });
+    const semRecurso = await lancarEEnviar(responsavel, { data: '2026-09-16', minutos: 30 });
+    const [aprovado] = await decidir('aprovarApontamentos', responsavel.payload, versoes(calculado, ambiguo));
+    await decidir('aprovarApontamentos', admin, versoes(semRecurso));
+    const motivo = 'O dia do trabalho foi lançado errado.';
+    const reabrir = (pessoa: JwtPayload, dados: Partial<ReabrirProjetoApontamentoInput> = {}) => world.projetosService.reabrirApontamento({
+      projetoId: projeto.id, id: expectDefined(aprovado).id, versao: expectDefined(aprovado).versao, motivo, ...dados
+    }, pessoa);
+
+    await expect(reabrir(responsavel.payload, { motivo: 'erro' })).rejects.toThrow('Informe um motivo com 5 a 500 caracteres.');
+    await expect(reabrir(observador.payload)).rejects.toThrow('Apontamento não encontrado.');
+    await expect(reabrir(responsavel.payload, { versao: expectDefined(aprovado).versao + 1 }))
+      .rejects.toThrow('O apontamento foi alterado em outra tela ou por outra pessoa. Atualize os dados.');
+    await world.prisma.projeto.update({ where: { id: projeto.id }, data: { situacao: ProjetoSituacao.PAUSADO } });
+    await expect(reabrir(responsavel.payload))
+      .rejects.toThrow('Para reabrir o apontamento, o projeto precisa estar em Rascunho, Planejado ou Em andamento.');
+    expect((await horasDe(responsavel.payload)).items.find((item) => item.id === calculado.id)?.acoes).toEqual({
+      ...SEM_DECISAO, bloqueio: 'Para reabrir o apontamento, o projeto precisa estar em Rascunho, Planejado ou Em andamento.'
+    });
+    await world.prisma.projeto.update({ where: { id: projeto.id }, data: { situacao: ProjetoSituacao.EM_ANDAMENTO } });
+
+    const reaberto = await reabrir(responsavel.payload, { motivo: `  ${motivo}  ` });
+    expect(reaberto).toMatchObject({
+      id: calculado.id,
+      status: ProjetoApontamentoStatus.RASCUNHO,
+      motivo,
+      versao: expectDefined(aprovado).versao + 1,
+      acoes: { ...SEM_DECISAO, bloqueio: null },
+      custo: { situacao: 'NAO_APLICAVEL', custoId: null, taxaHoraAplicada: null, valorCusto: null, moeda: null }
+    });
+    expect(apontamentoGravado(calculado.id)).toMatchObject({
+      custoSituacao: 'NAO_APLICAVEL', custoId: null, taxaHistoricoId: null, taxaHoraAplicada: null, valorCusto: null, moeda: null
+    });
+    expect(eventosDeApontamento().filter((evento) => evento.evento === 'REABERTO')).toEqual([{
+      entidadeId: calculado.id,
+      evento: 'REABERTO',
+      usuarioId: responsavel.id,
+      dados: {
+        statusAnterior: 'APROVADO',
+        motivo,
+        custoRemovido: {
+          custoSituacao: 'CALCULADO',
+          custoId: linhas.geral.id,
+          taxaHistoricoId: taxas.primeiraGeral.id,
+          taxaHoraAplicada: '120.0000',
+          valorCusto: '180.00',
+          moeda: 'BRL'
+        }
+      }
+    }]);
+    const doAutor = await world.projetosService.meusApontamentos(subordinado.payload, { inicio: '2026-09-14', fim: '2026-09-14' });
+    expect(doAutor.items).toEqual([expect.objectContaining({
+      status: ProjetoApontamentoStatus.RASCUNHO,
+      motivo,
+      acoes: expect.objectContaining({ podeAlterar: true, podeEnviar: true, podeExcluir: true })
+    })]);
+    expect(expectDefined((await world.projetosService.orcamento(projeto.id, responsavel.payload)).financeiro))
+      .toMatchObject({ totalRealizadoHoras: '0.00', apontamentosSemCusto: 2 });
+    // A policy da 17.1 permite reabrir o próprio aprovado a quem tem reabrir_horas; a nova aprovação continua com outra pessoa.
+    const doSuperior = await lancarEEnviar(superior, { data: '2026-09-17', minutos: 45 });
+    const [aprovadoDoSuperior] = await decidir('aprovarApontamentos', responsavel.payload, versoes(doSuperior));
+    await expect(world.projetosService.reabrirApontamento({
+      projetoId: projeto.id, id: doSuperior.id, versao: expectDefined(aprovadoDoSuperior).versao, motivo
+    }, superior.payload)).resolves.toMatchObject({ status: ProjetoApontamentoStatus.RASCUNHO });
+
+    const recalcular = (pessoa: JwtPayload) => world.projetosService.recalcularCustoDosApontamentos({ projetoId: projeto.id }, pessoa);
+    const recalculos = () => eventosDeApontamento().filter((evento) => evento.evento === 'CUSTO_RECALCULADO');
+    await expect(recalcular(superior.payload)).rejects.toThrow('sem permissao');
+    await expect(recalcular(responsavel.payload)).resolves.toEqual({ calculados: 0, pendentes: 2 });
+    expect(recalculos()).toEqual([]);
+
+    await world.prisma.projetoCusto.delete({ where: { id: linhas.coordenacaoDeApoio.id } });
+    const recursoDoResponsavel = await world.prisma.recurso.create({ data: { empresaId: empresaInicialId, usuarioId: responsavel.id } });
+    // O vínculo inativo hoje ainda localiza a linha de custo de quando o trabalho foi feito.
+    const vinculoDoResponsavel = await world.prisma.projetoRecurso.create({
+      data: { empresaId: empresaInicialId, projetoId: projeto.id, recursoId: recursoDoResponsavel.id, ativo: false }
+    });
+    const gestao = await linhaDeCusto('Gestão do projeto', { recursoId: vinculoDoResponsavel.id, quantidadeMinutos: 60, taxaHora: '200.0000', valorPlanejado: '200.00' });
+    const gestaoDuplicada = await linhaDeCusto('Gestão duplicada', { recursoId: vinculoDoResponsavel.id, quantidadeMinutos: 60, taxaHora: '210.0000', valorPlanejado: '210.00' });
+    await expect(recalcular(responsavel.payload)).resolves.toEqual({ calculados: 1, pendentes: 1 });
+    expect(apontamentoGravado(ambiguo.id)).toMatchObject({ custoSituacao: 'CALCULADO', custoId: linhas.coordenacaoGeral.id, taxaHoraAplicada: '150.0000', valorCusto: '150.00', moeda: 'BRL' });
+    expect(apontamentoGravado(semRecurso.id)).toMatchObject({ custoSituacao: 'TAXA_AMBIGUA', valorCusto: null });
+    expect(recalculos().map((evento) => [evento.entidadeId, evento.dados.antes, evento.dados.depois.custoSituacao])).toEqual([
+      [ambiguo.id, { custoSituacao: 'TAXA_AMBIGUA' }, 'CALCULADO'],
+      [semRecurso.id, { custoSituacao: 'SEM_TAXA' }, 'TAXA_AMBIGUA']
+    ]);
+
+    await world.prisma.projetoCusto.delete({ where: { id: gestaoDuplicada.id } });
+    await expect(recalcular(responsavel.payload)).resolves.toEqual({ calculados: 1, pendentes: 0 });
+    expect(apontamentoGravado(semRecurso.id)).toMatchObject({ custoSituacao: 'CALCULADO', custoId: gestao.id, taxaHoraAplicada: '200.0000', valorCusto: '100.00' });
+    const eventosDepois = recalculos().length;
+    await taxa(linhas.coordenacaoGeral.id, '999.0000', '2026-09-01T00:00:00.000Z');
+    await expect(recalcular(responsavel.payload)).resolves.toEqual({ calculados: 0, pendentes: 0 });
+    expect(recalculos()).toHaveLength(eventosDepois);
+    expect(apontamentoGravado(ambiguo.id)).toMatchObject({ taxaHoraAplicada: '150.0000', valorCusto: '150.00' });
+    expect(expectDefined((await world.projetosService.orcamento(projeto.id, responsavel.payload)).financeiro))
+      .toMatchObject({ totalRealizadoHoras: '250.00', apontamentosSemCusto: 0 });
+
+    // Com o orçamento reaberto, a linha usada por horas aprovadas não some nem muda de dono, e o realizado dela vem das horas.
+    await world.prisma.projetoOrcamento.update({ where: { id: orcamento.id }, data: { status: 'RASCUNHO' } });
+    const linhaDoPar = expectDefined(world.prisma.data.projetoCusto.find((custo) => custo.id === linhas.coordenacaoGeral.id));
+    const custoDoPar = (dados: Partial<SalvarProjetoCustoInput> = {}) => world.projetosService.salvarCusto({
+      projetoId: projeto.id,
+      id: linhaDoPar.id,
+      versao: linhaDoPar.versao,
+      tipo: ProjetoCustoTipo.RECURSO,
+      descricao: 'Coordenação geral',
+      recursoId: vinculos.par.id,
+      quantidadeMinutos: 60,
+      taxaHora: '150.0000',
+      valorPlanejado: '150.00',
+      valorComprometido: '0.00',
+      valorRealizado: '0.00',
+      ...dados
+    }, responsavel.payload);
+    await expect(world.projetosService.excluirCusto({ projetoId: projeto.id, id: linhaDoPar.id, versao: linhaDoPar.versao }, responsavel.payload))
+      .rejects.toThrow('O custo tem 1 apontamento(s) aprovado(s) ligado(s) a ele e não pode ser excluído. Reabra esses apontamentos antes de excluir o custo.');
+    await expect(custoDoPar({ recursoId: vinculos.superior.id }))
+      .rejects.toThrow('O custo tem 1 apontamento(s) aprovado(s) ligado(s) a ele e não pode trocar de tipo, recurso ou item.');
+    const realizadoManual = 'Nos custos de recurso, o realizado vem das horas aprovadas e não pode ser digitado.';
+    await expect(custoDoPar({ valorRealizado: '10.00' })).rejects.toThrow(realizadoManual);
+    await expect(custoDoPar({ descricao: 'Coordenação do projeto' }))
+      .resolves.toMatchObject({ descricao: 'Coordenação do projeto', valorRealizado: '0.00', minutosAprovados: 60, valorRealizadoHoras: '150.00' });
+    await expect(world.projetosService.salvarCusto({
+      projetoId: projeto.id,
+      tipo: ProjetoCustoTipo.RECURSO,
+      descricao: 'Nova coordenação',
+      recursoId: vinculos.superior.id,
+      quantidadeMinutos: 60,
+      taxaHora: '90',
+      valorPlanejado: '0',
+      valorComprometido: '0',
+      valorRealizado: '5'
+    }, responsavel.payload)).rejects.toThrow(realizadoManual);
+    await expect(world.projetosService.salvarCusto({
+      projetoId: projeto.id, tipo: ProjetoCustoTipo.FIXO, descricao: 'Licença', valorPlanejado: '50', valorComprometido: '0', valorRealizado: '20'
+    }, responsavel.payload)).resolves.toMatchObject({ valorRealizado: '20.00', minutosAprovados: 0, valorRealizadoHoras: '0.00' });
+    const legado = await linhaDeCusto('Análise com ajuste legado', {
+      recursoId: vinculos.subordinado.id, quantidadeMinutos: 60, taxaHora: '80.0000', valorPlanejado: '80.00', valorRealizado: '35.50'
+    });
+    await expect(world.projetosService.salvarCusto({
+      projetoId: projeto.id, id: legado.id, versao: legado.versao, tipo: ProjetoCustoTipo.RECURSO, descricao: 'Análise com ajuste legado',
+      recursoId: vinculos.subordinado.id, quantidadeMinutos: 90, taxaHora: '80.0000', valorPlanejado: '0', valorComprometido: '0', valorRealizado: '35.50'
+    }, responsavel.payload)).resolves.toMatchObject({ quantidadeMinutos: 90, valorPlanejado: '120.00', valorRealizado: '35.50' });
+
+    await world.prisma.projeto.update({ where: { id: projeto.id }, data: { arquivadoEm: new Date(), arquivadoPorId: admin.sub } });
+    await expect(recalcular(responsavel.payload)).rejects.toThrow('somente para consulta');
+  });
+
+  it('fecha e reabre as competencias pelo responsavel, sem enviados pendentes e fora do feed do projeto', async () => {
+    const {
+      world, admin, empresaInicialId, projeto, pessoas, lancarEEnviar, versoes, decidir, horasDe, eventosDeApontamento
+    } = await prepararHorasDoProjeto();
+    const { responsavel, superior, subordinado } = pessoas;
+    const fechar = (pessoa: JwtPayload, competencia = '2026-09') =>
+      world.projetosService.fecharPeriodoDeApontamentos({ projetoId: projeto.id, competencia }, pessoa);
+    const reabrirCompetencia = (pessoa: JwtPayload, versao: number, motivo = 'Ajuste de horas da equipe.') =>
+      world.projetosService.reabrirPeriodoDeApontamentos({ projetoId: projeto.id, competencia: '2026-09', versao, motivo }, pessoa);
+    const setembro = async (pessoa: JwtPayload) =>
+      expectDefined((await horasDe(pessoa)).competencias.find((competencia) => competencia.competencia === '2026-09'));
+    const enviado = await lancarEEnviar(subordinado, { data: '2026-09-14' });
+    const rascunho = await world.projetosService.salvarApontamento({
+      projetoId: projeto.id, data: '2026-09-20', minutos: 30, descricao: 'Ajuste da documentação', faturavel: false
+    }, subordinado.payload);
+    const editarRascunho = (minutos: number) => world.projetosService.salvarApontamento({
+      projetoId: projeto.id, id: rascunho.id, versao: rascunho.versao, data: '2026-09-20', minutos, descricao: 'Ajuste da documentação', faturavel: false
+    }, subordinado.payload);
+
+    expect((await horasDe(responsavel.payload)).competencias.map((competencia) => competencia.competencia)).toEqual(['2026-08', '2026-09']);
+    expect(await setembro(responsavel.payload)).toEqual({
+      competencia: '2026-09',
+      fechada: false,
+      situacao: null,
+      versao: null,
+      fechadoEm: null,
+      fechadoPor: null,
+      reabertoEm: null,
+      reabertoPor: null,
+      motivoReabertura: null,
+      minutos: 120,
+      enviadosPendentes: 1,
+      podeFechar: false,
+      podeReabrir: false,
+      bloqueio: 'Há 1 apontamento(s) enviado(s) aguardando decisão na competência 09/2026.'
+    });
+    expect(await setembro(superior.payload)).toMatchObject({ minutos: 120, enviadosPendentes: 1, podeFechar: false, podeReabrir: false, bloqueio: null });
+    await expect(fechar(responsavel.payload)).rejects.toThrow(
+      'A competência 09/2026 tem 1 apontamento(s) enviado(s) aguardando decisão. Aprove ou rejeite antes de fechar.'
+    );
+    await expect(fechar(superior.payload)).rejects.toThrow('Somente o responsável do projeto fecha e reabre as competências.');
+    const { fimExclusivo } = world.projetoPeriodoService.limitesDaCompetencia(world.projetoPeriodoService.competenciaAtual());
+    const proxima = fimExclusivo.toISOString().slice(0, 7);
+    const ateOProximoMes = await horasDe(responsavel.payload, { inicio: '2026-09-01', fim: `${proxima}-01` });
+    expect(ateOProximoMes.competencias.find((competencia) => competencia.competencia === proxima)).toMatchObject({
+      fechada: false,
+      podeFechar: false,
+      podeReabrir: false,
+      bloqueio: `A competência ${proxima.slice(5)}/${proxima.slice(0, 4)} ainda não começou.`
+    });
+    await expect(fechar(responsavel.payload, proxima))
+      .rejects.toThrow(`A competência ${proxima.slice(5)}/${proxima.slice(0, 4)} ainda não começou.`);
+
+    const [aprovado] = await decidir('aprovarApontamentos', responsavel.payload, versoes(enviado));
+    const fechada = await fechar(responsavel.payload);
+    expect(fechada).toMatchObject({
+      competencia: '2026-09',
+      fechada: true,
+      situacao: 'FECHADO',
+      versao: 1,
+      fechadoPor: { id: responsavel.id },
+      minutos: 120,
+      enviadosPendentes: 0,
+      podeFechar: false,
+      podeReabrir: true,
+      bloqueio: null
+    });
+    expect(fechada.fechadoEm).toBeInstanceOf(Date);
+    await expect(fechar(responsavel.payload)).rejects.toThrow('A competência 09/2026 já está fechada. Atualize os dados.');
+    await expect(editarRascunho(45)).rejects.toThrow('A competência deste apontamento está fechada.');
+    await expect(world.projetosService.reabrirApontamento({
+      projetoId: projeto.id, id: enviado.id, versao: expectDefined(aprovado).versao, motivo: 'Lançamento duplicado.'
+    }, responsavel.payload)).rejects.toThrow('A competência 09/2026 deste projeto está fechada.');
+    expect((await horasDe(responsavel.payload)).items.find((item) => item.id === enviado.id)?.acoes)
+      .toEqual({ ...SEM_DECISAO, bloqueio: 'A competência 09/2026 deste projeto está fechada.' });
+
+    const versaoFechada = expectDefined(fechada.versao);
+    await expect(reabrirCompetencia(responsavel.payload, versaoFechada, 'erro')).rejects.toThrow('Informe um motivo com 5 a 500 caracteres.');
+    await expect(reabrirCompetencia(superior.payload, versaoFechada)).rejects.toThrow('Somente o responsável do projeto fecha e reabre as competências.');
+    await expect(reabrirCompetencia(responsavel.payload, versaoFechada + 1)).rejects.toThrow('A competência foi alterada por outra pessoa. Atualize os dados.');
+    const reaberta = await reabrirCompetencia(responsavel.payload, versaoFechada);
+    expect(reaberta).toMatchObject({
+      fechada: false,
+      situacao: 'REABERTO',
+      versao: versaoFechada + 1,
+      reabertoPor: { id: responsavel.id },
+      motivoReabertura: 'Ajuste de horas da equipe.',
+      podeFechar: true,
+      podeReabrir: false,
+      bloqueio: null
+    });
+    await expect(reabrirCompetencia(responsavel.payload, versaoFechada + 1)).rejects.toThrow('A competência 09/2026 não está fechada.');
+    await expect(editarRascunho(45)).resolves.toMatchObject({ minutos: 45 });
+    await expect(fechar(responsavel.payload)).resolves.toMatchObject({
+      fechada: true, situacao: 'FECHADO', versao: versaoFechada + 2, minutos: 135, reabertoPor: { id: responsavel.id }
+    });
+    await expect(fechar(admin, '2026-08')).resolves.toMatchObject({ competencia: '2026-08', fechada: true, versao: 1, fechadoPor: { id: admin.sub } });
+    expect(world.prisma.data.projetoEvento
+      .filter((evento) => evento.entidade === 'APONTAMENTO_PERIODO')
+      .map((evento) => [evento.evento, evento.usuarioId, JSON.parse(evento.dados)])).toEqual([
+      ['FECHADA', responsavel.id, { competencia: '2026-09' }],
+      ['REABERTA', responsavel.id, { competencia: '2026-09', motivo: 'Ajuste de horas da equipe.' }],
+      ['FECHADA', responsavel.id, { competencia: '2026-09' }],
+      ['FECHADA', admin.sub, { competencia: '2026-08' }]
+    ]);
+
+    // As horas e as competências ficam fora do feed de Comunicação, visto por todos os participantes do projeto.
+    await world.prisma.projetoEvento.create({
+      data: { empresaId: empresaInicialId, projetoId: projeto.id, usuarioId: admin.sub, entidade: 'PROJETO', entidadeId: projeto.id, evento: 'ALTERADO', dados: '{}' }
+    });
+    const { feed } = await world.projetoComunicacaoService.painel(projeto.id, admin);
+    expect(eventosDeApontamento().length).toBeGreaterThan(0);
+    expect(feed.filter((entrada) => entrada.tipo === 'EVENTO').map((entrada) => entrada.entidade)).toEqual(['PROJETO']);
+
+    await world.prisma.projeto.update({ where: { id: projeto.id }, data: { arquivadoEm: new Date(), arquivadoPorId: admin.sub } });
+    await expect(fechar(responsavel.payload, '2026-07')).rejects.toThrow('somente para consulta');
   });
 });

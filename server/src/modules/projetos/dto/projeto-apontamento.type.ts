@@ -33,11 +33,11 @@ export class ProjetoApontamentoAcoesType {
   bloqueio?: string | null;
 }
 
-@ObjectType()
-export class ProjetoApontamentoType {
+/** Campos comuns ao apontamento visto pelo autor e por quem gerencia as horas do projeto. */
+@ObjectType({ isAbstract: true })
+export abstract class ProjetoApontamentoBaseType {
   @Field() id!: string;
   @Field() projetoId!: string;
-  @Field(() => ProjetoApontamentoProjetoType) projeto!: ProjetoApontamentoProjetoType;
   @Field() usuarioId!: string;
   @Field(() => String, { nullable: true }) itemId?: string | null;
   @Field(() => ProjetoApontamentoItemType, { nullable: true }) item?: ProjetoApontamentoItemType | null;
@@ -54,6 +54,11 @@ export class ProjetoApontamentoType {
   @Field(() => Int) versao!: number;
   @Field(() => Date) criadoEm!: Date;
   @Field(() => Date) atualizadoEm!: Date;
+}
+
+@ObjectType()
+export class ProjetoApontamentoType extends ProjetoApontamentoBaseType {
+  @Field(() => ProjetoApontamentoProjetoType) projeto!: ProjetoApontamentoProjetoType;
   @Field(() => ProjetoApontamentoAcoesType) acoes!: ProjetoApontamentoAcoesType;
 }
 

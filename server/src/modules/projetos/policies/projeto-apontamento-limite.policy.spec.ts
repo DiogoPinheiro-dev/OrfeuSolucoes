@@ -2,7 +2,8 @@ import { BadRequestException } from '@nestjs/common';
 import {
   assertLimiteDiarioApontamentos,
   assertMinutosApontamento,
-  normalizeDescricaoApontamento
+  normalizeDescricaoApontamento,
+  normalizeMotivoApontamento
 } from './projeto-apontamento-limite.policy';
 
 describe('ProjetoApontamentoLimitePolicy', () => {
@@ -44,5 +45,16 @@ describe('ProjetoApontamentoLimitePolicy', () => {
     expect(() => normalizeDescricaoApontamento('a'.repeat(1001))).toThrow(
       new BadRequestException('A descrição do apontamento pode ter até 1.000 caracteres.')
     );
+  });
+
+  it('exige motivo de 5 a 500 caracteres sem os espacos das pontas', () => {
+    const recusa = new BadRequestException('Informe um motivo com 5 a 500 caracteres.');
+
+    expect(normalizeMotivoApontamento('  Falta a entrega revisada.  ')).toBe('Falta a entrega revisada.');
+    expect(normalizeMotivoApontamento('abcde')).toBe('abcde');
+    expect(normalizeMotivoApontamento(` ${'a'.repeat(500)} `)).toHaveLength(500);
+    expect(() => normalizeMotivoApontamento('  abcd  ')).toThrow(recusa);
+    expect(() => normalizeMotivoApontamento('a'.repeat(501))).toThrow(recusa);
+    expect(() => normalizeMotivoApontamento(undefined as unknown as string)).toThrow(recusa);
   });
 });

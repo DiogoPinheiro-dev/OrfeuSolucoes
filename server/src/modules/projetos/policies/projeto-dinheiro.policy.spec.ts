@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { calcularValorPorMinutos, normalizeProjetoDinheiro } from './projeto-dinheiro.policy';
+import { calcularValorPorMinutos, formatarDecimal, normalizeProjetoDinheiro } from './projeto-dinheiro.policy';
 
 describe('ProjetoDinheiroPolicy', () => {
   it('arredonda valores monetarios com meio para cima', () => {
@@ -22,5 +22,12 @@ describe('ProjetoDinheiroPolicy', () => {
     [1, '0.2999', '0.00']
   ])('calcula %i minutos a %s por hora como %s', (minutos, taxaHora, esperado) => {
     expect(calcularValorPorMinutos(minutos, taxaHora)).toBe(esperado);
+  });
+
+  it('formata o decimal gravado com as casas pedidas e devolve nulo sem valor', () => {
+    expect(formatarDecimal('133.3333', 4)).toBe('133.3333');
+    expect(formatarDecimal(82.2, 2)).toBe('82.20');
+    expect(formatarDecimal(null, 2)).toBeNull();
+    expect(formatarDecimal(undefined, 4)).toBeNull();
   });
 });

@@ -45,6 +45,7 @@ export const ProjetoAcao = {
   APONTAR: 'apontar',
   APROVAR_HORAS: 'aprovar_horas',
   REABRIR_HORAS: 'reabrir_horas',
+  FECHAR_PERIODO: 'fechar_periodo',
   PUBLICAR: 'publicar',
   INSTANCIAR: 'instanciar'
 } as const;
