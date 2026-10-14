@@ -106,6 +106,24 @@ function criarPersistencia() {
       .filter((candidato) => atende(candidato, where))
       .slice(skip, take === undefined ? undefined : skip + take)
       .map(comRelacoes)),
+    groupBy: jest.fn(async ({ where, by, _sum, _count }: Registro) => {
+      const grupos = new Map<string, { valores: Registro; registros: Registro[] }>();
+      for (const registro of registros.filter((candidato) => atende(candidato, where))) {
+        const valores = Object.fromEntries(by.map((campo: string) => [campo, registro[campo]]));
+        const chave = JSON.stringify(by.map((campo: string) => registro[campo] instanceof Date ? registro[campo].toISOString() : registro[campo]));
+        const grupo = grupos.get(chave) ?? { valores, registros: [] };
+        grupo.registros.push(registro);
+        grupos.set(chave, grupo);
+      }
+      return [...grupos.values()].map(({ valores, registros: agrupados }) => ({
+        ...valores,
+        ...(_sum ? { _sum: Object.fromEntries(Object.keys(_sum).map((campo) => {
+          const valoresDoCampo = agrupados.map((registro) => registro[campo]).filter((valor) => valor !== null && valor !== undefined);
+          return [campo, valoresDoCampo.length ? valoresDoCampo.reduce((total, valor) => total + Number(valor), 0) : null];
+        })) } : {}),
+        ...(_count ? { _count: { _all: agrupados.length } } : {})
+      }));
+    }),
     count: jest.fn(async ({ where }: Registro = {}) => registros.filter((candidato) => atende(candidato, where)).length),
     create: jest.fn(async ({ data }: Registro) => {
       const criado = { id: randomUUID(), versao: 1, criadoEm: new Date(), atualizadoEm: new Date(), ...data };
@@ -135,6 +153,8 @@ function criarPersistencia() {
 
   const prisma = {
     projeto: tabela(dados.projetos),
+    usuario: tabela([...usuarios.values()]),
+    projetoItem: tabela([]),
     projetoApontamento: tabela(dados.apontamentos, (registro) => ({
       ...registro,
       usuario: usuarios.get(registro.usuarioId),
@@ -298,6 +318,20 @@ describe('Horas do projeto GraphQL e2e', () => {
       permissoes: { podeAprovar: true, podeReabrir: false, podeFecharPeriodo: false, podeVisualizarFinanceiro: true, podeGerenciarFinanceiro: false },
       financeiro: { moeda: 'BRL', totalCusto: '180.00', apontamentosSemCusto: 0, linhas: [{ custoId: 'linha-analista', minutosAprovados: 90, valorRealizadoHoras: '180.00' }] }
     });
+    expect(prisma.projetoApontamento.groupBy).toHaveBeenCalledWith(expect.objectContaining({
+      by: ['usuarioId', 'itemId', 'status', 'custoSituacao'],
+      _sum: { minutos: true, valorCusto: true }
+    }));
+    expect(prisma.projetoApontamento.groupBy).toHaveBeenCalledWith(expect.objectContaining({
+      by: ['dataTrabalho', 'status'],
+      _sum: { minutos: true },
+      _count: { _all: true }
+    }));
+    expect(prisma.projetoApontamento.groupBy).toHaveBeenCalledWith(expect.objectContaining({
+      by: ['custoId', 'custoSituacao'],
+      _sum: { minutos: true, valorCusto: true },
+      _count: { _all: true }
+    }));
 
     const daAnalistaSemFinanceiro = await gql(tokenDaAnalista, HORAS_DO_PROJETO, { filtro }).expect(200);
     expect(daAnalistaSemFinanceiro.body.errors).toBeUndefined();

@@ -2192,6 +2192,7 @@ type Query {
   projetoComunicacao(feed: ProjetoComunicacaoFeedFiltroInput, projetoId: String!): ProjetoComunicacaoPainelType!
   projetoComunicacaoProjetos: [ProjetoComunicacaoProjetoType!]!
   projetoCronograma(filtro: ProjetoCronogramaFiltroInput!): ProjetoCronogramaPainelType!
+  projetoHojeOperacional: String!
   projetoHoras(filtro: ProjetoHorasFiltroInput!): ProjetoHorasPageType!
   projetoHorasProjetos(incluirArquivados: Boolean = false): [ProjetoApontamentoProjetoType!]!
   projetoItem(id: String!): ProjetoItemType!

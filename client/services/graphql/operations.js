@@ -1900,6 +1900,7 @@ export const PROJETO_APONTAMENTO_PROJETOS_QUERY = gql`
   ${PROJETO_APONTAMENTO_PROJETO_FIELDS}
   query ProjetoApontamentoProjetos { projetoApontamentoProjetos { ...ProjetoApontamentoProjetoFields } }
 `;
+export const PROJETO_HOJE_OPERACIONAL_QUERY = gql`query ProjetoHojeOperacional { projetoHojeOperacional }`;
 export const PROJETO_APONTAMENTO_ITENS_QUERY = gql`
   ${PROJETO_APONTAMENTO_ITEM_FIELDS}
   query ProjetoApontamentoItens($projetoId: String!) { projetoApontamentoItens(projetoId: $projetoId) { ...ProjetoApontamentoItemFields } }

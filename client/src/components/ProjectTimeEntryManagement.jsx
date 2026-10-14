@@ -8,6 +8,7 @@ import {
     getApontamentoItens,
     getApontamentoProjetos,
     getMeusApontamentos,
+    getProjetoHojeOperacional,
     recolherApontamento,
     salvarApontamento
 } from "../../services/Projetos/ApontamentoService";
@@ -32,7 +33,6 @@ import {
     formatarData,
     formatarDataHora,
     formatarDuracao,
-    hojeNoNavegador,
     lerDuracao,
     nomeDaPessoa,
     periodoDe,
@@ -198,14 +198,17 @@ function DetalhesDoApontamento({ apontamento }) {
 }
 
 export default function ProjectTimeEntryManagement() {
+    const hojeRequest = useLatestRequest();
     const paginaRequest = useLatestRequest();
     const projetosRequest = useLatestRequest();
     const itensRequest = useLatestRequest();
     const primeiroCampoRef = useRef(null);
-    const [hoje] = useState(() => hojeNoNavegador());
+    const [hoje, setHoje] = useState("");
+    const [hojeCarregado, setHojeCarregado] = useState(false);
+    const [falhaDoHoje, setFalhaDoHoje] = useState(null);
     const [modo, setModo] = useState("semana");
-    const [referencia, setReferencia] = useState(hoje);
-    const periodo = useMemo(() => periodoDe(modo, referencia), [modo, referencia]);
+    const [referencia, setReferencia] = useState("");
+    const periodo = useMemo(() => (referencia ? periodoDe(modo, referencia) : { inicio: "", fim: "" }), [modo, referencia]);
     const [filtros, setFiltros] = useState(FILTROS_INICIAIS);
     const [pagina, setPagina] = useState(1);
     const [dados, setDados] = useState(PAGINA_VAZIA);
@@ -230,7 +233,29 @@ export default function ProjectTimeEntryManagement() {
         fieldMatchers: CAMPOS_RECONHECIDOS
     });
 
+    const carregarHoje = useCallback(() => {
+        setHojeCarregado(false);
+        setFalhaDoHoje(null);
+        return hojeRequest.run(getProjetoHojeOperacional, {
+            onSuccess: (data) => {
+                setHoje(data);
+                setReferencia(data);
+            },
+            onError: setFalhaDoHoje,
+            onSettled: () => setHojeCarregado(true)
+        });
+    }, [hojeRequest]);
+
     const carregar = useCallback(() => {
+        if (!periodo.inicio || !periodo.fim) {
+            paginaRequest.invalidate();
+            setDados(PAGINA_VAZIA);
+            setFalhaDaCarga(null);
+            setCarregando(false);
+            return Promise.resolve();
+        }
+        setDados((atuais) => ({ ...PAGINA_VAZIA, total: atuais.total }));
+        setFalhaDaCarga(null);
         setCarregando(true);
         return paginaRequest.run(() => getMeusApontamentos({
             inicio: periodo.inicio,
@@ -242,7 +267,6 @@ export default function ProjectTimeEntryManagement() {
         }), {
             onSuccess: (resultado) => {
                 setDados(resultado);
-                setFalhaDaCarga(null);
             },
             onError: setFalhaDaCarga,
             onSettled: () => {
@@ -260,6 +284,7 @@ export default function ProjectTimeEntryManagement() {
         onError: (falha) => setFalhaDosProjetos(falha.message)
     }), [projetosRequest]);
 
+    useEffect(() => { void carregarHoje(); }, [carregarHoje]);
     useEffect(() => { void carregar(); }, [carregar]);
     useEffect(() => { void carregarProjetos(); }, [carregarProjetos]);
 
@@ -280,14 +305,30 @@ export default function ProjectTimeEntryManagement() {
         });
     }, [itensRequest, projetoDoFormulario]);
 
+    const descartarConsultaAtual = (preservarTotal = false) => {
+        paginaRequest.invalidate();
+        setDados((atuais) => (preservarTotal ? { ...PAGINA_VAZIA, total: atuais.total } : PAGINA_VAZIA));
+        setFalhaDaCarga(null);
+        setParaExcluir([]);
+        setParaDescartar(null);
+        setErroDoDialogo("");
+    };
+
     const mudarPeriodo = (proximoModo, proximaReferencia) => {
+        descartarConsultaAtual();
         setModo(proximoModo);
         setReferencia(proximaReferencia);
         setPagina(1);
     };
     const mudarFiltro = (campo, valor) => {
+        descartarConsultaAtual();
         setFiltros((atuais) => ({ ...atuais, [campo]: valor }));
         setPagina(1);
+    };
+    const mudarPagina = (proximaPagina) => {
+        if (pagina === proximaPagina) return;
+        descartarConsultaAtual(true);
+        setPagina(proximaPagina);
     };
 
     const executar = async ({ operacao, mensagem, fechar, mostrarErro = setErro }) => {
@@ -365,7 +406,7 @@ export default function ProjectTimeEntryManagement() {
 
     const ativo = dados.items.find((apontamento) => apontamento.id === selecao.selectedId) || null;
     const marcados = dados.items.filter((apontamento) => selecao.selectedIds.includes(apontamento.id));
-    const aguarde = processando ? "Aguarde o processamento atual." : "";
+    const aguarde = carregando || processando ? "Aguarde o processamento atual." : "";
     const motivoDoEnvio = aguarde
         || (!marcados.length ? "Marque ao menos um apontamento em rascunho ou rejeitado." : "")
         || (marcados.some((apontamento) => !apontamento.acoes.podeEnviar) ? "Marque somente apontamentos que você pode enviar." : "");
@@ -374,9 +415,9 @@ export default function ProjectTimeEntryManagement() {
     const motivoDoDescarte = aguarde || (!ativo ? "Selecione um apontamento." : "")
         || (!ativo.acoes.podeDescartar ? ativo.acoes.bloqueio || "Somente apontamentos rejeitados podem ser descartados." : "");
     const podeIncluir = dados.permissoes.podeIncluir && projetos.length > 0;
-    const motivoDaInclusao = !dados.permissoes.podeIncluir
+    const motivoDaInclusao = aguarde || (!dados.permissoes.podeIncluir
         ? "Você não possui permissão para lançar horas."
-        : "Você não participa de nenhum projeto aberto para lançamento de horas.";
+        : "Você não participa de nenhum projeto aberto para lançamento de horas.");
     // O filtro oferece os projetos em que a pessoa lança horas e também os do período, mesmo que ela já tenha saído deles.
     const opcoesDeProjeto = useMemo(() => {
         const porId = new Map(projetos.map((projeto) => [projeto.id, rotuloDoProjeto(projeto)]));
@@ -401,7 +442,7 @@ export default function ProjectTimeEntryManagement() {
         { key: "motivo", label: "Motivo", render: (apontamento) => (apontamento.motivo ? textoLongo(apontamento.motivo) : "—") }
     ];
 
-    const acessoNegado = falhaDaCarga?.type === "permission";
+    const acessoNegado = falhaDoHoje?.type === "permission" || falhaDaCarga?.type === "permission";
     const somenteLeitura = formulario?.modo === "view";
     const edicao = formulario?.modo === "edit";
 
@@ -413,7 +454,7 @@ export default function ProjectTimeEntryManagement() {
                     <h2>Meus apontamentos</h2>
                     <p>Lance as horas trabalhadas em cada projeto e envie para aprovação.</p>
                 </div>
-                {!acessoNegado && (
+                {!acessoNegado && hoje && (
                     <PeriodoDosApontamentos
                         modo={modo}
                         periodo={periodo}
@@ -428,6 +469,10 @@ export default function ProjectTimeEntryManagement() {
 
             {acessoNegado ? (
                 <AccessState>Você não possui permissão para consultar os seus apontamentos.</AccessState>
+            ) : !hojeCarregado ? (
+                <LoadingState message="Carregando calendário operacional..." />
+            ) : falhaDoHoje ? (
+                <FeedbackMessage type="error" action={<button type="button" onClick={carregarHoje}>Tentar novamente</button>}>{falhaDoHoje.message}</FeedbackMessage>
             ) : !carregado ? (
                 <LoadingState message="Carregando apontamentos..." />
             ) : (
@@ -494,21 +539,21 @@ export default function ProjectTimeEntryManagement() {
                             <>
                                 <label>
                                     Projeto
-                                    <select value={filtros.projetoId} onChange={(event) => mudarFiltro("projetoId", event.target.value)}>
+                                    <select value={filtros.projetoId} disabled={processando} onChange={(event) => mudarFiltro("projetoId", event.target.value)}>
                                         <option value="">Todos os projetos</option>
                                         {opcoesDeProjeto.map((opcao) => <option key={opcao.id} value={opcao.id}>{opcao.rotulo}</option>)}
                                     </select>
                                 </label>
                                 <label>
                                     Situação
-                                    <select value={filtros.status} onChange={(event) => mudarFiltro("status", event.target.value)}>
+                                    <select value={filtros.status} disabled={processando} onChange={(event) => mudarFiltro("status", event.target.value)}>
                                         <option value="">Todas as situações</option>
                                         {Object.entries(SITUACOES_DO_APONTAMENTO).map(([valor, rotulo]) => <option key={valor} value={valor}>{rotulo}</option>)}
                                     </select>
                                 </label>
                             </>
                         )}
-                        paginationConfig={{ mode: "server", page: pagina, pageSize: CRUD_PAGE_SIZE, totalItems: dados.total, onPageChange: setPagina }}
+                        paginationConfig={{ mode: "server", page: pagina, pageSize: CRUD_PAGE_SIZE, totalItems: dados.total, onPageChange: mudarPagina }}
                         paginationResetKey={`${periodo.inicio}|${periodo.fim}|${filtros.projetoId}|${filtros.status}`}
                         error={falhaDaCarga?.message || null}
                         onRetry={carregar}

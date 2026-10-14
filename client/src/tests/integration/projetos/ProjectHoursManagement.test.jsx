@@ -10,6 +10,7 @@ import {
     fecharCompetencia,
     getHorasDoProjeto,
     getHorasProjetos,
+    getProjetoHojeOperacional,
     reabrirApontamento,
     reabrirCompetencia,
     recalcularCustosPendentes,
@@ -22,6 +23,7 @@ vi.mock("../../../../services/Projetos/ApontamentoService", () => ({
     fecharCompetencia: vi.fn(),
     getHorasDoProjeto: vi.fn(),
     getHorasProjetos: vi.fn(),
+    getProjetoHojeOperacional: vi.fn(),
     reabrirApontamento: vi.fn(),
     reabrirCompetencia: vi.fn(),
     recalcularCustosPendentes: vi.fn(),
@@ -92,6 +94,7 @@ beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date(2026, 9, 14, 10, 0, 0));
     getHorasProjetos.mockResolvedValue([projeto, outroProjeto]);
+    getProjetoHojeOperacional.mockResolvedValue("2026-10-14");
     getHorasDoProjeto.mockResolvedValue(pagina());
     aprovarApontamentos.mockResolvedValue([]);
     rejeitarApontamentos.mockResolvedValue([]);
@@ -111,8 +114,9 @@ describe("Horas do projeto", () => {
     it("abre o primeiro projeto ativo no mês atual com totais, competências e o custo das horas", async () => {
         render(<ProjectHoursManagement />);
 
-        expect(screen.getByText("Carregando projetos...")).toBeInTheDocument();
+        expect(screen.getByText("Carregando calendário operacional...")).toBeInTheDocument();
         await screen.findByRole("heading", { name: "Apontamentos do projeto" });
+        expect(getProjetoHojeOperacional).toHaveBeenCalled();
         expect(getHorasProjetos).toHaveBeenLastCalledWith(false);
         await waitFor(() => expect(ultimaConsulta()).toEqual({ projetoId: "p1", inicio: "2026-10-01", fim: "2026-10-31", pagina: 1, limite: 5 }));
 
@@ -281,6 +285,24 @@ describe("Horas do projeto", () => {
         await waitFor(() => expect(ultimaConsulta()).toEqual({
             projetoId: "p2", inicio: "2026-10-05", fim: "2026-10-31", status: "ENVIADO", faturavel: false, pagina: 1, limite: 5
         }));
+    });
+
+    it("descarta os dados e as ações do projeto anterior enquanto a nova consulta carrega e quando ela falha", async () => {
+        let rejeitarConsulta;
+        const consultaPendente = new Promise((_resolve, reject) => { rejeitarConsulta = reject; });
+        getHorasDoProjeto.mockResolvedValueOnce(pagina()).mockReturnValueOnce(consultaPendente);
+        const user = await renderTela();
+        await screen.findByRole("row", { name: /13\/10\/2026/ });
+
+        await user.selectOptions(screen.getByRole("combobox", { name: "Projeto" }), "p2");
+        await waitFor(() => expect(ultimaConsulta()).toMatchObject({ projetoId: "p2" }));
+        expect(screen.queryByRole("row", { name: /13\/10\/2026/ })).not.toBeInTheDocument();
+        expect(screen.getByRole("button", { name: /Aprovar selecionados\. Indisponível: Aguarde/ })).toBeDisabled();
+
+        rejeitarConsulta(falha("Não foi possível carregar as horas do novo projeto.", "network"));
+        expect(await screen.findByText("Não foi possível carregar as horas do novo projeto.")).toBeInTheDocument();
+        expect(screen.queryByRole("row", { name: /13\/10\/2026/ })).not.toBeInTheDocument();
+        expect(aprovarApontamentos).not.toHaveBeenCalled();
     });
 
     it("deixa o projeto arquivado somente para consulta", async () => {

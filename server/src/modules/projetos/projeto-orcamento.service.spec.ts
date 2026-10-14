@@ -20,7 +20,7 @@ const createService = () => {
     projetoOrcamentoCategoria: { count: jest.fn(), findFirst: jest.fn(), create: jest.fn(), updateMany: jest.fn(), findUnique: jest.fn(), deleteMany: jest.fn() },
     projetoCusto: { count: jest.fn(), findFirst: jest.fn(), findUnique: jest.fn(), create: jest.fn(), updateMany: jest.fn(), deleteMany: jest.fn() },
     projetoCustoTaxaHistorico: { create: jest.fn() },
-    projetoApontamento: { findMany: jest.fn().mockResolvedValue([]), count: jest.fn().mockResolvedValue(0) }
+    projetoApontamento: { groupBy: jest.fn().mockResolvedValue([]), count: jest.fn().mockResolvedValue(0) }
   };
   prisma.$transaction = jest.fn((callback) => callback(prisma));
   const authorization = {
@@ -238,17 +238,19 @@ describe('ProjetoOrcamentoService', () => {
         { id: 'cost2', categoriaId: null, tipo: ProjetoCustoTipo.RECURSO, taxaHora: '90', valorPlanejado: '90', valorComprometido: '0', valorRealizado: '0', recurso: null, item: null, taxas: [] }
       ]
     });
-    prisma.projetoApontamento.findMany.mockResolvedValue([
-      { custoId: 'cost1', minutos: 90, valorCusto: '180.00', custoSituacao: 'CALCULADO' },
-      { custoId: 'cost2', minutos: 30, valorCusto: '45.00', custoSituacao: 'CALCULADO' },
-      { custoId: null, minutos: 60, valorCusto: null, custoSituacao: 'SEM_TAXA' }
+    prisma.projetoApontamento.groupBy.mockResolvedValue([
+      { custoId: 'cost1', custoSituacao: 'CALCULADO', _sum: { minutos: 90, valorCusto: '180.00' }, _count: { _all: 1 } },
+      { custoId: 'cost2', custoSituacao: 'CALCULADO', _sum: { minutos: 30, valorCusto: '45.00' }, _count: { _all: 1 } },
+      { custoId: null, custoSituacao: 'SEM_TAXA', _sum: { minutos: 60, valorCusto: null }, _count: { _all: 1 } }
     ]);
 
     const painel = await service.painel('p1', user);
 
-    expect(prisma.projetoApontamento.findMany).toHaveBeenCalledWith({
+    expect(prisma.projetoApontamento.groupBy).toHaveBeenCalledWith({
       where: { projetoId: 'p1', status: 'APROVADO' },
-      select: { custoId: true, minutos: true, valorCusto: true, custoSituacao: true }
+      by: ['custoId', 'custoSituacao'],
+      _sum: { minutos: true, valorCusto: true },
+      _count: { _all: true }
     });
     expect(painel.financeiro).toMatchObject({
       totalPlanejado: '500.00',
@@ -271,12 +273,14 @@ describe('ProjetoOrcamentoService', () => {
     prisma.projetoOrcamento.findUnique.mockResolvedValue(financeiro);
     prisma.projetoOrcamentoCategoria.updateMany.mockResolvedValue({ count: 1 });
     prisma.projetoOrcamentoCategoria.findUnique.mockResolvedValue({ id: 'c1', nome: 'Mão de obra', valorPlanejado: '500', valorComprometido: '0', valorRealizado: '40' });
-    prisma.projetoApontamento.findMany.mockResolvedValue([{ custoId: 'cost1', minutos: 90, valorCusto: '180.00', custoSituacao: 'CALCULADO' }]);
+    prisma.projetoApontamento.groupBy.mockResolvedValue([
+      { custoId: 'cost1', custoSituacao: 'CALCULADO', _sum: { minutos: 90, valorCusto: '180.00' }, _count: { _all: 1 } }
+    ]);
 
     await expect(service.salvarCategoria({
       projetoId: 'p1', id: 'c1', versao: 1, nome: 'Mão de obra', valorPlanejado: '500', valorComprometido: '0', valorRealizado: '40'
     } as never, user)).resolves.toMatchObject({ valorRealizado: '40.00', valorRealizadoHoras: '180.00', variacao: '460.00' });
-    expect(prisma.projetoApontamento.findMany).toHaveBeenCalledWith(expect.objectContaining({
+    expect(prisma.projetoApontamento.groupBy).toHaveBeenCalledWith(expect.objectContaining({
       where: { projetoId: 'p1', custo: { categoriaId: 'c1' }, status: 'APROVADO' }
     }));
   });

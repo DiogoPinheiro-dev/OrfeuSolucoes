@@ -8,6 +8,7 @@ import {
     MEUS_PROJETO_APONTAMENTOS_QUERY,
     PROJETO_APONTAMENTO_ITENS_QUERY,
     PROJETO_APONTAMENTO_PROJETOS_QUERY,
+    PROJETO_HOJE_OPERACIONAL_QUERY,
     PROJETO_HORAS_PROJETOS_QUERY,
     PROJETO_HORAS_QUERY,
     REABRIR_PROJETO_APONTAMENTO_MUTATION,
@@ -61,6 +62,11 @@ const paginaDoGestor = (page) => ({
 export const getApontamentoProjetos = () => execute({
     document: PROJETO_APONTAMENTO_PROJETOS_QUERY,
     select: (data) => lista(data?.projetoApontamentoProjetos)
+});
+
+export const getProjetoHojeOperacional = () => execute({
+    document: PROJETO_HOJE_OPERACIONAL_QUERY,
+    select: (data) => data?.projetoHojeOperacional
 });
 
 export const getApontamentoItens = (projetoId) => execute({

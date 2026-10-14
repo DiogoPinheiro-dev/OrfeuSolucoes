@@ -34,16 +34,6 @@ const DETALHE = {
   item: { select: ITEM_SELECT },
   decididoPor: { select: USUARIO_SELECT }
 } satisfies Prisma.ProjetoApontamentoInclude;
-const LANCADO_SELECT = {
-  usuarioId: true,
-  itemId: true,
-  minutos: true,
-  status: true,
-  custoSituacao: true,
-  valorCusto: true,
-  usuario: { select: USUARIO_SELECT },
-  item: { select: ITEM_SELECT }
-} satisfies Prisma.ProjetoApontamentoSelect;
 const ORDEM_DOS_APONTAMENTOS: Prisma.ProjetoApontamentoOrderByWithRelationInput[] = [
   { dataTrabalho: 'desc' },
   { criadoEm: 'desc' },
@@ -91,7 +81,7 @@ export class ProjetoHorasQueryService {
       dataTrabalho: { gte: periodo.inicio, lte: periodo.fim },
       AND: [this.authorization.filtroDoEscopo(escopo), this.filtros(filtro)]
     };
-    const [total, apontamentos, lancados, competencias] = await Promise.all([
+    const [total, apontamentos, lancadosAgrupados, competencias] = await Promise.all([
       this.prisma.projetoApontamento.count({ where }),
       this.prisma.projetoApontamento.findMany({
         where,
@@ -100,9 +90,38 @@ export class ProjetoHorasQueryService {
         skip: (pagina - 1) * limite,
         take: limite
       }),
-      this.prisma.projetoApontamento.findMany({ where, select: LANCADO_SELECT }),
+      this.prisma.projetoApontamento.groupBy({
+        where,
+        by: ['usuarioId', 'itemId', 'status', 'custoSituacao'],
+        _sum: { minutos: true, valorCusto: true }
+      }),
       this.periodos.situacoes(contexto, periodo, escopo, permissoes.podeFecharPeriodo)
     ]);
+    const usuarioIds = [...new Set(lancadosAgrupados.map((total) => total.usuarioId))];
+    const itemIds = [...new Set(lancadosAgrupados.flatMap((total) => total.itemId ? [total.itemId] : []))];
+    const [usuarios, itens] = await Promise.all([
+      usuarioIds.length ? this.prisma.usuario.findMany({ where: { id: { in: usuarioIds } }, select: USUARIO_SELECT }) : [],
+      itemIds.length ? this.prisma.projetoItem.findMany({
+        where: { empresaId, projetoId: contexto.projeto.id, id: { in: itemIds } },
+        select: ITEM_SELECT
+      }) : []
+    ]);
+    const usuariosPorId = new Map(usuarios.map((usuario) => [usuario.id, usuario]));
+    const itensPorId = new Map(itens.map((item) => [item.id, item]));
+    const lancados: ProjetoApontamentoLancado[] = lancadosAgrupados.flatMap((total) => {
+      const usuario = usuariosPorId.get(total.usuarioId);
+      if (!usuario) return [];
+      return [{
+        usuarioId: total.usuarioId,
+        itemId: total.itemId,
+        minutos: total._sum.minutos ?? 0,
+        status: total.status,
+        custoSituacao: total.custoSituacao,
+        valorCusto: total._sum.valorCusto,
+        usuario,
+        item: total.itemId ? itensPorId.get(total.itemId) ?? null : null
+      }];
+    });
 
     return {
       items: await this.comAcoes(apontamentos, user, contexto, permissoes),
@@ -200,12 +219,20 @@ export class ProjetoHorasQueryService {
           }
         }
       }),
-      this.prisma.projetoApontamento.findMany({
+      this.prisma.projetoApontamento.groupBy({
         where: { empresaId: contexto.empresaId, projetoId: contexto.projeto.id, status: ProjetoApontamentoStatus.APROVADO },
-        select: { custoId: true, minutos: true, valorCusto: true, custoSituacao: true }
+        by: ['custoId', 'custoSituacao'],
+        _sum: { minutos: true, valorCusto: true },
+        _count: { _all: true }
       })
     ]);
-    const horas = resumirCustoDasHoras(aprovados);
+    const horas = resumirCustoDasHoras(aprovados.map((total) => ({
+      custoId: total.custoId,
+      custoSituacao: total.custoSituacao,
+      minutos: total._sum.minutos ?? 0,
+      valorCusto: total._sum.valorCusto,
+      quantidade: total._count._all
+    })));
 
     return {
       moeda: orcamento?.moeda ?? null,

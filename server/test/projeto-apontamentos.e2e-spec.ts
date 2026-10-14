@@ -111,13 +111,28 @@ function criarPersistencia() {
       decididoPor: null
     };
   };
+  const agrupar = ({ where, by, _sum, _count }: Registro) => {
+    const grupos = new Map<string, { valores: Registro; registros: Registro[] }>();
+    for (const registro of apontamentos.filter((apontamento) => atende(apontamento, where))) {
+      const valores = Object.fromEntries(by.map((campo: string) => [campo, registro[campo]]));
+      const chave = JSON.stringify(by.map((campo: string) => registro[campo] instanceof Date ? registro[campo].toISOString() : registro[campo]));
+      const grupo = grupos.get(chave) ?? { valores, registros: [] };
+      grupo.registros.push(registro);
+      grupos.set(chave, grupo);
+    }
+    return [...grupos.values()].map(({ valores, registros }) => ({
+      ...valores,
+      ...(_sum ? { _sum: Object.fromEntries(Object.keys(_sum).map((campo) => [campo, registros.reduce((total, registro) => total + Number(registro[campo] ?? 0), 0)])) } : {}),
+      ...(_count ? { _count: { _all: registros.length } } : {})
+    }));
+  };
 
   const prisma = {
     projeto: {
       findFirst: jest.fn(async ({ where }: Registro) =>
         projetos.find((projeto) => projeto.id === where.id && projeto.empresaId === where.empresaId) ?? null),
       findMany: jest.fn(async ({ where }: Registro) => projetos
-        .filter((projeto) => projeto.empresaId === where.empresaId)
+        .filter((projeto) => projeto.empresaId === where.empresaId && (!where.id?.in || where.id.in.includes(projeto.id)))
         .map(({ id, chave, nome, situacao, arquivadoEm }) => ({ id, chave, nome, situacao, arquivadoEm })))
     },
     projetoItem: {
@@ -131,6 +146,7 @@ function criarPersistencia() {
         apontamento.usuarioId === where.usuarioId &&
         (!where.projetoId || apontamento.projetoId === where.projetoId)) ?? null),
       count: jest.fn(async ({ where }: Registro) => apontamentos.filter((apontamento) => atende(apontamento, where)).length),
+      groupBy: jest.fn(async (args: Registro) => agrupar(args)),
       findMany: jest.fn(async ({ where, skip = 0, take }: Registro) => apontamentos
         .filter((apontamento) => atende(apontamento, where))
         .slice(skip, take === undefined ? undefined : skip + take)
@@ -276,7 +292,15 @@ describe('Meus apontamentos GraphQL e2e', () => {
       permissoes { podeIncluir }
     }
   }`;
+  const HOJE_OPERACIONAL = `query HojeOperacional { projetoHojeOperacional }`;
   const lancamento = { projetoId: PROJETO_ID, data: '2026-09-15', minutos: 90, descricao: '  Reunião de alinhamento  ', faturavel: true };
+
+  it('expõe a data corrente no mesmo fuso operacional usado pelas regras de apontamento', async () => {
+    const response = await gql(memberToken, HOJE_OPERACIONAL).expect(200);
+
+    expect(response.body.errors).toBeUndefined();
+    expect(response.body.data.projetoHojeOperacional).toBe(new ProjetoPeriodoService().hojeOperacional());
+  });
 
   it('lança, envia e consulta as próprias horas pela borda GraphQL', async () => {
     acessos.set(membro.sub, new Set(TODAS_AS_ACOES));
@@ -317,6 +341,10 @@ describe('Meus apontamentos GraphQL e2e', () => {
       items: [{ id: apontamento.id, status: 'ENVIADO' }],
       permissoes: { podeIncluir: true }
     });
+    expect(prisma.projetoApontamento.groupBy).toHaveBeenCalledWith(expect.objectContaining({
+      by: ['dataTrabalho', 'projetoId'],
+      _sum: { minutos: true }
+    }));
   });
 
   it('recolhe, descarta, exclui e lista projetos e itens pela borda GraphQL', async () => {

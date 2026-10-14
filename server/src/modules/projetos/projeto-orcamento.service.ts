@@ -18,7 +18,6 @@ const FINANCE_INCLUDE = {
   categorias: { orderBy: { nome: 'asc' as const } },
   custos: { include: { recurso: { include: RESOURCE_INCLUDE }, item: { select: ITEM_SELECT }, taxas: { include: { criadoPor: { select: USER_SELECT } }, orderBy: { criadoEm: 'desc' as const } } }, orderBy: { descricao: 'asc' as const } }
 };
-const HORAS_APROVADAS_SELECT = { custoId: true, minutos: true, valorCusto: true, custoSituacao: true };
 
 @Injectable()
 export class ProjetoOrcamentoService {
@@ -167,7 +166,21 @@ export class ProjetoOrcamentoService {
   private audit(tx: Prisma.TransactionClient, contexto: ProjetoOrcamentoContexto, user: JwtPayload, entidade: string, entidadeId: string, evento: string, dados: any) { return this.auditoria.registrar(tx, { empresaId: contexto.empresaId, projetoId: contexto.projeto.id, usuarioId: user.sub, entidade, entidadeId, evento, dados }); }
   private async findFinanceiro(tx: Prisma.TransactionClient | PrismaService, projetoId: string) { const item = await tx.projetoOrcamento.findUnique({ where: { projetoId }, include: FINANCE_INCLUDE }); if (!item) throw new NotFoundException('Orcamento nao encontrado.'); return this.financeiro(item, await this.horasAprovadas(tx, { projetoId })); }
   /** Horas aprovadas que alimentam o realizado das linhas de custo, com o custo congelado em cada apontamento. */
-  private async horasAprovadas(db: Prisma.TransactionClient | PrismaService, where: Prisma.ProjetoApontamentoWhereInput): Promise<ProjetoResumoDoCustoDasHoras> { return resumirCustoDasHoras(await db.projetoApontamento.findMany({ where: { ...where, status: ProjetoApontamentoStatus.APROVADO }, select: HORAS_APROVADAS_SELECT })); }
+  private async horasAprovadas(db: Prisma.TransactionClient | PrismaService, where: Prisma.ProjetoApontamentoWhereInput): Promise<ProjetoResumoDoCustoDasHoras> {
+    const totais = await db.projetoApontamento.groupBy({
+      where: { ...where, status: ProjetoApontamentoStatus.APROVADO },
+      by: ['custoId', 'custoSituacao'],
+      _sum: { minutos: true, valorCusto: true },
+      _count: { _all: true }
+    });
+    return resumirCustoDasHoras(totais.map((total) => ({
+      custoId: total.custoId,
+      custoSituacao: total.custoSituacao,
+      minutos: total._sum.minutos ?? 0,
+      valorCusto: total._sum.valorCusto,
+      quantidade: total._count._all
+    })));
+  }
   /** Decisão D6: nos custos de recurso, o realizado manual já gravado vira ajuste legado e o realizado novo vem das horas. */
   private assertRealizadoLegado(anterior: { valorRealizado: Prisma.Decimal.Value } | null, realizado: string) { if (!new Prisma.Decimal(anterior?.valorRealizado ?? 0).equals(realizado)) throw new BadRequestException('Nos custos de recurso, o realizado vem das horas aprovadas e não pode ser digitado. Um valor gravado antes fica como ajuste legado, sem alteração.'); }
   private trocaVinculo(anterior: { tipo: string; recursoId?: string | null; itemId?: string | null }, data: { tipo: string; recursoId?: string | null; itemId?: string | null }) { return anterior.tipo !== data.tipo || (anterior.recursoId ?? null) !== (data.recursoId ?? null) || (anterior.itemId ?? null) !== (data.itemId ?? null); }

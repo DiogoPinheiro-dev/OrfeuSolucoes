@@ -36,6 +36,10 @@ export class ProjetoApontamentoQueryService {
     private readonly periodos: ProjetoApontamentoPeriodoService
   ) {}
 
+  hojeOperacional(): string {
+    return this.periodo.hojeOperacional();
+  }
+
   async projetos(user: JwtPayload): Promise<ProjetoApontamentoProjetoType[]> {
     const empresaId = await this.authorization.assertAcaoDoAutor(user, ProjetoAcao.VISUALIZAR);
     const projetos = await this.prisma.projeto.findMany({
@@ -74,7 +78,7 @@ export class ProjetoApontamentoQueryService {
       ...(filtro.projetoId ? { projetoId: filtro.projetoId } : {}),
       ...(filtro.status ? { status: filtro.status } : {})
     };
-    const [total, apontamentos, lancados, permissoes] = await Promise.all([
+    const [total, apontamentos, totaisAgrupados, permissoes] = await Promise.all([
       this.prisma.projetoApontamento.count({ where }),
       this.prisma.projetoApontamento.findMany({
         where,
@@ -83,12 +87,23 @@ export class ProjetoApontamentoQueryService {
         skip: (pagina - 1) * limite,
         take: limite
       }),
-      this.prisma.projetoApontamento.findMany({
+      this.prisma.projetoApontamento.groupBy({
         where: doPeriodo,
-        select: { dataTrabalho: true, minutos: true, projeto: { select: { id: true, chave: true, nome: true } } }
+        by: ['dataTrabalho', 'projetoId'],
+        _sum: { minutos: true }
       }),
       this.authorization.permissoesDoAutor(user)
     ]);
+    const projetoIds = [...new Set(totaisAgrupados.map((total) => total.projetoId))];
+    const projetos = projetoIds.length ? await this.prisma.projeto.findMany({
+      where: { empresaId, id: { in: projetoIds } },
+      select: { id: true, chave: true, nome: true }
+    }) : [];
+    const projetosPorId = new Map(projetos.map((projeto) => [projeto.id, projeto]));
+    const lancados = totaisAgrupados.flatMap((total) => {
+      const projeto = projetosPorId.get(total.projetoId);
+      return projeto ? [{ dataTrabalho: total.dataTrabalho, minutos: total._sum.minutos ?? 0, projeto }] : [];
+    });
 
     return {
       items: await this.comAcoes(apontamentos as unknown as ProjetoApontamentoDetalheRecord[], permissoes),

@@ -64,9 +64,6 @@ export const rotuloDoItem = (item) => (item ? `${item.chave} — ${item.titulo}`
 
 export const rotuloDoProjeto = (projeto) => (projeto ? `${projeto.chave} — ${projeto.nome}` : "");
 
-export const hojeNoNavegador = (agora = new Date()) =>
-    `${agora.getFullYear()}-${pad(agora.getMonth() + 1)}-${pad(agora.getDate())}`;
-
 export const somarDias = (data, dias) => {
     const resultado = comoData(data);
     resultado.setUTCDate(resultado.getUTCDate() + dias);

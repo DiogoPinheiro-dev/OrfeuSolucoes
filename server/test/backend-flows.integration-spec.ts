@@ -1,5 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { Prisma } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, mkdtempSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -397,6 +398,34 @@ class InMemoryDelegate {
     }
 
     return result;
+  }
+
+  async groupBy(args: AnyRecord): Promise<AnyRecord[]> {
+    const by = args.by as string[];
+    const groups = new Map<string, { values: AnyRecord; rows: AnyRecord[] }>();
+
+    for (const row of this.db.filterRows(this.model, args.where)) {
+      const values = Object.fromEntries(by.map((field) => [field, row[field]]));
+      const key = JSON.stringify(by.map((field) => row[field] instanceof Date ? row[field].toISOString() : row[field]));
+      const group = groups.get(key) ?? { values, rows: [] };
+      group.rows.push(row);
+      groups.set(key, group);
+    }
+
+    return [...groups.values()].map(({ values, rows }) => ({
+      ...values,
+      ...(args._sum ? {
+        _sum: Object.fromEntries(Object.keys(args._sum).map((field) => {
+          const entries = rows.map((row) => row[field]).filter((value) => value !== null && value !== undefined);
+          if (!entries.length) return [field, null];
+          if (entries.every((value) => typeof value === 'number')) {
+            return [field, entries.reduce((total: number, value) => total + Number(value), 0)];
+          }
+          return [field, entries.reduce((total: Prisma.Decimal, value) => total.add(value), new Prisma.Decimal(0))];
+        }))
+      } : {}),
+      ...(args._count ? { _count: { _all: rows.length } } : {})
+    }));
   }
 
   async update(args: AnyRecord): Promise<AnyRecord> {

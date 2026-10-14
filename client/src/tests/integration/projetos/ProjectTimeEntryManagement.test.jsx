@@ -12,6 +12,7 @@ import {
     getApontamentoItens,
     getApontamentoProjetos,
     getMeusApontamentos,
+    getProjetoHojeOperacional,
     recolherApontamento,
     salvarApontamento
 } from "../../../../services/Projetos/ApontamentoService";
@@ -24,6 +25,7 @@ vi.mock("../../../../services/Projetos/ApontamentoService", () => ({
     getApontamentoItens: vi.fn(),
     getApontamentoProjetos: vi.fn(),
     getMeusApontamentos: vi.fn(),
+    getProjetoHojeOperacional: vi.fn(),
     recolherApontamento: vi.fn(),
     salvarApontamento: vi.fn()
 }));
@@ -77,6 +79,7 @@ beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date(2026, 9, 14, 10, 0, 0));
     getMeusApontamentos.mockResolvedValue(pagina());
+    getProjetoHojeOperacional.mockResolvedValue("2026-10-14");
     getApontamentoProjetos.mockResolvedValue([projeto, outroProjeto]);
     getApontamentoItens.mockResolvedValue([item]);
     salvarApontamento.mockResolvedValue({ id: "a9", status: "RASCUNHO", versao: 1 });
@@ -96,8 +99,9 @@ describe("Meus apontamentos", () => {
     it("abre a semana atual com o resumo por dia e por projeto e avisa o dia perto de 24 horas", async () => {
         render(<ProjectTimeEntryManagement />);
 
-        expect(screen.getByText("Carregando apontamentos...")).toBeInTheDocument();
+        expect(screen.getByText("Carregando calendário operacional...")).toBeInTheDocument();
         await screen.findByRole("heading", { name: "Lançamentos do período" });
+        expect(getProjetoHojeOperacional).toHaveBeenCalled();
         expect(ultimaConsulta()).toEqual({ inicio: "2026-10-12", fim: "2026-10-18", pagina: 1, limite: 5 });
 
         const resumo = screen.getByRole("region", { name: "Resumo do período" });
@@ -143,6 +147,24 @@ describe("Meus apontamentos", () => {
         await waitFor(() => expect(ultimaConsulta()).toMatchObject({ projetoId: "p2", pagina: 1 }));
         await user.selectOptions(screen.getByRole("combobox", { name: "Situação" }), "REJEITADO");
         await waitFor(() => expect(ultimaConsulta()).toMatchObject({ projetoId: "p2", status: "REJEITADO", pagina: 1 }));
+    });
+
+    it("remove os lançamentos do período anterior durante a troca e não os restaura quando a consulta falha", async () => {
+        let rejeitarConsulta;
+        const consultaPendente = new Promise((_resolve, reject) => { rejeitarConsulta = reject; });
+        getMeusApontamentos.mockResolvedValueOnce(pagina()).mockReturnValueOnce(consultaPendente);
+        const user = await renderTela();
+        await screen.findByRole("row", { name: /13\/10\/2026/ });
+
+        await user.click(screen.getByRole("button", { name: "Semana anterior" }));
+        await waitFor(() => expect(ultimaConsulta()).toMatchObject({ inicio: "2026-10-05", fim: "2026-10-11" }));
+        expect(screen.queryByRole("row", { name: /13\/10\/2026/ })).not.toBeInTheDocument();
+        expect(screen.getByRole("button", { name: /Enviar para aprovação\. Indisponível: Aguarde/ })).toBeDisabled();
+
+        rejeitarConsulta(falha("Não foi possível carregar o período anterior.", "network"));
+        expect(await screen.findByText("Não foi possível carregar o período anterior.")).toBeInTheDocument();
+        expect(screen.queryByRole("row", { name: /13\/10\/2026/ })).not.toBeInTheDocument();
+        expect(enviarApontamentos).not.toHaveBeenCalled();
     });
 
     it("lança um apontamento em hh:mm com item opcional e faturável marcado", async () => {

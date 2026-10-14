@@ -188,7 +188,7 @@ export class ProjetoApontamentoPeriodoService {
         where: { projetoId: contexto.projeto.id, competencia: { in: competencias } },
         include: PERIODO_INCLUDE
       }),
-      db.projetoApontamento.findMany({
+      db.projetoApontamento.groupBy({
         where: {
           empresaId: contexto.empresaId,
           projetoId: contexto.projeto.id,
@@ -199,7 +199,9 @@ export class ProjetoApontamentoPeriodoService {
           },
           ...this.authorization.filtroDoEscopo(escopo)
         },
-        select: { dataTrabalho: true, minutos: true, status: true }
+        by: ['dataTrabalho', 'status'],
+        _sum: { minutos: true },
+        _count: { _all: true }
       })
     ]);
     const atual = this.periodo.competenciaAtual();
@@ -207,7 +209,9 @@ export class ProjetoApontamentoPeriodoService {
     const situacaoDe = (competencia: string): ProjetoApontamentoCompetenciaType => {
       const registro = registros.find((candidato) => candidato.competencia === competencia) ?? null;
       const doMes = apontamentos.filter((apontamento) => this.competencia(apontamento) === competencia);
-      const enviadosPendentes = doMes.filter((apontamento) => apontamento.status === ProjetoApontamentoStatus.ENVIADO).length;
+      const enviadosPendentes = doMes
+        .filter((apontamento) => apontamento.status === ProjetoApontamentoStatus.ENVIADO)
+        .reduce((total, apontamento) => total + apontamento._count._all, 0);
       const fechada = registro?.situacao === ProjetoApontamentoPeriodoSituacao.FECHADO;
       const bloqueio = podeFecharPeriodo && !fechada ? this.motivoParaNaoFechar(competencia, atual, enviadosPendentes) : null;
 
@@ -221,7 +225,7 @@ export class ProjetoApontamentoPeriodoService {
         reabertoEm: registro?.reabertoEm ?? null,
         reabertoPor: registro?.reabertoPor ? toProjetoUsuarioType(registro.reabertoPor) : null,
         motivoReabertura: registro?.motivoReabertura ?? null,
-        minutos: doMes.reduce((total, apontamento) => total + apontamento.minutos, 0),
+        minutos: doMes.reduce((total, apontamento) => total + (apontamento._sum.minutos ?? 0), 0),
         enviadosPendentes,
         podeFechar: podeFecharPeriodo && !fechada && !bloqueio,
         podeReabrir: podeFecharPeriodo && fechada,

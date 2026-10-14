@@ -6,6 +6,7 @@ import {
     fecharCompetencia,
     getHorasDoProjeto,
     getHorasProjetos,
+    getProjetoHojeOperacional,
     reabrirApontamento,
     reabrirCompetencia,
     recalcularCustosPendentes,
@@ -28,7 +29,6 @@ import {
     formatarDataHora,
     formatarDuracao,
     formatarMoeda,
-    hojeNoNavegador,
     mesDe,
     nomeDaPessoa,
     rotuloDoItem,
@@ -54,7 +54,7 @@ const PAGINA_VAZIA = {
 const OPCOES_VAZIAS = { projetoId: "", pessoas: [], itens: [] };
 
 // Projeto, período, filtros e página mudam juntos: trocar o projeto zera pessoa, item e página na mesma atualização.
-const consultaInicial = (hoje) => ({ projetoId: "", ...mesDe(hoje), usuarioId: "", itemId: "", status: "", faturavel: "", pagina: 1 });
+const consultaInicial = () => ({ projetoId: "", inicio: "", fim: "", usuarioId: "", itemId: "", status: "", faturavel: "", pagina: 1 });
 const comProjeto = (consulta, projetoId) =>
     (projetoId === consulta.projetoId ? consulta : { ...consulta, projetoId, usuarioId: "", itemId: "", pagina: 1 });
 
@@ -150,16 +150,18 @@ function CampoDeMotivo({ id, rotulo, ajuda, valor, onChange, erro, campoRef }) {
 }
 
 export default function ProjectHoursManagement() {
+    const hojeRequest = useLatestRequest();
     const projetosRequest = useLatestRequest();
     const paginaRequest = useLatestRequest();
     const chavesPendentes = useRef(new Map());
     const motivoRef = useRef(null);
-    const [hoje] = useState(() => hojeNoNavegador());
+    const [hojeCarregado, setHojeCarregado] = useState(false);
+    const [falhaDoHoje, setFalhaDoHoje] = useState(null);
     const [incluirArquivados, setIncluirArquivados] = useState(false);
     const [projetos, setProjetos] = useState([]);
     const [projetosCarregados, setProjetosCarregados] = useState(false);
     const [falhaDosProjetos, setFalhaDosProjetos] = useState(null);
-    const [consulta, setConsulta] = useState(() => consultaInicial(hoje));
+    const [consulta, setConsulta] = useState(consultaInicial);
     const [opcoes, setOpcoes] = useState(OPCOES_VAZIAS);
     const [dados, setDados] = useState(PAGINA_VAZIA);
     const [carregando, setCarregando] = useState(false);
@@ -177,6 +179,16 @@ export default function ProjectHoursManagement() {
     const projeto = projetos.find((item) => item.id === projetoId) || null;
     const opcoesDoProjeto = opcoes.projetoId === projetoId ? opcoes : OPCOES_VAZIAS;
 
+    const carregarHoje = useCallback(() => {
+        setHojeCarregado(false);
+        setFalhaDoHoje(null);
+        return hojeRequest.run(getProjetoHojeOperacional, {
+            onSuccess: (hoje) => setConsulta((atual) => ({ ...atual, ...mesDe(hoje), pagina: 1 })),
+            onError: setFalhaDoHoje,
+            onSettled: () => setHojeCarregado(true)
+        });
+    }, [hojeRequest]);
+
     const carregarProjetos = useCallback(() => projetosRequest.run(() => getHorasProjetos(incluirArquivados), {
         onSuccess: (lista) => {
             setProjetos(lista);
@@ -193,9 +205,16 @@ export default function ProjectHoursManagement() {
         if (!consulta.projetoId || !periodoValido) {
             paginaRequest.invalidate();
             setDados(PAGINA_VAZIA);
+            setFalhaDaCarga(null);
             setCarregando(false);
             return Promise.resolve();
         }
+        setDados((atuais) => ({ ...PAGINA_VAZIA, total: atuais.total }));
+        setFalhaDaCarga(null);
+        setDetalhe(null);
+        setDecisao(null);
+        setParaFechar(null);
+        setErroDaDecisao("");
         setCarregando(true);
         return paginaRequest.run(() => getHorasDoProjeto({
             projetoId: consulta.projetoId,
@@ -210,7 +229,6 @@ export default function ProjectHoursManagement() {
         }), {
             onSuccess: (resultado) => {
                 setDados(resultado);
-                setFalhaDaCarga(null);
                 // Pessoa e item oferecem quem tem horas no período; enquanto um desses filtros está ativo, as opções ficam.
                 setOpcoes((atuais) => {
                     const doMesmoProjeto = atuais.projetoId === consulta.projetoId;
@@ -226,16 +244,35 @@ export default function ProjectHoursManagement() {
         });
     }, [consulta, paginaRequest, periodoValido]);
 
+    useEffect(() => { void carregarHoje(); }, [carregarHoje]);
     useEffect(() => { void carregarProjetos(); }, [carregarProjetos]);
     useEffect(() => { void carregar(); }, [carregar]);
 
+    const descartarConsultaAtual = (preservarTotal = false) => {
+        paginaRequest.invalidate();
+        setDados((atuais) => (preservarTotal ? { ...PAGINA_VAZIA, total: atuais.total } : PAGINA_VAZIA));
+        setFalhaDaCarga(null);
+        setDetalhe(null);
+        setDecisao(null);
+        setParaFechar(null);
+        setErroDaDecisao("");
+    };
+
     const mudarProjeto = (proximo) => {
+        descartarConsultaAtual();
         setConsulta((atual) => comProjeto(atual, proximo));
         setAviso("");
         setErro("");
     };
-    const mudarFiltro = (campo, valor) => setConsulta((atual) => ({ ...atual, [campo]: valor, pagina: 1 }));
-    const mudarPagina = (pagina) => setConsulta((atual) => (atual.pagina === pagina ? atual : { ...atual, pagina }));
+    const mudarFiltro = (campo, valor) => {
+        descartarConsultaAtual();
+        setConsulta((atual) => ({ ...atual, [campo]: valor, pagina: 1 }));
+    };
+    const mudarPagina = (pagina) => {
+        if (consulta.pagina === pagina) return;
+        descartarConsultaAtual(true);
+        setConsulta((atual) => ({ ...atual, pagina }));
+    };
 
     // Uma nova tentativa da mesma decisão reaproveita a chave, para o backend devolver o resultado já gravado.
     const comChave = async (assinatura, enviar) => {
@@ -269,7 +306,7 @@ export default function ProjectHoursManagement() {
     const marcados = dados.items.filter((apontamento) => selecao.selectedIds.includes(apontamento.id));
     const ativo = dados.items.find((apontamento) => apontamento.id === selecao.selectedId) || null;
     const permissoes = dados.permissoes || {};
-    const aguarde = processando ? "Aguarde o processamento atual." : "";
+    const aguarde = carregando || processando ? "Aguarde o processamento atual." : "";
     const motivoDaDecisao = (permitida, podeNoApontamento, verbo) => aguarde
         || (!permitida ? (projeto?.arquivadoEm ? "O projeto arquivado fica somente para consulta." : `Você não possui permissão para ${verbo} horas.`) : "")
         || (!marcados.length ? "Marque ao menos um apontamento enviado." : "")
@@ -341,11 +378,15 @@ export default function ProjectHoursManagement() {
         { key: "realizado", label: "Realizado por horas", render: (linha) => formatarMoeda(linha.valorRealizadoHoras, dados.financeiro?.moeda) }
     ];
 
-    const acessoNegado = falhaDosProjetos?.type === "permission" || falhaDaCarga?.type === "permission";
+    const acessoNegado = falhaDoHoje?.type === "permission" || falhaDosProjetos?.type === "permission" || falhaDaCarga?.type === "permission";
     const semCusto = dados.financeiro?.apontamentosSemCusto || 0;
 
     const conteudo = () => {
         if (acessoNegado) return <AccessState>Você não possui permissão para acompanhar as horas dos projetos.</AccessState>;
+        if (!hojeCarregado) return <LoadingState message="Carregando calendário operacional..." />;
+        if (falhaDoHoje) {
+            return <FeedbackMessage type="error" action={<button type="button" onClick={carregarHoje}>Tentar novamente</button>}>{falhaDoHoje.message}</FeedbackMessage>;
+        }
         if (!projetosCarregados) return <LoadingState message="Carregando projetos..." />;
         if (falhaDosProjetos) {
             return <FeedbackMessage type="error" action={<button type="button" onClick={carregarProjetos}>Tentar novamente</button>}>{falhaDosProjetos.message}</FeedbackMessage>;
@@ -363,36 +404,36 @@ export default function ProjectHoursManagement() {
                 <section className="project-hours-panel project-hours-filters" aria-label="Filtros das horas">
                     <label>
                         Início
-                        <input type="date" value={consulta.inicio} max={consulta.fim || undefined} onChange={(event) => mudarFiltro("inicio", event.target.value)} />
+                        <input type="date" value={consulta.inicio} max={consulta.fim || undefined} disabled={processando} onChange={(event) => mudarFiltro("inicio", event.target.value)} />
                     </label>
                     <label>
                         Fim
-                        <input type="date" value={consulta.fim} min={consulta.inicio || undefined} onChange={(event) => mudarFiltro("fim", event.target.value)} />
+                        <input type="date" value={consulta.fim} min={consulta.inicio || undefined} disabled={processando} onChange={(event) => mudarFiltro("fim", event.target.value)} />
                     </label>
                     <label>
                         Pessoa
-                        <select value={consulta.usuarioId} onChange={(event) => mudarFiltro("usuarioId", event.target.value)}>
+                        <select value={consulta.usuarioId} disabled={processando} onChange={(event) => mudarFiltro("usuarioId", event.target.value)}>
                             <option value="">Todas as pessoas</option>
                             {opcoesDoProjeto.pessoas.map((pessoa) => <option key={pessoa.id} value={pessoa.id}>{nomeDaPessoa(pessoa)}</option>)}
                         </select>
                     </label>
                     <label>
                         Item
-                        <select value={consulta.itemId} onChange={(event) => mudarFiltro("itemId", event.target.value)}>
+                        <select value={consulta.itemId} disabled={processando} onChange={(event) => mudarFiltro("itemId", event.target.value)}>
                             <option value="">Todos os itens</option>
                             {opcoesDoProjeto.itens.map((item) => <option key={item.id} value={item.id}>{rotuloDoItem(item)}</option>)}
                         </select>
                     </label>
                     <label>
                         Situação
-                        <select value={consulta.status} onChange={(event) => mudarFiltro("status", event.target.value)}>
+                        <select value={consulta.status} disabled={processando} onChange={(event) => mudarFiltro("status", event.target.value)}>
                             <option value="">Todas as situações</option>
                             {Object.entries(SITUACOES_DO_APONTAMENTO).map(([valor, rotulo]) => <option key={valor} value={valor}>{rotulo}</option>)}
                         </select>
                     </label>
                     <label>
                         Faturável
-                        <select value={consulta.faturavel} onChange={(event) => mudarFiltro("faturavel", event.target.value)}>
+                        <select value={consulta.faturavel} disabled={processando} onChange={(event) => mudarFiltro("faturavel", event.target.value)}>
                             <option value="">Todos</option>
                             <option value="true">Faturáveis</option>
                             <option value="false">Não faturáveis</option>
@@ -535,7 +576,7 @@ export default function ProjectHoursManagement() {
                     <h2>Horas do projeto</h2>
                     <p>Acompanhe as horas lançadas, aprove os apontamentos e feche as competências do projeto.</p>
                 </div>
-                {!acessoNegado && projetosCarregados && !falhaDosProjetos && (
+                {!acessoNegado && hojeCarregado && !falhaDoHoje && projetosCarregados && !falhaDosProjetos && (
                     <div className="project-hours-header-controls">
                         {projetos.length > 0 && (
                             <label>
@@ -546,7 +587,10 @@ export default function ProjectHoursManagement() {
                             </label>
                         )}
                         <label className="project-hours-check">
-                            <input type="checkbox" checked={incluirArquivados} disabled={processando} onChange={(event) => setIncluirArquivados(event.target.checked)} />
+                            <input type="checkbox" checked={incluirArquivados} disabled={processando} onChange={(event) => {
+                                descartarConsultaAtual();
+                                setIncluirArquivados(event.target.checked);
+                            }} />
                             Incluir arquivados
                         </label>
                     </div>

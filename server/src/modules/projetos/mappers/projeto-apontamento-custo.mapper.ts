@@ -6,6 +6,7 @@ export type ProjetoApontamentoAprovado = {
   minutos: number;
   valorCusto?: Prisma.Decimal.Value | null;
   custoSituacao?: string;
+  quantidade?: number;
 };
 
 export type ProjetoCustoDasHoras = { minutos: number; valor: Prisma.Decimal };
@@ -32,7 +33,7 @@ export function resumirCustoDasHoras(aprovados: readonly ProjetoApontamentoAprov
 
   for (const apontamento of aprovados) {
     if (apontamento.custoSituacao && SITUACOES_SEM_CUSTO.has(apontamento.custoSituacao)) {
-      semCusto += 1;
+      semCusto += apontamento.quantidade ?? 1;
       continue;
     }
     if (!apontamento.custoId || apontamento.valorCusto === null || apontamento.valorCusto === undefined) {

@@ -7,7 +7,7 @@ const ACTION_CONSUMER_KEYS = [
   'gerenciar_membros', 'alterar_status', 'reativar_projeto', 'priorizar', 'planejar',
   'iniciar', 'concluir', 'cancelar', 'aprovar', 'editar_datas', 'comentar', 'moderar',
   'gerenciar_anexos', 'visualizar_financeiro', 'gerenciar_financeiro', 'aprovar_orcamento',
-  'apontar', 'aprovar_horas', 'reabrir_horas', 'publicar', 'instanciar',
+  'apontar', 'aprovar_horas', 'reabrir_horas', 'fechar_periodo', 'publicar', 'instanciar',
   'responder_proprio_chamado', 'reabrir_proprio_chamado', 'visualizar_fila',
   'assumir_chamado', 'atribuir_chamado', 'transferir_chamado', 'responder_chamado',
   'adicionar_nota_interna', 'alterar_prioridade', 'alterar_categoria', 'resolver_chamado',

@@ -393,6 +393,7 @@ export class ProjetosService {
   excluirCusto(input: ExcluirProjetoOrcamentoItemInput, user: JwtPayload) { return this.orcamentoService.excluirCusto(input, user); }
   aprovarOrcamento(input: AprovarProjetoOrcamentoInput, user: JwtPayload) { return this.orcamentoService.aprovar(input, user); }
   reabrirOrcamento(input: AprovarProjetoOrcamentoInput, user: JwtPayload) { return this.orcamentoService.reabrir(input, user); }
+  hojeOperacional() { return this.apontamentoQueryService.hojeOperacional(); }
   apontamentoProjetos(user: JwtPayload) { return this.apontamentoQueryService.projetos(user); }
   apontamentoItens(projetoId: string, user: JwtPayload) { return this.apontamentoQueryService.itens(projetoId, user); }
   meusApontamentos(user: JwtPayload, filtro: MeusProjetoApontamentosFiltroInput) { return this.apontamentoQueryService.meus(user, filtro); }

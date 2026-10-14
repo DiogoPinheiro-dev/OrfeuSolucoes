@@ -29,4 +29,13 @@ describe('resumirCustoDasHoras', () => {
     expect(resumo.semCusto).toBe(0);
     expect(custoDaLinha(resumo, 'geral')).toEqual({ minutos: 0, valor: new Prisma.Decimal(0) });
   });
+
+  it('preserva a quantidade de apontamentos sem custo quando recebe grupos agregados', () => {
+    const resumo = resumirCustoDasHoras([
+      { custoId: null, minutos: 180, valorCusto: null, custoSituacao: 'SEM_TAXA', quantidade: 3 },
+      { custoId: null, minutos: 120, valorCusto: null, custoSituacao: 'TAXA_AMBIGUA', quantidade: 2 }
+    ]);
+
+    expect(resumo.semCusto).toBe(5);
+  });
 });

@@ -13,6 +13,7 @@ import {
     getHorasDoProjeto,
     getHorasProjetos,
     getMeusApontamentos,
+    getProjetoHojeOperacional,
     reabrirApontamento,
     reabrirCompetencia,
     recalcularCustosPendentes,
@@ -33,6 +34,7 @@ describe("ApontamentoService", () => {
 
     it("consulta projetos, itens e páginas sem cache local e completa as listas ausentes", async () => {
         apolloClient.query
+            .mockResolvedValueOnce({ data: { projetoHojeOperacional: "2026-10-14" } })
             .mockResolvedValueOnce({ data: { projetoApontamentoProjetos: null } })
             .mockResolvedValueOnce({ data: { projetoApontamentoItens: [{ id: "i1", chave: "ORF-1", titulo: "Login" }] } })
             .mockResolvedValueOnce({ data: { meusProjetoApontamentos: { total: 0, pagina: 1 } } })
@@ -40,6 +42,7 @@ describe("ApontamentoService", () => {
             .mockResolvedValueOnce({ data: { projetoHoras: { total: 0, financeiro: { totalCusto: "0.00" } } } })
             .mockResolvedValueOnce({ data: { projetoHoras: { total: 0, financeiro: null } } });
 
+        await expect(getProjetoHojeOperacional()).resolves.toBe("2026-10-14");
         await expect(getApontamentoProjetos()).resolves.toEqual([]);
         await expect(getApontamentoItens("p1")).resolves.toEqual([{ id: "i1", chave: "ORF-1", titulo: "Login" }]);
         await expect(getMeusApontamentos({ inicio: "2026-10-12", fim: "2026-10-18", pagina: 1, limite: 5 })).resolves.toEqual({
@@ -54,6 +57,7 @@ describe("ApontamentoService", () => {
 
         const variables = apolloClient.query.mock.calls.map(([options]) => options.variables);
         expect(variables).toEqual([
+            {},
             {},
             { projetoId: "p1" },
             { filtro: { inicio: "2026-10-12", fim: "2026-10-18", pagina: 1, limite: 5 } },

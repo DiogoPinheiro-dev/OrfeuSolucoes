@@ -37,6 +37,9 @@ import { ProjetosService } from './projetos.service';
 export class ProjetoApontamentoResolver {
   constructor(private readonly service: ProjetosService) {}
 
+  @Query(() => String)
+  projetoHojeOperacional() { return this.service.hojeOperacional(); }
+
   @Query(() => [ProjetoApontamentoProjetoType])
   projetoApontamentoProjetos(@CurrentUser() user: JwtPayload) { return this.service.apontamentoProjetos(user); }
 
