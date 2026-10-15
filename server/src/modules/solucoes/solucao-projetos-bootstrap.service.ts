@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { retryBootstrapAfterUniqueConflict } from '../../common/persistence/bootstrap-concurrency.util';
+import { PROJETOS_PRODUTO } from '../instalacao/manifesto/catalogo-produto';
 import { PrismaService } from '../../prisma/prisma.service';
-import { PROJETOS_AGRUPAMENTOS_PADRAO } from './constants/agrupamento-definitions';
-import { PROJETO_FEATURE_DEFINITIONS } from './constants/projeto-feature-definitions';
 import { FuncionalidadeAcaoService } from './funcionalidade-acao.service';
 import { FuncionalidadeAgrupamentoService } from './funcionalidade-agrupamento.service';
 import { SolucaoAcessoService } from './solucao-acesso.service';
@@ -25,10 +24,19 @@ export class SolucaoProjetosBootstrapService {
 
   private async ensureProjetosSolutionOnce(): Promise<void> {
     const existingSolucao = (await (this.prisma as never as { solucao: { findUnique: Function } }).solucao.findUnique({
-      where: { slug: 'projetos' },
+      where: { slug: PROJETOS_PRODUTO.slug },
     })) as SolucaoRecord | null;
 
-    const solutionBaseline = { slug: 'projetos', nome: 'Gerenciador de Projetos', descricao: 'Espaço para organizar projetos, backlog, entregas, marcos e comunicação entre as equipes.', eyebrow: 'Operação', ordem: 10, ativo: true, exibirNoHub: true, somenteAdminSistema: false };
+    const solutionBaseline = {
+      slug: PROJETOS_PRODUTO.slug,
+      nome: PROJETOS_PRODUTO.nome,
+      descricao: PROJETOS_PRODUTO.descricao,
+      eyebrow: PROJETOS_PRODUTO.eyebrow,
+      ordem: PROJETOS_PRODUTO.ordem,
+      ativo: PROJETOS_PRODUTO.ativo,
+      exibirNoHub: PROJETOS_PRODUTO.exibirNoHub,
+      somenteAdminSistema: PROJETOS_PRODUTO.somenteAdminSistema
+    };
 
     const solucao = existingSolucao
       ? existingSolucao
@@ -38,7 +46,7 @@ export class SolucaoProjetosBootstrapService {
 
     await this.reconciliation.reconcileSolution(solucao.id, existingSolucao ? { ...solutionBaseline, nome: existingSolucao.nome, descricao: existingSolucao.descricao, eyebrow: existingSolucao.eyebrow, ordem: existingSolucao.ordem, ativo: existingSolucao.ativo, exibirNoHub: existingSolucao.exibirNoHub, somenteAdminSistema: existingSolucao.somenteAdminSistema } : solutionBaseline, solutionBaseline);
 
-    const features = PROJETO_FEATURE_DEFINITIONS;
+    const features = PROJETOS_PRODUTO.funcionalidades;
 
     for (const feature of features) {
       const existing = (await (this.prisma as never as { funcionalidade: { findUnique: Function } }).funcionalidade.findUnique({
@@ -49,7 +57,7 @@ export class SolucaoProjetosBootstrapService {
           }
         }
       })) as FuncionalidadeRecord | null;
-      const featureBaseline = { solucaoId: solucao.id, slug: feature.slug, titulo: feature.titulo, label: feature.label, descricao: feature.descricao, ordem: feature.ordem, ativo: feature.ativo, registryKey: feature.registryKey, providerKey: feature.registryKey, providerVersion: 1, somenteAdminSistema: false };
+      const featureBaseline = { solucaoId: solucao.id, slug: feature.slug, titulo: feature.titulo, label: feature.label, descricao: feature.descricao, ordem: feature.ordem, ativo: feature.ativo, registryKey: feature.registryKey, providerKey: feature.providerKey, providerVersion: feature.providerVersion, somenteAdminSistema: feature.somenteAdminSistema };
       const funcionalidade = existing
         ? existing
         : (await (this.prisma as never as { funcionalidade: { create: Function } }).funcionalidade.create({
@@ -69,7 +77,7 @@ export class SolucaoProjetosBootstrapService {
       }
     }
 
-    for (const agrupamento of PROJETOS_AGRUPAMENTOS_PADRAO) {
+    for (const agrupamento of PROJETOS_PRODUTO.agrupamentos) {
       await this.agrupamentos.ensureAgrupamentoPadrao(solucao.id, agrupamento);
     }
   }

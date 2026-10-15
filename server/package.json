@@ -10,6 +10,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
+    "catalogo:generate": "node scripts/generate-product-catalog.cjs",
+    "catalogo:check": "node scripts/generate-product-catalog.cjs --check",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:unit": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand",
     "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage --runInBand --config ./test/jest-coverage.json",

@@ -12,6 +12,7 @@ import { ChamadosModule } from './modules/chamados/chamados.module';
 import { DocumentacaoModule } from './modules/documentacao/documentacao.module';
 import { EmpresasModule } from './modules/empresas/empresas.module';
 import { GruposUsuariosModule } from './modules/grupos-usuarios/grupos-usuarios.module';
+import { InstalacaoModule } from './modules/instalacao/instalacao.module';
 import { ProjetosModule } from './modules/projetos/projetos.module';
 import { ServicosModule } from './modules/servicos/servicos.module';
 import { SolucoesModule } from './modules/solucoes/solucoes.module';
@@ -44,6 +45,7 @@ import { PrismaModule } from './prisma/prisma.module';
       })
     }),
     PrismaModule,
+    InstalacaoModule,
     UsersModule,
     GruposUsuariosModule,
     EmpresasModule,

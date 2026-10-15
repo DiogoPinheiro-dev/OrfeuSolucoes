@@ -39,6 +39,9 @@ jobs:
         run: npm ci
       - name: Auditar testes focados ou desativados
         run: node scripts/ci-static-audit.mjs
+      - name: Conferir manifesto do produto
+        working-directory: server
+        run: npm run catalogo:check
       - name: Validar frontend estaticamente
         working-directory: client
         run: npm run lint

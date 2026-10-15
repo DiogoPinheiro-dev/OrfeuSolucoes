@@ -1,0 +1,1580 @@
+{
+  "versao": 1,
+  "solucoes": [
+    {
+      "slug": "projetos",
+      "nome": "Gerenciador de Projetos",
+      "descricao": "Espaço para organizar projetos, backlog, entregas, marcos e comunicação entre as equipes.",
+      "eyebrow": "Operação",
+      "ordem": 10,
+      "ativo": true,
+      "exibirNoHub": true,
+      "somenteAdminSistema": false,
+      "funcionalidades": [
+        {
+          "slug": "cadastro-de-projetos",
+          "titulo": "Cadastro de projetos",
+          "label": "Projetos",
+          "descricao": "Cadastre projetos, responsáveis, participantes, metodologia e ciclo de vida.",
+          "ordem": 10,
+          "ativo": true,
+          "registryKey": "projetos.cadastro-de-projetos",
+          "somenteAdminSistema": false,
+          "acoes": [
+            {
+              "chave": "visualizar",
+              "nome": "Visualizar",
+              "ordem": 10,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "incluir",
+              "nome": "Incluir",
+              "ordem": 20,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "alterar",
+              "nome": "Alterar",
+              "ordem": 30,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "excluir",
+              "nome": "Excluir",
+              "ordem": 40,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "gerenciar_membros",
+              "nome": "Gerenciar membros",
+              "ordem": 50,
+              "descricao": "Permite adicionar, alterar e remover membros do projeto.",
+              "configuracao": "gerenciar_membros",
+              "ativo": true
+            },
+            {
+              "chave": "alterar_status",
+              "nome": "Alterar status",
+              "ordem": 60,
+              "descricao": "Permite alterar o status e o ciclo de vida do projeto.",
+              "configuracao": "alterar_status",
+              "ativo": true
+            },
+            {
+              "chave": "reativar_projeto",
+              "nome": "Reativar projeto",
+              "ordem": 70,
+              "descricao": "Permite reativar projetos arquivados.",
+              "configuracao": "reativar_projeto",
+              "ativo": true
+            }
+          ],
+          "providerKey": "projetos.cadastro-de-projetos",
+          "providerVersion": 1
+        },
+        {
+          "slug": "backlog-de-demandas",
+          "titulo": "Backlog de demandas",
+          "label": "Backlog",
+          "descricao": "Organize demandas, prioridades e itens planejados para o projeto.",
+          "ordem": 20,
+          "ativo": true,
+          "registryKey": "projetos.backlog-de-demandas",
+          "somenteAdminSistema": false,
+          "acoes": [
+            {
+              "chave": "visualizar",
+              "nome": "Visualizar",
+              "ordem": 10,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "incluir",
+              "nome": "Incluir",
+              "ordem": 20,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "alterar",
+              "nome": "Alterar",
+              "ordem": 30,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "excluir",
+              "nome": "Excluir",
+              "ordem": 40,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "priorizar",
+              "nome": "Priorizar backlog",
+              "ordem": 50,
+              "descricao": "Permite alterar a ordem persistente dos itens.",
+              "configuracao": "priorizar",
+              "ativo": true
+            }
+          ],
+          "providerKey": "projetos.backlog-de-demandas",
+          "providerVersion": 1
+        },
+        {
+          "slug": "sprints",
+          "titulo": "Sprints",
+          "label": "Sprints",
+          "descricao": "Planeje e acompanhe períodos de execução do projeto.",
+          "ordem": 30,
+          "ativo": true,
+          "registryKey": "projetos.sprints",
+          "somenteAdminSistema": false,
+          "acoes": [
+            {
+              "chave": "visualizar",
+              "nome": "Visualizar",
+              "ordem": 10,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "incluir",
+              "nome": "Incluir",
+              "ordem": 20,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "alterar",
+              "nome": "Alterar",
+              "ordem": 30,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "excluir",
+              "nome": "Excluir",
+              "ordem": 40,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "planejar",
+              "nome": "Planejar sprints",
+              "ordem": 50,
+              "descricao": "Permite definir o escopo planejado.",
+              "configuracao": "planejar",
+              "ativo": true
+            },
+            {
+              "chave": "iniciar",
+              "nome": "Iniciar sprint",
+              "ordem": 60,
+              "descricao": "Permite ativar uma sprint planejada.",
+              "configuracao": "iniciar",
+              "ativo": true
+            },
+            {
+              "chave": "concluir",
+              "nome": "Concluir sprint",
+              "ordem": 70,
+              "descricao": "Permite encerrar uma sprint ativa.",
+              "configuracao": "concluir",
+              "ativo": true
+            },
+            {
+              "chave": "cancelar",
+              "nome": "Cancelar sprint",
+              "ordem": 80,
+              "descricao": "Permite cancelar uma sprint.",
+              "configuracao": "cancelar",
+              "ativo": true
+            }
+          ],
+          "providerKey": "projetos.sprints",
+          "providerVersion": 1
+        },
+        {
+          "slug": "marcos-e-entregas",
+          "titulo": "Marcos e entregas",
+          "label": "Marcos e entregas",
+          "descricao": "Acompanhe marcos, entregas previstas e resultados do projeto.",
+          "ordem": 40,
+          "ativo": true,
+          "registryKey": "projetos.marcos-e-entregas",
+          "somenteAdminSistema": false,
+          "acoes": [
+            {
+              "chave": "visualizar",
+              "nome": "Visualizar",
+              "ordem": 10,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "incluir",
+              "nome": "Incluir",
+              "ordem": 20,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "alterar",
+              "nome": "Alterar",
+              "ordem": 30,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "excluir",
+              "nome": "Excluir",
+              "ordem": 40,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "aprovar",
+              "nome": "Aprovar entregas",
+              "ordem": 50,
+              "descricao": "Permite aprovar compromissos de negócio.",
+              "configuracao": "aprovar",
+              "ativo": true
+            }
+          ],
+          "providerKey": "projetos.marcos-e-entregas",
+          "providerVersion": 1
+        },
+        {
+          "slug": "cronograma-e-gantt",
+          "titulo": "Cronograma e Gantt",
+          "label": "Cronograma",
+          "descricao": "Consulte datas, dependências e riscos do cronograma.",
+          "ordem": 50,
+          "ativo": true,
+          "registryKey": "projetos.cronograma-e-gantt",
+          "somenteAdminSistema": false,
+          "acoes": [
+            {
+              "chave": "visualizar",
+              "nome": "Visualizar",
+              "ordem": 10,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "incluir",
+              "nome": "Incluir",
+              "ordem": 20,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "alterar",
+              "nome": "Alterar",
+              "ordem": 30,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "excluir",
+              "nome": "Excluir",
+              "ordem": 40,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "editar_datas",
+              "nome": "Editar datas",
+              "ordem": 50,
+              "descricao": "Permite confirmar alterações de datas no cronograma.",
+              "configuracao": "editar_datas",
+              "ativo": true
+            }
+          ],
+          "providerKey": "projetos.cronograma-e-gantt",
+          "providerVersion": 1
+        },
+        {
+          "slug": "comunicacao-do-projeto",
+          "titulo": "Comunicação do projeto",
+          "label": "Comunicação",
+          "descricao": "Centralize comunicados, decisões e alinhamentos do projeto.",
+          "ordem": 60,
+          "ativo": true,
+          "registryKey": "projetos.comunicacao-do-projeto",
+          "somenteAdminSistema": false,
+          "acoes": [
+            {
+              "chave": "visualizar",
+              "nome": "Visualizar",
+              "ordem": 10,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "incluir",
+              "nome": "Incluir",
+              "ordem": 20,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "alterar",
+              "nome": "Alterar",
+              "ordem": 30,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "excluir",
+              "nome": "Excluir",
+              "ordem": 40,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "comentar",
+              "nome": "Comentar",
+              "ordem": 50,
+              "descricao": "Permite publicar e editar comentários próprios.",
+              "configuracao": "comentar",
+              "ativo": true
+            },
+            {
+              "chave": "moderar",
+              "nome": "Moderar",
+              "ordem": 60,
+              "descricao": "Permite moderar comentários de outros autores.",
+              "configuracao": "moderar",
+              "ativo": true
+            },
+            {
+              "chave": "gerenciar_anexos",
+              "nome": "Gerenciar anexos",
+              "ordem": 70,
+              "descricao": "Permite gerenciar anexos autorizados.",
+              "configuracao": "gerenciar_anexos",
+              "ativo": true
+            }
+          ],
+          "providerKey": "projetos.comunicacao-do-projeto",
+          "providerVersion": 1
+        },
+        {
+          "slug": "planejamento-de-recursos",
+          "titulo": "Cadastro de recursos",
+          "label": "Recursos",
+          "descricao": "Cadastre os recursos da empresa e a grade de capacitações usada no planejamento dos projetos.",
+          "ordem": 70,
+          "ativo": true,
+          "registryKey": "projetos.planejamento-de-recursos",
+          "somenteAdminSistema": false,
+          "providerKey": "projetos.planejamento-de-recursos",
+          "providerVersion": 1,
+          "acoes": [
+            {
+              "chave": "visualizar",
+              "nome": "Visualizar",
+              "ordem": 10,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "incluir",
+              "nome": "Incluir",
+              "ordem": 20,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "alterar",
+              "nome": "Alterar",
+              "ordem": 30,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "excluir",
+              "nome": "Excluir",
+              "ordem": 40,
+              "ativo": true,
+              "acaoPadrao": true
+            }
+          ]
+        },
+        {
+          "slug": "equipes",
+          "titulo": "Cadastro de equipes",
+          "label": "Equipes",
+          "descricao": "Organize os recursos em equipes e vincule as equipes aos projetos atendidos.",
+          "ordem": 75,
+          "ativo": true,
+          "registryKey": "projetos.equipes",
+          "somenteAdminSistema": false,
+          "copiarAcessoDe": "planejamento-de-recursos",
+          "providerKey": "projetos.equipes",
+          "providerVersion": 1,
+          "acoes": [
+            {
+              "chave": "visualizar",
+              "nome": "Visualizar",
+              "ordem": 10,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "incluir",
+              "nome": "Incluir",
+              "ordem": 20,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "alterar",
+              "nome": "Alterar",
+              "ordem": 30,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "excluir",
+              "nome": "Excluir",
+              "ordem": 40,
+              "ativo": true,
+              "acaoPadrao": true
+            }
+          ]
+        },
+        {
+          "slug": "orcamento-do-projeto",
+          "titulo": "Orçamento do projeto",
+          "label": "Orçamento",
+          "descricao": "Planeje o orçamento, categorias e custos do projeto.",
+          "ordem": 100,
+          "ativo": true,
+          "registryKey": "projetos.orcamento-do-projeto",
+          "somenteAdminSistema": false,
+          "acoes": [
+            {
+              "chave": "visualizar",
+              "nome": "Visualizar",
+              "ordem": 10,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "incluir",
+              "nome": "Incluir",
+              "ordem": 20,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "alterar",
+              "nome": "Alterar",
+              "ordem": 30,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "excluir",
+              "nome": "Excluir",
+              "ordem": 40,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "visualizar_financeiro",
+              "nome": "Visualizar financeiro",
+              "ordem": 50,
+              "descricao": "Permite consultar dados financeiros.",
+              "configuracao": "visualizar_financeiro",
+              "ativo": true
+            },
+            {
+              "chave": "gerenciar_financeiro",
+              "nome": "Gerenciar financeiro",
+              "ordem": 60,
+              "descricao": "Permite alterar orçamentos e custos.",
+              "configuracao": "gerenciar_financeiro",
+              "ativo": true
+            },
+            {
+              "chave": "aprovar_orcamento",
+              "nome": "Aprovar orçamento",
+              "ordem": 70,
+              "descricao": "Permite aprovar a linha de base.",
+              "configuracao": "aprovar_orcamento",
+              "ativo": true
+            }
+          ],
+          "providerKey": "projetos.orcamento-do-projeto",
+          "providerVersion": 1
+        },
+        {
+          "slug": "meus-apontamentos",
+          "titulo": "Meus apontamentos",
+          "label": "Meus apontamentos",
+          "descricao": "Registre as horas trabalhadas nos projetos e acompanhe o envio para aprovação.",
+          "ordem": 105,
+          "ativo": true,
+          "registryKey": "projetos.meus-apontamentos",
+          "somenteAdminSistema": false,
+          "acessoInicial": "SOMENTE_ADMINISTRADORES",
+          "providerKey": "projetos.meus-apontamentos",
+          "providerVersion": 1,
+          "acoes": [
+            {
+              "chave": "visualizar",
+              "nome": "Visualizar",
+              "ordem": 10,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "incluir",
+              "nome": "Incluir",
+              "ordem": 20,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "alterar",
+              "nome": "Alterar",
+              "ordem": 30,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "excluir",
+              "nome": "Excluir",
+              "ordem": 40,
+              "ativo": true,
+              "acaoPadrao": true
+            }
+          ]
+        },
+        {
+          "slug": "horas-do-projeto",
+          "titulo": "Horas do projeto",
+          "label": "Horas",
+          "descricao": "Aprove apontamentos, reabra lançamentos e controle o fechamento dos períodos do projeto.",
+          "ordem": 110,
+          "ativo": true,
+          "registryKey": "projetos.horas-do-projeto",
+          "somenteAdminSistema": false,
+          "acessoInicial": "SOMENTE_ADMINISTRADORES",
+          "acoes": [
+            {
+              "chave": "visualizar",
+              "nome": "Visualizar",
+              "ordem": 10,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "incluir",
+              "nome": "Incluir",
+              "ordem": 20,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "alterar",
+              "nome": "Alterar",
+              "ordem": 30,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "excluir",
+              "nome": "Excluir",
+              "ordem": 40,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "aprovar_horas",
+              "nome": "Aprovar horas",
+              "ordem": 60,
+              "descricao": "Permite aprovar apontamentos.",
+              "configuracao": "aprovar_horas",
+              "ativo": true
+            },
+            {
+              "chave": "reabrir_horas",
+              "nome": "Reabrir horas",
+              "ordem": 70,
+              "descricao": "Permite reabrir apontamentos com auditoria.",
+              "configuracao": "reabrir_horas",
+              "ativo": true
+            },
+            {
+              "chave": "fechar_periodo",
+              "nome": "Fechar período",
+              "ordem": 80,
+              "descricao": "Permite fechar o período mensal de apontamentos do projeto.",
+              "configuracao": "fechar_periodo",
+              "ativo": true
+            }
+          ],
+          "providerKey": "projetos.horas-do-projeto",
+          "providerVersion": 1
+        }
+      ],
+      "agrupamentos": [
+        {
+          "slug": "execucao-do-projeto",
+          "titulo": "Execução do projeto",
+          "label": "Execução",
+          "descricao": "Planeje sprints, acompanhe marcos e entregas e consulte o cronograma do projeto.",
+          "ordem": 30,
+          "funcionalidades": [
+            "sprints",
+            "marcos-e-entregas",
+            "cronograma-e-gantt"
+          ]
+        },
+        {
+          "slug": "recursos-e-equipes",
+          "titulo": "Recursos e equipes",
+          "label": "Organização",
+          "descricao": "Cadastre recursos e capacitações e organize as equipes que atendem os projetos.",
+          "ordem": 70,
+          "funcionalidades": [
+            "planejamento-de-recursos",
+            "equipes"
+          ]
+        },
+        {
+          "slug": "controle-de-horas",
+          "titulo": "Controle de horas",
+          "label": "Horas",
+          "descricao": "Registre apontamentos e gerencie a aprovação e o fechamento das horas dos projetos.",
+          "ordem": 110,
+          "funcionalidades": [
+            "meus-apontamentos",
+            "horas-do-projeto"
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "configurador",
+      "nome": "Configurador",
+      "descricao": "Central administrativa para cadastrar usuários, empresas, grupos e acessos.",
+      "eyebrow": "Administração",
+      "ordem": 30,
+      "ativo": true,
+      "exibirNoHub": true,
+      "somenteAdminSistema": true,
+      "funcionalidades": [
+        {
+          "slug": "cadastro-de-usuarios",
+          "titulo": "Cadastro de usuários",
+          "label": "Usuários",
+          "descricao": "Gerencie contas, dados de acesso, grupo e empresas dos usuários.",
+          "ordem": 10,
+          "ativo": true,
+          "registryKey": "configurador.cadastro-de-usuarios",
+          "somenteAdminSistema": true,
+          "providerKey": "configurador.cadastro-de-usuarios",
+          "providerVersion": 1,
+          "acoes": [
+            {
+              "chave": "visualizar",
+              "nome": "Visualizar",
+              "ordem": 10,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "incluir",
+              "nome": "Incluir",
+              "ordem": 20,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "alterar",
+              "nome": "Alterar",
+              "ordem": 30,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "excluir",
+              "nome": "Excluir",
+              "ordem": 40,
+              "ativo": true,
+              "acaoPadrao": true
+            }
+          ]
+        },
+        {
+          "slug": "cadastro-de-grupos",
+          "titulo": "Cadastro de grupos",
+          "label": "Grupos",
+          "descricao": "Defina grupos de usuários, soluções, funcionalidades e permissões.",
+          "ordem": 20,
+          "ativo": true,
+          "registryKey": "configurador.cadastro-de-grupos",
+          "somenteAdminSistema": true,
+          "providerKey": "configurador.cadastro-de-grupos",
+          "providerVersion": 1,
+          "acoes": [
+            {
+              "chave": "visualizar",
+              "nome": "Visualizar",
+              "ordem": 10,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "incluir",
+              "nome": "Incluir",
+              "ordem": 20,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "alterar",
+              "nome": "Alterar",
+              "ordem": 30,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "excluir",
+              "nome": "Excluir",
+              "ordem": 40,
+              "ativo": true,
+              "acaoPadrao": true
+            }
+          ]
+        },
+        {
+          "slug": "cadastro-de-empresas",
+          "titulo": "Cadastro de empresas",
+          "label": "Empresas",
+          "descricao": "Crie e mantenha empresas, liberando soluções e funcionalidades contratadas.",
+          "ordem": 30,
+          "ativo": true,
+          "registryKey": "configurador.cadastro-de-empresas",
+          "somenteAdminSistema": true,
+          "providerKey": "configurador.cadastro-de-empresas",
+          "providerVersion": 1,
+          "acoes": [
+            {
+              "chave": "visualizar",
+              "nome": "Visualizar",
+              "ordem": 10,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "incluir",
+              "nome": "Incluir",
+              "ordem": 20,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "alterar",
+              "nome": "Alterar",
+              "ordem": 30,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "excluir",
+              "nome": "Excluir",
+              "ordem": 40,
+              "ativo": true,
+              "acaoPadrao": true
+            }
+          ]
+        },
+        {
+          "slug": "cadastro-de-solucoes",
+          "titulo": "Cadastro de soluções",
+          "label": "Soluções",
+          "descricao": "Crie e mantenha as soluções exibidas no hub do sistema.",
+          "ordem": 35,
+          "ativo": true,
+          "registryKey": "configurador.cadastro-de-solucoes",
+          "somenteAdminSistema": true,
+          "providerKey": "configurador.cadastro-de-solucoes",
+          "providerVersion": 1,
+          "acoes": [
+            {
+              "chave": "visualizar",
+              "nome": "Visualizar",
+              "ordem": 10,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "incluir",
+              "nome": "Incluir",
+              "ordem": 20,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "alterar",
+              "nome": "Alterar",
+              "ordem": 30,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "excluir",
+              "nome": "Excluir",
+              "ordem": 40,
+              "ativo": true,
+              "acaoPadrao": true
+            }
+          ]
+        },
+        {
+          "slug": "cadastro-de-funcionalidades",
+          "titulo": "Cadastro de funcionalidades",
+          "label": "Funcionalidades",
+          "descricao": "Crie e mantenha rotas de funcionalidades vinculadas às soluções do sistema.",
+          "ordem": 40,
+          "ativo": true,
+          "registryKey": "configurador.cadastro-de-funcionalidades",
+          "somenteAdminSistema": true,
+          "providerKey": "configurador.cadastro-de-funcionalidades",
+          "providerVersion": 1,
+          "acoes": [
+            {
+              "chave": "visualizar",
+              "nome": "Visualizar",
+              "ordem": 10,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "incluir",
+              "nome": "Incluir",
+              "ordem": 20,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "alterar",
+              "nome": "Alterar",
+              "ordem": 30,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "excluir",
+              "nome": "Excluir",
+              "ordem": 40,
+              "ativo": true,
+              "acaoPadrao": true
+            }
+          ]
+        }
+      ],
+      "agrupamentos": [
+        {
+          "slug": "acessos",
+          "titulo": "Usuários e acessos",
+          "label": "Acessos",
+          "descricao": "Cadastre usuários, grupos de acesso e as empresas atendidas.",
+          "ordem": 10,
+          "funcionalidades": [
+            "cadastro-de-usuarios",
+            "cadastro-de-grupos",
+            "cadastro-de-empresas"
+          ]
+        },
+        {
+          "slug": "catalogo",
+          "titulo": "Catálogo do Hub",
+          "label": "Catálogo",
+          "descricao": "Mantenha as soluções, as funcionalidades e os agrupamentos apresentados no Hub.",
+          "ordem": 35,
+          "funcionalidades": [
+            "cadastro-de-solucoes",
+            "cadastro-de-funcionalidades"
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "controle-de-chamados",
+      "nome": "Controle de Chamados",
+      "descricao": "Abertura, acompanhamento e atendimento de chamados por empresa.",
+      "eyebrow": "Atendimento",
+      "ordem": 40,
+      "ativo": true,
+      "exibirNoHub": true,
+      "somenteAdminSistema": false,
+      "funcionalidades": [
+        {
+          "slug": "abrir-chamado",
+          "titulo": "Abrir chamado",
+          "label": "Novo chamado",
+          "descricao": "Registre uma nova solicitação de atendimento para a empresa selecionada.",
+          "ordem": 10,
+          "ativo": true,
+          "registryKey": "controle-de-chamados.abrir-chamado",
+          "somenteAdminSistema": false,
+          "providerKey": "controle-de-chamados.abrir-chamado",
+          "providerVersion": 1,
+          "acoes": [
+            {
+              "chave": "visualizar",
+              "nome": "Visualizar",
+              "ordem": 10,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "incluir",
+              "nome": "Incluir",
+              "ordem": 20,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "alterar",
+              "nome": "Alterar",
+              "ordem": 30,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "excluir",
+              "nome": "Excluir",
+              "ordem": 40,
+              "ativo": true,
+              "acaoPadrao": true
+            }
+          ]
+        },
+        {
+          "slug": "meus-chamados",
+          "titulo": "Meus chamados",
+          "label": "Minhas solicitações",
+          "descricao": "Acompanhe chamados abertos por você, responda e solicite reabertura quando necessário.",
+          "ordem": 20,
+          "ativo": true,
+          "registryKey": "controle-de-chamados.meus-chamados",
+          "somenteAdminSistema": false,
+          "acoes": [
+            {
+              "chave": "visualizar",
+              "nome": "Visualizar",
+              "ordem": 10,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "incluir",
+              "nome": "Incluir",
+              "ordem": 20,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "alterar",
+              "nome": "Alterar",
+              "ordem": 30,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "excluir",
+              "nome": "Excluir",
+              "ordem": 40,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "responder_proprio_chamado",
+              "nome": "Responder próprio chamado",
+              "ordem": 50,
+              "descricao": "Permite adicionar respostas públicas nos próprios chamados.",
+              "configuracao": "responder_proprio_chamado",
+              "ativo": true
+            },
+            {
+              "chave": "reabrir_proprio_chamado",
+              "nome": "Reabrir próprio chamado",
+              "ordem": 60,
+              "descricao": "Permite reabrir chamados próprios que foram resolvidos.",
+              "configuracao": "reabrir_proprio_chamado",
+              "ativo": true
+            }
+          ],
+          "providerKey": "controle-de-chamados.meus-chamados",
+          "providerVersion": 1
+        },
+        {
+          "slug": "painel-atendimento",
+          "titulo": "Painel de atendimento",
+          "label": "Fila de atendimento",
+          "descricao": "Visualize a fila da empresa, assuma, atribua, responda e movimente chamados.",
+          "ordem": 30,
+          "ativo": true,
+          "registryKey": "controle-de-chamados.painel-atendimento",
+          "somenteAdminSistema": false,
+          "acoes": [
+            {
+              "chave": "visualizar",
+              "nome": "Visualizar",
+              "ordem": 10,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "incluir",
+              "nome": "Incluir",
+              "ordem": 20,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "alterar",
+              "nome": "Alterar",
+              "ordem": 30,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "excluir",
+              "nome": "Excluir",
+              "ordem": 40,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "visualizar_fila",
+              "nome": "Visualizar fila",
+              "ordem": 50,
+              "configuracao": "visualizar_fila",
+              "ativo": true
+            },
+            {
+              "chave": "assumir_chamado",
+              "nome": "Assumir chamado",
+              "ordem": 60,
+              "configuracao": "assumir_chamado",
+              "ativo": true
+            },
+            {
+              "chave": "atribuir_chamado",
+              "nome": "Atribuir chamado",
+              "ordem": 70,
+              "configuracao": "atribuir_chamado",
+              "ativo": true
+            },
+            {
+              "chave": "transferir_chamado",
+              "nome": "Transferir chamado",
+              "ordem": 80,
+              "configuracao": "transferir_chamado",
+              "ativo": true
+            },
+            {
+              "chave": "responder_chamado",
+              "nome": "Responder chamado",
+              "ordem": 90,
+              "configuracao": "responder_chamado",
+              "ativo": true
+            },
+            {
+              "chave": "adicionar_nota_interna",
+              "nome": "Adicionar nota interna",
+              "ordem": 100,
+              "configuracao": "adicionar_nota_interna",
+              "ativo": true
+            },
+            {
+              "chave": "alterar_prioridade",
+              "nome": "Alterar prioridade",
+              "ordem": 110,
+              "configuracao": "alterar_prioridade",
+              "ativo": true
+            },
+            {
+              "chave": "alterar_categoria",
+              "nome": "Alterar categoria",
+              "ordem": 115,
+              "configuracao": "alterar_categoria",
+              "ativo": true
+            },
+            {
+              "chave": "alterar_status",
+              "nome": "Alterar status",
+              "ordem": 120,
+              "configuracao": "alterar_status",
+              "ativo": true
+            },
+            {
+              "chave": "resolver_chamado",
+              "nome": "Resolver chamado",
+              "ordem": 130,
+              "configuracao": "resolver_chamado",
+              "ativo": true
+            },
+            {
+              "chave": "encerrar_chamado",
+              "nome": "Encerrar chamado",
+              "ordem": 140,
+              "configuracao": "encerrar_chamado",
+              "ativo": true
+            },
+            {
+              "chave": "reabrir_chamado",
+              "nome": "Reabrir chamado",
+              "ordem": 150,
+              "configuracao": "reabrir_chamado",
+              "ativo": true
+            }
+          ],
+          "providerKey": "controle-de-chamados.painel-atendimento",
+          "providerVersion": 1
+        },
+        {
+          "slug": "chamados-arquivados",
+          "titulo": "Chamados arquivados",
+          "label": "Arquivados",
+          "descricao": "Visualize chamados arquivados e permita desarquivamento controlado por administradores.",
+          "ordem": 40,
+          "ativo": true,
+          "registryKey": "controle-de-chamados.chamados-arquivados",
+          "somenteAdminSistema": false,
+          "acoes": [
+            {
+              "chave": "visualizar",
+              "nome": "Visualizar",
+              "ordem": 10,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "incluir",
+              "nome": "Incluir",
+              "ordem": 20,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "alterar",
+              "nome": "Alterar",
+              "ordem": 30,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "excluir",
+              "nome": "Excluir",
+              "ordem": 40,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "reabrir_chamado",
+              "nome": "Desarquivar chamado",
+              "ordem": 50,
+              "configuracao": "reabrir_chamado",
+              "ativo": true
+            }
+          ],
+          "providerKey": "controle-de-chamados.chamados-arquivados",
+          "providerVersion": 1
+        },
+        {
+          "slug": "categorias",
+          "titulo": "Categorias de chamados",
+          "label": "Categorias",
+          "descricao": "Configure categorias de chamados específicas da empresa selecionada.",
+          "ordem": 50,
+          "ativo": true,
+          "registryKey": "controle-de-chamados.categorias",
+          "somenteAdminSistema": false,
+          "providerKey": "controle-de-chamados.categorias",
+          "providerVersion": 1,
+          "acoes": [
+            {
+              "chave": "visualizar",
+              "nome": "Visualizar",
+              "ordem": 10,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "incluir",
+              "nome": "Incluir",
+              "ordem": 20,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "alterar",
+              "nome": "Alterar",
+              "ordem": 30,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "excluir",
+              "nome": "Excluir",
+              "ordem": 40,
+              "ativo": true,
+              "acaoPadrao": true
+            }
+          ]
+        },
+        {
+          "slug": "responsaveis",
+          "titulo": "Cadastro de responsáveis",
+          "label": "Responsáveis",
+          "descricao": "Cadastre supervisores e responsáveis por solução ou funcionalidade.",
+          "ordem": 60,
+          "ativo": true,
+          "registryKey": "controle-de-chamados.responsaveis",
+          "somenteAdminSistema": false,
+          "providerKey": "controle-de-chamados.responsaveis",
+          "providerVersion": 1,
+          "acoes": [
+            {
+              "chave": "visualizar",
+              "nome": "Visualizar",
+              "ordem": 10,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "incluir",
+              "nome": "Incluir",
+              "ordem": 20,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "alterar",
+              "nome": "Alterar",
+              "ordem": 30,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "excluir",
+              "nome": "Excluir",
+              "ordem": 40,
+              "ativo": true,
+              "acaoPadrao": true
+            }
+          ]
+        },
+        {
+          "slug": "tipos",
+          "titulo": "Tipos de chamados",
+          "label": "Tipos",
+          "descricao": "Configure os tipos usados na abertura e classificação dos chamados.",
+          "ordem": 70,
+          "ativo": true,
+          "registryKey": "controle-de-chamados.tipos",
+          "somenteAdminSistema": false,
+          "providerKey": "controle-de-chamados.tipos",
+          "providerVersion": 1,
+          "acoes": [
+            {
+              "chave": "visualizar",
+              "nome": "Visualizar",
+              "ordem": 10,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "incluir",
+              "nome": "Incluir",
+              "ordem": 20,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "alterar",
+              "nome": "Alterar",
+              "ordem": 30,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "excluir",
+              "nome": "Excluir",
+              "ordem": 40,
+              "ativo": true,
+              "acaoPadrao": true
+            }
+          ]
+        },
+        {
+          "slug": "prioridades",
+          "titulo": "Prioridades de chamados",
+          "label": "Prioridades",
+          "descricao": "Configure as prioridades usadas na triagem e atendimento dos chamados.",
+          "ordem": 80,
+          "ativo": true,
+          "registryKey": "controle-de-chamados.prioridades",
+          "somenteAdminSistema": false,
+          "providerKey": "controle-de-chamados.prioridades",
+          "providerVersion": 1,
+          "acoes": [
+            {
+              "chave": "visualizar",
+              "nome": "Visualizar",
+              "ordem": 10,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "incluir",
+              "nome": "Incluir",
+              "ordem": 20,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "alterar",
+              "nome": "Alterar",
+              "ordem": 30,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "excluir",
+              "nome": "Excluir",
+              "ordem": 40,
+              "ativo": true,
+              "acaoPadrao": true
+            }
+          ]
+        },
+        {
+          "slug": "sla",
+          "titulo": "Regras de SLA",
+          "label": "SLA",
+          "descricao": "Configure prazos de primeira resposta e resolução por prioridade.",
+          "ordem": 90,
+          "ativo": true,
+          "registryKey": "controle-de-chamados.sla",
+          "somenteAdminSistema": false,
+          "providerKey": "controle-de-chamados.sla",
+          "providerVersion": 1,
+          "acoes": [
+            {
+              "chave": "visualizar",
+              "nome": "Visualizar",
+              "ordem": 10,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "incluir",
+              "nome": "Incluir",
+              "ordem": 20,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "alterar",
+              "nome": "Alterar",
+              "ordem": 30,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "excluir",
+              "nome": "Excluir",
+              "ordem": 40,
+              "ativo": true,
+              "acaoPadrao": true
+            }
+          ]
+        },
+        {
+          "slug": "dashboard",
+          "titulo": "Dashboard de chamados",
+          "label": "Dashboard",
+          "descricao": "Acompanhe volume, SLA e tempos médios da operação de atendimento.",
+          "ordem": 45,
+          "ativo": true,
+          "registryKey": "controle-de-chamados.dashboard",
+          "somenteAdminSistema": false,
+          "providerKey": "controle-de-chamados.dashboard",
+          "providerVersion": 1,
+          "acoes": [
+            {
+              "chave": "visualizar",
+              "nome": "Visualizar",
+              "ordem": 10,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "incluir",
+              "nome": "Incluir",
+              "ordem": 20,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "alterar",
+              "nome": "Alterar",
+              "ordem": 30,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "excluir",
+              "nome": "Excluir",
+              "ordem": 40,
+              "ativo": true,
+              "acaoPadrao": true
+            }
+          ]
+        },
+        {
+          "slug": "relatorios",
+          "titulo": "Relatórios de chamados",
+          "label": "Relatórios",
+          "descricao": "Consulte chamados por período e filtros operacionais, com exportação CSV ou Excel.",
+          "ordem": 110,
+          "ativo": true,
+          "registryKey": "controle-de-chamados.relatorios",
+          "somenteAdminSistema": false,
+          "providerKey": "controle-de-chamados.relatorios",
+          "providerVersion": 1,
+          "acoes": [
+            {
+              "chave": "visualizar",
+              "nome": "Visualizar",
+              "ordem": 10,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "incluir",
+              "nome": "Incluir",
+              "ordem": 20,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "alterar",
+              "nome": "Alterar",
+              "ordem": 30,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "excluir",
+              "nome": "Excluir",
+              "ordem": 40,
+              "ativo": true,
+              "acaoPadrao": true
+            }
+          ]
+        },
+        {
+          "slug": "emails-solucoes",
+          "titulo": "Configuração de e-mail",
+          "label": "E-mail",
+          "descricao": "Conecte a conta Google principal usada nas notificações automáticas dos chamados.",
+          "ordem": 100,
+          "ativo": true,
+          "registryKey": "controle-de-chamados.emails-solucoes",
+          "somenteAdminSistema": false,
+          "providerKey": "controle-de-chamados.emails-solucoes",
+          "providerVersion": 1,
+          "acoes": [
+            {
+              "chave": "visualizar",
+              "nome": "Visualizar",
+              "ordem": 10,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "incluir",
+              "nome": "Incluir",
+              "ordem": 20,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "alterar",
+              "nome": "Alterar",
+              "ordem": 30,
+              "ativo": true,
+              "acaoPadrao": true
+            },
+            {
+              "chave": "excluir",
+              "nome": "Excluir",
+              "ordem": 40,
+              "ativo": true,
+              "acaoPadrao": true
+            }
+          ]
+        }
+      ],
+      "agrupamentos": [
+        {
+          "slug": "indicadores",
+          "titulo": "Indicadores do atendimento",
+          "label": "Indicadores",
+          "descricao": "Acompanhe o dashboard da operação e consulte os relatórios dos chamados.",
+          "ordem": 45,
+          "funcionalidades": [
+            "dashboard",
+            "relatorios"
+          ]
+        },
+        {
+          "slug": "configuracoes-do-atendimento",
+          "titulo": "Configurações do atendimento",
+          "label": "Configurações",
+          "descricao": "Configure categorias, tipos, prioridades, SLA, responsáveis e o e-mail usados no atendimento.",
+          "ordem": 50,
+          "funcionalidades": [
+            "categorias",
+            "tipos",
+            "prioridades",
+            "sla",
+            "responsaveis",
+            "emails-solucoes"
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "documentacao",
+      "nome": "Documentação",
+      "descricao": "Manuais de uso e referências do sistema conforme seu nível de acesso.",
+      "eyebrow": "Central de conhecimento",
+      "ordem": 900,
+      "ativo": true,
+      "exibirNoHub": true,
+      "somenteAdminSistema": false,
+      "funcionalidades": [],
+      "agrupamentos": []
+    }
+  ]
+}

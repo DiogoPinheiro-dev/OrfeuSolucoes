@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { FormFieldBadRequestException, FormFieldConflictException } from '../../common/exceptions/form-field.exception';
+import { ACOES_CRUD_PADRAO } from '../instalacao/manifesto/catalogo-produto';
 import { PrismaService } from '../../prisma/prisma.service';
-import { DEFAULT_ACTIONS } from './constants/solucao.constants';
 import { FuncionalidadeAcaoInput } from './dto/funcionalidade-acao.input';
 import { FuncionalidadePermissao, GrupoAccessDefaults } from './types/permissao.types';
 import { FuncionalidadeAcaoRecord } from './types/solucao-record.types';
@@ -15,7 +15,7 @@ export class FuncionalidadeAcaoService {
   normalizeActionInputs(acoes?: FuncionalidadeAcaoInput[], includeDefaultActions = true): FuncionalidadeAcaoInput[] {
     const byKey = new Map<string, FuncionalidadeAcaoInput>();
 
-    for (const acao of [...(includeDefaultActions ? DEFAULT_ACTIONS : []), ...(acoes ?? [])]) {
+    for (const acao of [...(includeDefaultActions ? ACOES_CRUD_PADRAO : []), ...(acoes ?? [])]) {
       const chave = normalizeActionKey(acao.chave);
 
       if (!chave) {
@@ -30,7 +30,7 @@ export class FuncionalidadeAcaoService {
         configuracao: acao.configuracao?.trim() || null,
         ordem: acao.ordem ?? 0,
         ativo: acao.ativo ?? true,
-        acaoPadrao: acao.acaoPadrao ?? (includeDefaultActions && DEFAULT_ACTIONS.some((item) => item.chave === chave))
+        acaoPadrao: acao.acaoPadrao ?? (includeDefaultActions && ACOES_CRUD_PADRAO.some((item) => item.chave === chave))
       });
     }
 

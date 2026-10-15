@@ -11,13 +11,22 @@ describe('PROJETO_FEATURE_DEFINITIONS', () => {
       ativo: true,
       acessoInicial: 'SOMENTE_ADMINISTRADORES'
     });
-    expect(meusApontamentos?.acoes).toBeUndefined();
+    expect(meusApontamentos?.acoes.map((acao) => acao.chave)).toEqual([
+      'visualizar',
+      'incluir',
+      'alterar',
+      'excluir'
+    ]);
     expect(horasDoProjeto).toMatchObject({
       registryKey: 'projetos.horas-do-projeto',
       ativo: true,
       acessoInicial: 'SOMENTE_ADMINISTRADORES'
     });
-    expect(horasDoProjeto?.acoes?.map((acao) => acao.chave)).toEqual([
+    expect(horasDoProjeto?.acoes.map((acao) => acao.chave)).toEqual([
+      'visualizar',
+      'incluir',
+      'alterar',
+      'excluir',
       'aprovar_horas',
       'reabrir_horas',
       'fechar_periodo'

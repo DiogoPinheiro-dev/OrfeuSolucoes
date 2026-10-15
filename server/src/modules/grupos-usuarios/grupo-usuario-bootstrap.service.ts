@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { compare, hash } from 'bcrypt';
 import { isPrismaUniqueConstraintViolation, retryBootstrapAfterUniqueConflict } from '../../common/persistence/bootstrap-concurrency.util';
 import { normalizeAndValidatePassword } from '../../common/security/password.policy';
+import { DADOS_INICIAIS_PRODUTO } from '../instalacao/manifesto/dados-iniciais';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SolucoesService } from '../solucoes/solucoes.service';
 import { GrupoUsuarioRecord } from './types/grupo-usuario-record.types';
@@ -32,13 +33,7 @@ export class GrupoUsuarioBootstrapService {
 
       if (empresasCount === 0) {
         const empresa = await tx.empresa.create({
-          data: {
-            nome: 'Empresa Teste',
-            acessoEcommerce: false,
-            acessoProjetos: false,
-            acessoHoras: false,
-            padraoSistema: true
-          }
+          data: { ...DADOS_INICIAIS_PRODUTO.empresa }
         });
 
         empresaId = empresa.id;
@@ -47,29 +42,15 @@ export class GrupoUsuarioBootstrapService {
       if (shouldCreateInitialAdmin) {
         const grupo = (await (tx as never as { grupoUsuario: { create: Function } }).grupoUsuario.create({
           data: {
-            nome: 'Administradores',
-            descricao: 'Grupo inicial com acesso a todas as soluções.',
-            acessoEcommerce: true,
-            acessoProjetos: true,
-            acessoHoras: true,
-            acessoConfigurador: true,
-            podeVisualizar: true,
-            podeIncluir: true,
-            podeAlterar: true,
-            podeExcluir: true,
-            padraoSistema: true
+            ...DADOS_INICIAIS_PRODUTO.grupoAdministradores
           }
         })) as GrupoUsuarioRecord;
         const senhaHash = await hash(initialAdminPassword as string, 10);
         const usuario = await tx.usuario.create({
           data: {
-            nome: 'Administrador',
-            login: 'admin',
-            email: 'admin@admin.com',
+            ...DADOS_INICIAIS_PRODUTO.usuarioAdministrador,
             senhaHash,
-            grupoId: grupo.id,
-            deveAlterarSenha: true,
-            padraoSistema: true
+            grupoId: grupo.id
           } as never
         });
 
