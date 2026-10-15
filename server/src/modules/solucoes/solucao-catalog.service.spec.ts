@@ -2,6 +2,27 @@ import { BadRequestException } from '@nestjs/common';
 import { SolucaoCatalogService } from './solucao-catalog.service';
 
 describe('SolucaoCatalogService', () => {
+  it('reserva o identificador da solução de horas aposentada', async () => {
+    const prisma = { solucao: { findUnique: jest.fn() } };
+    const service = new SolucaoCatalogService(prisma as never, {} as never, {} as never, {} as never);
+
+    await expect(service.create({ slug: 'Horas', nome: 'Nova solução' })).rejects.toThrow('aposentada');
+    expect(prisma.solucao.findUnique).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['templates-de-projeto', 'projetos.relatorio-livre'],
+    ['relatorio-livre', 'projetos.portfolio-de-projetos']
+  ])('reserva slug e chave técnica das funcionalidades retiradas', async (slug, registryKey) => {
+    const prisma = { solucao: { findUnique: jest.fn().mockResolvedValue({ id: 1, slug: 'projetos' }) } };
+    const agrupamentos = { assertSlugDisponivel: jest.fn(), assertAssociacaoValida: jest.fn() };
+    const service = new SolucaoCatalogService(prisma as never, {} as never, {} as never, agrupamentos as never);
+
+    await expect(service.createFuncionalidade({ solucaoId: 1, slug, titulo: 'Retirada', registryKey }))
+      .rejects.toThrow('aposentada');
+    expect(agrupamentos.assertSlugDisponivel).not.toHaveBeenCalled();
+  });
+
   it('nega alteracao direta de solucao publicada e orienta o ciclo versionado', async () => {
     const prisma = { solucao: { findUnique: jest.fn().mockResolvedValue({ id: 1, padraoSistema: true, statusPublicacao: 'PUBLICADA' }) } };
     const service = new SolucaoCatalogService(prisma as never, {} as never, {} as never, {} as never);

@@ -270,6 +270,24 @@ export class SolucaoAcessoService {
   }
 
   /**
+   * Contrata uma funcionalidade nova para as empresas que já possuem a solução, sem conceder permissão
+   * a grupos comuns. Administradores do sistema e grupos de acesso total continuam sujeitos ao contrato
+   * da empresa, mas dispensam o vínculo explícito em GrupoFuncionalidade.
+   */
+  async syncNewFuncionalidadeCompanyAccess(funcionalidade: FuncionalidadeRecord): Promise<void> {
+    const empresas = (await (this.prisma as never as { empresaSolucao: { findMany: Function } }).empresaSolucao.findMany({
+      where: { solucaoId: funcionalidade.solucaoId },
+      select: { empresaId: true }
+    })) as { empresaId: number }[];
+
+    if (empresas.length) {
+      await (this.prisma as never as { empresaFuncionalidade: { createMany: Function } }).empresaFuncionalidade.createMany({
+        data: empresas.map((empresa) => ({ empresaId: empresa.empresaId, funcionalidadeId: funcionalidade.id }))
+      });
+    }
+  }
+
+  /**
    * Copia para uma funcionalidade recém-criada o acesso exato de outra: permissões dos grupos (inclusive das ações
    * de mesma chave), contratos das empresas e responsáveis de atendimento. Nenhum grupo ou empresa recebe acesso
    * que não possuía na origem.

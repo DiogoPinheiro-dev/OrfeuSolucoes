@@ -22,6 +22,12 @@ vi.mock("../../components/ChamadoCreate", () => ({
 vi.mock("../../components/ProjectResourcePlanningManagement", () => ({
     default: () => <div>Planejamento de recursos</div>
 }));
+vi.mock("../../components/ProjectTimeEntryManagement", () => ({
+    default: () => <div>Tela dos meus apontamentos</div>
+}));
+vi.mock("../../components/ProjectHoursManagement", () => ({
+    default: () => <div>Tela das horas do projeto</div>
+}));
 vi.mock("../../components/CategoriaChamadoManagement", () => ({ default: ({ permissions }) => <div>Categorias:{permissions.title}</div> }));
 vi.mock("../../components/ChamadoConfiguracaoManagement", () => ({ default: ({ kind }) => <div>Configuração:{kind}</div> }));
 vi.mock("../../components/ChamadoDashboard", () => ({ default: () => <div>Dashboard</div> }));
@@ -71,6 +77,40 @@ const chamados = {
         chamadosArea(31, "tipos", "Tipos", "Tipos de chamados", 7, 2, 70),
         chamadosArea(32, "prioridades", "Prioridades", "Prioridades de chamados", 7, 3, 80),
         chamadosArea(33, "categorias", "Categorias", "Categorias de chamados", 7, 1, 50)
+    ]
+};
+
+const projetoHoursArea = (id, slug, label, title, groupOrder) => ({
+    id,
+    slug,
+    label,
+    title,
+    groupId: 12,
+    groupOrder,
+    order: 100 + groupOrder,
+    registryKey: `projetos.${slug}`,
+    providerKey: `projetos.${slug}`,
+    providerVersion: 1,
+    podeVisualizar: true
+});
+
+const projetosComHoras = {
+    id: 2,
+    slug: "projetos",
+    title: "Gerenciador de Projetos",
+    description: "Gestão de projetos",
+    eyebrow: "Operação",
+    groups: [{
+        id: 12,
+        slug: "controle-de-horas",
+        title: "Controle de horas",
+        label: "Horas",
+        description: "Registre e gerencie as horas dos projetos.",
+        order: 110
+    }],
+    areas: [
+        projetoHoursArea(41, "meus-apontamentos", "Meus apontamentos", "Meus apontamentos", 1),
+        projetoHoursArea(42, "horas-do-projeto", "Horas do projeto", "Horas do projeto", 2)
     ]
 };
 
@@ -257,5 +297,65 @@ describe("funcionalidades agrupadas por abas", () => {
         expect(await screen.findByText("Configuração:tipos")).toBeInTheDocument();
         expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
         expect(screen.queryByRole("heading", { name: "Configurações do atendimento" })).not.toBeInTheDocument();
+    });
+});
+
+describe("controle de horas no Hub de Projetos", () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        useAuth.mockReturnValue({ user: { nome: "Administrador", empresa: { nome: "Empresa A" } } });
+        useHubNavigation.mockReturnValue({ loading: false, error: "", solutions: [projetosComHoras] });
+    });
+    afterEach(cleanup);
+
+    it("apresenta as duas telas como abas e mantém a rota da aba ativa", async () => {
+        const user = userEvent.setup();
+        renderAt("/hub/projetos/meus-apontamentos");
+
+        const tablist = screen.getByRole("tablist", { name: "Seções de Controle de horas" });
+        expect(within(tablist).getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
+            "Meus apontamentos",
+            "Horas do projeto"
+        ]);
+        expect(within(tablist).getByRole("tab", { name: "Meus apontamentos" })).toHaveAttribute("aria-selected", "true");
+        expect(await screen.findByText("Tela dos meus apontamentos")).toBeInTheDocument();
+
+        await user.click(within(tablist).getByRole("tab", { name: "Horas do projeto" }));
+
+        expect(await screen.findByText("/hub/projetos/horas-do-projeto")).toBeInTheDocument();
+        expect(await screen.findByText("Tela das horas do projeto")).toBeInTheDocument();
+    });
+
+    it("redireciona o endereço do agrupamento para Meus apontamentos", async () => {
+        renderAt("/hub/projetos/controle-de-horas");
+
+        expect(await screen.findByText("/hub/projetos/meus-apontamentos")).toBeInTheDocument();
+        expect(await screen.findByText("Tela dos meus apontamentos")).toBeInTheDocument();
+    });
+
+    it("dispensa a barra quando o usuário possui somente uma das telas", async () => {
+        useHubNavigation.mockReturnValue({
+            loading: false,
+            error: "",
+            solutions: [{ ...projetosComHoras, areas: [projetosComHoras.areas[0]] }]
+        });
+
+        renderAt("/hub/projetos/meus-apontamentos");
+
+        expect(await screen.findByText("Tela dos meus apontamentos")).toBeInTheDocument();
+        expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
+    });
+
+    it("não abre por link direto uma tela que não veio na navegação autorizada", async () => {
+        useHubNavigation.mockReturnValue({
+            loading: false,
+            error: "",
+            solutions: [{ ...projetosComHoras, areas: [projetosComHoras.areas[1]] }]
+        });
+
+        renderAt("/hub/projetos/meus-apontamentos");
+
+        expect(await screen.findByText("/hub/projetos")).toBeInTheDocument();
+        expect(screen.queryByText("Tela dos meus apontamentos")).not.toBeInTheDocument();
     });
 });

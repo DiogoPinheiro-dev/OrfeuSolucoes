@@ -24,6 +24,8 @@ O frontend usa essas permissões para ocultar ou desabilitar comandos. Essa veri
 
 O acesso efetivo é cumulativamente restritivo: a solução precisa estar publicada, ativa, disponível para a empresa e liberada ao grupo; depois, a funcionalidade também precisa estar publicada, ativa, contratada e visível ao grupo. A liberação da solução não concede automaticamente acesso às funcionalidades nem às ações. Administradores previstos pelas políticas do backend podem receber acesso integral, mas continuam sujeitos ao escopo e às restrições sistêmicas aplicáveis.
 
+Mutações bem-sucedidas de grupos e empresas notificam o contexto de autenticação para recarregar a navegação. Assim, a inclusão ou remoção de permissões e contratos passa a ser refletida no cabeçalho e nas rotas do Hub sem encerrar a sessão.
+
 ## Cadastros convencionais
 
 Cadastros convencionais reutilizam os seguintes contratos:
@@ -63,6 +65,8 @@ Exceções vigentes:
 - Relatórios de chamados: filtros analíticos, paginação e exportação;
 - Funcionalidades agrupadas: agrupamentos do catálogo apresentam funcionalidades complementares como abas principais de uma única tela, com `FeatureTabs`; cada aba mantém a rota, o provider e as permissões da própria funcionalidade;
 - Orçamento: estrutura híbrida; categorias e custos usam `CrudGrid compact`, enquanto resumo, formulários e histórico de taxas permanecem especializados.
+
+O agrupamento **Controle de horas** reúne `Meus apontamentos` e `Horas do projeto`. A rota do agrupamento redireciona para a primeira aba autorizada, histórico e recarga preservam a rota da funcionalidade, e o componente de abas suporta setas, Home e End. Em `Meus apontamentos`, as marcações da grade podem representar exclusão ou envio, conforme o estado do lançamento. Em `Horas do projeto`, representam os apontamentos enviados escolhidos para aprovação ou rejeição em lote. Essa é uma exceção operacional explícita ao uso convencional dos checkboxes apenas para exclusão.
 
 Capacidade não faz parte do sistema e não deve ser apresentada como módulo, indicador ou contrato.
 

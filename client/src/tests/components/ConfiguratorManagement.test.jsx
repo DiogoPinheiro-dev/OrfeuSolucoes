@@ -714,6 +714,54 @@ describe("CRUDs do Configurador", () => {
         expect(publishActionDraft.mock.invocationCallOrder[0]).toBeLessThan(publishFeatureDraft.mock.invocationCallOrder[0]);
     });
 
+    it("permite revisar e publicar atualização de produto de funcionalidade padrão", async () => {
+        const user = userEvent.setup();
+        const hoursFeature = {
+            id: 922,
+            slug: "horas-do-projeto",
+            titulo: "Horas do projeto",
+            label: "Horas",
+            descricao: "Consulte apontamentos pertencentes ao Controle de Horas.",
+            registryKey: "projetos.horas-do-projeto",
+            providerKey: "projetos.horas-do-projeto",
+            providerVersion: 1,
+            statusPublicacao: "PUBLICADA",
+            ordem: 110,
+            ativo: false,
+            somenteAdminSistema: false,
+            padraoSistema: true,
+            acoes: []
+        };
+        getSolucoes.mockResolvedValue([{ ...projectSolution, funcionalidades: [hoursFeature] }]);
+        getFeatureDraft.mockImplementation((featureId) => Promise.resolve(featureId === 922 ? {
+            id: "product-feature-draft",
+            revisao: 2,
+            origem: "PRODUTO",
+            snapshot: JSON.stringify({ ...hoursFeature, ativo: true })
+        } : null));
+
+        render(<FeatureManagement permissions={permissions} />);
+        await user.click(await screen.findByRole("button", { name: "Mostrar funcionalidades padrão" }));
+        await user.type(screen.getByRole("searchbox", { name: "Pesquisar" }), "horas");
+        await user.click(await screen.findByRole("cell", { name: "Horas do projeto" }));
+
+        await waitFor(() => expect(getFeatureDraft).toHaveBeenCalledWith(922));
+        expect(await screen.findByRole("cell", { name: "Atualização pendente" })).toBeInTheDocument();
+        const publishButton = screen.getByRole("button", { name: "Publicar atualização" });
+        expect(publishButton).toBeEnabled();
+        await user.click(publishButton);
+
+        const confirmation = screen.getByRole("alertdialog", { name: "Publicar funcionalidade" });
+        expect(confirmation).toHaveAccessibleDescription(/estado mudará de Não para Sim/i);
+        await user.click(within(confirmation).getByRole("button", { name: "Publicar" }));
+
+        await waitFor(() => expect(publishFeatureDraft).toHaveBeenCalledWith(expect.objectContaining({
+            versionId: "product-feature-draft",
+            expectedRevision: 2
+        })));
+        expect(createFeatureDraft).not.toHaveBeenCalled();
+    });
+
     it("mantém erro de campo no modal e explica todas as proteções padrão", async () => {
         const user = userEvent.setup();
         createUser.mockRejectedValueOnce(Object.assign(new Error("Revise os campos."), { fieldErrors: { email: "E-mail já cadastrado." } }));

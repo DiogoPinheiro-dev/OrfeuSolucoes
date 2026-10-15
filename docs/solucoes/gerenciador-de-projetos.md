@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-O Gerenciador de Projetos organiza o ciclo de vida, a execução, os compromissos, os recursos, a comunicação e o orçamento dos projetos da empresa ativa. A solução possui nove funcionalidades ativas e vinculadas a telas no Hub:
+O Gerenciador de Projetos organiza o ciclo de vida, a execução, os compromissos, os recursos, a comunicação, o orçamento e as horas dos projetos da empresa ativa. A solução possui onze funcionalidades ativas e vinculadas a telas no Hub:
 
 | Registry key | Tela |
 |---|---|
@@ -15,10 +15,14 @@ O Gerenciador de Projetos organiza o ciclo de vida, a execução, os compromisso
 | `projetos.planejamento-de-recursos` | Cadastro de recursos |
 | `projetos.equipes` | Cadastro de equipes |
 | `projetos.orcamento-do-projeto` | Orçamento do projeto |
+| `projetos.meus-apontamentos` | Meus apontamentos |
+| `projetos.horas-do-projeto` | Horas do projeto |
 
 Cada tela é resolvida pelo `RegistryKey` recebido do backend. Empresa, funcionalidade e participação no projeto compõem o contexto de autorização das operações.
 
 No Hub, `Sprints`, `Marcos e entregas` e `Cronograma e Gantt` são apresentados como abas do agrupamento padrão **Execução do projeto**. Cada aba mantém a rota, as ações e as permissões da própria funcionalidade, e o usuário vê somente as abas autorizadas.
+
+Da mesma forma, `Meus apontamentos` e `Horas do projeto` formam o agrupamento padrão **Controle de horas**. O endereço do agrupamento abre a primeira aba autorizada; quando o usuário pode acessar somente uma delas, a tela é apresentada sem barra de abas.
 
 ## Cadastro e ciclo do projeto
 
@@ -105,6 +109,16 @@ A aprovação de um projeto em `EM_ORCAMENTO` registra o orçamento aprovado e a
 
 Reabrir o orçamento para alteração preserva o ciclo atual do projeto. Aprovar novamente um orçamento de projeto que já esteja fora de `EM_ORCAMENTO` também preserva seu ciclo. Quando um projeto retorna a `EM_ORCAMENTO` com orçamento já aprovado, é necessário reabrir o orçamento e aprová-lo novamente para sair desse ciclo.
 
+## Controle de horas
+
+Em **Meus apontamentos**, a pessoa consulta os próprios lançamentos por período, projeto e situação. Um novo apontamento registra projeto, item opcional do backlog, data, duração, descrição e indicação de faturamento. Rascunhos podem ser alterados, excluídos ou enviados para aprovação; um envio ainda não decidido pode ser recolhido, e um apontamento rejeitado pode ser corrigido, reenviado ou descartado.
+
+Em **Horas do projeto**, responsáveis autorizados consultam os lançamentos por projeto, período, pessoa, item e situação. A tela permite aprovar ou rejeitar apontamentos enviados em lote, reabrir um apontamento aprovado, fechar ou reabrir competências mensais e recalcular custos pendentes. Os totais por pessoa e item, as competências e o realizado financeiro consideram o mesmo filtro. Somente horas aprovadas e associadas a uma taxa válida compõem o custo realizado.
+
+As ações dinâmicas `aprovar_horas`, `reabrir_horas` e `fechar_periodo` separam a autorização de cada decisão. Projetos arquivados permanecem disponíveis apenas para consulta. Operações que alteram o fluxo exigem a versão atual do registro e gravam a decisão para auditoria.
+
+As duas funcionalidades são contratadas para a empresa junto com o Gerenciador de Projetos, mas não são liberadas automaticamente para grupos comuns. O administrador inicial pode acessá-las e deve conceder explicitamente as permissões aos demais grupos no Configurador. A antiga solução separada **Controle de Horas** foi aposentada; seus registros históricos permanecem preservados e seus identificadores não podem ser reutilizados.
+
 ## Autorização, concorrência e auditoria
 
 O acesso considera a empresa ativa, a funcionalidade solicitada, as ações dinâmicas, o projeto, o papel do usuário, as equipes ativas e o nível hierárquico da capacitação. O backend calcula permissões efetivas por tela e por registro e volta a validá-las em todas as mutações. Ocultar ou desabilitar um botão no frontend não substitui essa validação.
@@ -143,6 +157,9 @@ A cobertura automatizada do frontend inclui:
 - dependências, inconsistências, navegação e datas versionadas do cronograma;
 - atualizações, comentários, feed, detalhes de eventos e permissões da comunicação;
 - as funcionalidades de recursos e de equipes, suas permissões próprias e o redirecionamento dos links antigos com o parâmetro `tab`;
-- orçamento-base, categorias, custos, aprovação, seleção compartilhada e ocultação financeira.
+- orçamento-base, categorias, custos, aprovação, seleção compartilhada e ocultação financeira;
+- criação, edição, envio, recolhimento, rejeição e descarte dos próprios apontamentos;
+- aprovação e rejeição em lote, reabertura, competências, fechamento de período e custos das horas do projeto;
+- navegação do agrupamento **Controle de horas**, inclusive histórico, recarga, teclado, responsividade e acesso a apenas uma aba.
 
 O backend possui cobertura de integração dos fluxos de projeto e uma suite E2E da borda GraphQL, incluindo jornada principal, paginação do feed, autenticação, contexto do usuário, filtros e negações de autorização. Os fluxos gerais de autenticação, rota protegida, empresa ativa e Hub também permanecem nas suites de regressão e E2E do frontend.

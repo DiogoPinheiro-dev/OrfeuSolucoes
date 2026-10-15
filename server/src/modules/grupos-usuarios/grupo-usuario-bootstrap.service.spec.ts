@@ -8,7 +8,6 @@ describe('GrupoUsuarioBootstrapService security', () => {
     ensureDefaultConfiguradorFeatures: jest.fn().mockResolvedValue(undefined),
     ensureControleChamadosSolution: jest.fn().mockResolvedValue(undefined),
     ensureProjetosSolution: jest.fn().mockResolvedValue(undefined),
-    ensureHorasSolutionUnavailable: jest.fn().mockResolvedValue(undefined),
     findAll: jest.fn().mockResolvedValue([]),
     syncGroupAccess: jest.fn().mockResolvedValue(undefined)
   };
@@ -140,7 +139,6 @@ describe('GrupoUsuarioBootstrapService security', () => {
     await expect(service.ensureInitialSetup()).resolves.toBeUndefined();
     expect(solutionService.ensureControleChamadosSolution).toHaveBeenCalled();
     expect(solutionService.ensureProjetosSolution).toHaveBeenCalled();
-    expect(solutionService.ensureHorasSolutionUnavailable).toHaveBeenCalled();
   });
 
   it('preserva metadados e acessos personalizados em uma instalacao existente', async () => {

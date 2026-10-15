@@ -128,4 +128,19 @@ describe("serviços Apollo", () => {
         expect(listener).toHaveBeenCalledTimes(3);
         window.removeEventListener(HUB_NAVIGATION_CHANGED_EVENT, listener);
     });
+
+    it("recarrega a navegação após alterações de grupos e empresas", async () => {
+        const listener = vi.fn();
+        window.addEventListener(HUB_NAVIGATION_CHANGED_EVENT, listener);
+
+        await GrupoUsuarioService.createGrupoUsuario(input);
+        await GrupoUsuarioService.updateGrupoUsuario(input);
+        await GrupoUsuarioService.deleteGrupoUsuario(input.id);
+        await EmpresaService.createEmpresa(input);
+        await EmpresaService.updateEmpresa(input);
+        await EmpresaService.deleteEmpresa(input.id);
+
+        expect(listener).toHaveBeenCalledTimes(6);
+        window.removeEventListener(HUB_NAVIGATION_CHANGED_EVENT, listener);
+    });
 });

@@ -7,6 +7,11 @@ import { FuncionalidadeType } from './dto/funcionalidade.type';
 import { SolucaoType } from './dto/solucao.type';
 import { UpdateFuncionalidadeInput } from './dto/update-funcionalidade.input';
 import { UpdateSolucaoInput } from './dto/update-solucao.input';
+import {
+  RETIRED_FEATURE_KEYS,
+  RETIRED_FEATURE_SLUGS,
+  RETIRED_SOLUTION_SLUGS
+} from './constants/catalogo-retired-keys.constants';
 import { FuncionalidadeAcaoService } from './funcionalidade-acao.service';
 import { FuncionalidadeAgrupamentoService } from './funcionalidade-agrupamento.service';
 import { toFuncionalidadeType } from './mappers/funcionalidade.mapper';
@@ -42,6 +47,7 @@ export class SolucaoCatalogService {
 
   async create(input: CreateSolucaoInput): Promise<SolucaoType> {
     const slug = normalizeSlug(input.slug);
+    this.assertSolucaoKeyAvailable(slug);
     const existing = (await (this.prisma as never as { solucao: { findUnique: Function } }).solucao.findUnique({
       where: { slug }
     })) as SolucaoRecord | null;
@@ -78,6 +84,7 @@ export class SolucaoCatalogService {
 
     if (input.slug !== undefined) {
       const slug = normalizeSlug(input.slug);
+      this.assertSolucaoKeyAvailable(slug);
       const existing = (await (this.prisma as never as { solucao: { findUnique: Function } }).solucao.findUnique({
         where: { slug }
       })) as SolucaoRecord | null;
@@ -117,8 +124,14 @@ export class SolucaoCatalogService {
   }
 
   async createFuncionalidade(input: CreateFuncionalidadeInput): Promise<FuncionalidadeType> {
-    await this.ensureSolucao(input.solucaoId);
+    const solucao = await this.ensureSolucao(input.solucaoId);
     const slug = normalizeSlug(input.slug);
+    this.assertFuncionalidadeKeyAvailable(
+      solucao.slug,
+      slug,
+      input.registryKey,
+      input.providerKey ?? input.registryKey
+    );
     const associacao = resolverAssociacaoAgrupamento({ agrupamentoId: null, ordemNoAgrupamento: null }, input);
     await this.agrupamentos.assertSlugDisponivel(input.solucaoId, slug);
     await this.agrupamentos.assertAssociacaoValida(input.solucaoId, associacao.agrupamentoId);
@@ -163,8 +176,17 @@ export class SolucaoCatalogService {
     }
 
     const solucaoId = input.solucaoId ?? existing.solucaoId;
-    if (input.solucaoId !== undefined) {
-      await this.ensureSolucao(input.solucaoId);
+    const solucao = await this.ensureSolucao(solucaoId);
+    if (
+      input.solucaoId !== undefined || input.slug !== undefined ||
+      input.registryKey !== undefined || input.providerKey !== undefined
+    ) {
+      this.assertFuncionalidadeKeyAvailable(
+        solucao.slug,
+        input.slug !== undefined ? normalizeSlug(input.slug) : existing.slug,
+        input.registryKey !== undefined ? input.registryKey : existing.registryKey,
+        input.providerKey !== undefined ? input.providerKey : existing.providerKey
+      );
     }
     if (input.slug !== undefined || input.solucaoId !== undefined) {
       const slug = input.slug !== undefined ? normalizeSlug(input.slug) : existing.slug;
@@ -266,5 +288,32 @@ export class SolucaoCatalogService {
       where: { id },
       include: { acoes: { orderBy: [{ ordem: 'asc' }, { nome: 'asc' }] } }
     })) as FuncionalidadeRecord;
+  }
+
+  private assertSolucaoKeyAvailable(slug: string): void {
+    if (RETIRED_SOLUTION_SLUGS.has(slug)) {
+      throw new FormFieldConflictException('slug', 'Este identificador pertence a uma solucao aposentada e nao pode ser reutilizado.');
+    }
+  }
+
+  private assertFuncionalidadeKeyAvailable(
+    solucaoSlug: string,
+    slug: string,
+    registryKey?: string | null,
+    providerKey?: string | null
+  ): void {
+    if (RETIRED_FEATURE_SLUGS.has(`${solucaoSlug}:${slug}`)) {
+      throw new FormFieldConflictException('slug', 'Este identificador pertence a uma funcionalidade aposentada e nao pode ser reutilizado.');
+    }
+
+    const registry = registryKey?.trim().toLowerCase();
+    if (registry && RETIRED_FEATURE_KEYS.has(registry)) {
+      throw new FormFieldConflictException('registryKey', 'Esta chave tecnica pertence a uma funcionalidade aposentada e nao pode ser reutilizada.');
+    }
+
+    const provider = providerKey?.trim().toLowerCase();
+    if (provider && RETIRED_FEATURE_KEYS.has(provider)) {
+      throw new FormFieldConflictException('providerKey', 'Esta chave de provider pertence a uma funcionalidade aposentada e nao pode ser reutilizada.');
+    }
   }
 }

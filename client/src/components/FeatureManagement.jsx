@@ -62,6 +62,30 @@ const initialForm = {
 
 const booleanLabel = (value) => (value ? "Sim" : "Não");
 
+const parseFeatureDraftSnapshot = (draft) => {
+    if (!draft?.snapshot) return null;
+
+    try {
+        return JSON.parse(draft.snapshot);
+    } catch {
+        return null;
+    }
+};
+
+const buildPublishMessage = (feature, draft) => {
+    const featureName = feature?.titulo || feature?.slug || "esta funcionalidade";
+    const snapshot = parseFeatureDraftSnapshot(draft);
+    const statusChange = snapshot && Boolean(snapshot.ativo) !== Boolean(feature?.ativo)
+        ? ` O estado mudará de ${booleanLabel(feature?.ativo)} para ${booleanLabel(snapshot.ativo)}.`
+        : "";
+
+    if (draft?.origem === "PRODUTO") {
+        return `A atualização do produto para ${featureName} será validada antes da publicação.${statusChange} Deseja continuar?`;
+    }
+
+    return `A implementação e as ações ativas de ${featureName} serão validadas antes da publicação.${statusChange} Deseja continuar?`;
+};
+
 const createLocalKey = () => {
     if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
         return crypto.randomUUID();
@@ -157,7 +181,10 @@ export default function FeatureManagement({ permissions }) {
     const [activeTab, setActiveTab] = useState("main");
     const [pendingDelete, setPendingDelete] = useState(null);
     const [pendingPublish, setPendingPublish] = useState(null);
+    const [selectedFeatureDraft, setSelectedFeatureDraft] = useState(null);
+    const [draftLoading, setDraftLoading] = useState(false);
     const solutionsRequest = useLatestRequest();
+    const featureDraftRequest = useLatestRequest();
     const {
         applyError: applyFormError,
         clearErrors: clearFormErrors,
@@ -175,7 +202,22 @@ export default function FeatureManagement({ permissions }) {
     });
     const features = useMemo(() => flattenFeatures(solucoes), [solucoes]);
     const selectedFeature = useMemo(() => features.find((feature) => feature.id === selectedId) || null, [features, selectedId]);
+    const selectedFeatureId = selectedFeature?.id ?? null;
+    const currentFeatureDraft = selectedFeatureDraft?.featureId === selectedFeatureId
+        ? selectedFeatureDraft.draft
+        : null;
     const canPublish = canUseFeatureAction(currentUser, permissions, "alterar");
+    const hasPublishableDraft = Boolean(currentFeatureDraft)
+        || Boolean(selectedFeature && !selectedFeature.padraoSistema && selectedFeature.statusPublicacao === "RASCUNHO");
+    const publishDisabledReason = !canPublish
+        ? "Você não possui permissão para publicar funcionalidades."
+        : !selectedFeature
+            ? "Selecione uma funcionalidade com rascunho pendente."
+            : draftLoading
+                ? "Verificando rascunho pendente."
+                : !hasPublishableDraft
+                    ? "A funcionalidade selecionada não possui rascunho pendente."
+                    : undefined;
 
     const filteredFeatures = useMemo(() => {
         const term = search.toLowerCase().trim();
@@ -212,6 +254,24 @@ export default function FeatureManagement({ permissions }) {
         void loadSolucoes();
         return solutionsRequest.invalidate;
     }, [loadSolucoes, solutionsRequest]);
+
+    useEffect(() => {
+        setSelectedFeatureDraft(null);
+
+        if (!selectedFeatureId || !canPublish) {
+            setDraftLoading(false);
+            return featureDraftRequest.invalidate;
+        }
+
+        setDraftLoading(true);
+        void featureDraftRequest.run(() => getFeatureDraft(selectedFeatureId), {
+            onSuccess: (draft) => setSelectedFeatureDraft({ featureId: selectedFeatureId, draft }),
+            onError: (draftError) => setError(draftError.message || "Não foi possível verificar o rascunho da funcionalidade."),
+            onSettled: () => setDraftLoading(false)
+        });
+
+        return featureDraftRequest.invalidate;
+    }, [canPublish, featureDraftRequest, selectedFeatureId]);
 
     const openModal = (mode, feature = null) => {
         setError("");
@@ -400,8 +460,12 @@ export default function FeatureManagement({ permissions }) {
         setError("");
 
         try {
-            const featureDraft = await getFeatureDraft(pendingPublish.id)
-                || await createFeatureDraft(pendingPublish.id, reason);
+            const featureDraft = pendingPublish.catalogDraft
+                || await getFeatureDraft(pendingPublish.id)
+                || (!pendingPublish.padraoSistema ? await createFeatureDraft(pendingPublish.id, reason) : null);
+            if (!featureDraft) {
+                throw new Error("Esta funcionalidade padrão não possui atualização pendente para publicação.");
+            }
             const featureIssues = await validateFeatureDraft(featureDraft.id);
             const featureErrors = featureIssues.filter((issue) => issue.severity === "ERROR");
             if (featureErrors.length) throw new Error(featureErrors.map((issue) => issue.message).join(" "));
@@ -443,7 +507,9 @@ export default function FeatureManagement({ permissions }) {
                         { key: "agrupamento", label: "Agrupamento", render: (feature) => feature.agrupamentoTitulo || "-" },
                         { key: "registryKey", label: "Rota", render: (feature) => feature.registryKey || "-" },
                         { key: "providerKey", label: "Implementação", render: (feature) => feature.providerKey || "-" },
-                        { key: "statusPublicacao", label: "Publicação", render: (feature) => ({ RASCUNHO: "Rascunho", PUBLICADA: "Publicada", DESPUBLICADA: "Despublicada" }[feature.statusPublicacao] || feature.statusPublicacao || "-") },
+                        { key: "statusPublicacao", label: "Publicação", render: (feature) => feature.id === selectedFeatureId && currentFeatureDraft
+                            ? "Atualização pendente"
+                            : ({ RASCUNHO: "Rascunho", PUBLICADA: "Publicada", DESPUBLICADA: "Despublicada" }[feature.statusPublicacao] || feature.statusPublicacao || "-") },
                         { key: "ordem", label: "Ordem" },
                         { key: "ativo", label: "Ativo", render: (feature) => booleanLabel(feature.ativo) },
                         { key: "somenteAdminSistema", label: "Admin", render: (feature) => booleanLabel(feature.somenteAdminSistema) },
@@ -466,11 +532,11 @@ export default function FeatureManagement({ permissions }) {
                         <button
                             type="button"
                             className="crud-inline-action"
-                            disabled={!canPublish || !selectedFeature || selectedFeature.padraoSistema || selectedFeature.statusPublicacao !== "RASCUNHO" || gridBusy}
-                            title={!selectedFeature ? "Selecione uma funcionalidade customizada em rascunho." : undefined}
-                            onClick={() => setPendingPublish(selectedFeature)}
+                            disabled={!!publishDisabledReason || gridBusy}
+                            title={publishDisabledReason}
+                            onClick={() => setPendingPublish({ ...selectedFeature, catalogDraft: currentFeatureDraft })}
                         >
-                            Publicar
+                            {currentFeatureDraft?.origem === "PRODUTO" ? "Publicar atualização" : "Publicar"}
                         </button>
                     )}
                     search={search}
@@ -777,7 +843,7 @@ export default function FeatureManagement({ permissions }) {
             <ConfirmDialog
                 open={!!pendingPublish}
                 title="Publicar funcionalidade"
-                message={`A implementação e as ações ativas de ${pendingPublish?.titulo || "esta funcionalidade"} serão validadas antes da publicação. Deseja continuar?`}
+                message={buildPublishMessage(pendingPublish, pendingPublish?.catalogDraft)}
                 confirmLabel="Publicar"
                 onCancel={() => setPendingPublish(null)}
                 onConfirm={confirmPublish}

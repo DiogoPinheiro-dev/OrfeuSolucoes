@@ -121,7 +121,6 @@ export class GrupoUsuarioBootstrapService {
     await this.solucoesService.ensureDefaultConfiguradorFeatures();
     await this.solucoesService.ensureControleChamadosSolution();
     await this.solucoesService.ensureProjetosSolution();
-    await this.solucoesService.ensureHorasSolutionUnavailable();
     if (shouldCreateInitialAdmin) {
       await retryBootstrapAfterUniqueConflict(() => this.ensureInitialAdminSolutionAccess());
     }

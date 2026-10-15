@@ -13,4 +13,10 @@ describe('CatalogoActionConsumerRegistry', () => {
     expect(registry.find('acao_sem_consumidor')).toBeNull();
     expect(registry.isCompatible('acao_sem_consumidor', 1)).toBe(false);
   });
+
+  it('não anuncia consumidores para ações aposentadas', () => {
+    expect(registry.find('apontar')).toBeNull();
+    expect(registry.find('publicar')).toBeNull();
+    expect(registry.find('instanciar')).toBeNull();
+  });
 });

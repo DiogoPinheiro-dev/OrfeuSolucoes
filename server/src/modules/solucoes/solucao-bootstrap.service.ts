@@ -7,7 +7,6 @@ import { FuncionalidadeAcaoService } from './funcionalidade-acao.service';
 import { FuncionalidadeAgrupamentoService } from './funcionalidade-agrupamento.service';
 import { SolucaoAcessoService } from './solucao-acesso.service';
 import { SolucaoChamadosBootstrapService } from './solucao-chamados-bootstrap.service';
-import { SolucaoHorasBootstrapService } from './solucao-horas-bootstrap.service';
 import { FuncionalidadeRecord } from './types/solucao-record.types';
 import { SolucaoProjetosBootstrapService } from './solucao-projetos-bootstrap.service';
 
@@ -19,7 +18,6 @@ export class SolucaoBootstrapService {
     private readonly solucaoAcessoService: SolucaoAcessoService,
     private readonly solucaoChamadosBootstrap: SolucaoChamadosBootstrapService,
     private readonly solucaoProjetosBootstrap: SolucaoProjetosBootstrapService,
-    private readonly solucaoHorasBootstrap: SolucaoHorasBootstrapService,
     private readonly agrupamentos: FuncionalidadeAgrupamentoService
   ) {}
 
@@ -156,10 +154,6 @@ export class SolucaoBootstrapService {
 
   async ensureProjetosSolution(): Promise<void> {
     return this.solucaoProjetosBootstrap.ensureProjetosSolution();
-  }
-
-  async ensureHorasSolutionUnavailable(): Promise<void> {
-    return this.solucaoHorasBootstrap.ensureHorasSolutionUnavailable();
   }
 
   async mergeDuplicateConfiguradorFeature(solucaoId: number, duplicateSlug: string, targetSlug: string): Promise<void> {

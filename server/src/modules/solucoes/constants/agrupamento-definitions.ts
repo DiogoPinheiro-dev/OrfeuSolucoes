@@ -62,5 +62,13 @@ export const PROJETOS_AGRUPAMENTOS_PADRAO: AgrupamentoPadraoDefinition[] = [
     descricao: 'Cadastre recursos e capacitações e organize as equipes que atendem os projetos.',
     ordem: 70,
     funcionalidades: ['planejamento-de-recursos', 'equipes']
+  },
+  {
+    slug: 'controle-de-horas',
+    titulo: 'Controle de horas',
+    label: 'Horas',
+    descricao: 'Registre apontamentos e gerencie a aprovação e o fechamento das horas dos projetos.',
+    ordem: 110,
+    funcionalidades: ['meus-apontamentos', 'horas-do-projeto']
   }
 ];

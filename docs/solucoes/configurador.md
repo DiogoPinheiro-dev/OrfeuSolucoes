@@ -37,13 +37,13 @@ O grupo reúne:
 - permissões de visualizar, incluir, alterar e excluir por funcionalidade;
 - permissões de ações dinâmicas vinculadas à funcionalidade.
 
-Soluções inativas, exclusivas do administrador do sistema ou sistêmicas de acesso universal não são oferecidas para vínculo com grupos. Por isso, Documentação não aparece como checkbox: qualquer usuário autenticado recebe acesso à Central sem depender do grupo. Cada checkbox de ação possui um nome acessível contextual, composto pela ação e pela funcionalidade, mesmo quando o texto visual da opção permanece curto. Em cada rotina, a ação **Marcar todas** seleciona a funcionalidade, as permissões básicas e todas as ações dinâmicas exibidas; depois de concluir a seleção, o botão permanece desabilitado até que alguma permissão seja desmarcada. Um grupo marcado como padrão do sistema não pode ser excluído. Vínculos e permissões são sincronizados pelo backend quando o grupo é salvo.
+Soluções inativas, exclusivas do administrador do sistema ou sistêmicas de acesso universal não são oferecidas para vínculo com grupos. Por isso, Documentação não aparece como checkbox: qualquer usuário autenticado recebe acesso à Central sem depender do grupo. Cada checkbox de ação possui um nome acessível contextual, composto pela ação e pela funcionalidade, mesmo quando o texto visual da opção permanece curto. Em cada rotina, a ação **Marcar todas** seleciona a funcionalidade, as permissões básicas e todas as ações dinâmicas exibidas; depois de concluir a seleção, o botão permanece desabilitado até que alguma permissão seja desmarcada. Um grupo marcado como padrão do sistema não pode ser excluído. Vínculos e permissões são sincronizados pelo backend quando o grupo é salvo. Depois de criar, alterar ou excluir um grupo, o frontend invalida imediatamente a navegação do Hub para refletir as novas permissões sem exigir uma nova autenticação.
 
 ## Empresas
 
 O cadastro associa cada empresa às soluções e funcionalidades contratáveis disponíveis no Hub. Soluções inativas não podem ser contratadas por esse cadastro. Documentação é uma solução sistêmica de acesso universal e, portanto, não aparece como opção de contrato da empresa. A empresa também mantém os acessos gerais ainda presentes no contrato do sistema.
 
-Criar, alterar ou remover empresas exige o administrador inicial do sistema. Ao criar uma empresa, o backend vincula os administradores do sistema, sincroniza os acessos selecionados e prepara as configurações padrão necessárias ao Controle de Chamados.
+Criar, alterar ou remover empresas exige o administrador inicial do sistema. Ao criar uma empresa, o backend vincula os administradores do sistema, sincroniza os acessos selecionados e prepara as configurações padrão necessárias ao Controle de Chamados. Mudanças no contrato da empresa também invalidam imediatamente a navegação do Hub.
 
 A empresa padrão do sistema não pode ser excluída. Ao remover outra empresa, o backend trata vínculos de usuários e impede que a operação deixe usuários comuns sem associação válida.
 
@@ -51,7 +51,7 @@ A empresa padrão do sistema não pode ser excluída. Ao remover outra empresa, 
 
 Uma solução define slug, nome, descrição, identificação visual, ordem, estado ativo, exibição no Hub e restrição ao administrador do sistema. O slug é único e identifica a solução nas rotas. A coluna de funcionalidades distingue quantas estão ativas e quantas estão cadastradas.
 
-Soluções padrão preservam seus dados cadastrais e permitem alterar somente a ordem. O Controle de Horas permanece registrado como solução padrão inativa, fora do Hub e indisponível para empresas e grupos até existir implementação funcional própria.
+Soluções padrão preservam seus dados cadastrais e permitem alterar somente a ordem. A antiga solução separada **Controle de Horas** permanece apenas como registro histórico inativo e fora do Hub. As telas implementadas de horas pertencem ao Gerenciador de Projetos. O campo legado `acessoHoras` continua presente no contrato por compatibilidade, mas não devolve nem reativa a solução aposentada.
 
 As operações cadastrais de solução são restritas ao administrador do sistema. A exclusão é confirmada antes do envio e falhas de dependência retornadas pelo backend permanecem visíveis ao usuário.
 
@@ -62,6 +62,12 @@ Uma funcionalidade pertence a uma solução e define slug, título, rótulo, des
 O `RegistryKey` preserva a identidade técnica usada por rotas e documentação. A implementação executável é selecionada exclusivamente pelo `providerKey` versionado no manifesto frontend. Uma funcionalidade sem provider conhecido ou com versão incompatível não pode ser publicada; se um contrato inconsistente chegar defensivamente ao navegador, nenhuma tela alternativa é executada. O catálogo atual usa providers desenvolvidos em código; não existe construtor no-code nem renderer declarativo.
 
 Funcionalidades marcadas como padrão do sistema são protegidas contra alteração cadastral e exclusão; somente sua ordem e seu agrupamento podem ser alterados. Elas continuam visíveis para consulta, mas não podem ser marcadas nos checkboxes de exclusão. Funcionalidades personalizadas seguem as permissões recebidas para inclusão, alteração e exclusão.
+
+Algumas funcionalidades padrão usam acesso inicial restrito. `Meus apontamentos` e `Horas do projeto` são vinculadas às empresas que já contratam o Gerenciador de Projetos, porém não são concedidas automaticamente aos grupos comuns. O administrador inicial revisa e publica os rascunhos de versão gerados pelo bootstrap e depois libera, em cada grupo, a visualização, as operações básicas e as ações dinâmicas necessárias.
+
+Quando uma atualização do produto gera um rascunho para uma funcionalidade padrão, a coluna **Publicação** da linha selecionada indica **Atualização pendente** e o comando **Publicar atualização** fica disponível. A confirmação informa se a publicação muda o estado ativo da funcionalidade; o provider é validado antes da publicação, que fica registrada na auditoria do catálogo. Sem rascunho pendente, uma funcionalidade padrão não pode ser publicada por esse comando.
+
+Os identificadores técnicos da antiga solução de horas e das funcionalidades aposentadas **Templates de projeto** e **Portfólio e programas**, assim como seus providers e ações antigas, ficam reservados. Eles não podem ser reutilizados em uma solução ou funcionalidade personalizada, evitando que dados históricos passem a representar outro comportamento.
 
 As consultas e mutações de soluções reutilizam o mesmo fragmento GraphQL completo. Assim, uma atualização cadastral não substitui no cache as funcionalidades e ações já carregadas por objetos parciais.
 
@@ -75,7 +81,7 @@ Os agrupamentos são mantidos na grade **Agrupamentos** da tela **Cadastro de fu
 
 A associação e a ordem dentro do agrupamento organizam a navegação e podem ser alteradas diretamente, inclusive em funcionalidades publicadas ou padrão do sistema, sem um novo rascunho versionado. O banco impede associar uma funcionalidade ao agrupamento de outra solução. Criação, alteração e exclusão de agrupamentos, assim como mudanças de associação, são registradas na auditoria do catálogo. Um agrupamento customizado só pode ser excluído depois de retiradas as suas funcionalidades.
 
-O produto fornece estes agrupamentos padrão: **Usuários e acessos** e **Catálogo do Hub**, no Configurador; **Indicadores do atendimento** e **Configurações do atendimento**, no Controle de Chamados; **Execução do projeto** e **Recursos e equipes**, no Gerenciador de Projetos. A inicialização do backend cria cada agrupamento padrão uma única vez e associa somente as funcionalidades da definição que ainda não pertencem a outro agrupamento; em uma base existente, as associações feitas pelo administrador são preservadas. Depois de criado, o agrupamento padrão nunca é regravado: título, rótulo, descrição, ordem, estado e composição podem ser personalizados. Ele não pode ser excluído; para apresentar suas funcionalidades separadamente, desative-o.
+O produto fornece estes agrupamentos padrão: **Usuários e acessos** e **Catálogo do Hub**, no Configurador; **Indicadores do atendimento** e **Configurações do atendimento**, no Controle de Chamados; **Execução do projeto**, **Recursos e equipes** e **Controle de horas**, no Gerenciador de Projetos. A inicialização do backend cria cada agrupamento padrão uma única vez e associa somente as funcionalidades da definição que ainda não pertencem a outro agrupamento; em uma base existente, as associações feitas pelo administrador são preservadas. Depois de criado, o agrupamento padrão nunca é regravado: título, rótulo, descrição, ordem, estado e composição podem ser personalizados. Ele não pode ser excluído; para apresentar suas funcionalidades separadamente, desative-o.
 
 ## Composição do acesso ao Hub
 

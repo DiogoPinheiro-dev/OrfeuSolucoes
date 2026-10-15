@@ -18,6 +18,34 @@ describe('SolucaoAcessoService', () => {
     expect(actions.syncMissingActionPermissionsForFeature).toHaveBeenCalledWith(10, true);
   });
 
+  it('vincula funcionalidade restrita somente às empresas que já contrataram a solução', async () => {
+    const createMany = jest.fn().mockResolvedValue({ count: 2 });
+    const prisma = {
+      grupoSolucao: { findMany: jest.fn() },
+      grupoFuncionalidade: { createMany: jest.fn() },
+      empresaSolucao: { findMany: jest.fn().mockResolvedValue([{ empresaId: 4 }, { empresaId: 8 }]) },
+      empresaFuncionalidade: { createMany }
+    };
+    const actions = { syncMissingActionPermissionsForFeature: jest.fn() };
+    const service = new SolucaoAcessoService(prisma as never, actions as never);
+
+    await service.syncNewFuncionalidadeCompanyAccess({ id: 12, solucaoId: 3 } as never);
+
+    expect(prisma.empresaSolucao.findMany).toHaveBeenCalledWith({
+      where: { solucaoId: 3 },
+      select: { empresaId: true }
+    });
+    expect(createMany).toHaveBeenCalledWith({
+      data: [
+        { empresaId: 4, funcionalidadeId: 12 },
+        { empresaId: 8, funcionalidadeId: 12 }
+      ]
+    });
+    expect(prisma.grupoSolucao.findMany).not.toHaveBeenCalled();
+    expect(prisma.grupoFuncionalidade.createMany).not.toHaveBeenCalled();
+    expect(actions.syncMissingActionPermissionsForFeature).not.toHaveBeenCalled();
+  });
+
   it('copia para a funcionalidade nova somente o acesso existente na origem', async () => {
     const db = {
       grupoFuncionalidade: {

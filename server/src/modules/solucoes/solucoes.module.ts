@@ -7,7 +7,6 @@ import { HubNavigationService } from './hub-navigation.service';
 import { SolucaoAcessoService } from './solucao-acesso.service';
 import { SolucaoBootstrapService } from './solucao-bootstrap.service';
 import { SolucaoChamadosBootstrapService } from './solucao-chamados-bootstrap.service';
-import { SolucaoHorasBootstrapService } from './solucao-horas-bootstrap.service';
 import { SolucaoProjetosBootstrapService } from './solucao-projetos-bootstrap.service';
 import { SolucaoCatalogService } from './solucao-catalog.service';
 import { SolucaoQueryService } from './solucao-query.service';
@@ -22,7 +21,7 @@ import { CatalogoBootstrapReconciliationService } from './catalogo-bootstrap-rec
 
 @Module({
   imports: [PrismaModule],
-  providers: [CatalogoProviderRegistry, CatalogoActionConsumerRegistry, CatalogoBootstrapReconciliationService, CatalogoValidationService, CatalogoLifecycleService, CatalogoResolver, FuncionalidadeAcaoService, FuncionalidadeAgrupamentoService, FuncionalidadeAuthorizationService, HubNavigationService, SolucaoAcessoService, SolucaoBootstrapService, SolucaoChamadosBootstrapService, SolucaoHorasBootstrapService, SolucaoProjetosBootstrapService, SolucaoCatalogService, SolucaoQueryService, SolucoesService, SolucoesResolver],
-  exports: [CatalogoProviderRegistry, CatalogoValidationService, CatalogoLifecycleService, FuncionalidadeAcaoService, FuncionalidadeAuthorizationService, HubNavigationService, SolucaoAcessoService, SolucaoBootstrapService, SolucaoChamadosBootstrapService, SolucaoHorasBootstrapService, SolucaoProjetosBootstrapService, SolucaoCatalogService, SolucaoQueryService, SolucoesService]
+  providers: [CatalogoProviderRegistry, CatalogoActionConsumerRegistry, CatalogoBootstrapReconciliationService, CatalogoValidationService, CatalogoLifecycleService, CatalogoResolver, FuncionalidadeAcaoService, FuncionalidadeAgrupamentoService, FuncionalidadeAuthorizationService, HubNavigationService, SolucaoAcessoService, SolucaoBootstrapService, SolucaoChamadosBootstrapService, SolucaoProjetosBootstrapService, SolucaoCatalogService, SolucaoQueryService, SolucoesService, SolucoesResolver],
+  exports: [CatalogoProviderRegistry, CatalogoValidationService, CatalogoLifecycleService, FuncionalidadeAcaoService, FuncionalidadeAuthorizationService, HubNavigationService, SolucaoAcessoService, SolucaoBootstrapService, SolucaoChamadosBootstrapService, SolucaoProjetosBootstrapService, SolucaoCatalogService, SolucaoQueryService, SolucoesService]
 })
 export class SolucoesModule {}

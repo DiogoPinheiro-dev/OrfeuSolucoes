@@ -117,7 +117,6 @@ import { SolucaoAcessoService } from '../src/modules/solucoes/solucao-acesso.ser
 import { FuncionalidadeAgrupamentoService } from '../src/modules/solucoes/funcionalidade-agrupamento.service';
 import { SolucaoBootstrapService } from '../src/modules/solucoes/solucao-bootstrap.service';
 import { SolucaoChamadosBootstrapService } from '../src/modules/solucoes/solucao-chamados-bootstrap.service';
-import { SolucaoHorasBootstrapService } from '../src/modules/solucoes/solucao-horas-bootstrap.service';
 import { SolucaoProjetosBootstrapService } from '../src/modules/solucoes/solucao-projetos-bootstrap.service';
 import { CatalogoBootstrapReconciliationService } from '../src/modules/solucoes/catalogo-bootstrap-reconciliation.service';
 import { CatalogoLifecycleService } from '../src/modules/solucoes/catalogo-lifecycle.service';
@@ -1856,8 +1855,7 @@ function createWorld(): TestWorld {
   const solucaoChamadosBootstrapService = new SolucaoChamadosBootstrapService(prismaService, funcionalidadeAcaoService, solucaoAcessoService, funcionalidadeAgrupamentoService);
   const catalogoBootstrapReconciliationService = new CatalogoBootstrapReconciliationService(prismaService);
   const solucaoProjetosBootstrapService = new SolucaoProjetosBootstrapService(prismaService, funcionalidadeAcaoService, solucaoAcessoService, catalogoBootstrapReconciliationService, funcionalidadeAgrupamentoService);
-  const solucaoHorasBootstrapService = new SolucaoHorasBootstrapService(prismaService, funcionalidadeAcaoService);
-  const solucaoBootstrapService = new SolucaoBootstrapService(prismaService, funcionalidadeAcaoService, solucaoAcessoService, solucaoChamadosBootstrapService, solucaoProjetosBootstrapService, solucaoHorasBootstrapService, funcionalidadeAgrupamentoService);
+  const solucaoBootstrapService = new SolucaoBootstrapService(prismaService, funcionalidadeAcaoService, solucaoAcessoService, solucaoChamadosBootstrapService, solucaoProjetosBootstrapService, funcionalidadeAgrupamentoService);
   const solucaoQueryService = new SolucaoQueryService(prismaService);
   const solucaoCatalogService = new SolucaoCatalogService(prismaService, funcionalidadeAcaoService, solucaoAcessoService, funcionalidadeAgrupamentoService);
   const hubNavigationService = new HubNavigationService(solucaoAcessoService, solucaoQueryService);
@@ -2271,19 +2269,7 @@ async function seedChamadoConfiguracoes(world: TestWorld, empresaId: number) {
 async function prepararMeusApontamentos() {
   const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
   const projetosSolucao = expectDefined((await world.solucoesService.findAll()).find((solucao) => solucao.slug === 'projetos'));
-  const meusApontamentos = await world.solucoesService.createFuncionalidade({
-    solucaoId: projetosSolucao.id,
-    slug: 'meus-apontamentos',
-    titulo: 'Meus apontamentos',
-    label: 'Meus apontamentos',
-    descricao: 'Lance as horas trabalhadas em cada projeto e envie para aprovação.',
-    ordem: 111,
-    ativo: true,
-    registryKey: 'projetos.meus-apontamentos'
-  });
-  // A definição padrão e o provider chegam nas fases 17.4 e 17.5; aqui a publicação é simulada no banco em memória.
-  await world.prisma.funcionalidade.update({ where: { id: meusApontamentos.id }, data: { statusPublicacao: 'PUBLICADA' } });
-  await world.solucoesService.syncCompanyAccess(empresaInicialId, [projetosSolucao.id], [meusApontamentos.id]);
+  const meusApontamentos = expectDefined(projetosSolucao.funcionalidades.find((item) => item.slug === 'meus-apontamentos'));
   const grupo = await world.prisma.grupoUsuario.create({ data: { nome: 'Lancam horas' } });
   await world.solucoesService.syncGroupAccess(
     grupo.id,
@@ -2356,11 +2342,6 @@ async function prepararHorasDoProjeto() {
   const horas = funcionalidade('horas-do-projeto');
   const orcamento = funcionalidade('orcamento-do-projeto');
   const comunicacao = funcionalidade('comunicacao-do-projeto');
-  // A publicação de Horas do projeto e a ação fechar_periodo chegam na fase 17.5; aqui são simuladas no banco em memória.
-  await world.prisma.funcionalidade.update({ where: { id: horas.id }, data: { ativo: true, statusPublicacao: 'PUBLICADA' } });
-  await world.prisma.funcionalidadeAcao.create({
-    data: { funcionalidadeId: horas.id, chave: 'fechar_periodo', nome: 'Fechar período', ordem: 80, ativo: true, statusPublicacao: 'PUBLICADA' }
-  });
   await world.solucoesService.syncCompanyAccess(
     empresaInicialId,
     [projetosSolucao.id],
@@ -2842,7 +2823,8 @@ describe('Fluxos integrados do backend', () => {
       ['controle-de-chamados', 'indicadores', 'Indicadores do atendimento', ['dashboard', 'relatorios']],
       ['controle-de-chamados', 'configuracoes-do-atendimento', 'Configurações do atendimento', ['categorias', 'tipos', 'prioridades', 'sla', 'responsaveis', 'emails-solucoes']],
       ['projetos', 'execucao-do-projeto', 'Execução do projeto', ['sprints', 'marcos-e-entregas', 'cronograma-e-gantt']],
-      ['projetos', 'recursos-e-equipes', 'Recursos e equipes', ['planejamento-de-recursos', 'equipes']]
+      ['projetos', 'recursos-e-equipes', 'Recursos e equipes', ['planejamento-de-recursos', 'equipes']],
+      ['projetos', 'controle-de-horas', 'Controle de horas', ['meus-apontamentos', 'horas-do-projeto']]
     ] as const;
     for (const [solucaoSlug, agrupamentoSlug, titulo, abas] of padroes) {
       const atual = await composicao(solucaoSlug, agrupamentoSlug);
@@ -3130,20 +3112,9 @@ describe('Fluxos integrados do backend', () => {
     expect(projetosSolucao.funcionalidades.find((item) => item.slug === 'comunicacao-do-projeto'))
       .toMatchObject({ titulo: 'Comunicação do projeto', label: 'Comunicação' });
     const cadastroProjetos = expectDefined(projetosSolucao.funcionalidades.find((item) => item.slug === 'cadastro-de-projetos'));
-    const horasSolucao = expectDefined(solucoes.find((item) => item.slug === 'horas'));
-    expect(horasSolucao).toMatchObject({
-      nome: 'Controle de Horas',
-      eyebrow: 'Operação',
-      ativo: false,
-      exibirNoHub: false,
-      padraoSistema: true
-    });
-    expect(horasSolucao.funcionalidades).toHaveLength(3);
-    expect(horasSolucao.funcionalidades.every((funcionalidade) => !funcionalidade.ativo && funcionalidade.padraoSistema)).toBe(true);
-    await expect(world.solucoesService.syncCompanyAccess(empresaInicialId, [horasSolucao.id], []))
-      .rejects.toThrow('Solucoes inativas nao podem ser vinculadas a empresas ou grupos.');
-    await expect(world.solucoesService.syncGroupAccess(1, [horasSolucao.id], [], []))
-      .rejects.toThrow('Solucoes inativas nao podem ser vinculadas a empresas ou grupos.');
+    expect(solucoes.find((item) => item.slug === 'horas')).toBeUndefined();
+    await expect(world.solucoesService.create({ slug: 'horas', nome: 'Horas recriada' }))
+      .rejects.toThrow('aposentada');
     const chamadosSolucao = expectDefined(solucoes.find((item) => item.slug === 'controle-de-chamados'));
     expect(chamadosSolucao.funcionalidades.find((item) => item.slug === 'responsaveis'))
       .toMatchObject({ titulo: 'Cadastro de responsáveis', label: 'Responsáveis' });
@@ -4416,16 +4387,20 @@ describe('Fluxos integrados do backend', () => {
       ['planejamento-de-recursos', 70],
       ['equipes', 75],
       ['orcamento-do-projeto', 100],
-      ['horas-do-projeto', 110],
-      ['templates-de-projeto', 120],
-      ['portfolio-de-projetos', 130]
+      ['meus-apontamentos', 105],
+      ['horas-do-projeto', 110]
     ]);
     expect(projetos.funcionalidades.filter((funcionalidade) => funcionalidade.ativo).map((funcionalidade) => funcionalidade.slug))
-      .toEqual(['cadastro-de-projetos', 'backlog-de-demandas', 'sprints', 'marcos-e-entregas', 'cronograma-e-gantt', 'comunicacao-do-projeto', 'planejamento-de-recursos', 'equipes', 'orcamento-do-projeto']);
+      .toEqual(['cadastro-de-projetos', 'backlog-de-demandas', 'sprints', 'marcos-e-entregas', 'cronograma-e-gantt', 'comunicacao-do-projeto', 'planejamento-de-recursos', 'equipes', 'orcamento-do-projeto', 'meus-apontamentos', 'horas-do-projeto']);
     const hubProjetos = expectDefined((await world.solucoesService.myHubNavigation(admin))
       .find((solucao) => solucao.slug === 'projetos'));
     expect(hubProjetos.funcionalidades.map((funcionalidade) => funcionalidade.slug))
-      .toEqual(['cadastro-de-projetos', 'backlog-de-demandas', 'sprints', 'marcos-e-entregas', 'cronograma-e-gantt', 'comunicacao-do-projeto', 'planejamento-de-recursos', 'equipes', 'orcamento-do-projeto']);
+      .toEqual(['cadastro-de-projetos', 'backlog-de-demandas', 'sprints', 'marcos-e-entregas', 'cronograma-e-gantt', 'comunicacao-do-projeto', 'planejamento-de-recursos', 'equipes', 'orcamento-do-projeto', 'meus-apontamentos', 'horas-do-projeto']);
+    expect(projetos.agrupamentos.find((agrupamento) => agrupamento.slug === 'controle-de-horas')).toMatchObject({
+      titulo: 'Controle de horas',
+      label: 'Horas',
+      ordem: 110
+    });
     expect(cadastroProjetos.registryKey).toBe('projetos.cadastro-de-projetos');
     expect(cadastroProjetos.acoes.map((acao) => acao.chave)).toEqual(expect.arrayContaining([
       'visualizar',
@@ -7331,6 +7306,9 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
 
   it('nega Meus apontamentos a todos enquanto a funcionalidade nao estiver publicada', async () => {
     const { world, admin } = await bootstrapBaseWorld();
+    const projetos = expectDefined((await world.solucoesService.findAll()).find((solucao) => solucao.slug === 'projetos'));
+    const meusApontamentos = expectDefined(projetos.funcionalidades.find((funcionalidade) => funcionalidade.slug === 'meus-apontamentos'));
+    await world.prisma.funcionalidade.update({ where: { id: meusApontamentos.id }, data: { statusPublicacao: 'DESPUBLICADA' } });
 
     await expect(world.projetosService.apontamentoProjetos(admin)).rejects.toThrow('sem permissao');
     await expect(world.projetosService.meusApontamentos(admin, { inicio: '2026-09-01', fim: '2026-09-30' })).rejects.toThrow('sem permissao');
@@ -7726,6 +7704,9 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
   it('nega Horas do projeto a todos enquanto a funcionalidade nao estiver publicada', async () => {
     const { world, admin, criarProjeto } = await prepararMeusApontamentos();
     const projeto = await criarProjeto('NPB');
+    const projetos = expectDefined((await world.solucoesService.findAll()).find((solucao) => solucao.slug === 'projetos'));
+    const horas = expectDefined(projetos.funcionalidades.find((funcionalidade) => funcionalidade.slug === 'horas-do-projeto'));
+    await world.prisma.funcionalidade.update({ where: { id: horas.id }, data: { statusPublicacao: 'DESPUBLICADA' } });
 
     await expect(world.projetosService.horasProjetos(admin, false)).rejects.toThrow('sem permissao');
     await expect(world.projetosService.horas({ projetoId: projeto.id, inicio: '2026-09-01', fim: '2026-09-30' }, admin))

@@ -1,4 +1,5 @@
 import { apolloClient } from "../../src/lib/apolloClient";
+import { notifyHubNavigationChanged } from "../../src/auth/hubNavigationEvents";
 import { toServiceError } from "../graphql/serviceError";
 import {
     CREATE_EMPRESA_MUTATION,
@@ -42,7 +43,9 @@ export const createEmpresa = async ({
             }
         });
 
-        return response?.data?.createEmpresa;
+        const empresa = response?.data?.createEmpresa;
+        notifyHubNavigationChanged();
+        return empresa;
     } catch (error) {
         throw toServiceError(error);
     }
@@ -64,7 +67,9 @@ export const updateEmpresa = async ({ id, nome, acessoProjetos, acessoHoras, sol
             }
         });
 
-        return response?.data?.updateEmpresa;
+        const empresa = response?.data?.updateEmpresa;
+        notifyHubNavigationChanged();
+        return empresa;
     } catch (error) {
         throw toServiceError(error);
     }
@@ -77,7 +82,9 @@ export const deleteEmpresa = async (id) => {
             variables: { id: Number(id) }
         });
 
-        return response?.data?.deleteEmpresa;
+        const deleted = response?.data?.deleteEmpresa;
+        notifyHubNavigationChanged();
+        return deleted;
     } catch (error) {
         throw toServiceError(error);
     }

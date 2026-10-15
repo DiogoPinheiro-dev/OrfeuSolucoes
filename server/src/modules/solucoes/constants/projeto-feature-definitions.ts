@@ -9,6 +9,8 @@ export type ProjetoFeatureDefinition = {
   registryKey: string;
   ativo: boolean;
   acoes?: FuncionalidadeAcaoInput[];
+  /** Define quem recebe acesso quando a funcionalidade entra no catálogo pela primeira vez. */
+  acessoInicial?: 'PADRAO_DA_SOLUCAO' | 'SOMENTE_ADMINISTRADORES';
   /** Na criação, copia o acesso de outra funcionalidade da solução em vez de conceder o acesso padrão. */
   copiarAcessoDe?: string;
 };
@@ -141,42 +143,28 @@ export const PROJETO_FEATURE_DEFINITIONS: ProjetoFeatureDefinition[] = [
     ]
   },
   {
+    slug: 'meus-apontamentos',
+    titulo: 'Meus apontamentos',
+    label: 'Meus apontamentos',
+    descricao: 'Registre as horas trabalhadas nos projetos e acompanhe o envio para aprovação.',
+    ordem: 105,
+    registryKey: 'projetos.meus-apontamentos',
+    ativo: true,
+    acessoInicial: 'SOMENTE_ADMINISTRADORES'
+  },
+  {
     slug: 'horas-do-projeto',
     titulo: 'Horas do projeto',
     label: 'Horas',
-    descricao: 'Consulte apontamentos pertencentes ao Controle de Horas.',
+    descricao: 'Aprove apontamentos, reabra lançamentos e controle o fechamento dos períodos do projeto.',
     ordem: 110,
     registryKey: 'projetos.horas-do-projeto',
-    ativo: false,
+    ativo: true,
+    acessoInicial: 'SOMENTE_ADMINISTRADORES',
     acoes: [
-      action('apontar', 'Apontar horas', 50, 'Permite registrar esforço.'),
       action('aprovar_horas', 'Aprovar horas', 60, 'Permite aprovar apontamentos.'),
-      action('reabrir_horas', 'Reabrir horas', 70, 'Permite reabrir apontamentos com auditoria.')
-    ]
-  },
-  {
-    slug: 'templates-de-projeto',
-    titulo: 'Templates de projeto',
-    label: 'Templates',
-    descricao: 'Gerencie estruturas versionadas para novos projetos.',
-    ordem: 120,
-    registryKey: 'projetos.templates-de-projeto',
-    ativo: false,
-    acoes: [
-      action('publicar', 'Publicar template', 50, 'Permite publicar uma versão imutável.'),
-      action('instanciar', 'Instanciar template', 60, 'Permite criar projeto a partir de template.')
-    ]
-  },
-  {
-    slug: 'portfolio-de-projetos',
-    titulo: 'Portfólio de projetos',
-    label: 'Portfólio',
-    descricao: 'Acompanhe indicadores agregados dos projetos acessíveis.',
-    ordem: 130,
-    registryKey: 'projetos.portfolio-de-projetos',
-    ativo: false,
-    acoes: [
-      action('visualizar_financeiro', 'Visualizar financeiro', 50, 'Permite consultar agregações financeiras.')
+      action('reabrir_horas', 'Reabrir horas', 70, 'Permite reabrir apontamentos com auditoria.'),
+      action('fechar_periodo', 'Fechar período', 80, 'Permite fechar o período mensal de apontamentos do projeto.')
     ]
   }
 ];

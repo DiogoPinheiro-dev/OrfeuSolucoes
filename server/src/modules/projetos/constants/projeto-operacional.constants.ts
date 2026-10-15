@@ -13,9 +13,7 @@ export const ProjetoFuncionalidade = {
   EQUIPES: 'equipes',
   ORCAMENTO: 'orcamento-do-projeto',
   MEUS_APONTAMENTOS: 'meus-apontamentos',
-  HORAS: 'horas-do-projeto',
-  TEMPLATES: 'templates-de-projeto',
-  PORTFOLIO: 'portfolio-de-projetos'
+  HORAS: 'horas-do-projeto'
 } as const;
 
 export type ProjetoFuncionalidadeSlug =
@@ -42,10 +40,7 @@ export const ProjetoAcao = {
   VISUALIZAR_FINANCEIRO: 'visualizar_financeiro',
   GERENCIAR_FINANCEIRO: 'gerenciar_financeiro',
   APROVAR_ORCAMENTO: 'aprovar_orcamento',
-  APONTAR: 'apontar',
   APROVAR_HORAS: 'aprovar_horas',
   REABRIR_HORAS: 'reabrir_horas',
-  FECHAR_PERIODO: 'fechar_periodo',
-  PUBLICAR: 'publicar',
-  INSTANCIAR: 'instanciar'
+  FECHAR_PERIODO: 'fechar_periodo'
 } as const;

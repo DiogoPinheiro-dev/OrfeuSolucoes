@@ -65,7 +65,7 @@ npm.cmd run test:coverage
 
 Os testes de componentes validam renderização, estados, acessibilidade e interação com serviços simulados. As integrações do frontend exercitam fluxos completos das soluções com fronteiras externas substituídas por mocks.
 
-Os testes E2E do frontend usam roteamento e contexto reais em ambiente JSDOM. O Cypress complementa essa camada com jornadas no Electron, incluindo autenticação, Hub, documentação, cache Apollo, aplicação do contrato da empresa às rotas de Chamados e Horas e responsividade do modal nos viewports 390×844, 768×1024 e 1440×900.
+Os testes E2E do frontend usam roteamento e contexto reais em ambiente JSDOM. O Cypress complementa essa camada com jornadas no Electron, incluindo autenticação, Hub, documentação, cache Apollo, aplicação do contrato da empresa às rotas de Chamados e Horas e responsividade do modal nos viewports 390×844, 768×1024 e 1440×900. O contrato do agrupamento **Controle de horas** também cobre redirecionamento para a primeira aba autorizada, histórico, recarga, teclado, acesso a uma única aba e ausência de overflow nos três viewports.
 
 No backend, o harness de integração instancia o grafo de serviços em memória. Ele valida regras e colaboração entre serviços, mas não equivale a uma execução completa por HTTP, GraphQL e SQL Server. Testes E2E e validação visual complementam essa cobertura.
 
@@ -79,6 +79,8 @@ Em 25 de agosto de 2026, a suíte geral do frontend concluiu 502 testes, o Cypre
 | Backend | 75,73% | 65,70% | 72,89% | 76,93% |
 
 O Prisma validou o schema e confirmou 70 migrations aplicadas no SQL Server. Essa contagem representa o estado daquela revisão; os comandos continuam sendo a fonte de verdade para validações posteriores.
+
+O Planejamento 17.5 acrescenta contratos unitários e de integração para o bootstrap restrito das telas de horas, chaves aposentadas, permissões do catálogo, atualização imediata do Hub e ausência da solução legada. O ensaio de release candidate complementa as suítes aplicando as migrations de setembro e outubro sobre um catálogo anterior, verificando auditoria, preservação histórica, rascunhos de publicação e repetibilidade do bootstrap. Os totais desta seção permanecem como baseline histórica; a saída do gate executado no commit candidato é a evidência atual.
 
 ## Integração contínua
 

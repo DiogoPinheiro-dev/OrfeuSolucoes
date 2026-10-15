@@ -65,7 +65,7 @@ export class SolucaoProjetosBootstrapService {
       await this.funcionalidadeAcaoService.syncFuncionalidadeAcoes(funcionalidade.id, feature.acoes, { preserveAdditionalActions: true });
 
       if (!existing) {
-        await this.grantInitialAccess(solucao.id, funcionalidade, feature.copiarAcessoDe);
+        await this.grantInitialAccess(solucao.id, funcionalidade, feature.acessoInicial, feature.copiarAcessoDe);
       }
     }
 
@@ -78,7 +78,17 @@ export class SolucaoProjetosBootstrapService {
    * Uma funcionalidade nova derivada de outra recebe exatamente o acesso da origem, sem ampliar o acesso de nenhum grupo.
    * As demais seguem o acesso padrão da solução.
    */
-  private async grantInitialAccess(solucaoId: number, funcionalidade: FuncionalidadeRecord, origemSlug?: string): Promise<void> {
+  private async grantInitialAccess(
+    solucaoId: number,
+    funcionalidade: FuncionalidadeRecord,
+    acessoInicial: 'PADRAO_DA_SOLUCAO' | 'SOMENTE_ADMINISTRADORES' = 'PADRAO_DA_SOLUCAO',
+    origemSlug?: string
+  ): Promise<void> {
+    if (acessoInicial === 'SOMENTE_ADMINISTRADORES') {
+      await this.solucaoAcessoService.syncNewFuncionalidadeCompanyAccess(funcionalidade);
+      return;
+    }
+
     if (!origemSlug) {
       await this.solucaoAcessoService.syncNewFuncionalidadeAccess(funcionalidade);
       return;

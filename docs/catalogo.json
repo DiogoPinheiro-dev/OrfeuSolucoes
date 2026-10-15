@@ -106,6 +106,38 @@
       "funcionalidade": "cadastro-de-usuarios",
       "registryKey": "configurador.cadastro-de-usuarios",
       "palavrasChave": ["usuário", "grupo", "empresa", "permissão"]
+    },
+    {
+      "id": "solucoes.projetos.meus-apontamentos",
+      "slug": "meus-apontamentos",
+      "titulo": "Meus apontamentos",
+      "resumo": "Como registrar horas trabalhadas e acompanhar o envio para aprovação.",
+      "arquivo": "solucoes/projetos/meus-apontamentos.md",
+      "categoria": "solucao",
+      "audiencia": "usuario",
+      "status": "publicado",
+      "ordem": 70,
+      "validadoEm": "2026-10-15",
+      "solucao": "projetos",
+      "funcionalidade": "meus-apontamentos",
+      "registryKey": "projetos.meus-apontamentos",
+      "palavrasChave": ["horas", "apontamento", "projeto", "aprovação"]
+    },
+    {
+      "id": "solucoes.projetos.horas-do-projeto",
+      "slug": "horas-do-projeto",
+      "titulo": "Horas do projeto",
+      "resumo": "Como aprovar apontamentos, controlar competências e consultar custos das horas.",
+      "arquivo": "solucoes/projetos/horas-do-projeto.md",
+      "categoria": "solucao",
+      "audiencia": "usuario",
+      "status": "publicado",
+      "ordem": 80,
+      "validadoEm": "2026-10-15",
+      "solucao": "projetos",
+      "funcionalidade": "horas-do-projeto",
+      "registryKey": "projetos.horas-do-projeto",
+      "palavrasChave": ["horas", "aprovação", "competência", "custo"]
     }
   ]
 }

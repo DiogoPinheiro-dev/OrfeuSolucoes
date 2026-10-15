@@ -77,7 +77,6 @@ export function resolveDefaultSolutions(user: UsuarioWithRole): string[] {
     return [
       'ecommerce',
       'projetos',
-      'horas',
       canAccessConfigurador ? 'configurador' : null
     ].filter((solution): solution is string => !!solution);
   }
@@ -86,7 +85,6 @@ export function resolveDefaultSolutions(user: UsuarioWithRole): string[] {
     return [
       grupo.acessoEcommerce ? 'ecommerce' : null,
       grupo.acessoProjetos ? 'projetos' : null,
-      grupo.acessoHoras ? 'horas' : null,
       grupo.acessoConfigurador && canAccessConfigurador ? 'configurador' : null
     ].filter((solution): solution is string => !!solution);
   }
