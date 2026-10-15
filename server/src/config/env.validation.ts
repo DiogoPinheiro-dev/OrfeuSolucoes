@@ -160,6 +160,7 @@ export const validateEnv = (config: RawConfig): RawConfig => {
     APP_ENV: appEnv,
     TRUST_PROXY: trustProxy,
     INITIAL_ADMIN_PASSWORD: optionalStringKey(config, 'INITIAL_ADMIN_PASSWORD'),
+    INSTALACAO_EMPRESA_NOME: optionalStringKey(config, 'INSTALACAO_EMPRESA_NOME') ?? 'Empresa Teste',
     AUTH_RATE_LIMIT_MAX_ATTEMPTS: authRateLimitMaxAttempts,
     AUTH_RATE_LIMIT_WINDOW_SECONDS: authRateLimitWindowSeconds,
     AUTH_RATE_LIMIT_BLOCK_SECONDS: authRateLimitBlockSeconds,

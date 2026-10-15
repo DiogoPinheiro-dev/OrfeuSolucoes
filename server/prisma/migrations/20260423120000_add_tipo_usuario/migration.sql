@@ -1,2 +1,0 @@
-ALTER TABLE [dbo].[Usuarios]
-ADD [Tipo] NVARCHAR(30) NOT NULL CONSTRAINT [DF_Usuarios_Tipo] DEFAULT N'CLIENTE';

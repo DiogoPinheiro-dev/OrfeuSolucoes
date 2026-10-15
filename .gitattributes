@@ -1,0 +1,3 @@
+# O Prisma grava no banco o checksum de cada migration aplicada. Finais de linha fixos evitam que
+# um checkout com core.autocrlf altere o arquivo e acuse divergência num banco já migrado.
+server/prisma/migrations/**/*.sql text eol=lf

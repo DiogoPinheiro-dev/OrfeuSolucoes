@@ -12,7 +12,7 @@ defaults:
 
 jobs:
   database-rehearsal:
-    name: Migração, backup e rollback
+    name: Instalação, backup e restauração
     runs-on: ubuntu-latest
     services:
       sqlserver:
@@ -41,7 +41,8 @@ jobs:
       - name: Instalar backend em ambiente limpo
         working-directory: server
         run: npm ci --include=dev
-      - name: Preparar banco anterior à migration destrutiva
+      - name: Criar banco novo e aplicar as migrations
+        working-directory: server
         run: |
           for attempt in {1..30}; do
             if docker exec "${{ job.services.sqlserver.id }}" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'OrfeuRc_Sql2026!' -C -Q "IF DB_ID('OrfeuRc') IS NULL CREATE DATABASE [OrfeuRc]"; then
@@ -50,51 +51,60 @@ jobs:
             test "$attempt" -lt 30 || exit 1
             sleep 2
           done
-          cp -R server/prisma /tmp/prisma-pre-legacy
-          find /tmp/prisma-pre-legacy/migrations -mindepth 1 -maxdepth 1 -type d \( -name '202609*' -o -name '202610*' \) -exec rm -rf {} +
-          npx --prefix server prisma migrate deploy --schema /tmp/prisma-pre-legacy/schema.prisma
-          docker exec -i "${{ job.services.sqlserver.id }}" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'OrfeuRc_Sql2026!' -C -d OrfeuRc -b < scripts/release-candidate/seed-pre-task-migration.sql
-      - name: Criar backup recuperável
-        run: |
-          docker exec "${{ job.services.sqlserver.id }}" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'OrfeuRc_Sql2026!' -C -b -Q "BACKUP DATABASE [OrfeuRc] TO DISK = N'/var/opt/mssql/data/orfeu-pre-upgrade.bak' WITH INIT, CHECKSUM"
-          docker exec "${{ job.services.sqlserver.id }}" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'OrfeuRc_Sql2026!' -C -b -Q "RESTORE VERIFYONLY FROM DISK = N'/var/opt/mssql/data/orfeu-pre-upgrade.bak' WITH CHECKSUM"
-      - name: Aplicar migrations e reconciliar dados
-        working-directory: server
-        run: |
           npx prisma validate
           npx prisma migrate deploy
           npx prisma migrate status
-          docker exec -i "${{ job.services.sqlserver.id }}" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'OrfeuRc_Sql2026!' -C -d OrfeuRc -b < ../scripts/release-candidate/verify-upgrade.sql
-      - name: Ensaiar rollback por restauração
-        run: |
-          docker exec "${{ job.services.sqlserver.id }}" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'OrfeuRc_Sql2026!' -C -b -Q "ALTER DATABASE [OrfeuRc] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; RESTORE DATABASE [OrfeuRc] FROM DISK = N'/var/opt/mssql/data/orfeu-pre-upgrade.bak' WITH REPLACE, RECOVERY; ALTER DATABASE [OrfeuRc] SET MULTI_USER"
-          docker exec -i "${{ job.services.sqlserver.id }}" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'OrfeuRc_Sql2026!' -C -d OrfeuRc -b < scripts/release-candidate/verify-rollback.sql
-      - name: Reaplicar migrations após o rollback
-        working-directory: server
-        run: |
-          npx prisma migrate deploy
-          npx prisma migrate status
-          docker exec -i "${{ job.services.sqlserver.id }}" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'OrfeuRc_Sql2026!' -C -d OrfeuRc -b < ../scripts/release-candidate/verify-upgrade.sql
-      - name: Executar bootstrap duas vezes e validar runtime
+          node scripts/base-consolidada/verify-installation.cjs --expect-empty
+      - name: Preparar a subida do runtime
         working-directory: server
         run: |
           npm run build
-          for cycle in 1 2; do
-            node dist/main.js > "runtime-$cycle.log" 2>&1 &
-            server_pid=$!
-            for attempt in {1..30}; do
+          cat > /tmp/subir.sh <<'SCRIPT'
+          # Sobe o backend, confere saúde e CORS e encerra; o log fica no arquivo informado.
+          subir() {
+            node dist/main.js > "$1" 2>&1 &
+            local pid=$!
+            for attempt in {1..60}; do
               if curl --fail --silent --show-error -H 'Content-Type: application/json' -H 'Origin: http://127.0.0.1:4173' --data '{"query":"{ health }"}' http://127.0.0.1:3001/graphql | grep -q '"health":"ok"'; then
-                break
+                local cors_code
+                cors_code=$(curl --silent --output /dev/null --write-out '%{http_code}' -H 'Content-Type: application/json' -H 'Origin: https://origem-invalida.orfeu.test' --data '{"query":"mutation { logout }"}' http://127.0.0.1:3001/graphql)
+                kill "$pid"; wait "$pid" || true
+                test "$cors_code" = "403"
+                return $?
               fi
-              test "$attempt" -lt 30 || { cat "runtime-$cycle.log"; kill "$server_pid" || true; exit 1; }
               sleep 2
             done
-            cors_code=$(curl --silent --output /dev/null --write-out '%{http_code}' -H 'Content-Type: application/json' -H 'Origin: https://origem-invalida.orfeu.test' --data '{"query":"mutation { logout }"}' http://127.0.0.1:3001/graphql)
-            test "$cors_code" = "403"
-            kill "$server_pid"
-            wait "$server_pid" || true
-          done
-          docker exec -i "${{ job.services.sqlserver.id }}" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'OrfeuRc_Sql2026!' -C -d OrfeuRc -b < ../scripts/release-candidate/verify-bootstrap.sql
+            cat "$1"; kill "$pid" || true
+            return 1
+          }
+          SCRIPT
+      - name: Instalar na primeira subida
+        working-directory: server
+        run: |
+          source /tmp/subir.sh
+          subir runtime-1.log
+          grep -q 'Instalacao inicial concluida' runtime-1.log
+          node scripts/base-consolidada/verify-installation.cjs --expect-installed --write-hash /tmp/instalacao.sha256
+      - name: Criar backup recuperável
+        run: |
+          docker exec "${{ job.services.sqlserver.id }}" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'OrfeuRc_Sql2026!' -C -b -Q "BACKUP DATABASE [OrfeuRc] TO DISK = N'/var/opt/mssql/data/orfeu-instalado.bak' WITH INIT, CHECKSUM"
+          docker exec "${{ job.services.sqlserver.id }}" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'OrfeuRc_Sql2026!' -C -b -Q "RESTORE VERIFYONLY FROM DISK = N'/var/opt/mssql/data/orfeu-instalado.bak' WITH CHECKSUM"
+      - name: Subir de novo sem escrever no banco
+        working-directory: server
+        run: |
+          source /tmp/subir.sh
+          subir runtime-2.log
+          if grep -q 'Instalacao inicial concluida' runtime-2.log; then echo 'A segunda subida instalou de novo.'; exit 1; fi
+          node scripts/base-consolidada/verify-installation.cjs --expect-installed --compare-hash /tmp/instalacao.sha256
+      - name: Ensaiar a restauração do backup
+        working-directory: server
+        run: |
+          docker exec "${{ job.services.sqlserver.id }}" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'OrfeuRc_Sql2026!' -C -b -Q "ALTER DATABASE [OrfeuRc] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; RESTORE DATABASE [OrfeuRc] FROM DISK = N'/var/opt/mssql/data/orfeu-instalado.bak' WITH REPLACE, RECOVERY; ALTER DATABASE [OrfeuRc] SET MULTI_USER"
+          npx prisma migrate status
+          node scripts/base-consolidada/verify-installation.cjs --expect-installed --compare-hash /tmp/instalacao.sha256
+          source /tmp/subir.sh
+          subir runtime-3.log
+          node scripts/base-consolidada/verify-installation.cjs --expect-installed --compare-hash /tmp/instalacao.sha256
       - name: Publicar evidências do ensaio
         if: always()
         uses: actions/upload-artifact@v6

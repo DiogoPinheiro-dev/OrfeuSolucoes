@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import { FormFieldConflictException } from '../../common/exceptions/form-field.exception';
 import { isPrismaUniqueConstraintViolation } from '../../common/persistence/bootstrap-concurrency.util';
 import { PrismaService } from '../../prisma/prisma.service';
-import { AgrupamentoPadraoDefinition } from './constants/agrupamento-definitions';
+import { AgrupamentoProdutoDefinition as AgrupamentoPadraoDefinition } from '../instalacao/manifesto/catalogo-produto';
 import { CreateFuncionalidadeAgrupamentoInput } from './dto/create-funcionalidade-agrupamento.input';
 import { FuncionalidadeAgrupamentoType } from './dto/funcionalidade-agrupamento.type';
 import { UpdateFuncionalidadeAgrupamentoInput } from './dto/update-funcionalidade-agrupamento.input';

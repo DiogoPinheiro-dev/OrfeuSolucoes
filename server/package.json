@@ -10,6 +10,9 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
+    "banco:atualizar": "prisma migrate deploy",
+    "banco:transicao": "node scripts/base-consolidada/transicionar-banco.cjs",
+    "base:fingerprint": "node scripts/base-consolidada/schema-fingerprint.cjs",
     "catalogo:generate": "node scripts/generate-product-catalog.cjs",
     "catalogo:check": "node scripts/generate-product-catalog.cjs --check",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
@@ -20,6 +23,9 @@
     "test:integration": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config ./test/jest-integration.json --runInBand",
     "test:documentation": "node --test ../docs/scripts/documentation-contract.test.mjs && node ../docs/scripts/validate-documentation.mjs",
     "test:regression": "npm run test:unit && npm run test:integration && npm run test:e2e && npm run build"
+  },
+  "prisma": {
+    "seed": "ts-node --transpile-only src/modules/instalacao/seed.ts"
   },
   "keywords": [],
   "author": "",

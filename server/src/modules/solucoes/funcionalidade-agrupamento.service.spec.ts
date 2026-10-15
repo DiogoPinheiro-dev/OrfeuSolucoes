@@ -1,6 +1,6 @@
 import { BadRequestException, Logger } from '@nestjs/common';
 import { FormFieldConflictException } from '../../common/exceptions/form-field.exception';
-import { AgrupamentoPadraoDefinition } from './constants/agrupamento-definitions';
+import { AgrupamentoProdutoDefinition as AgrupamentoPadraoDefinition } from '../instalacao/manifesto/catalogo-produto';
 import { FuncionalidadeAgrupamentoService } from './funcionalidade-agrupamento.service';
 
 const agrupamento = { id: 5, solucaoId: 1, slug: 'configuracoes', titulo: 'Configurações', label: null, descricao: null, ordem: 10, ativo: true, padraoSistema: false, chaveTecnica: 'chave' };

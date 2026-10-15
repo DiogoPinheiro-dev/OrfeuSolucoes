@@ -8,17 +8,13 @@ import { UpdateCatalogoSolucaoDraftInput } from './dto/update-catalogo-solucao-d
 import { UpdateCatalogoAcaoDraftInput } from './dto/update-catalogo-acao-draft.input';
 import { CatalogoActionConsumerRegistry } from './catalogo-action-consumer.registry';
 import { CatalogoActionSnapshot } from './types/catalogo-lifecycle.types';
-
-type FeatureSnapshot = {
-  solucaoId: number; slug: string; titulo: string; label: string | null; descricao: string | null;
-  ordem: number; ativo: boolean; registryKey: string | null; providerKey: string | null;
-  providerVersion: number | null; somenteAdminSistema: boolean;
-};
-
-type SolutionSnapshot = {
-  slug: string; nome: string; descricao: string | null; eyebrow: string | null; ordem: number;
-  ativo: boolean; exibirNoHub: boolean; somenteAdminSistema: boolean;
-};
+import {
+  CatalogoFeatureSnapshot as FeatureSnapshot,
+  CatalogoSolutionSnapshot as SolutionSnapshot,
+  catalogoActionSnapshot,
+  catalogoFeatureSnapshot,
+  catalogoSolutionSnapshot
+} from './utils/catalogo-snapshot.util';
 
 @Injectable()
 export class CatalogoLifecycleService {
@@ -34,7 +30,7 @@ export class CatalogoLifecycleService {
       if (!solution) throw new NotFoundException('Solucao nao encontrada.');
       if (await db.catalogoVersao.findFirst({ where: { solucaoId: solutionId, estado: 'RASCUNHO' } })) throw new ConflictException('A solucao ja possui um rascunho em edicao.');
       const latest = await db.catalogoVersao.findFirst({ where: { solucaoId: solutionId }, orderBy: { numero: 'desc' } });
-      const draft = await db.catalogoVersao.create({ data: { solucaoId: solutionId, numero: (latest?.numero ?? 0) + 1, estado: 'RASCUNHO', origem: 'CUSTOMIZACAO', versaoDefinicao: solution.versaoDefinicao, snapshot: JSON.stringify(this.solutionSnapshot(solution)), baselineSnapshot: latest?.baselineSnapshot ?? null, motivo: reason?.trim() || null, criadoPorId: authorId } });
+      const draft = await db.catalogoVersao.create({ data: { solucaoId: solutionId, numero: (latest?.numero ?? 0) + 1, estado: 'RASCUNHO', origem: 'CUSTOMIZACAO', versaoDefinicao: solution.versaoDefinicao, snapshot: JSON.stringify(catalogoSolutionSnapshot(solution)), baselineSnapshot: latest?.baselineSnapshot ?? null, motivo: reason?.trim() || null, criadoPorId: authorId } });
       await db.catalogoAuditoria.create({ data: { versaoId: draft.id, entidade: 'SOLUCAO', entidadeId: solutionId, evento: 'RASCUNHO_CRIADO', depois: draft.snapshot, motivo: draft.motivo, autorId: authorId } });
       return draft;
     });
@@ -85,7 +81,7 @@ export class CatalogoLifecycleService {
       if (!current) throw new NotFoundException('Solucao nao encontrada.');
       if (current.statusPublicacao !== 'PUBLICADA') throw new ConflictException('A solucao nao esta publicada.');
       const updated = await db.solucao.update({ where: { id: solutionId }, data: { statusPublicacao: 'DESPUBLICADA', revisaoCatalogo: { increment: 1 } } });
-      await db.catalogoAuditoria.create({ data: { entidade: 'SOLUCAO', entidadeId: solutionId, evento: 'DESPUBLICADA', antes: JSON.stringify(this.solutionSnapshot(current)), depois: JSON.stringify(this.solutionSnapshot(updated)), motivo: reason.trim(), autorId: authorId } });
+      await db.catalogoAuditoria.create({ data: { entidade: 'SOLUCAO', entidadeId: solutionId, evento: 'DESPUBLICADA', antes: JSON.stringify(catalogoSolutionSnapshot(current)), depois: JSON.stringify(catalogoSolutionSnapshot(updated)), motivo: reason.trim(), autorId: authorId } });
       return updated;
     });
   }
@@ -127,7 +123,7 @@ export class CatalogoLifecycleService {
       const latest = await db.catalogoVersao.findFirst({ where: { funcionalidadeId: featureId }, orderBy: { numero: 'desc' } });
       const draft = await db.catalogoVersao.create({ data: {
         funcionalidadeId: featureId, numero: (latest?.numero ?? 0) + 1, estado: 'RASCUNHO', origem: 'CUSTOMIZACAO',
-        versaoDefinicao: feature.versaoDefinicao, snapshot: JSON.stringify(this.snapshot(feature)),
+        versaoDefinicao: feature.versaoDefinicao, snapshot: JSON.stringify(catalogoFeatureSnapshot(feature)),
         baselineSnapshot: latest?.baselineSnapshot ?? null, motivo: reason?.trim() || null, criadoPorId: authorId
       } });
       await db.catalogoAuditoria.create({ data: { versaoId: draft.id, entidade: 'FUNCIONALIDADE', entidadeId: featureId, evento: 'RASCUNHO_CRIADO', depois: draft.snapshot, motivo: draft.motivo, autorId: authorId } });
@@ -200,7 +196,7 @@ export class CatalogoLifecycleService {
       if (!current) throw new NotFoundException('Funcionalidade nao encontrada.');
       if (current.statusPublicacao !== 'PUBLICADA') throw new ConflictException('A funcionalidade nao esta publicada.');
       const updated = await db.funcionalidade.update({ where: { id: featureId }, data: { statusPublicacao: 'DESPUBLICADA', revisaoCatalogo: { increment: 1 } } });
-      await db.catalogoAuditoria.create({ data: { entidade: 'FUNCIONALIDADE', entidadeId: featureId, evento: 'DESPUBLICADA', antes: JSON.stringify(this.snapshot(current)), depois: JSON.stringify(this.snapshot(updated)), motivo: reason.trim(), autorId: authorId } });
+      await db.catalogoAuditoria.create({ data: { entidade: 'FUNCIONALIDADE', entidadeId: featureId, evento: 'DESPUBLICADA', antes: JSON.stringify(catalogoFeatureSnapshot(current)), depois: JSON.stringify(catalogoFeatureSnapshot(updated)), motivo: reason.trim(), autorId: authorId } });
       return updated;
     });
   }
@@ -252,7 +248,7 @@ export class CatalogoLifecycleService {
       const latest = await db.catalogoVersao.findFirst({ where: { funcionalidadeAcaoId: actionId }, orderBy: { numero: 'desc' } });
       const draft = await db.catalogoVersao.create({ data: {
         funcionalidadeAcaoId: actionId, numero: (latest?.numero ?? 0) + 1, estado: 'RASCUNHO', origem: 'CUSTOMIZACAO',
-        versaoDefinicao: action.versaoDefinicao, snapshot: JSON.stringify(this.actionSnapshot(action)),
+        versaoDefinicao: action.versaoDefinicao, snapshot: JSON.stringify(catalogoActionSnapshot(action)),
         baselineSnapshot: latest?.baselineSnapshot ?? null, motivo: reason?.trim() || null, criadoPorId: authorId
       } });
       await db.catalogoAuditoria.create({ data: { versaoId: draft.id, entidade: 'ACAO', entidadeId: actionId, evento: 'RASCUNHO_CRIADO', depois: draft.snapshot, motivo: draft.motivo, autorId: authorId } });
@@ -333,7 +329,7 @@ export class CatalogoLifecycleService {
       if (!current) throw new NotFoundException('Acao nao encontrada.');
       if (current.statusPublicacao !== 'PUBLICADA') throw new ConflictException('A acao nao esta publicada.');
       const updated = await db.funcionalidadeAcao.update({ where: { id: actionId }, data: { statusPublicacao: 'DESPUBLICADA', revisaoCatalogo: { increment: 1 } } });
-      await db.catalogoAuditoria.create({ data: { entidade: 'ACAO', entidadeId: actionId, evento: 'DESPUBLICADA', antes: JSON.stringify(this.actionSnapshot(current)), depois: JSON.stringify(this.actionSnapshot(updated)), motivo: reason.trim(), autorId: authorId } });
+      await db.catalogoAuditoria.create({ data: { entidade: 'ACAO', entidadeId: actionId, evento: 'DESPUBLICADA', antes: JSON.stringify(catalogoActionSnapshot(current)), depois: JSON.stringify(catalogoActionSnapshot(updated)), motivo: reason.trim(), autorId: authorId } });
       return updated;
     });
   }
@@ -364,24 +360,12 @@ export class CatalogoLifecycleService {
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 
-  private snapshot(feature: FeatureSnapshot): FeatureSnapshot {
-    return { solucaoId: feature.solucaoId, slug: feature.slug, titulo: feature.titulo, label: feature.label, descricao: feature.descricao, ordem: feature.ordem, ativo: feature.ativo, registryKey: feature.registryKey, providerKey: feature.providerKey, providerVersion: feature.providerVersion, somenteAdminSistema: feature.somenteAdminSistema };
-  }
-
-  private solutionSnapshot(solution: SolutionSnapshot): SolutionSnapshot {
-    return { slug: solution.slug, nome: solution.nome, descricao: solution.descricao, eyebrow: solution.eyebrow, ordem: solution.ordem, ativo: solution.ativo, exibirNoHub: solution.exibirNoHub, somenteAdminSistema: solution.somenteAdminSistema };
-  }
-
   private parseSolution(value: string): SolutionSnapshot {
     try { return JSON.parse(value) as SolutionSnapshot; } catch { throw new BadRequestException('O rascunho possui um snapshot invalido.'); }
   }
 
   private parse(value: string): FeatureSnapshot {
     try { return JSON.parse(value) as FeatureSnapshot; } catch { throw new BadRequestException('O rascunho possui um snapshot invalido.'); }
-  }
-
-  private actionSnapshot(action: CatalogoActionSnapshot): CatalogoActionSnapshot {
-    return { funcionalidadeId: action.funcionalidadeId, chave: action.chave, nome: action.nome, descricao: action.descricao, ordem: action.ordem, ativo: action.ativo, configuracao: action.configuracao, consumerKey: action.consumerKey, consumerVersion: action.consumerVersion };
   }
 
   private parseAction(value: string): CatalogoActionSnapshot {

@@ -154,6 +154,77 @@ jobs:
       - name: Confirmar estado das migrations
         working-directory: server
         run: npx prisma migrate status
+      - name: Conferir que o banco novo ficou vazio
+        working-directory: server
+        run: node scripts/base-consolidada/verify-installation.cjs --expect-empty
+      - name: Instalar na primeira subida e provar que as seguintes so leem
+        working-directory: server
+        env:
+          NODE_ENV: production
+          APP_ENV: homologation
+          CORS_ORIGIN: http://127.0.0.1:4173
+          JWT_SECRET: quality-installation-jwt-secret-2026-validation
+          GOOGLE_TOKEN_ENCRYPTION_KEY: quality-installation-google-token-key-2026
+          INITIAL_ADMIN_PASSWORD: OrfeuCi_Admin2026!
+        run: |
+          npm run build
+          subir() {
+            PORT="$1" node dist/main.js > "$2" 2>&1 &
+            local pid=$!
+            for attempt in {1..60}; do
+              if curl --fail --silent -H 'Content-Type: application/json' -H "Origin: $CORS_ORIGIN" --data '{"query":"{ health }"}' "http://127.0.0.1:$1/graphql" | grep -q '"health":"ok"'; then
+                kill "$pid"; wait "$pid" || true
+                return 0
+              fi
+              sleep 2
+            done
+            cat "$2"; kill "$pid" || true
+            return 1
+          }
+          subir 3001 instalacao-1.log
+          grep -q 'Instalacao inicial concluida' instalacao-1.log
+          node scripts/base-consolidada/verify-installation.cjs --expect-installed --write-hash instalacao.sha256
+          subir 3001 instalacao-2.log
+          if grep -q 'Instalacao inicial concluida' instalacao-2.log; then echo 'A segunda subida instalou de novo.'; exit 1; fi
+          node scripts/base-consolidada/verify-installation.cjs --expect-installed --compare-hash instalacao.sha256
+          npx prisma db seed
+          node scripts/base-consolidada/verify-installation.cjs --expect-installed --compare-hash instalacao.sha256
+      - name: Instalar com duas instancias ao mesmo tempo
+        working-directory: server
+        env:
+          NODE_ENV: production
+          APP_ENV: homologation
+          CORS_ORIGIN: http://127.0.0.1:4173
+          JWT_SECRET: quality-installation-jwt-secret-2026-validation
+          GOOGLE_TOKEN_ENCRYPTION_KEY: quality-installation-google-token-key-2026
+          INITIAL_ADMIN_PASSWORD: OrfeuCi_Admin2026!
+        run: |
+          docker exec "${{ job.services.sqlserver.id }}" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'OrfeuCi_Sql2026!' -C -b -Q "CREATE DATABASE [OrfeuCiConcorrente]"
+          export DATABASE_URL="${DATABASE_URL/database=OrfeuCi;/database=OrfeuCiConcorrente;}"
+          npx prisma migrate deploy
+          PORT=3002 node dist/main.js > concorrente-1.log 2>&1 &
+          primeira=$!
+          PORT=3003 node dist/main.js > concorrente-2.log 2>&1 &
+          segunda=$!
+          for porta in 3002 3003; do
+            for attempt in {1..60}; do
+              if curl --fail --silent -H 'Content-Type: application/json' -H "Origin: $CORS_ORIGIN" --data '{"query":"{ health }"}' "http://127.0.0.1:$porta/graphql" | grep -q '"health":"ok"'; then
+                break
+              fi
+              test "$attempt" -lt 60 || { cat concorrente-1.log concorrente-2.log; exit 1; }
+              sleep 2
+            done
+          done
+          kill "$primeira" "$segunda"; wait "$primeira" "$segunda" || true
+          test "$(grep -c 'Instalacao inicial concluida' concorrente-1.log concorrente-2.log | awk -F: '{ total += $2 } END { print total }')" = "1"
+          node scripts/base-consolidada/verify-installation.cjs --expect-installed
+      - name: Publicar logs da instalacao
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: logs-instalacao-limpa
+          path: server/*.log
+          if-no-files-found: ignore
 
   security:
     name: Segurança de dependências

@@ -14,7 +14,7 @@ import { UpdateSolucaoInput } from './dto/update-solucao.input';
 import { FuncionalidadeAgrupamentoService } from './funcionalidade-agrupamento.service';
 import { HubNavigationService } from './hub-navigation.service';
 import { SolucaoAcessoService } from './solucao-acesso.service';
-import { SolucaoBootstrapService } from './solucao-bootstrap.service';
+import { ChamadoConfiguracaoPadraoService } from './chamado-configuracao-padrao.service';
 import { SolucaoCatalogService } from './solucao-catalog.service';
 import { SolucaoQueryService } from './solucao-query.service';
 import { FuncionalidadePermissao } from './types/permissao.types';
@@ -25,7 +25,7 @@ export type { FuncionalidadeAcaoPermissao, FuncionalidadePermissao } from './typ
 export class SolucoesService {
   constructor(
     private readonly solucaoAcessoService: SolucaoAcessoService,
-    private readonly solucaoBootstrapService: SolucaoBootstrapService,
+    private readonly chamadoConfiguracaoPadraoService: ChamadoConfiguracaoPadraoService,
     private readonly solucaoCatalogService: SolucaoCatalogService,
     private readonly hubNavigationService: HubNavigationService,
     private readonly solucaoQueryService: SolucaoQueryService,
@@ -33,22 +33,7 @@ export class SolucoesService {
   ) {}
 
   async ensureDefaultChamadoConfiguracoesForEmpresa(empresaId: number, force = false): Promise<void> {
-    return this.solucaoBootstrapService.ensureDefaultChamadoConfiguracoesForEmpresa(empresaId, force);
-  }
-
-  async ensureDefaultConfiguradorFeatures(): Promise<void> {
-    return this.solucaoBootstrapService.ensureDefaultConfiguradorFeatures();
-  }
-
-  async ensureDocumentationSolution(): Promise<void> {
-    return this.solucaoBootstrapService.ensureDocumentationSolution();
-  }
-
-  async ensureControleChamadosSolution(): Promise<void> {
-    return this.solucaoBootstrapService.ensureControleChamadosSolution();
-  }
-  async ensureProjetosSolution(): Promise<void> {
-    return this.solucaoBootstrapService.ensureProjetosSolution();
+    return this.chamadoConfiguracaoPadraoService.ensureForEmpresa(empresaId, force);
   }
 
   async myHubNavigation(user: JwtPayload): Promise<SolucaoType[]> {

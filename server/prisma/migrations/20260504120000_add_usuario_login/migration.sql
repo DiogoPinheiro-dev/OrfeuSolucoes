@@ -1,1 +1,0 @@
-ALTER TABLE [Usuarios] ADD [Login] NVARCHAR(1000);

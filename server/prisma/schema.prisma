@@ -165,6 +165,27 @@ model Empresa {
   @@map("Empresas")
 }
 
+model SistemaInstalacao {
+  id              Int      @id @map("Id")
+  origem          String   @map("Origem") @db.NVarChar(20)
+  versaoManifesto Int?     @map("VersaoManifesto")
+  instaladoEm     DateTime @default(now()) @map("InstaladoEm")
+  duracaoMs       Int?     @map("DuracaoMs")
+
+  @@map("SistemaInstalacoes")
+}
+
+model ProdutoAtualizacao {
+  id         String   @id @map("Id") @db.NVarChar(100)
+  descricao  String   @map("Descricao") @db.NVarChar(500)
+  modo       String   @map("Modo") @db.NVarChar(30)
+  aplicadaEm DateTime @default(now()) @map("AplicadaEm")
+  duracaoMs  Int?     @map("DuracaoMs")
+  resumo     String?  @map("Resumo") @db.NVarChar(Max)
+
+  @@map("ProdutoAtualizacoes")
+}
+
 model Projeto {
   id               String    @id @default(uuid()) @map("Id") @db.UniqueIdentifier
   empresaId        Int       @map("EmpresaId")
