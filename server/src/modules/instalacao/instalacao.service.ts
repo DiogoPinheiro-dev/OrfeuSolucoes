@@ -204,39 +204,58 @@ export class InstalacaoService {
     };
   }
 
+  /**
+   * Confere, só lendo, se cada tela publicada tem componente e cada ação publicada tem regra no código.
+   * O log traz um resumo e uma linha por problema, com solução, tela e ação, para o suporte localizar cada caso.
+   */
   private async conferirCompatibilidade(): Promise<string[]> {
+    const publicada = { ativo: true, statusPublicacao: 'PUBLICADA' };
     const [funcionalidades, acoes] = await Promise.all([
       this.prisma.funcionalidade.findMany({
-        where: { ativo: true, statusPublicacao: 'PUBLICADA' },
-        select: { registryKey: true, providerKey: true, providerVersion: true }
+        where: publicada,
+        select: { titulo: true, providerKey: true, providerVersion: true, solucao: { select: { slug: true } } },
+        orderBy: [{ solucaoId: 'asc' }, { ordem: 'asc' }]
       }),
       this.prisma.funcionalidadeAcao.findMany({
-        where: { ativo: true, statusPublicacao: 'PUBLICADA' },
-        select: { chave: true, consumerKey: true, consumerVersion: true }
+        where: { ...publicada, funcionalidade: publicada },
+        select: {
+          chave: true,
+          consumerKey: true,
+          consumerVersion: true,
+          funcionalidade: { select: { titulo: true, solucao: { select: { slug: true } } } }
+        },
+        orderBy: [{ funcionalidadeId: 'asc' }, { ordem: 'asc' }]
       })
     ]);
+    const valor = (texto: string | null | undefined) => (texto?.trim() ? texto : 'vazio');
     const incompatibilidades = [
       ...funcionalidades
         .filter((funcionalidade) => !this.providerRegistry.isCompatible(
           funcionalidade.providerKey,
           funcionalidade.providerVersion
         ))
-        .map((funcionalidade) => `Tela incompativel: ${funcionalidade.registryKey ?? funcionalidade.providerKey ?? 'sem-chave'}.`),
+        .map((funcionalidade) =>
+          `Tela sem componente compativel: ${funcionalidade.solucao.slug} > ${funcionalidade.titulo} ` +
+          `(provider: ${valor(funcionalidade.providerKey)}, versao: ${funcionalidade.providerVersion ?? 'vazia'}).`),
       ...acoes
         .filter((acao) => !this.actionConsumerRegistry.isCompatible(
           acao.consumerKey,
           acao.consumerVersion
         ))
-        .map((acao) => `Regra de acao incompativel: ${acao.consumerKey ?? acao.chave}.`)
+        .map((acao) =>
+          `Acao sem regra compativel: ${acao.funcionalidade.solucao.slug} > ${acao.funcionalidade.titulo} > ${acao.chave} ` +
+          `(consumidor: ${valor(acao.consumerKey)}, versao: ${acao.consumerVersion ?? 'vazia'}).`)
     ];
 
+    if (!incompatibilidades.length) {
+      this.logger.log('Conferencia do catalogo: telas e acoes publicadas compativeis com o codigo.');
+      return incompatibilidades;
+    }
+
+    this.logger.warn(`Conferencia do catalogo: ${incompatibilidades.length} problema(s) encontrado(s); detalhes nas linhas abaixo.`);
     for (const incompatibilidade of incompatibilidades) {
       this.logger.warn(incompatibilidade);
     }
-    if (!incompatibilidades.length) {
-      this.logger.log('Banco instalado; contratos de telas e acoes compativeis.');
-    }
-
     return incompatibilidades;
   }
 

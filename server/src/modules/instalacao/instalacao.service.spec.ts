@@ -24,8 +24,13 @@ function criarCenario(options: {
   marcas?: Array<{ origem: string } | null>;
   contagens?: Contagens[];
   config?: Record<string, string | undefined>;
-  funcionalidadesPublicadas?: Array<{ registryKey: string | null; providerKey: string | null; providerVersion: number | null }>;
-  acoesPublicadas?: Array<{ chave: string; consumerKey: string | null; consumerVersion: number | null }>;
+  funcionalidadesPublicadas?: Array<{ titulo: string; providerKey: string | null; providerVersion: number | null; solucao: { slug: string } }>;
+  acoesPublicadas?: Array<{
+    chave: string;
+    consumerKey: string | null;
+    consumerVersion: number | null;
+    funcionalidade: { titulo: string; solucao: { slug: string } };
+  }>;
 } = {}) {
   const marcas = [...(options.marcas ?? [null])];
   const contagens = [...(options.contagens ?? [[0, 0, 0, 0, 0]])];
@@ -87,27 +92,40 @@ function criarCenario(options: {
 }
 
 describe('InstalacaoService', () => {
-  it('apenas lê um banco já instalado e confere telas e regras', async () => {
+  it('apenas lê um banco já instalado e aponta cada tela ou ação sem código, com solução e tela', async () => {
+    const backlog = { titulo: 'Backlog de demandas', solucao: { slug: 'projetos' } };
     const { service, prisma, operacoes } = criarCenario({
       marcas: [{ origem: 'INSTALACAO' }],
       funcionalidadesPublicadas: [
-        { registryKey: 'projetos.backlog-de-demandas', providerKey: 'projetos.backlog-de-demandas', providerVersion: 1 },
-        { registryKey: 'projetos.tela-removida', providerKey: 'projetos.tela-removida', providerVersion: 1 }
+        { ...backlog, providerKey: 'projetos.backlog-de-demandas', providerVersion: 1 },
+        { titulo: 'Tela removida', solucao: { slug: 'projetos' }, providerKey: 'projetos.tela-removida', providerVersion: 1 }
       ],
       acoesPublicadas: [
-        { chave: 'visualizar', consumerKey: 'visualizar', consumerVersion: 1 },
-        { chave: 'regra_removida', consumerKey: 'regra_removida', consumerVersion: 1 }
+        { chave: 'visualizar', consumerKey: 'visualizar', consumerVersion: 1, funcionalidade: backlog },
+        { chave: 'regra_removida', consumerKey: 'regra_removida', consumerVersion: 1, funcionalidade: backlog },
+        { chave: 'incluir', consumerKey: null, consumerVersion: null, funcionalidade: { titulo: 'Cadastro de usuários', solucao: { slug: 'configurador' } } }
       ]
     });
+    const avisos = jest.spyOn((service as unknown as { logger: { warn: (mensagem: string) => void } }).logger, 'warn').mockImplementation(() => undefined);
 
     await expect(service.verificarSubida()).resolves.toEqual({
       estado: 'JA_INSTALADA',
       origem: 'INSTALACAO',
       incompatibilidades: [
-        'Tela incompativel: projetos.tela-removida.',
-        'Regra de acao incompativel: regra_removida.'
+        'Tela sem componente compativel: projetos > Tela removida (provider: projetos.tela-removida, versao: 1).',
+        'Acao sem regra compativel: projetos > Backlog de demandas > regra_removida (consumidor: regra_removida, versao: 1).',
+        'Acao sem regra compativel: configurador > Cadastro de usuários > incluir (consumidor: vazio, versao: vazia).'
       ]
     });
+    expect(avisos.mock.calls.map(([mensagem]) => mensagem)).toEqual([
+      'Conferencia do catalogo: 3 problema(s) encontrado(s); detalhes nas linhas abaixo.',
+      expect.stringContaining('Tela removida'),
+      expect.stringContaining('regra_removida'),
+      expect.stringContaining('Cadastro de usuários > incluir')
+    ]);
+    expect(prisma.funcionalidadeAcao.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { ativo: true, statusPublicacao: 'PUBLICADA', funcionalidade: { ativo: true, statusPublicacao: 'PUBLICADA' } }
+    }));
     expect(prisma.$transaction).not.toHaveBeenCalled();
     expect(prisma.empresa.count).not.toHaveBeenCalled();
     expect(operacoes.criarCatalogo).not.toHaveBeenCalled();
