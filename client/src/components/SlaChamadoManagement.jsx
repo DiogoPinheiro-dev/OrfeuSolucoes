@@ -238,11 +238,11 @@ export default function SlaChamadoManagement({ permissions }) {
                     kicker="Controle de Chamados"
                     title="Regras de SLA"
                     columns={[
-                        { key: "prioridadeNome", label: "Prioridade", render: (regra) => regra.prioridadeNome || "-" },
+                        { key: "prioridadeNome", label: "Prioridade", filter: { type: "select", allLabel: "Todas" }, render: (regra) => regra.prioridadeNome || "-" },
                         { key: "primeiraRespostaPrazoMinutos", label: "Primeira resposta", render: (regra) => prazoLabel(regra.primeiraRespostaPrazoMinutos) },
                         { key: "resolucaoPrazoMinutos", label: "Resolução", render: (regra) => prazoLabel(regra.resolucaoPrazoMinutos) },
-                        { key: "modoContagem", label: "Contagem", render: (regra) => regra.modoContagem === "UTEIS" ? "Dias úteis" : "Tempo corrido" },
-                        { key: "ativo", label: "Ativo", render: (regra) => booleanLabel(regra.ativo) }
+                        { key: "modoContagem", label: "Contagem", filter: { type: "select", allLabel: "Todas", options: [{ value: "UTEIS", label: "Dias úteis" }, { value: "CORRIDO", label: "Tempo corrido" }] }, render: (regra) => regra.modoContagem === "UTEIS" ? "Dias úteis" : "Tempo corrido" },
+                        { key: "ativo", label: "Ativo", filter: "boolean", render: (regra) => booleanLabel(regra.ativo) }
                     ]}
                     rows={filteredRegras}
                     getRowLabel={(regra) => regra.prioridadeNome || "regra de SLA"}

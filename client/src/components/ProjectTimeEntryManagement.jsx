@@ -82,7 +82,7 @@ const valoresDoApontamento = (apontamento) => ({
 });
 
 // Textos longos quebram em até duas linhas dentro da célula; o texto completo fica no title.
-const textoLongo = (texto) => <span className="project-hours-text-cell" title={texto}>{texto}</span>;
+const textoLongo = (texto) => <span className="project-hours-text-cell" data-tooltip={texto}>{texto}</span>;
 
 const tituloDoMotivo = (apontamento) =>
     apontamento.status === "REJEITADO" ? "Motivo da rejeição" : "Motivo da última rejeição ou reabertura";

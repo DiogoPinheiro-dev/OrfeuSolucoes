@@ -480,6 +480,7 @@ export default function GroupManagement({ permissions }) {
                         ...solucoes.map((solucao) => ({
                             key: `solucao-${solucao.id}`,
                             label: solucao.nome,
+                            filter: { type: "boolean", value: (group) => group.solucaoIds?.includes(solucao.id) },
                             render: (group) => booleanLabel(group.solucaoIds?.includes(solucao.id))
                         })),
                         { key: "permissoes", label: "Permissões", render: summarizeGroupPermissions }

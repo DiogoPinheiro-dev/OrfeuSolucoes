@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FaEdit, FaEye, FaPlus, FaTrashAlt } from "react-icons/fa";
 
 import { EmptyState, FeedbackMessage, LoadingState } from "./CrudFeedback";
+import { columnFilterOf, filterOptionsOf, matchesFilter } from "../utils/crudFilters";
+import { actionAvailabilityProps, tooltipProps } from "../utils/tooltip";
 import "../styles/crudGrid.css";
 
 export const CRUD_PAGE_SIZE = 5;
@@ -59,20 +61,28 @@ export default function CrudGrid({
     const rowRefs = useRef(new Map());
     const previousResetKey = useRef(paginationResetKey);
     const previousSearch = useRef(search);
+    const previousColumnFilterKey = useRef("");
     const [localPage, setLocalPage] = useState(1);
+    const [columnFilterValues, setColumnFilterValues] = useState({});
     const structuredPagination = !pagination;
     const paginationMode = paginationConfig?.mode || "local";
+    const columnFilters = paginationMode === "local" ? columns.map(columnFilterOf).filter(Boolean) : [];
+    const activeColumnFilters = columnFilters.filter((filter) => columnFilterValues[filter.key]);
+    const columnFilterKey = activeColumnFilters.map((filter) => `${filter.key}=${columnFilterValues[filter.key]}`).join("|");
+    const filteredRows = activeColumnFilters.length
+        ? rows.filter((row) => activeColumnFilters.every((filter) => matchesFilter(filter, row, columnFilterValues[filter.key])))
+        : rows;
     const controlledPage = paginationConfig?.page;
     const currentPage = Math.max(1, controlledPage || localPage);
     const pageSize = Math.min(CRUD_PAGE_SIZE, Math.max(1, paginationConfig?.pageSize || CRUD_PAGE_SIZE));
-    const totalItems = paginationMode === "local" ? rows.length : Math.max(0, paginationConfig?.totalItems ?? rows.length);
+    const totalItems = paginationMode === "local" ? filteredRows.length : Math.max(0, paginationConfig?.totalItems ?? rows.length);
     const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
     const visibleRows = useMemo(() => {
-        if (!structuredPagination || paginationMode !== "local") return rows;
+        if (!structuredPagination || paginationMode !== "local") return filteredRows;
         const start = (Math.min(currentPage, totalPages) - 1) * pageSize;
-        return rows.slice(start, start + pageSize);
-    }, [currentPage, pageSize, paginationMode, rows, structuredPagination, totalPages]);
-    const selectedRow = rows.find((row) => getRowId(row) === selectedId);
+        return filteredRows.slice(start, start + pageSize);
+    }, [currentPage, pageSize, paginationMode, filteredRows, structuredPagination, totalPages]);
+    const selectedRow = filteredRows.find((row) => getRowId(row) === selectedId);
     const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
     const selectableRows = visibleRows.filter((row) => isRowSelectable(row));
     const allVisibleSelected = selectableRows.length > 0 && selectableRows.every((row) => selectedIdSet.has(getRowId(row)));
@@ -102,13 +112,17 @@ export default function CrudGrid({
     useEffect(() => {
         const searchChanged = previousSearch.current !== search;
         const resetKeyChanged = previousResetKey.current !== paginationResetKey;
+        const columnFiltersChanged = previousColumnFilterKey.current !== columnFilterKey;
         previousSearch.current = search;
         previousResetKey.current = paginationResetKey;
-        if (!searchChanged && !resetKeyChanged) return;
+        previousColumnFilterKey.current = columnFilterKey;
+        if (!searchChanged && !resetKeyChanged && !columnFiltersChanged) return;
         clearSelection();
         if (controlledPage == null) setLocalPage(1);
         if (effectivePage !== 1) paginationConfig?.onPageChange?.(1);
-    }, [clearSelection, controlledPage, effectivePage, paginationConfig, paginationResetKey, search]);
+    }, [clearSelection, columnFilterKey, controlledPage, effectivePage, paginationConfig, paginationResetKey, search]);
+
+    const changeColumnFilter = (key, value) => setColumnFilterValues((current) => ({ ...current, [key]: value }));
 
     const actionReason = (action, allowed, needsSelection = false) => {
         if (busy) return "Aguarde o processamento atual.";
@@ -118,11 +132,7 @@ export default function CrudGrid({
         return "";
     };
 
-    const actionProps = (label, reason) => ({
-        "aria-label": reason ? `${label}. Indisponível: ${reason}` : label,
-        title: reason ? `${label}: ${reason}` : label,
-        disabled: Boolean(reason)
-    });
+    const actionProps = actionAvailabilityProps;
 
     const focusRow = (index) => {
         const row = visibleRows[Math.max(0, Math.min(index, visibleRows.length - 1))];
@@ -173,7 +183,25 @@ export default function CrudGrid({
                 )}
             </header>
 
-            {filters && <div className="crud-filters">{filters}</div>}
+            {(columnFilters.length > 0 || filters) && (
+                <div className="crud-filters">
+                    {columnFilters.map((filter) => (
+                        <label key={filter.key} className="crud-field-filter">
+                            {filter.label}
+                            {filter.type === "text" ? (
+                                <input type="search" value={columnFilterValues[filter.key] || ""} placeholder={filter.placeholder || "Filtrar"} onChange={(event) => changeColumnFilter(filter.key, event.target.value)} />
+                            ) : (
+                                <select value={columnFilterValues[filter.key] || ""} onChange={(event) => changeColumnFilter(filter.key, event.target.value)}>
+                                    <option value="">{filter.allLabel}</option>
+                                    {filterOptionsOf(filter, rows).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                                </select>
+                            )}
+                        </label>
+                    ))}
+                    {filters}
+                    {activeColumnFilters.length > 0 && <button type="button" className="crud-filters-clear" onClick={() => setColumnFilterValues({})}>Limpar filtros</button>}
+                </div>
+            )}
 
             {(showCreate || showEdit || showView || showDelete || toolbarActions) && (
                 <div className="crud-toolbar" role="toolbar" aria-label={toolbarLabel}>
@@ -204,11 +232,11 @@ export default function CrudGrid({
                             const selectionDisabledReason = rowSelectable ? "" : getRowSelectionDisabledReason(row);
                             return (
                                 <tr key={rowId} ref={(element) => element ? rowRefs.current.set(rowId, element) : rowRefs.current.delete(rowId)} className={[getRowClassName(row), selected ? "selected" : ""].filter(Boolean).join(" ")} aria-selected={selected} onClick={() => onSelect?.(rowId)} onDoubleClick={() => canView && onView?.(row)} onKeyDown={(event) => handleRowKeyDown(event, row, index, rowSelectable)} tabIndex={selected || (!selectedId && index === 0) ? 0 : -1}>
-                                    {selectable && <td><input type="checkbox" checked={selectedIdSet.has(rowId)} aria-label={selectionDisabledReason ? `Selecionar ${getRowLabel(row)}. Indisponível: ${selectionDisabledReason}` : `Selecionar ${getRowLabel(row)}`} title={selectionDisabledReason || undefined} disabled={!rowSelectable} onClick={(event) => event.stopPropagation()} onChange={() => rowSelectable && onToggleSelect?.(rowId)} /></td>}
+                                    {selectable && <td><input type="checkbox" checked={selectedIdSet.has(rowId)} aria-label={selectionDisabledReason ? `Selecionar ${getRowLabel(row)}. Indisponível: ${selectionDisabledReason}` : `Selecionar ${getRowLabel(row)}`} {...tooltipProps(selectionDisabledReason)} disabled={!rowSelectable} onClick={(event) => event.stopPropagation()} onChange={() => rowSelectable && onToggleSelect?.(rowId)} /></td>}
                                     {columns.map((column) => <td key={column.key}>{column.render ? column.render(row) : row[column.key]}</td>)}
                                 </tr>
                             );
-                        }) : <tr><td className="crud-empty" colSpan={columns.length + (selectable ? 1 : 0)}><EmptyState title={emptyMessage} compact /></td></tr>}
+                        }) : <tr><td className="crud-empty" colSpan={columns.length + (selectable ? 1 : 0)}><EmptyState title={rows.length > 0 && activeColumnFilters.length > 0 ? "Nenhum registro corresponde aos filtros." : emptyMessage} compact /></td></tr>}
                     </tbody>
                 </table>
             </div>

@@ -170,11 +170,11 @@ export default function FeatureGroupManagement({ solucoes, permissions, onChange
                 columns={[
                     { key: "titulo", label: "Título" },
                     { key: "slug", label: "Identificador" },
-                    { key: "solucaoNome", label: "Solução" },
+                    { key: "solucaoNome", label: "Solução", filter: { type: "select", allLabel: "Todas" } },
                     { key: "funcionalidades", label: "Funcionalidades" },
                     { key: "ordem", label: "Ordem" },
-                    { key: "ativo", label: "Ativo", render: (group) => booleanLabel(group.ativo) },
-                    { key: "padraoSistema", label: "Padrão", render: (group) => booleanLabel(group.padraoSistema) }
+                    { key: "ativo", label: "Ativo", filter: "boolean", render: (group) => booleanLabel(group.ativo) },
+                    { key: "padraoSistema", label: "Padrão", filter: "boolean", render: (group) => booleanLabel(group.padraoSistema) }
                 ]}
                 rows={groups}
                 getRowLabel={(group) => group.titulo}

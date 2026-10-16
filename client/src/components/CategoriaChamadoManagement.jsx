@@ -211,7 +211,7 @@ export default function CategoriaChamadoManagement({ permissions }) {
                     columns={[
                         { key: "nome", label: "Nome", render: (categoria) => categoria.nome || "-" },
                         { key: "descricao", label: "Descrição", render: (categoria) => categoria.descricao || "-" },
-                        { key: "ativo", label: "Ativo", render: (categoria) => booleanLabel(categoria.ativo) }
+                        { key: "ativo", label: "Ativo", filter: "boolean", render: (categoria) => booleanLabel(categoria.ativo) }
                     ]}
                     rows={filteredCategorias}
                     selectedId={selectedId}

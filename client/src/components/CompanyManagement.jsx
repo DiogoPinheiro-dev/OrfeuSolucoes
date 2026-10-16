@@ -285,6 +285,7 @@ export default function CompanyManagement({ permissions }) {
                         ...solucoes.map((solucao) => ({
                             key: `solucao-${solucao.id}`,
                             label: solucao.nome,
+                            filter: { type: "boolean", value: (empresa) => empresa.solucaoIds?.includes(solucao.id) },
                             render: (empresa) => booleanLabel(empresa.solucaoIds?.includes(solucao.id))
                         }))
                     ]}

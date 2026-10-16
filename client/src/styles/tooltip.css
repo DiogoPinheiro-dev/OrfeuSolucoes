@@ -1,0 +1,61 @@
+.ui-tooltip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 3000;
+  display: grid;
+  gap: 2px;
+  max-width: min(280px, calc(100vw - 16px));
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--primary);
+  box-shadow: var(--shadow-soft);
+  color: var(--text-on-dark);
+  font-size: 0.8rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.ui-tooltip.is-visible {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.ui-tooltip::after {
+  content: "";
+  position: absolute;
+  left: var(--ui-tooltip-arrow, 50%);
+  width: 10px;
+  height: 10px;
+  background: inherit;
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.ui-tooltip--top::after {
+  bottom: -4px;
+}
+
+.ui-tooltip--bottom::after {
+  top: -4px;
+}
+
+.ui-tooltip-title {
+  font-weight: 700;
+}
+
+.ui-tooltip-title + .ui-tooltip-text {
+  color: color-mix(in srgb, var(--text-on-dark) 82%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-tooltip {
+    transition: none;
+    transform: none;
+  }
+}

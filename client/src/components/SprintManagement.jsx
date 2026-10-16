@@ -225,7 +225,7 @@ function ScopeList({ sprint, canPlan, onRemove }) {
                         <small>{estimate(item.estimativaMinutos)}</small>
                         {item.adicionadoAposInicio && <em>Adicionado após início</em>}
                         {canPlan && (
-                            <button type="button" onClick={() => onRemove(item)} title="Retirar da sprint">
+                            <button type="button" onClick={() => onRemove(item)} aria-label="Retirar da sprint" data-tooltip="Retirar da sprint">
                                 <FaTimes />
                             </button>
                         )}

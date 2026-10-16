@@ -126,7 +126,7 @@ describe("Cronograma e Gantt", () => {
         expect(screen.getByLabelText("Resumo do cronograma")).toHaveTextContent("2 elementos");
         expect(screen.getByText("Existe intervalo entre as atividades.")).toBeInTheDocument();
 
-        await user.click(screen.getByTitle("Abrir Implementar autenticacao"));
+        await user.click(document.querySelector("[data-tooltip=\"Abrir Implementar autenticacao\"]"));
         expect(screen.getByRole("status", { name: "Rota atual" })).toHaveTextContent("/hub/projetos/backlog-de-demandas?projetoId=p1&itemId=i1");
     });
 

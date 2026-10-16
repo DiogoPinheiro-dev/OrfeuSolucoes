@@ -1,6 +1,8 @@
 // Apresentação dos apontamentos de horas. As regras (limite diário, competência, permissões) ficam no backend;
 // aqui só há formatação, leitura de hh:mm e cálculo de períodos sobre datas de calendário AAAA-MM-DD.
 
+import { actionAvailabilityProps } from "./tooltip";
+
 export const SITUACOES_DO_APONTAMENTO = Object.freeze({
     RASCUNHO: "Rascunho",
     ENVIADO: "Enviado",
@@ -52,11 +54,7 @@ export const formatarMoeda = (valor, moeda) =>
 export const contar = (quantidade, singular, plural) => `${quantidade} ${quantidade === 1 ? singular : plural}`;
 
 /** Propriedades de um botão de ação com o motivo da indisponibilidade, no mesmo formato da toolbar do CrudGrid. */
-export const disponibilidade = (rotulo, motivo) => ({
-    disabled: Boolean(motivo),
-    title: motivo ? `${rotulo}: ${motivo}` : rotulo,
-    "aria-label": motivo ? `${rotulo}. Indisponível: ${motivo}` : rotulo
-});
+export const disponibilidade = actionAvailabilityProps;
 
 export const nomeDaPessoa = (usuario) => usuario?.nome || usuario?.login || usuario?.email || "Pessoa sem nome";
 

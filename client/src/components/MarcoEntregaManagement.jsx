@@ -235,7 +235,7 @@ export default function MarcoEntregaManagement() {
                 <button className={tab === "ENTREGA" ? "active" : ""} onClick={() => setTab("ENTREGA")}><FaBoxOpen /> Entregas <span>{panel.entregas.length}</span></button>
             </nav>
             <div className="crud-toolbar">
-                <button type="button" disabled={!panel.permissoes.podeCriar} onClick={() => { setEditorError(""); setEditor({ kind: tab, item: null }); }} aria-label="Incluir" title="Incluir"><FaPlus /></button>
+                <button type="button" disabled={!panel.permissoes.podeCriar} onClick={() => { setEditorError(""); setEditor({ kind: tab, item: null }); }} aria-label="Incluir" data-tooltip="Incluir"><FaPlus /></button>
             </div>
             {loading ? <LoadingState message="Carregando marcos e entregas..." /> : (
                 <div className="commitment-grid">
@@ -244,8 +244,8 @@ export default function MarcoEntregaManagement() {
                             <header>
                                 <div><span className={`commitment-status status-${item.status.toLowerCase()}`}>{(tab === "MARCO" ? MARCO_STATUS : ENTREGA_STATUS)[item.status]}</span><h3>{item.nome}</h3></div>
                                 <div className="commitment-actions">
-                                    <button type="button" disabled={!panel.permissoes.podeEditar || !!item.arquivadoEm} onClick={() => setEditor({ kind: tab, item })} title="Alterar"><FaEdit /></button>
-                                    <button type="button" disabled={item.arquivadoEm ? !panel.permissoes.podeReativar : !panel.permissoes.podeArquivar} onClick={() => toggleArchive(item)} title={item.arquivadoEm ? "Reativar" : "Arquivar"}>{item.arquivadoEm ? <FaUndoAlt /> : <FaArchive />}</button>
+                                    <button type="button" disabled={!panel.permissoes.podeEditar || !!item.arquivadoEm} onClick={() => setEditor({ kind: tab, item })} aria-label="Alterar" data-tooltip="Alterar"><FaEdit /></button>
+                                    <button type="button" disabled={item.arquivadoEm ? !panel.permissoes.podeReativar : !panel.permissoes.podeArquivar} onClick={() => toggleArchive(item)} aria-label={item.arquivadoEm ? "Reativar" : "Arquivar"} data-tooltip={item.arquivadoEm ? "Reativar" : "Arquivar"}>{item.arquivadoEm ? <FaUndoAlt /> : <FaArchive />}</button>
                                 </div>
                             </header>
                             <p>{tab === "MARCO" ? item.descricao || "Sem descrição." : item.resultadoEsperado}</p>
@@ -261,7 +261,7 @@ export default function MarcoEntregaManagement() {
                                         <Link
                                             key={entry.id}
                                             to={`/hub/projetos/backlog-de-demandas?projetoId=${projectId}&itemId=${entry.id}`}
-                                            title={`Abrir ${entry.chave} no backlog`}
+                                            data-tooltip={`Abrir ${entry.chave} no backlog`}
                                         >
                                             <strong>{entry.chave}</strong>
                                             <span>{entry.titulo}</span>

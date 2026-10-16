@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { excluirRecurso, getRecursos, getRecursosProjetos, salvarRecurso } from "../../services/Projetos/RecursoService";
 import { useCrudSelection } from "../hooks/useCrudSelection";
 import CrudGrid from "./CrudGrid";
+import { statusFilter } from "../utils/crudFilters";
 import { CrudModal } from "./CrudModal";
 import { FeedbackMessage } from "./CrudFeedback";
 import "../styles/crudGrid.css";
@@ -133,7 +134,7 @@ export default function ProjectResourceManagement() {
       label: "Projetos ativos",
       render: (row) => row.projetos?.filter((item) => item.ativo).map((item) => item.projeto.chave).join(", ") || "—"
     },
-    { key: "ativo", label: "Situação", render: (row) => row.ativo ? "Ativo" : "Inativo" }
+    { key: "ativo", label: "Situação", filter: statusFilter(), render: (row) => row.ativo ? "Ativo" : "Inativo" }
   ], []);
 
   return <section className="project-resource">

@@ -265,7 +265,7 @@ describe("CRUDs do Configurador", () => {
             name: /Selecionar Administradores\. Indisponível: Grupos padrão do sistema não podem ser excluídos\./
         });
         expect(checkbox).toBeDisabled();
-        expect(checkbox).toHaveAttribute("title", "Grupos padrão do sistema não podem ser excluídos.");
+        expect(checkbox).toHaveAttribute("data-tooltip", "Grupos padrão do sistema não podem ser excluídos.");
     });
 
     it.each([
@@ -350,7 +350,7 @@ describe("CRUDs do Configurador", () => {
         const user = userEvent.setup();
         render(<FeatureManagement permissions={permissions} />);
 
-        await user.click(await screen.findByRole("button", { name: /Mostrar funcionalidades padrão/ }));
+        await user.click(await screen.findByRole("checkbox", { name: /Mostrar funcionalidades padrão/ }));
         await user.click(await screen.findByRole("cell", { name: "Usuários" }));
         await user.click(screen.getByRole("button", { name: "Alterar" }));
         const dialog = screen.getByRole("dialog", { name: "Cadastro de funcionalidade" });
@@ -374,7 +374,7 @@ describe("CRUDs do Configurador", () => {
         await user.click(within(toolbar).getByRole("button", { name: "Incluir agrupamento" }));
         const dialog = screen.getByRole("dialog", { name: "Cadastro de agrupamento" });
         await user.click(within(dialog).getByRole("button", { name: "Selecionar solução do agrupamento" }));
-        await user.click(screen.getByRole("option", { name: "Configurador" }));
+        await user.click(within(screen.getByRole("listbox")).getByRole("option", { name: "Configurador" }));
         await user.type(within(dialog).getByRole("textbox", { name: /T.tulo/ }), "Configurações");
         await user.type(within(dialog).getByRole("textbox", { name: "Identificador" }), "configuracoes");
         await user.click(within(dialog).getByRole("button", { name: "Salvar" }));
@@ -399,7 +399,7 @@ describe("CRUDs do Configurador", () => {
         }, standardSolution]);
         render(<FeatureManagement permissions={permissions} />);
 
-        await user.click(await screen.findByRole("button", { name: /Mostrar funcionalidades padrão/ }));
+        await user.click(await screen.findByRole("checkbox", { name: /Mostrar funcionalidades padrão/ }));
         await user.click(await screen.findByRole("cell", { name: "Usuários" }));
         await user.click(within(screen.getByRole("toolbar", { name: "Ações do cadastro" })).getByRole("button", { name: "Alterar" }));
         const dialog = screen.getByRole("dialog", { name: "Cadastro de funcionalidade" });
@@ -650,7 +650,7 @@ describe("CRUDs do Configurador", () => {
 
         await user.click(screen.getByRole("button", { name: "Incluir" }));
         await user.click(screen.getByRole("button", { name: /Selecionar solu/ }));
-        await user.click(screen.getByRole("option", { name: "Configurador" }));
+        await user.click(within(screen.getByRole("listbox")).getByRole("option", { name: "Configurador" }));
         await user.type(screen.getByRole("textbox", { name: /T.tulo/ }), "Nova rotina");
         await user.type(screen.getByRole("textbox", { name: "Identificador" }), "nova-rotina");
         await user.click(screen.getByRole("button", { name: "Selecionar implementação da funcionalidade" }));
@@ -741,7 +741,7 @@ describe("CRUDs do Configurador", () => {
         } : null));
 
         render(<FeatureManagement permissions={permissions} />);
-        await user.click(await screen.findByRole("button", { name: "Mostrar funcionalidades padrão" }));
+        await user.click(await screen.findByRole("checkbox", { name: "Mostrar funcionalidades padrão" }));
         await user.type(screen.getByRole("searchbox", { name: "Pesquisar" }), "horas");
         await user.click(await screen.findByRole("cell", { name: "Horas do projeto" }));
 
@@ -781,7 +781,7 @@ describe("CRUDs do Configurador", () => {
         companyView.unmount();
 
         render(<FeatureManagement permissions={permissions} />);
-        await user.click(await screen.findByRole("button", { name: /Mostrar funcionalidades padrão/ }));
+        await user.click(await screen.findByRole("checkbox", { name: /Mostrar funcionalidades padrão/ }));
         expect(await screen.findByRole("checkbox", { name: /Selecionar Usu.*Indispon/ })).toBeDisabled();
     });
 });

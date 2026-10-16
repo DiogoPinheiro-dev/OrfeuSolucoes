@@ -247,7 +247,7 @@ export default function ChamadoConfiguracaoManagement({ permissions, kind }) {
                     columns={[
                         { key: "ordem", label: "Ordem", render: (item) => item.ordem ?? 0 },                        { key: "nome", label: "Nome", render: (item) => item.nome || "-" },
                         { key: "cor", label: "Cor", render: (item) => colorLabel(item.cor) },
-                        { key: "ativo", label: "Ativo", render: (item) => booleanLabel(item.ativo) }
+                        { key: "ativo", label: "Ativo", filter: "boolean", render: (item) => booleanLabel(item.ativo) }
                     ]}
                     rows={filteredItems}
                     selectedId={selectedId}

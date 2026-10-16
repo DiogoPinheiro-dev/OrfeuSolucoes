@@ -166,4 +166,68 @@ describe("CrudGrid", () => {
         expect(screen.getByRole("button", { name: "Desativar selecionados. Indisponível: Marque ao menos um registro ativo para desativação." })).toBeDisabled();
         expect(screen.getByTestId("deactivate-icon")).toBeInTheDocument();
     });
+
+    it("entrega o nome e o motivo da ação ao aviso visual, sem usar o title nativo", () => {
+        render(<CrudGrid {...baseProps} canCreate={false} disabledReasons={{ create: "Cadastro bloqueado." }} />);
+        const create = screen.getByRole("button", { name: "Incluir. Indisponível: Cadastro bloqueado." });
+        expect(create).toHaveAttribute("data-tooltip-title", "Incluir");
+        expect(create).toHaveAttribute("data-tooltip", "Cadastro bloqueado.");
+        expect(create).not.toHaveAttribute("title");
+    });
+
+    describe("filtros por campo", () => {
+        const people = [
+            { id: "1", nome: "Ana", grupo: "Administradores", ativo: true },
+            { id: "2", nome: "Bruno", grupo: "Suporte", ativo: false },
+            { id: "3", nome: "Carla", grupo: null, ativo: true },
+            { id: "4", nome: "Davi", grupo: "Suporte", ativo: true },
+            { id: "5", nome: "Élio", grupo: "Suporte", ativo: true },
+            { id: "6", nome: "Fábio", grupo: "Suporte", ativo: true }
+        ];
+        const filterColumns = [
+            { key: "nome", label: "Nome", filter: "text" },
+            { key: "grupo", label: "Grupo", filter: { type: "select", emptyLabel: "Sem grupo" }, render: (row) => row.grupo || "Sem grupo" },
+            { key: "ativo", label: "Ativo", filter: "boolean", render: (row) => (row.ativo ? "Sim" : "Não") }
+        ];
+        const names = () => screen.getAllByRole("row").slice(1).map((row) => within(row).getAllByRole("cell")[1].textContent);
+
+        it("monta os controles pelas colunas e combina os filtros", async () => {
+            const user = userEvent.setup();
+            render(<CrudGrid {...baseProps} columns={filterColumns} rows={people} />);
+
+            const grupo = screen.getByRole("combobox", { name: "Grupo" });
+            expect(within(grupo).getAllByRole("option").map((option) => option.textContent)).toEqual(["Todos", "Administradores", "Suporte", "Sem grupo"]);
+            expect(screen.getByText("6 registro(s) · Página 1 de 2")).toBeInTheDocument();
+
+            await user.selectOptions(grupo, "Suporte");
+            await user.selectOptions(screen.getByRole("combobox", { name: "Ativo" }), "true");
+            expect(names()).toEqual(["Davi", "Élio", "Fábio"]);
+            expect(screen.getByText("3 registro(s) · Página 1 de 1")).toBeInTheDocument();
+
+            await user.type(screen.getByRole("searchbox", { name: "Nome" }), "elio");
+            expect(names()).toEqual(["Élio"]);
+
+            await user.click(screen.getByRole("button", { name: "Limpar filtros" }));
+            expect(screen.getByText("6 registro(s) · Página 1 de 2")).toBeInTheDocument();
+            expect(screen.queryByRole("button", { name: "Limpar filtros" })).not.toBeInTheDocument();
+        });
+
+        it("filtra valores vazios, avisa quando nada corresponde e limpa a seleção ao filtrar", async () => {
+            const user = userEvent.setup();
+            const onSelect = vi.fn();
+            render(<CrudGrid {...baseProps} onSelect={onSelect} selectedId="1" columns={filterColumns} rows={people} />);
+
+            await user.selectOptions(screen.getByRole("combobox", { name: "Grupo" }), "Sem grupo");
+            expect(names()).toEqual(["Carla"]);
+            expect(onSelect).toHaveBeenCalledWith(null);
+
+            await user.selectOptions(screen.getByRole("combobox", { name: "Ativo" }), "false");
+            expect(screen.getByText("Nenhum registro corresponde aos filtros.")).toBeInTheDocument();
+        });
+
+        it("não aplica filtros de coluna na paginação do servidor", () => {
+            render(<CrudGrid {...baseProps} columns={filterColumns} rows={people} paginationConfig={{ mode: "server", page: 1, totalItems: 6, onPageChange: vi.fn() }} />);
+            expect(screen.queryByRole("combobox", { name: "Grupo" })).not.toBeInTheDocument();
+        });
+    });
 });

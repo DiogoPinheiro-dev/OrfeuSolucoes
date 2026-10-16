@@ -21,6 +21,7 @@ import { canUseFeatureAction } from "../auth/hubConfig";
 import { useAuth } from "../hooks/useAuth";
 import { useFormFieldErrors } from "../hooks/useFormFieldErrors";
 import { useLatestRequest } from "../hooks/useLatestRequest";
+import { tooltipProps } from "../utils/tooltip";
 import ConfirmDialog from "./ConfirmDialog";
 import { FeedbackMessage } from "./CrudFeedback";
 import FormFieldError from "./FormFieldError";
@@ -29,6 +30,7 @@ import { CrudModal, CrudModalTabPanel, CrudModalTabs } from "./CrudModal";
 import CustomDropdown from "./CustomDropdown";
 import FeatureGroupManagement from "./FeatureGroupManagement";
 
+import "../styles/crudGrid.css";
 import "../styles/userManagement.css";
 
 const FEATURE_FORM_ID = "feature-registration-form";
@@ -503,16 +505,16 @@ export default function FeatureManagement({ permissions }) {
                     columns={[
                         { key: "titulo", label: "Título", render: (feature) => feature.titulo || "-" },
                         { key: "slug", label: "Identificador", render: (feature) => feature.slug || "-" },
-                        { key: "solucao", label: "Solução", render: (feature) => feature.solucaoNome || "-" },
-                        { key: "agrupamento", label: "Agrupamento", render: (feature) => feature.agrupamentoTitulo || "-" },
+                        { key: "solucao", label: "Solução", filter: { type: "select", value: (feature) => feature.solucaoNome, allLabel: "Todas" }, render: (feature) => feature.solucaoNome || "-" },
+                        { key: "agrupamento", label: "Agrupamento", filter: { type: "select", value: (feature) => feature.agrupamentoTitulo, emptyLabel: "Sem agrupamento" }, render: (feature) => feature.agrupamentoTitulo || "-" },
                         { key: "registryKey", label: "Rota", render: (feature) => feature.registryKey || "-" },
                         { key: "providerKey", label: "Implementação", render: (feature) => feature.providerKey || "-" },
-                        { key: "statusPublicacao", label: "Publicação", render: (feature) => feature.id === selectedFeatureId && currentFeatureDraft
+                        { key: "statusPublicacao", label: "Publicação", filter: { type: "select", allLabel: "Todas", options: [{ value: "RASCUNHO", label: "Rascunho" }, { value: "PUBLICADA", label: "Publicada" }, { value: "DESPUBLICADA", label: "Despublicada" }] }, render: (feature) => feature.id === selectedFeatureId && currentFeatureDraft
                             ? "Atualização pendente"
                             : ({ RASCUNHO: "Rascunho", PUBLICADA: "Publicada", DESPUBLICADA: "Despublicada" }[feature.statusPublicacao] || feature.statusPublicacao || "-") },
                         { key: "ordem", label: "Ordem" },
-                        { key: "ativo", label: "Ativo", render: (feature) => booleanLabel(feature.ativo) },
-                        { key: "somenteAdminSistema", label: "Admin", render: (feature) => booleanLabel(feature.somenteAdminSistema) },
+                        { key: "ativo", label: "Ativo", filter: "boolean", render: (feature) => booleanLabel(feature.ativo) },
+                        { key: "somenteAdminSistema", label: "Admin", filter: "boolean", render: (feature) => booleanLabel(feature.somenteAdminSistema) },
                         { key: "padraoSistema", label: "Padrão", render: (feature) => booleanLabel(feature.padraoSistema) }
                     ]}
                     rows={loading ? [] : filteredFeatures}
@@ -531,9 +533,9 @@ export default function FeatureManagement({ permissions }) {
                     toolbarActions={(
                         <button
                             type="button"
-                            className="crud-inline-action"
+                            className="crud-toolbar-action"
                             disabled={!!publishDisabledReason || gridBusy}
-                            title={publishDisabledReason}
+                            {...tooltipProps(publishDisabledReason, currentFeatureDraft?.origem === "PRODUTO" ? "Publicar atualização" : "Publicar")}
                             onClick={() => setPendingPublish({ ...selectedFeature, catalogDraft: currentFeatureDraft })}
                         >
                             {currentFeatureDraft?.origem === "PRODUTO" ? "Publicar atualização" : "Publicar"}
@@ -542,14 +544,14 @@ export default function FeatureManagement({ permissions }) {
                     search={search}
                     onSearchChange={setSearch}
                     filters={(
-                        <button
-                            type="button"
-                            className="crud-inline-action"
-                            onClick={toggleSystemFeatures}
-                            aria-pressed={showSystemFeatures}
-                        >
-                            {showSystemFeatures ? "Ocultar funcionalidades padrão" : "Mostrar funcionalidades padrão"}
-                        </button>
+                        <label className="crud-filter-check">
+                            <input
+                                type="checkbox"
+                                checked={showSystemFeatures}
+                                onChange={toggleSystemFeatures}
+                            />
+                            Mostrar funcionalidades padrão
+                        </label>
                     )}
                     emptyMessage={showSystemFeatures ? "Nenhuma funcionalidade encontrada." : "Nenhuma funcionalidade customizada encontrada."}
                     busy={gridBusy || loading}

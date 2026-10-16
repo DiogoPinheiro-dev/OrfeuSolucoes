@@ -251,10 +251,10 @@ export default function SolutionManagement({ permissions }) {
                         { key: "nome", label: "Nome", render: (solucao) => solucao.nome || "-" },
                         { key: "slug", label: "Identificador", render: (solucao) => solucao.slug || "-" },
                         { key: "ordem", label: "Ordem" },
-                        { key: "ativo", label: "Ativo", render: (solucao) => booleanLabel(solucao.ativo) },
-                        { key: "exibirNoHub", label: "Hub", render: (solucao) => booleanLabel(solucao.exibirNoHub) },
-                        { key: "somenteAdminSistema", label: "Admin", render: (solucao) => booleanLabel(solucao.somenteAdminSistema) },
-                        { key: "padraoSistema", label: "Padrão", render: (solucao) => booleanLabel(solucao.padraoSistema) },
+                        { key: "ativo", label: "Ativo", filter: "boolean", render: (solucao) => booleanLabel(solucao.ativo) },
+                        { key: "exibirNoHub", label: "Hub", filter: "boolean", render: (solucao) => booleanLabel(solucao.exibirNoHub) },
+                        { key: "somenteAdminSistema", label: "Admin", filter: "boolean", render: (solucao) => booleanLabel(solucao.somenteAdminSistema) },
+                        { key: "padraoSistema", label: "Padrão", filter: "boolean", render: (solucao) => booleanLabel(solucao.padraoSistema) },
                         { key: "funcionalidades", label: "Funcionalidades", render: (solucao) => functionalityCountLabel(solucao.funcionalidades) }
                     ]}
                     rows={loading ? [] : filteredSolucoes}

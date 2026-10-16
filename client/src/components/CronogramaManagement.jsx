@@ -223,14 +223,14 @@ export default function CronogramaManagement() {
             {notice && <FeedbackMessage type="success" compact>{notice}</FeedbackMessage>}
 
             <div className="crud-toolbar gantt-toolbar">
-                <button type="button" disabled={!panel.permissoes.podeGerenciarDependencias || itemCandidates.length < 2} onClick={() => { setModalError(""); setModal({ type: "dependency" }); }} title="Incluir dependência" aria-label="Incluir dependência"><FaPlus /></button>
+                <button type="button" disabled={!panel.permissoes.podeGerenciarDependencias || itemCandidates.length < 2} onClick={() => { setModalError(""); setModal({ type: "dependency" }); }} data-tooltip="Incluir dependência" aria-label="Incluir dependência"><FaPlus /></button>
                 <span className="gantt-toolbar-divider" />
-                <button type="button" onClick={() => shiftRange(-1)} title="Período anterior" aria-label="Período anterior"><FaArrowLeft /></button>
+                <button type="button" onClick={() => shiftRange(-1)} data-tooltip="Período anterior" aria-label="Período anterior"><FaArrowLeft /></button>
                 <button type="button" onClick={() => setFilters((current) => ({ ...current, inicioEm: "", fimEm: "" }))} className="gantt-text-button">Todo o período</button>
-                <button type="button" onClick={() => shiftRange(1)} title="Próximo período" aria-label="Próximo período"><FaArrowRight /></button>
+                <button type="button" onClick={() => shiftRange(1)} data-tooltip="Próximo período" aria-label="Próximo período"><FaArrowRight /></button>
                 <span className="gantt-toolbar-divider" />
-                <button type="button" onClick={() => setPixelsPerDay((value) => clamp(value - 8, 8, 48))} title="Reduzir zoom" aria-label="Reduzir zoom"><FaCompressAlt /></button>
-                <button type="button" onClick={() => setPixelsPerDay((value) => clamp(value + 8, 8, 48))} title="Aumentar zoom" aria-label="Aumentar zoom"><FaExpandAlt /></button>
+                <button type="button" onClick={() => setPixelsPerDay((value) => clamp(value - 8, 8, 48))} data-tooltip="Reduzir zoom" aria-label="Reduzir zoom"><FaCompressAlt /></button>
+                <button type="button" onClick={() => setPixelsPerDay((value) => clamp(value + 8, 8, 48))} data-tooltip="Aumentar zoom" aria-label="Aumentar zoom"><FaExpandAlt /></button>
             </div>
 
             {!!panel.inconsistencias.length && (
@@ -244,7 +244,7 @@ export default function CronogramaManagement() {
                 <div className="gantt-labels" aria-hidden="true">
                     <div className="gantt-axis-corner">Elemento</div>
                     {panel.elementos.map((item) => (
-                        <button key={item.id} type="button" onClick={() => openElement(item)} title={`Abrir ${item.titulo}`}>
+                        <button key={item.id} type="button" onClick={() => openElement(item)} data-tooltip={`Abrir ${item.titulo}`}>
                             <span className={`gantt-type type-${item.tipo.toLowerCase()}`}>{TYPE_LABEL[item.tipo]}</span>
                             <strong>{item.chave || item.titulo}</strong>
                             <small>{item.grupo}</small>
@@ -286,7 +286,9 @@ export default function CronogramaManagement() {
                                                         setModal({ type: "dates", item });
                                                     }
                                                 }}
-                                                title={`${item.titulo}: ${dateLabel(item.inicioEm)} a ${dateLabel(item.fimEm)}`}
+                                                aria-label={`${item.chave || item.titulo}: ${dateLabel(item.inicioEm)} a ${dateLabel(item.fimEm)}`}
+                                                data-tooltip-title={item.titulo}
+                                                data-tooltip={`${dateLabel(item.inicioEm)} a ${dateLabel(item.fimEm)}`}
                                             >
                                                 {item.tipo !== "MARCO" && <span style={{ width: `${item.progressoPercentual}%` }} />}
                                                 <em>{item.chave || item.titulo}</em>
@@ -358,7 +360,8 @@ export default function CronogramaManagement() {
                                     })) return;
                                     run(() => archiveDependencia({ id: dependency.id, versao: dependency.versao }, !!dependency.arquivadoEm), `Dependência ${dependency.arquivadoEm ? "reativada" : "arquivada"}.`, false);
                                 }}
-                                title={dependency.arquivadoEm ? "Reativar" : "Arquivar"}
+                                aria-label={dependency.arquivadoEm ? "Reativar dependência" : "Arquivar dependência"}
+                                data-tooltip={dependency.arquivadoEm ? "Reativar" : "Arquivar"}
                             >
                                 {dependency.arquivadoEm ? <FaUndoAlt /> : <FaArchive />}
                             </button>

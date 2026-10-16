@@ -63,7 +63,7 @@ const versoes = (apontamentos) => apontamentos.map(({ id, versao }) => ({ id, ve
 const motivoValido = (motivo) => motivo.trim().length >= MOTIVO_MINIMO && motivo.trim().length <= MOTIVO_MAXIMO;
 
 // Textos longos quebram em até duas linhas dentro da célula; o texto completo fica no title.
-const textoLongo = (texto) => <span className="project-hours-text-cell" title={texto}>{texto}</span>;
+const textoLongo = (texto) => <span className="project-hours-text-cell" data-tooltip={texto}>{texto}</span>;
 
 const custoDoApontamento = (apontamento) => {
     const custo = apontamento.custo;

@@ -462,11 +462,11 @@ export default function ResponsavelChamadoManagement({ permissions }) {
                     kicker="Controle de Chamados"
                     title="Cadastro de responsáveis"
                     columns={[
-                        { key: "tipo", label: "Tipo", render: (responsavel) => tipoLabel(responsavel.tipo) },
+                        { key: "tipo", label: "Tipo", filter: { type: "select", value: (responsavel) => tipoLabel(responsavel.tipo) }, render: (responsavel) => tipoLabel(responsavel.tipo) },
                         { key: "responsavelNome", label: "Responsável", render: responsavelLabel },
                         { key: "solucoes", label: "Soluções", render: solucoesLabel },
                         { key: "funcionalidades", label: "Funcionalidades", render: funcionalidadesLabel },
-                        { key: "ativo", label: "Ativo", render: (responsavel) => booleanLabel(responsavel.ativo) }
+                        { key: "ativo", label: "Ativo", filter: "boolean", render: (responsavel) => booleanLabel(responsavel.ativo) }
                     ]}
                     rows={filteredResponsaveis}
                     getRowLabel={responsavelLabel}

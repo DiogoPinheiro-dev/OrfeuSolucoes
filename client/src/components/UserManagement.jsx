@@ -324,7 +324,7 @@ export default function UserManagement({ permissions }) {
                         { key: "nome", label: "Nome", render: (user) => user.nome || "-" },
                         { key: "login", label: "Login", render: (user) => user.login || "-" },
                         { key: "email", label: "E-mail" },
-                        { key: "grupo", label: "Grupo", render: (user) => user.grupo?.nome || "Sem grupo" },
+                        { key: "grupo", label: "Grupo", filter: { type: "select", value: (user) => user.grupo?.nome, emptyLabel: "Sem grupo" }, render: (user) => user.grupo?.nome || "Sem grupo" },
                         {
                             key: "empresas",
                             label: "Empresas",

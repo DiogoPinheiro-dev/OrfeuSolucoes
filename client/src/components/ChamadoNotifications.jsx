@@ -86,7 +86,7 @@ export default function ChamadoNotifications() {
         <div className="chamado-notifications" ref={rootRef}>
             <button type="button" className="chamado-notifications-trigger"
                 onClick={() => setOpen((current) => !current)}
-                aria-label={"Notificações de chamados. " + naoLidas + " não lidas"} title="Notificações">
+                aria-label={"Notificações de chamados. " + naoLidas + " não lidas"} data-tooltip="Notificações">
                 <Bell size={19} aria-hidden="true" />
                 {naoLidas > 0 && <span>{naoLidas > 99 ? "99+" : naoLidas}</span>}
             </button>
@@ -94,7 +94,7 @@ export default function ChamadoNotifications() {
                 <div className="chamado-notifications-popover" ref={popoverRef} style={popoverStyle}>
                     <header>
                         <strong>Notificações</strong>
-                        <button type="button" onClick={markAll} disabled={!naoLidas} title="Marcar todas como lidas">
+                        <button type="button" onClick={markAll} disabled={!naoLidas} aria-label="Marcar todas como lidas" data-tooltip="Marcar todas como lidas">
                             <CheckCheck size={17} aria-hidden="true" />
                         </button>
                     </header>

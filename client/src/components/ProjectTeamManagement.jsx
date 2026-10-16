@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { excluirEquipe, getProjetoOrganizacao, salvarEquipe } from "../../services/Projetos/OrganizacaoProjetoService";
 import { useCrudSelection } from "../hooks/useCrudSelection";
 import CrudGrid from "./CrudGrid";
+import { statusFilter } from "../utils/crudFilters";
 import { CrudModal } from "./CrudModal";
 import { FeedbackMessage } from "./CrudFeedback";
 import "../styles/projectResource.css";
@@ -37,7 +38,7 @@ export default function ProjectTeamManagement() {
       { key: "nome", label: "Equipe" },
       { key: "recursos", label: "Recursos", render: (row) => row.recursos?.map((item) => userLabel(item.usuario)).join(", ") || "Nenhum recurso" },
       { key: "projetos", label: "Projetos", render: (row) => row.projetos?.map((item) => item.chave).join(", ") || "Nenhum projeto" },
-      { key: "ativo", label: "Situação", render: (row) => row.ativo ? "Ativa" : "Inativa" }
+      { key: "ativo", label: "Situação", filter: statusFilter({ active: "Ativa", inactive: "Inativa" }), render: (row) => row.ativo ? "Ativa" : "Inativa" }
     ]} rows={panel.equipes} selectedId={selection.selectedId} selectedIds={selection.selectedIds} onSelect={selection.selectRow} onToggleSelect={selection.toggleSelected} onToggleSelectAll={selection.toggleVisible} onCreate={() => open("create")} onEdit={(row) => open("edit", row)} onView={(row) => open("view", row)} onDelete={(ids) => setDeleteTarget(panel.equipes.filter((item) => ids.includes(item.id)))} busy={loading} emptyMessage="Nenhuma equipe cadastrada." canCreate={panel.permissoesEquipes?.podeIncluir} canEdit={!!selectedTeam && panel.permissoesEquipes?.podeAlterar} canView={!!selectedTeam} canDelete={panel.permissoesEquipes?.podeExcluir} getRowLabel={(row) => row.nome} />
     {editor && <CrudModal mode={editor.mode} title={editor.mode === "create" ? "Cadastrar equipe" : editor.mode === "view" ? "Visualizar equipe" : "Alterar equipe"} onClose={() => setEditor(null)} onSubmit={submit} formClassName="resource-form" actions={editor.mode === "view" ? <button type="button" onClick={() => setEditor(null)}>Fechar</button> : <><button type="button" className="secondary" onClick={() => setEditor(null)}>Cancelar</button><button type="submit" disabled={saving || !editor.nome.trim()}>{saving ? "Salvando..." : "Salvar"}</button></>}>
       <div className="resource-form-grid"><label><span>Nome</span><input required maxLength={120} disabled={editor.mode === "view"} value={editor.nome} onChange={(event) => setEditor({ ...editor, nome: event.target.value })} /></label><label className="wide"><span>Descrição</span><textarea maxLength={500} rows={3} disabled={editor.mode === "view"} value={editor.descricao} onChange={(event) => setEditor({ ...editor, descricao: event.target.value })} /></label></div>
