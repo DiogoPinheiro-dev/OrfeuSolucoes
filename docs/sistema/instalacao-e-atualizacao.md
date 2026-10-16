@@ -131,4 +131,3 @@ Confirme também a saúde GraphQL, o log de compatibilidade, o login, a troca ob
 O rollback operacional é feito pela restauração do backup anterior; não há migration SQL reversa para uma atualização de produto já promovida. Depois de restaurar, use a versão de código correspondente ao backup. Em especial, um código anterior à base consolidada não deve ser iniciado sobre um banco já transicionado.
 
 O workflow [Release candidate](release-candidate.md) ensaia instalação, recusa por atualização pendente, backup, restauração, reaplicação e idempotência em infraestrutura descartável.
-
