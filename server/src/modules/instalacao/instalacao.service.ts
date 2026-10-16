@@ -10,6 +10,7 @@ import { CatalogoProviderRegistry } from '../solucoes/catalogo-provider.registry
 import { CatalogoInstalacaoOperations } from './catalogo-instalacao.operations';
 import { CATALOGO_PRODUTO } from './manifesto/catalogo-produto';
 import { DADOS_INICIAIS_PRODUTO } from './manifesto/dados-iniciais';
+import { ProdutoAtualizacaoService } from './produto-atualizacao.service';
 
 export type InstalacaoSubidaResultado = {
   estado: 'INSTALADA_AGORA' | 'JA_INSTALADA';
@@ -26,13 +27,15 @@ export class InstalacaoService {
     private readonly configService: ConfigService,
     private readonly catalogoOperations: CatalogoInstalacaoOperations,
     private readonly providerRegistry: CatalogoProviderRegistry,
-    private readonly actionConsumerRegistry: CatalogoActionConsumerRegistry
+    private readonly actionConsumerRegistry: CatalogoActionConsumerRegistry,
+    private readonly produtoAtualizacao: ProdutoAtualizacaoService
   ) {}
 
   async verificarSubida(): Promise<InstalacaoSubidaResultado> {
     const marca = await this.prisma.sistemaInstalacao.findUnique({ where: { id: 1 } });
 
     if (marca) {
+      await this.conferirAtualizacoesProduto();
       const incompatibilidades = await this.conferirCompatibilidade();
       return {
         estado: 'JA_INSTALADA',
@@ -45,6 +48,7 @@ export class InstalacaoService {
     if (this.possuiDados(contagens)) {
       const marcaConcorrente = await this.prisma.sistemaInstalacao.findUnique({ where: { id: 1 } });
       if (marcaConcorrente) {
+        await this.conferirAtualizacoesProduto();
         const incompatibilidades = await this.conferirCompatibilidade();
         return {
           estado: 'JA_INSTALADA',
@@ -86,6 +90,7 @@ export class InstalacaoService {
         }
 
         const catalogo = await this.catalogoOperations.criarCatalogo(database, instaladoEm);
+        await this.produtoAtualizacao.registrarIncorporadasNaInstalacao(database, instaladoEm);
         const empresa = await database.empresa.create({
           data: {
             ...DADOS_INICIAIS_PRODUTO.empresa,
@@ -188,6 +193,7 @@ export class InstalacaoService {
       if (!marcaConcorrente) {
         throw error;
       }
+      await this.conferirAtualizacoesProduto();
       const incompatibilidades = await this.conferirCompatibilidade();
       return {
         estado: 'JA_INSTALADA',
@@ -202,6 +208,23 @@ export class InstalacaoService {
       origem: 'INSTALACAO',
       incompatibilidades: []
     };
+  }
+
+  private async conferirAtualizacoesProduto(): Promise<void> {
+    const pendentes = await this.produtoAtualizacao.listarPendentes();
+    if (pendentes.length) {
+      const lista = pendentes.map((atualizacao) => `${atualizacao.id} (${atualizacao.descricao})`).join(', ');
+      throw new Error(
+        `Atualizacoes de produto pendentes: ${lista}. Execute npm run banco:atualizar antes de iniciar o backend.`
+      );
+    }
+
+    const desconhecidas = await this.produtoAtualizacao.listarDesconhecidas();
+    if (desconhecidas.length) {
+      this.logger.warn(
+        `O banco registra atualizacoes mais novas que este codigo: ${desconhecidas.join(', ')}. A subida continuara em modo de compatibilidade.`
+      );
+    }
   }
 
   /**

@@ -31,7 +31,7 @@ const INSTALLATION_TABLES = [
 
 const EXPECTED_COUNTS = {
   SistemaInstalacoes: 1,
-  ProdutoAtualizacoes: 0,
+  ProdutoAtualizacoes: 1,
   Empresas: 1,
   Usuarios: 1,
   GruposUsuarios: 1,
@@ -63,12 +63,13 @@ function parseArguments(argv) {
       options.expected = 'installed';
       continue;
     }
-    if (argument === '--database' || argument === '--write-hash' || argument === '--compare-hash') {
+    if (argument === '--database' || argument === '--write-hash' || argument === '--compare-hash' ||
+        argument === '--expect-origin' || argument === '--expect-update-mode') {
       const value = argv[index + 1];
       if (!value || value.startsWith('--')) {
         throw new Error(`Informe um valor para ${argument}.`);
       }
-      options[argument.slice(2).replace('-', '')] = value;
+      options[argument.slice(2).replaceAll('-', '')] = value;
       index += 1;
       continue;
     }
@@ -109,10 +110,19 @@ function assertCounts(state, expected) {
   }
 }
 
-function assertInstalledSemantics(state) {
+function assertInstalledSemantics(state, options) {
   const marker = state.SistemaInstalacoes[0];
-  if (marker.Origem !== 'INSTALACAO' || marker.VersaoManifesto !== 1 || marker.DuracaoMs === null) {
+  const expectedOrigin = options.expectorigin ?? 'INSTALACAO';
+  const validManifestVersion = expectedOrigin === 'INSTALACAO'
+    ? marker.VersaoManifesto === 1
+    : marker.VersaoManifesto === null || marker.VersaoManifesto === 1;
+  if (marker.Origem !== expectedOrigin || !validManifestVersion || marker.DuracaoMs === null) {
     throw new Error('A marca da instalacao inicial nao possui origem, versao e duracao esperadas.');
+  }
+  const update = state.ProdutoAtualizacoes[0];
+  const expectedUpdateMode = options.expectupdatemode ?? 'INCORPORADA_NA_INSTALACAO';
+  if (update.Id !== '0001-convergencia-catalogo-2026-10-15' || update.Modo !== expectedUpdateMode) {
+    throw new Error(`O registro da atualizacao 0001 nao possui o modo esperado ${expectedUpdateMode}.`);
   }
   const unpublished = [
     ...state.Solucoes,
@@ -150,7 +160,7 @@ async function main() {
     if (options.expected === 'empty') await assertAllTablesEmpty(prisma);
     const state = await readState(prisma);
     assertCounts(state, options.expected);
-    if (options.expected === 'installed') assertInstalledSemantics(state);
+    if (options.expected === 'installed') assertInstalledSemantics(state, options);
 
     const sha256 = createHash('sha256').update(JSON.stringify(state)).digest('hex');
     if (options.writehash) {

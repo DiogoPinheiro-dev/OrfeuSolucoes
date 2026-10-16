@@ -89,9 +89,34 @@ jobs:
         run: |
           docker exec "${{ job.services.sqlserver.id }}" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'OrfeuRc_Sql2026!' -C -b -Q "BACKUP DATABASE [OrfeuRc] TO DISK = N'/var/opt/mssql/data/orfeu-instalado.bak' WITH INIT, CHECKSUM"
           docker exec "${{ job.services.sqlserver.id }}" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'OrfeuRc_Sql2026!' -C -b -Q "RESTORE VERIFYONLY FROM DISK = N'/var/opt/mssql/data/orfeu-instalado.bak' WITH CHECKSUM"
+      - name: Ensaiar atualização de um banco já instalado
+        working-directory: server
+        run: |
+          docker exec "${{ job.services.sqlserver.id }}" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'OrfeuRc_Sql2026!' -C -b -d OrfeuRc -Q "UPDATE [dbo].[SistemaInstalacoes] SET [Origem] = N'BANCO_EXISTENTE' WHERE [Id] = 1; DELETE FROM [dbo].[ProdutoAtualizacoes] WHERE [Id] = N'0001-convergencia-catalogo-2026-10-15'"
+          if node dist/main.js > runtime-pendente.log 2>&1; then
+            echo 'O backend iniciou mesmo com atualização pendente.'
+            exit 1
+          fi
+          grep -q 'npm run banco:atualizar' runtime-pendente.log
+          docker exec "${{ job.services.sqlserver.id }}" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'OrfeuRc_Sql2026!' -C -b -Q "BACKUP DATABASE [OrfeuRc] TO DISK = N'/var/opt/mssql/data/orfeu-pendente.bak' WITH INIT, CHECKSUM"
+          npm run banco:atualizar
+          node scripts/base-consolidada/verify-installation.cjs --expect-installed --expect-origin BANCO_EXISTENTE --expect-update-mode APLICADA --write-hash /tmp/atualizado.sha256
+          npm run banco:atualizar
+          node scripts/base-consolidada/verify-installation.cjs --expect-installed --expect-origin BANCO_EXISTENTE --expect-update-mode APLICADA --compare-hash /tmp/atualizado.sha256
+          source /tmp/subir.sh
+          subir runtime-atualizado.log
+      - name: Restaurar o banco pendente e reaplicar a atualização
+        working-directory: server
+        run: |
+          docker exec "${{ job.services.sqlserver.id }}" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'OrfeuRc_Sql2026!' -C -b -Q "ALTER DATABASE [OrfeuRc] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; RESTORE DATABASE [OrfeuRc] FROM DISK = N'/var/opt/mssql/data/orfeu-pendente.bak' WITH REPLACE, RECOVERY; ALTER DATABASE [OrfeuRc] SET MULTI_USER"
+          npm run banco:atualizar
+          node scripts/base-consolidada/verify-installation.cjs --expect-installed --expect-origin BANCO_EXISTENTE --expect-update-mode APLICADA
+          source /tmp/subir.sh
+          subir runtime-reaplicado.log
       - name: Subir de novo sem escrever no banco
         working-directory: server
         run: |
+          docker exec "${{ job.services.sqlserver.id }}" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'OrfeuRc_Sql2026!' -C -b -Q "ALTER DATABASE [OrfeuRc] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; RESTORE DATABASE [OrfeuRc] FROM DISK = N'/var/opt/mssql/data/orfeu-instalado.bak' WITH REPLACE, RECOVERY; ALTER DATABASE [OrfeuRc] SET MULTI_USER"
           source /tmp/subir.sh
           subir runtime-2.log
           if grep -q 'Instalacao inicial concluida' runtime-2.log; then echo 'A segunda subida instalou de novo.'; exit 1; fi

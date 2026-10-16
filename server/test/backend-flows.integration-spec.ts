@@ -50,7 +50,9 @@ import { GrupoUsuarioCatalogService } from '../src/modules/grupos-usuarios/grupo
 import { GrupoUsuarioPermissaoService } from '../src/modules/grupos-usuarios/grupo-usuario-permissao.service';
 import { GruposUsuariosService } from '../src/modules/grupos-usuarios/grupos-usuarios.service';
 import { CatalogoInstalacaoOperations } from '../src/modules/instalacao/catalogo-instalacao.operations';
+import { CatalogoAtualizacaoOperations } from '../src/modules/instalacao/catalogo-atualizacao.operations';
 import { InstalacaoService } from '../src/modules/instalacao/instalacao.service';
+import { ProdutoAtualizacaoService } from '../src/modules/instalacao/produto-atualizacao.service';
 import { ProjetoApontamentoAprovacaoService } from '../src/modules/projetos/projeto-apontamento-aprovacao.service';
 import { ProjetoApontamentoAuthorizationService } from '../src/modules/projetos/projeto-apontamento-authorization.service';
 import { ProjetoApontamentoCustoService } from '../src/modules/projetos/projeto-apontamento-custo.service';
@@ -1814,6 +1816,7 @@ class TestChamadoAnexoStorage {
 type TestWorld = {
   prisma: InMemoryPrismaService;
   instalacaoService: InstalacaoService;
+  produtoAtualizacaoService: ProdutoAtualizacaoService;
   solucoesService: SolucoesService;
   catalogoLifecycleService: CatalogoLifecycleService;
   funcionalidadeAuthorizationService: FuncionalidadeAuthorizationService;
@@ -1900,12 +1903,15 @@ function createWorld(): TestWorld {
   const funcionalidadeAuthorizationService = new FuncionalidadeAuthorizationService(solucoesService);
   const catalogoProviderRegistry = new CatalogoProviderRegistry();
   const catalogoActionConsumerRegistry = new CatalogoActionConsumerRegistry();
+  const catalogoAtualizacaoOperations = new CatalogoAtualizacaoOperations(configService);
+  const produtoAtualizacaoService = new ProdutoAtualizacaoService(prismaService, catalogoAtualizacaoOperations);
   const instalacaoService = new InstalacaoService(
     prismaService,
     configService,
     new CatalogoInstalacaoOperations(),
     catalogoProviderRegistry,
-    catalogoActionConsumerRegistry
+    catalogoActionConsumerRegistry,
+    produtoAtualizacaoService
   );
   const catalogoLifecycleService = new CatalogoLifecycleService(
     prismaService,
@@ -2115,6 +2121,7 @@ function createWorld(): TestWorld {
   return {
     prisma,
     instalacaoService,
+    produtoAtualizacaoService,
     solucoesService,
     catalogoLifecycleService,
     funcionalidadeAuthorizationService,
@@ -2798,6 +2805,10 @@ describe('Fluxos integrados do backend', () => {
       versoes: contar('catalogoVersao')
     }).toEqual({ solucoes: 4, funcionalidades: 28, acoes: 146, agrupamentos: 7, versoes: 178 });
     expect(world.prisma.data.sistemaInstalacao).toEqual([expect.objectContaining({ id: 1, origem: 'INSTALACAO', versaoManifesto: 1 })]);
+    expect(world.prisma.data.produtoAtualizacao).toEqual([expect.objectContaining({
+      id: '0001-convergencia-catalogo-2026-10-15',
+      modo: 'INCORPORADA_NA_INSTALACAO'
+    })]);
     expect(world.prisma.data.catalogoVersao.every((versao) => versao.estado === 'PUBLICADA' && versao.origem === 'PRODUTO')).toBe(true);
     expect(world.prisma.data.funcionalidade.every((funcionalidade) => funcionalidade.chaveTecnica === funcionalidade.registryKey)).toBe(true);
     expect(world.prisma.data.solucao.map((solucao) => solucao.chaveTecnica).sort())
@@ -2816,6 +2827,145 @@ describe('Fluxos integrados do backend', () => {
     expect(JSON.stringify(world.prisma.data)).toBe(antes);
   });
 
+  it('bloqueia banco existente pendente, aplica a 0001 uma vez e libera a subida', async () => {
+    const world = createWorld();
+    await world.instalacaoService.verificarSubida();
+    expectDefined(world.prisma.data.sistemaInstalacao[0]).origem = 'BANCO_EXISTENTE';
+    world.prisma.data.produtoAtualizacao.splice(0);
+    const contagensCatalogo = {
+      solucoes: world.prisma.data.solucao.length,
+      funcionalidades: world.prisma.data.funcionalidade.length,
+      acoes: world.prisma.data.funcionalidadeAcao.length,
+      versoes: world.prisma.data.catalogoVersao.length,
+      auditorias: world.prisma.data.catalogoAuditoria.length
+    };
+
+    await expect(world.instalacaoService.verificarSubida()).rejects.toThrow('npm run banco:atualizar');
+    await expect(world.produtoAtualizacaoService.aplicarPendentes()).resolves.toEqual({
+      aplicadas: ['0001-convergencia-catalogo-2026-10-15'],
+      incorporadas: []
+    });
+    expect(world.prisma.data.produtoAtualizacao).toEqual([expect.objectContaining({
+      id: '0001-convergencia-catalogo-2026-10-15',
+      modo: 'APLICADA'
+    })]);
+    expect({
+      solucoes: world.prisma.data.solucao.length,
+      funcionalidades: world.prisma.data.funcionalidade.length,
+      acoes: world.prisma.data.funcionalidadeAcao.length,
+      versoes: world.prisma.data.catalogoVersao.length,
+      auditorias: world.prisma.data.catalogoAuditoria.length
+    }).toEqual(contagensCatalogo);
+
+    const depois = JSON.stringify(world.prisma.data);
+    await expect(world.produtoAtualizacaoService.aplicarPendentes()).resolves.toEqual({ aplicadas: [], incorporadas: [] });
+    await expect(world.instalacaoService.verificarSubida()).resolves.toMatchObject({ estado: 'JA_INSTALADA' });
+    expect(JSON.stringify(world.prisma.data)).toBe(depois);
+  });
+
+  it('converge item ausente com acesso copiado e atinge paridade com uma instalacao nova', async () => {
+    const legado = createWorld();
+    const novo = createWorld();
+    await legado.instalacaoService.verificarSubida();
+    await novo.instalacaoService.verificarSubida();
+
+    expectDefined(legado.prisma.data.sistemaInstalacao[0]).origem = 'BANCO_EXISTENTE';
+    legado.prisma.data.produtoAtualizacao.splice(0);
+    const solucaoProjetos = expectDefined(legado.prisma.data.solucao.find((item) => item.slug === 'projetos'));
+    const ausente = expectDefined(legado.prisma.data.funcionalidade.find((item) =>
+      item.solucaoId === solucaoProjetos.id && item.slug === 'equipes'));
+    const acoesAusentes = legado.prisma.data.funcionalidadeAcao
+      .filter((item) => item.funcionalidadeId === ausente.id)
+      .map((item) => item.id);
+    const versoesAusentes = legado.prisma.data.catalogoVersao
+      .filter((item) => item.funcionalidadeId === ausente.id || (item.funcionalidadeAcaoId && acoesAusentes.includes(item.funcionalidadeAcaoId)))
+      .map((item) => item.id);
+    const remover = (modelo: ModelName, predicado: (item: Record<string, any>) => boolean) => {
+      const itens = legado.prisma.data[modelo];
+      for (let indice = itens.length - 1; indice >= 0; indice -= 1) {
+        if (predicado(expectDefined(itens[indice]))) itens.splice(indice, 1);
+      }
+    };
+    remover('catalogoConflito', (item) => versoesAusentes.includes(item.versaoId));
+    remover('catalogoAuditoria', (item) => versoesAusentes.includes(item.versaoId) ||
+      (item.entidade === 'FUNCIONALIDADE' && item.entidadeId === ausente.id) ||
+      (item.entidade === 'ACAO' && acoesAusentes.includes(item.entidadeId)));
+    remover('catalogoVersao', (item) => versoesAusentes.includes(item.id));
+    remover('grupoFuncionalidadeAcao', (item) => acoesAusentes.includes(item.funcionalidadeAcaoId));
+    remover('funcionalidadeAcao', (item) => item.funcionalidadeId === ausente.id);
+    remover('grupoFuncionalidade', (item) => item.funcionalidadeId === ausente.id);
+    remover('empresaFuncionalidade', (item) => item.funcionalidadeId === ausente.id);
+    remover('chamadoResponsavelFuncionalidade', (item) => item.funcionalidadeId === ausente.id);
+    remover('funcionalidade', (item) => item.id === ausente.id);
+
+    await legado.produtoAtualizacaoService.aplicarPendentes();
+
+    const recriada = expectDefined(legado.prisma.data.funcionalidade.find((item) =>
+      item.solucaoId === solucaoProjetos.id && item.slug === 'equipes'));
+    const origem = expectDefined(legado.prisma.data.funcionalidade.find((item) =>
+      item.solucaoId === solucaoProjetos.id && item.slug === 'planejamento-de-recursos'));
+    const gruposDa = (funcionalidadeId: number) => legado.prisma.data.grupoFuncionalidade
+      .filter((item) => item.funcionalidadeId === funcionalidadeId)
+      .map(({ grupoId, podeVisualizar, podeIncluir, podeAlterar, podeExcluir }) => ({ grupoId, podeVisualizar, podeIncluir, podeAlterar, podeExcluir }));
+    const empresasDa = (funcionalidadeId: number) => legado.prisma.data.empresaFuncionalidade
+      .filter((item) => item.funcionalidadeId === funcionalidadeId)
+      .map((item) => item.empresaId);
+    expect(gruposDa(recriada.id)).toEqual(gruposDa(origem.id));
+    expect(empresasDa(recriada.id)).toEqual(empresasDa(origem.id));
+
+    const formaCatalogo = (world: TestWorld) => world.prisma.data.solucao
+      .map((solucao) => ({
+        slug: solucao.slug,
+        funcionalidades: world.prisma.data.funcionalidade
+          .filter((funcionalidade) => funcionalidade.solucaoId === solucao.id)
+          .map((funcionalidade) => ({
+            slug: funcionalidade.slug,
+            registryKey: funcionalidade.registryKey,
+            providerKey: funcionalidade.providerKey,
+            acoes: world.prisma.data.funcionalidadeAcao
+              .filter((acao) => acao.funcionalidadeId === funcionalidade.id)
+              .map((acao) => acao.chave)
+              .sort()
+          }))
+          .sort((left, right) => left.slug.localeCompare(right.slug))
+      }))
+      .sort((left, right) => left.slug.localeCompare(right.slug));
+    expect(formaCatalogo(legado)).toEqual(formaCatalogo(novo));
+    expect(legado.prisma.data.catalogoVersao).toHaveLength(novo.prisma.data.catalogoVersao.length);
+
+    const depois = JSON.stringify(legado.prisma.data);
+    await legado.produtoAtualizacaoService.aplicarPendentes();
+    expect(JSON.stringify(legado.prisma.data)).toBe(depois);
+  });
+
+  it('nao aumenta revisao nem auditoria de rascunho que ja usa o baseline da 0001', async () => {
+    const world = createWorld();
+    await world.instalacaoService.verificarSubida();
+    const funcionalidade = expectDefined(world.prisma.data.funcionalidade.find((item) =>
+      item.registryKey === 'projetos.backlog-de-demandas'));
+    const administrador = expectDefined(world.prisma.data.usuario.find((item) => item.padraoSistema));
+    const rascunho = await world.catalogoLifecycleService.createFeatureDraft(
+      funcionalidade.id,
+      administrador.id,
+      'Personalizacao preservada'
+    );
+    const personalizado = await world.catalogoLifecycleService.updateFeatureDraft({
+      versaoId: rascunho.id,
+      revisaoEsperada: rascunho.revisao,
+      titulo: 'Backlog personalizado'
+    }, administrador.id);
+    const auditoriasAntes = world.prisma.data.catalogoAuditoria.length;
+
+    expectDefined(world.prisma.data.sistemaInstalacao[0]).origem = 'BANCO_EXISTENTE';
+    world.prisma.data.produtoAtualizacao.splice(0);
+    await world.produtoAtualizacaoService.aplicarPendentes();
+
+    const depois = expectDefined(world.prisma.data.catalogoVersao.find((item) => item.id === rascunho.id));
+    expect(depois.revisao).toBe(personalizado.revisao);
+    expect(depois.snapshot).toBe(personalizado.snapshot);
+    expect(world.prisma.data.catalogoAuditoria).toHaveLength(auditoriasAntes);
+  });
+
   it('desfaz a instalacao inteira quando um passo falha e instala na proxima subida', async () => {
     const world = createWorld();
     const vazio = JSON.stringify(world.prisma.data);
@@ -2831,7 +2981,8 @@ describe('Fluxos integrados do backend', () => {
       configService,
       operacoesComFalha as never,
       new CatalogoProviderRegistry(),
-      new CatalogoActionConsumerRegistry()
+      new CatalogoActionConsumerRegistry(),
+      world.produtoAtualizacaoService
     );
 
     await expect(instalacaoComFalha.verificarSubida()).rejects.toThrow('falha simulada depois do catalogo');

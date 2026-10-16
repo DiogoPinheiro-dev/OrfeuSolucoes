@@ -541,7 +541,14 @@ export const DOCUMENTACAO_PRODUTO: SolucaoProdutoDefinition = {
   agrupamentos: []
 };
 
-export const CATALOGO_PRODUTO: CatalogoProdutoManifest = {
+/**
+ * Fotografia imutavel do catalogo entregue em 2026-10-15.
+ *
+ * Atualizacoes de produto publicadas podem importar esta constante datada. O
+ * catalogo corrente deve evoluir por novas camadas/versionamentos, sem alterar
+ * esta fotografia, para que bancos antigos sempre executem o mesmo passo.
+ */
+export const CATALOGO_PRODUTO_2026_10_15: CatalogoProdutoManifest = {
   versao: 1,
   solucoes: [
     PROJETOS_PRODUTO,
@@ -550,6 +557,8 @@ export const CATALOGO_PRODUTO: CatalogoProdutoManifest = {
     DOCUMENTACAO_PRODUTO
   ]
 };
+
+export const CATALOGO_PRODUTO: CatalogoProdutoManifest = CATALOGO_PRODUTO_2026_10_15;
 
 export function obterSolucaoProduto(slug: string): SolucaoProdutoDefinition {
   const solucao = CATALOGO_PRODUTO.solucoes.find((item) => item.slug === slug);

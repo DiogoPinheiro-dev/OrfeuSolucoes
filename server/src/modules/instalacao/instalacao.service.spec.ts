@@ -80,15 +80,21 @@ function criarCenario(options: {
       acoes: [{ id: 9, funcionalidadeId: 5, ativo: true }, { id: 10, funcionalidadeId: 5, ativo: false }]
     })
   };
+  const produtoAtualizacao = {
+    listarPendentes: jest.fn().mockResolvedValue([]),
+    listarDesconhecidas: jest.fn().mockResolvedValue([]),
+    registrarIncorporadasNaInstalacao: jest.fn().mockResolvedValue(undefined)
+  };
   const service = new InstalacaoService(
     prisma as never,
     configService as never,
     operacoes as never,
     new CatalogoProviderRegistry(),
-    new CatalogoActionConsumerRegistry()
+    new CatalogoActionConsumerRegistry(),
+    produtoAtualizacao as never
   );
 
-  return { service, prisma, transacao, operacoes };
+  return { service, prisma, transacao, operacoes, produtoAtualizacao };
 }
 
 describe('InstalacaoService', () => {
@@ -138,6 +144,27 @@ describe('InstalacaoService', () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
+  it('recusa a subida quando existe atualizacao de produto pendente e informa o comando', async () => {
+    const { service, prisma, produtoAtualizacao } = criarCenario({ marcas: [{ origem: 'BANCO_EXISTENTE' }] });
+    produtoAtualizacao.listarPendentes.mockResolvedValueOnce([{
+      id: '0001-convergencia-catalogo-2026-10-15',
+      descricao: 'Converge o catalogo.'
+    }]);
+
+    await expect(service.verificarSubida()).rejects.toThrow('npm run banco:atualizar');
+    expect(prisma.funcionalidade.findMany).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('avisa sobre atualizacao desconhecida, mas permite a subida', async () => {
+    const { service, produtoAtualizacao } = criarCenario({ marcas: [{ origem: 'BANCO_EXISTENTE' }] });
+    produtoAtualizacao.listarDesconhecidas.mockResolvedValueOnce(['9999-futura']);
+    const avisos = jest.spyOn((service as unknown as { logger: { warn: (mensagem: string) => void } }).logger, 'warn').mockImplementation(() => undefined);
+
+    await expect(service.verificarSubida()).resolves.toMatchObject({ estado: 'JA_INSTALADA' });
+    expect(avisos).toHaveBeenCalledWith(expect.stringContaining('9999-futura'));
+  });
+
   it('trata como instalado o banco que outra instância acabou de instalar', async () => {
     const { service, prisma } = criarCenario({
       marcas: [null, { origem: 'INSTALACAO' }],
@@ -149,7 +176,7 @@ describe('InstalacaoService', () => {
   });
 
   it('instala o banco vazio numa transação com marca, admin, contratos e permissões totais', async () => {
-    const { service, prisma, transacao, operacoes } = criarCenario({ config: { INSTALACAO_EMPRESA_NOME: 'Orfeu Cliente' } });
+    const { service, prisma, transacao, operacoes, produtoAtualizacao } = criarCenario({ config: { INSTALACAO_EMPRESA_NOME: 'Orfeu Cliente' } });
 
     await expect(service.verificarSubida()).resolves.toEqual({
       estado: 'INSTALADA_AGORA',
@@ -164,6 +191,7 @@ describe('InstalacaoService', () => {
     expect(transacao.sistemaInstalacao.create).toHaveBeenCalledWith({
       data: expect.objectContaining({ id: 1, origem: 'INSTALACAO', versaoManifesto: CATALOGO_PRODUTO.versao })
     });
+    expect(produtoAtualizacao.registrarIncorporadasNaInstalacao).toHaveBeenCalledWith(transacao, expect.any(Date));
     // A marca é gravada antes de qualquer item do catálogo: é ela que trava uma segunda instância.
     const ordemDaMarca = transacao.sistemaInstalacao.create.mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY;
     const ordemDoCatalogo = operacoes.criarCatalogo.mock.invocationCallOrder[0] ?? Number.NEGATIVE_INFINITY;
