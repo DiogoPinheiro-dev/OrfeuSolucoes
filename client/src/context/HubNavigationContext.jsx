@@ -14,10 +14,13 @@ export function HubNavigationProvider({ children }) {
     const [error, setError] = useState("");
     const [loadedScope, setLoadedScope] = useState(null);
     const navigationRequest = useLatestRequest();
-    const navigationScope = isAuthenticated ? `company:${user?.empresa?.id ?? "none"}` : null;
+    const passwordChangeRequired = Boolean(user?.deveAlterarSenha);
+    const navigationScope = isAuthenticated && !passwordChangeRequired
+        ? `company:${user?.empresa?.id ?? "none"}`
+        : null;
 
     useEffect(() => {
-        if (!isAuthenticated) {
+        if (!isAuthenticated || passwordChangeRequired) {
             navigationRequest.invalidate();
             setSolutions([]);
             setLoading(false);
@@ -55,9 +58,9 @@ export function HubNavigationProvider({ children }) {
             navigationRequest.invalidate();
             window.removeEventListener(HUB_NAVIGATION_CHANGED_EVENT, handleHubNavigationChanged);
         };
-    }, [isAuthenticated, navigationRequest, navigationScope]);
+    }, [isAuthenticated, navigationRequest, navigationScope, passwordChangeRequired]);
 
-    const scopePending = isAuthenticated && loadedScope !== navigationScope;
+    const scopePending = isAuthenticated && !passwordChangeRequired && loadedScope !== navigationScope;
     const value = useMemo(() => ({
         error: scopePending ? "" : error,
         loading: scopePending || loading,

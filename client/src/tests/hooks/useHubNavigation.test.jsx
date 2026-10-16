@@ -120,6 +120,26 @@ describe("useHubNavigation", () => {
         expect(result.current.loading).toBe(false);
     });
 
+    it("aguarda a troca obrigatória de senha antes de carregar a navegação", async () => {
+        auth = { isAuthenticated: true, user: { deveAlterarSenha: true, empresa: { id: 1 } } };
+        getMyHubNavigation.mockResolvedValue(navigation(10, "Configurador"));
+
+        const { result, rerender } = renderHook(() => useHubNavigation(), strictOptions);
+
+        expect(result.current.loading).toBe(false);
+        expect(result.current.error).toBe("");
+        expect(result.current.solutions).toEqual([]);
+        expect(getMyHubNavigation).not.toHaveBeenCalled();
+
+        auth = { ...auth, user: { ...auth.user, deveAlterarSenha: false } };
+        rerender();
+
+        await waitFor(() => expect(result.current.solutions[0]?.id).toBe(10));
+        expect(result.current.error).toBe("");
+        expect(result.current.loading).toBe(false);
+        expect(getMyHubNavigation).toHaveBeenCalledTimes(1);
+    });
+
     it("ignora a resposta atrasada da empresa anterior", async () => {
         const previousCompany = deferred();
         const currentCompany = deferred();

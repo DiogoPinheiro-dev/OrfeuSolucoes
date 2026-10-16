@@ -15,6 +15,19 @@
       "palavrasChave": ["frontend", "navegação", "componentes"]
     },
     {
+      "id": "sistema.instalacao-e-atualizacao",
+      "slug": "instalacao-e-atualizacao",
+      "titulo": "Instalação e atualização",
+      "resumo": "Como instalar o produto, transicionar bancos anteriores e aplicar atualizações com backup e validação.",
+      "arquivo": "sistema/instalacao-e-atualizacao.md",
+      "categoria": "sistema",
+      "audiencia": "admin-sistema",
+      "status": "publicado",
+      "ordem": 15,
+      "validadoEm": "2026-10-16",
+      "palavrasChave": ["instalação", "atualização", "migration", "backup"]
+    },
+    {
       "id": "sistema.testes-automatizados",
       "slug": "testes-automatizados",
       "titulo": "Testes automatizados",

@@ -1,25 +1,30 @@
 # Release candidate
 
-O ensaio de release candidate é executado manualmente pelo workflow `Release candidate`, sempre em infraestrutura descartável. Ele não utiliza nem altera o banco local ou o banco de produção.
+O workflow manual `Release candidate` ensaia a instalação e a atualização do Orfeu em um SQL Server descartável. Ele não utiliza nem altera o banco local ou o banco de produção.
 
 ## Evidências exigidas
 
-O workflow instala o backend com `npm ci`, cria um SQL Server limpo e aplica as migrations até o fim de agosto de 2026. O corte exclui explicitamente as migrations `202609*` e `202610*`, permitindo ensaiar em sequência a substituição das tarefas por itens do backlog, o controle de horas e a consolidação do catálogo. Em seguida, insere uma amostra relacionada de empresa, usuário, projeto, recurso, equipe, orçamento, custo, tarefa legada, solução customizada e catálogo anterior de horas, templates e portfólio.
+O job `Instalação, backup e restauração` cria um banco novo e aplica as migrations atuais. Antes da primeira subida, o verificador confirma que não existe nenhum dado de negócio. O backend então instala o manifesto, responde à consulta GraphQL de saúde, aceita a origem de homologação e bloqueia uma mutation enviada por origem não confiável.
 
-Antes da atualização, o banco é salvo com `BACKUP DATABASE`, checksum e `RESTORE VERIFYONLY`. A migration completa deve transformar a tarefa legada em item do backlog, reconciliar o custo com esse item e preservar projeto, recurso, equipe e customização do catálogo. Também deve manter o contrato empresarial do Gerenciador de Projetos, retirar dos grupos comuns o acesso inicial às duas telas de horas, despublicar a ação antiga de apontar, aposentar a solução legada e as telas de templates e portfólio sem apagar seu histórico, além de registrar as mudanças na auditoria.
+Depois da instalação, o workflow cria um backup com checksum e o valida com `RESTORE VERIFYONLY`. Para simular uma versão instalada com atualização pendente, ele mantém a marca de banco existente e remove somente o registro da atualização `0001-convergencia-catalogo-2026-10-15`. A tentativa de subir o backend deve falhar e informar `npm run banco:atualizar`.
 
-O rollback é feito exclusivamente pela restauração do backup anterior. Após confirmar a recuperação da tarefa e do vínculo de custo, as migrations são reaplicadas para demonstrar que o procedimento é repetível.
+O comando de atualização aplica a versão pendente e registra sua origem. Uma segunda execução deve ser nula, com a mesma soma de verificação dos dados. Em seguida, o workflow restaura o backup pendente e reaplica a atualização, comprovando que o procedimento pode ser repetido depois de uma recuperação.
 
-Por fim, o backend de homologação é iniciado duas vezes. Cada inicialização deve concluir o bootstrap, responder à consulta GraphQL de saúde com a origem permitida, bloquear uma mutation enviada por origem não confiável e preservar uma única instância da solução customizada e das soluções padrão. O bootstrap deve criar uma única vez `Meus apontamentos`, o agrupamento **Controle de horas** e suas duas abas, manter as funcionalidades restritas aos grupos comuns e gerar o rascunho versionado de `Horas do projeto` para revisão administrativa.
+O backup da instalação inicial também é restaurado para provar que uma nova subida não instala nem regrava o catálogo. O hash anterior e o posterior precisam ser iguais.
+
+Os logs `runtime-*.log` são publicados como artefato mesmo quando o ensaio falha. Eles devem mostrar a causa de uma recusa e, em uma subida válida, a compatibilidade das telas e ações publicadas.
 
 ## Procedimento operacional
 
 1. Confirmar que o workflow `Qualidade` está verde para o mesmo commit.
 2. Executar manualmente o workflow `Release candidate` no commit candidato.
-3. Exigir sucesso do job `Migração, backup e rollback` e guardar o link da execução.
-4. Em uma promoção real, criar e verificar o backup do banco antes das migrations.
-5. Depois do bootstrap, revisar no Configurador os rascunhos das funcionalidades de horas, publicar as versões aprovadas e liberar as permissões somente para os grupos definidos pela operação.
-6. Se a validação pós-migration falhar, interromper a promoção e restaurar o backup anterior; migrations destrutivas não possuem rollback por SQL reverso.
-7. Liberar tráfego somente após migrations, bootstrap, publicação do catálogo, permissões, saúde, CORS, autenticação e jornadas de homologação estarem aprovados.
+3. Exigir sucesso do job `Instalação, backup e restauração` e guardar o link da execução.
+4. Examinar os logs publicados, inclusive a recusa por atualização pendente e as subidas após aplicação e restauração.
+5. Em uma promoção real, criar e verificar um backup imediatamente antes de `npm run banco:atualizar`.
+6. Aplicar a atualização com o tráfego interrompido e iniciar o backend somente depois do comando concluir.
+7. Revisar no Configurador os rascunhos propostos, publicar apenas os aprovados e conferir contratos e permissões.
+8. Homologar login, troca obrigatória de senha quando aplicável, Hub, Configurador e jornadas críticas.
+9. Se uma validação falhar, interromper a promoção e restaurar o backup anterior. O rollback é por restauração, não por SQL reverso.
+10. Liberar tráfego somente depois de migrations, atualização do produto, catálogo, permissões, saúde, CORS, autenticação e homologação estarem aprovados.
 
-O backup produzido no workflow é descartável e serve como prova do procedimento. Backups reais devem seguir a retenção, criptografia, controle de acesso e armazenamento definidos para o ambiente de destino.
+O backup do workflow é descartável e serve como prova do procedimento. Backups reais devem seguir a retenção, criptografia, controle de acesso e armazenamento definidos para o ambiente de destino. O fluxo completo está em [Instalação e atualização](instalacao-e-atualizacao.md).

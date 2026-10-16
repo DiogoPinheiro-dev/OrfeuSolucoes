@@ -119,6 +119,8 @@ As ações dinâmicas `aprovar_horas`, `reabrir_horas` e `fechar_periodo` separa
 
 As duas funcionalidades são contratadas para a empresa junto com o Gerenciador de Projetos, mas não são liberadas automaticamente para grupos comuns. O administrador inicial pode acessá-las e deve conceder explicitamente as permissões aos demais grupos no Configurador. A antiga solução separada **Controle de Horas** foi aposentada; seus registros históricos permanecem preservados e seus identificadores não podem ser reutilizados.
 
+Em uma instalação nova, as funcionalidades de horas e o agrupamento **Controle de horas** vêm do manifesto do produto. Bancos existentes recebem as definições ausentes por uma atualização versionada executada com `npm run banco:atualizar`. A atualização preserva customizações e permissões existentes, registra a convergência na auditoria e não é repetida em reinícios posteriores.
+
 ## Autorização, concorrência e auditoria
 
 O acesso considera a empresa ativa, a funcionalidade solicitada, as ações dinâmicas, o projeto, o papel do usuário, as equipes ativas e o nível hierárquico da capacitação. O backend calcula permissões efetivas por tela e por registro e volta a validá-las em todas as mutações. Ocultar ou desabilitar um botão no frontend não substitui essa validação.

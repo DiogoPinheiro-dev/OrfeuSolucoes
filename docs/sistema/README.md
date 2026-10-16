@@ -5,6 +5,7 @@ Esta pasta descreve contratos transversais já implementados no Orfeu Soluções
 ## Conteúdo
 
 - [Frontend](frontend.md): organização, navegação, permissões, componentes compartilhados e exceções operacionais.
+- [Instalação e atualização](instalacao-e-atualizacao.md): base consolidada, primeira subida, transição, atualização do produto, backup e recuperação.
 - [Testes automatizados](testes-automatizados.md): suites, comandos, cobertura e limites de cada nível de teste.
 
 As regras específicas de cada solução ficam no [índice de soluções](../solucoes/README.md).

@@ -78,9 +78,9 @@ Em 25 de agosto de 2026, a suíte geral do frontend concluiu 502 testes, o Cypre
 | Frontend | 75,31% | 62,23% | 66,65% | 77,60% |
 | Backend | 75,73% | 65,70% | 72,89% | 76,93% |
 
-O Prisma validou o schema e confirmou 70 migrations aplicadas no SQL Server. Essa contagem representa o estado daquela revisão; os comandos continuam sendo a fonte de verdade para validações posteriores.
+O Prisma validou o schema e confirmou 70 migrations aplicadas no SQL Server. Essa contagem representa o estado daquela revisão; os comandos continuam sendo a fonte de verdade para validações posteriores. O histórico de desenvolvimento chegou a 80 migrations e permanece consultável no commit `189e494`. A linha atual usa uma base consolidada e migrations posteriores; por isso, a quantidade atual não deve ser comparada diretamente à baseline histórica.
 
-O Planejamento 17.5 acrescenta contratos unitários e de integração para o bootstrap restrito das telas de horas, chaves aposentadas, permissões do catálogo, atualização imediata do Hub e ausência da solução legada. O ensaio de release candidate complementa as suítes aplicando as migrations de setembro e outubro sobre um catálogo anterior, verificando auditoria, preservação histórica, rascunhos de publicação e repetibilidade do bootstrap. Os totais desta seção permanecem como baseline histórica; a saída do gate executado no commit candidato é a evidência atual.
+Os contratos atuais validam o manifesto único do produto, a instalação transacional em banco vazio, a concorrência entre duas instâncias, o seed do Prisma, a segunda subida sem escrita, a recusa de banco sem marca, as atualizações versionadas, a preservação das customizações, a paridade entre instalação nova e banco convergido e a compatibilidade de providers e consumidores. O ensaio de release candidate complementa as suítes com SQL Server real, backup verificado, restauração e reaplicação. Os totais desta seção permanecem como baseline histórica; a saída do gate executado no commit candidato é a evidência atual.
 
 ## Integração contínua
 
@@ -90,6 +90,7 @@ O workflow `.github/workflows/quality.yml` executa os gates em jobs independente
 - regressão e cobertura do backend;
 - qualidade e cobertura do frontend;
 - validação do Prisma e aplicação das migrations em um SQL Server limpo;
+- prova de que as migrations deixam o banco vazio, a primeira subida instala uma única vez, duas instâncias não duplicam dados e o seed é idempotente;
 - auditoria das dependências de produção;
 - build de homologação e jornadas Cypress no Electron.
 
