@@ -46,7 +46,8 @@ describe('Hierarquia nos consumidores de itens', () => {
       prisma as never,
       authorization as never,
       {} as never,
-      hierarquia() as never
+      hierarquia() as never,
+      { hojeOperacional: jest.fn().mockReturnValue('2026-10-16') } as never
     );
 
     await service.painel({ projetoId: 'projeto-1' } as never, user);

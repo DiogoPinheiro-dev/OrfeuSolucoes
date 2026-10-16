@@ -1729,6 +1729,103 @@ type ProjetoHorasTotalUsuarioType {
   usuario: ProjetoUsuarioType!
 }
 
+type ProjetoIndicadorAtividadeType {
+  avisos: [String!]!
+  calculadoEm: DateTime!
+  eventosNosUltimosSeteDias: Int!
+  origem: ProjetoIndicadorOrigemType!
+  saudePercebida: String
+  ultimaAtualizacaoAutor: String
+  ultimaAtualizacaoEm: DateTime
+  ultimoEventoEm: DateTime
+}
+
+type ProjetoIndicadorBloqueiosType {
+  avisos: [String!]!
+  calculadoEm: DateTime!
+  inconsistenciasDeDatas: Int!
+  itensBloqueados: Int!
+  origem: ProjetoIndicadorOrigemType!
+}
+
+type ProjetoIndicadorEsforcoType {
+  avisos: [String!]!
+  calculadoEm: DateTime!
+  estimativaTotalMinutos: Int!
+  minutosAprovados: Int!
+  minutosEnviadosPendentes: Int!
+  origem: ProjetoIndicadorOrigemType!
+}
+
+type ProjetoIndicadorMarcoEntregaItemType {
+  atrasado: Boolean!
+  dataPrevistaEm: DateTime!
+  id: String!
+  nome: String!
+  progressoPercentual: Int!
+  status: String!
+  tipo: String!
+}
+
+type ProjetoIndicadorMarcosEntregasType {
+  atrasados: Int!
+  avisos: [String!]!
+  calculadoEm: DateTime!
+  origem: ProjetoIndicadorOrigemType!
+  proximos: [ProjetoIndicadorMarcoEntregaItemType!]!
+}
+
+type ProjetoIndicadorOrcamentoType {
+  apontamentosSemCusto: Int!
+  avisos: [String!]!
+  calculadoEm: DateTime!
+  moeda: String
+  origem: ProjetoIndicadorOrigemType!
+  percentualConsumido: Float
+  status: String!
+  totalPlanejado: String
+  totalRealizadoConsolidado: String
+  variacaoConsolidada: String
+}
+
+type ProjetoIndicadorOrigemType {
+  filtros: [String!]!
+  tela: String!
+}
+
+type ProjetoIndicadorPrazosType {
+  avisos: [String!]!
+  calculadoEm: DateTime!
+  diasAteFim: Int
+  itensAtrasados: Int!
+  itensSemFimPrevisto: Int!
+  origem: ProjetoIndicadorOrigemType!
+}
+
+type ProjetoIndicadorProgressoType {
+  avisos: [String!]!
+  calculadoEm: DateTime!
+  esperadoPercentual: Int
+  itensAbertos: Int!
+  itensCancelados: Int!
+  itensConcluidos: Int!
+  itensEmAndamento: Int!
+  origem: ProjetoIndicadorOrigemType!
+  percentual: Int!
+  usaEstimativas: Boolean!
+}
+
+type ProjetoIndicadorSprintType {
+  avisos: [String!]!
+  calculadoEm: DateTime!
+  diasRestantes: Int
+  itensAdicionadosAposInicio: Int!
+  itensRetiradosAposInicio: Int!
+  nome: String
+  origem: ProjetoIndicadorOrigemType!
+  progressoPercentual: Int!
+}
+
 type ProjetoItemDependenciaType {
   arquivadoEm: DateTime
   atualizadoEm: DateTime!
@@ -1948,6 +2045,18 @@ type ProjetoOrganizacaoPainelType {
   permissoesEquipes: ProjetoRecursoPermissoesType!
   projetos: [ProjetoRecursoProjetoType!]!
   recursos: [OrganizacaoRecursoType!]!
+}
+
+type ProjetoPainelType {
+  atividade: ProjetoIndicadorAtividadeType!
+  bloqueios: ProjetoIndicadorBloqueiosType!
+  esforco: ProjetoIndicadorEsforcoType!
+  marcosEntregas: ProjetoIndicadorMarcosEntregasType!
+  orcamento: ProjetoIndicadorOrcamentoType
+  prazos: ProjetoIndicadorPrazosType!
+  progresso: ProjetoIndicadorProgressoType!
+  projetoId: String!
+  sprintAtiva: ProjetoIndicadorSprintType!
 }
 
 type ProjetoPageType {
@@ -2202,6 +2311,7 @@ type Query {
   projetoOrcamento(projetoId: String!): ProjetoOrcamentoPainelType!
   projetoOrcamentoProjetos: [ProjetoOrcamentoProjetoType!]!
   projetoOrganizacao: ProjetoOrganizacaoPainelType!
+  projetoPainel(projetoId: String!): ProjetoPainelType!
   projetoParticipantesDisponiveis: [ProjetoUsuarioType!]!
   projetoRecursos: ProjetoRecursoPainelType!
   projetoRecursosProjetos: [ProjetoRecursoProjetoType!]!

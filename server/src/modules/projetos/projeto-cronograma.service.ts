@@ -30,6 +30,10 @@ import {
 } from './policies/projeto-input.policy';
 import { assertProjetoDependenciaSemCiclo } from './policies/projeto-dependencia.policy';
 import {
+  calcularProjetoProgresso,
+  estaVencidoNoDiaOperacional
+} from './policies/projeto-progresso.policy';
+import {
   ProjetoCronogramaAgrupamento,
   ProjetoCronogramaElementoTipo,
   ProjetoCronogramaSeveridade
@@ -39,6 +43,7 @@ import {
   ProjetoRecursoEscopoHierarquico,
   ProjetoRecursoHierarquiaService
 } from './projeto-recurso-hierarquia.service';
+import { ProjetoPeriodoService } from './projeto-periodo.service';
 
 const DEPENDENCIA_INCLUDE = {
   bloqueador: true,
@@ -67,7 +72,8 @@ export class ProjetoCronogramaService {
     private readonly prisma: PrismaService,
     private readonly authorization: ProjetoCronogramaAuthorizationService,
     private readonly auditoria: ProjetoAuditoriaService,
-    private readonly recursoHierarquia: ProjetoRecursoHierarquiaService
+    private readonly recursoHierarquia: ProjetoRecursoHierarquiaService,
+    private readonly periodo: ProjetoPeriodoService
   ) {}
 
   async painel(
@@ -606,30 +612,7 @@ export class ProjetoCronogramaService {
   }
 
   private progress(items: Array<{ status: string; estimativaMinutos: number | null }>): number {
-    if (!items.length) return 0;
-    const hasEstimate = items.some(
-      (item) => (item.estimativaMinutos ?? 0) > 0
-    );
-    if (!hasEstimate) {
-      return Math.round(
-        (items.filter((item) => this.isDone(item.status)).length / items.length) *
-          100
-      );
-    }
-    const total = items.reduce(
-      (sum, item) => sum + Math.max(item.estimativaMinutos ?? 0, 0),
-      0
-    );
-    if (!total) return 0;
-    const done = items.reduce(
-      (sum, item) =>
-        sum +
-        (this.isDone(item.status)
-          ? Math.max(item.estimativaMinutos ?? 0, 0)
-          : 0),
-      0
-    );
-    return Math.round((done / total) * 100);
+    return calcularProjetoProgresso(items).percentual;
   }
 
   private groupLabel(
@@ -673,9 +656,7 @@ export class ProjetoCronogramaService {
     terminalStatuses: string[]
   ): boolean {
     if (!date || terminalStatuses.includes(status)) return false;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return date.getTime() < today.getTime();
+    return estaVencidoNoDiaOperacional(date, this.periodo.hojeOperacional());
   }
 
   private isDone(status: string): boolean {

@@ -87,6 +87,8 @@ import { ProjetoComunicacaoService } from '../src/modules/projetos/projeto-comun
 import { ProjetoFeedRegistroService } from '../src/modules/projetos/projeto-feed-registro.service';
 import { ProjetoOrcamentoAuthorizationService } from '../src/modules/projetos/projeto-orcamento-authorization.service';
 import { ProjetoOrcamentoService } from '../src/modules/projetos/projeto-orcamento.service';
+import { ProjetoIndicadoresService } from '../src/modules/projetos/projeto-indicadores.service';
+import { ProjetoPainelService } from '../src/modules/projetos/projeto-painel.service';
 import { ProjetoRecursoAuthorizationService } from '../src/modules/projetos/projeto-recurso-authorization.service';
 import { ProjetoRecursoService } from '../src/modules/projetos/projeto-recurso.service';
 import { ProjetoRecursoHierarquiaService } from '../src/modules/projetos/projeto-recurso-hierarquia.service';
@@ -1851,6 +1853,8 @@ type TestWorld = {
   projetoRecursoService: ProjetoRecursoService;
   projetoOrcamentoAuthorizationService: ProjetoOrcamentoAuthorizationService;
   projetoOrcamentoService: ProjetoOrcamentoService;
+  projetoIndicadoresService: ProjetoIndicadoresService;
+  projetoPainelService: ProjetoPainelService;
 };
 
 const asPrisma = (prisma: InMemoryPrismaService): PrismaService => prisma as unknown as PrismaService;
@@ -1981,7 +1985,8 @@ function createWorld(): TestWorld {
     prismaService,
     projetoCronogramaAuthorizationService,
     projetoAuditoriaService,
-    projetoRecursoHierarquiaService
+    projetoRecursoHierarquiaService,
+    projetoPeriodoService
   );
   const projetoComunicacaoAuthorizationService = new ProjetoComunicacaoAuthorizationService(
     prismaService,
@@ -2000,6 +2005,14 @@ function createWorld(): TestWorld {
   const projetoRecursoService = new ProjetoRecursoService(prismaService, projetoRecursoAuthorizationService, projetoAuditoriaService);
   const projetoOrcamentoAuthorizationService = new ProjetoOrcamentoAuthorizationService(prismaService, projetoAuthorizationService);
   const projetoOrcamentoService = new ProjetoOrcamentoService(prismaService, projetoOrcamentoAuthorizationService, projetoAuditoriaService);
+  const projetoIndicadoresService = new ProjetoIndicadoresService(prismaService);
+  const projetoPainelService = new ProjetoPainelService(
+    prismaService,
+    projetoAuthorizationService,
+    projetoIndicadoresService,
+    projetoOrcamentoService,
+    projetoPeriodoService
+  );
   const projetoApontamentoAuthorizationService = new ProjetoApontamentoAuthorizationService(
     prismaService,
     projetoAuthorizationService,
@@ -2156,6 +2169,8 @@ function createWorld(): TestWorld {
     projetoRecursoService,
     projetoOrcamentoAuthorizationService,
     projetoOrcamentoService,
+    projetoIndicadoresService,
+    projetoPainelService,
   };
 }
 
@@ -7299,6 +7314,50 @@ const filaAposEncerramento = await world.chamadosService.filaChamados(atendenteP
     itemFindManySpy.mockRestore();
     dependencyFindManySpy.mockRestore();
     eventFindManySpy.mockRestore();
+  });
+
+  it('calcula o painel do projeto a partir das fontes e nao grava dados', async () => {
+    const { world, admin, empresaInicialId } = await bootstrapBaseWorld();
+    const projeto = await world.prisma.projeto.create({
+      data: {
+        empresaId: empresaInicialId,
+        chave: 'PNL',
+        nome: 'Painel integrado',
+        responsavelId: admin.sub,
+        criadoPorId: admin.sub,
+        inicioPrevistoEm: new Date('2026-10-01T00:00:00.000Z'),
+        fimPrevistoEm: new Date('2026-10-31T00:00:00.000Z')
+      }
+    });
+    await world.prisma.projetoItem.createMany({
+      data: [
+        { empresaId: empresaInicialId, projetoId: projeto.id, numero: 1, chave: 'PNL-1', ordemBacklog: 1, tipo: 'TAREFA', titulo: 'Concluido', status: 'CONCLUIDO', prioridade: 'MEDIA', autorId: admin.sub, estimativaMinutos: 60 },
+        { empresaId: empresaInicialId, projetoId: projeto.id, numero: 2, chave: 'PNL-2', ordemBacklog: 2, tipo: 'TAREFA', titulo: 'Aberto', status: 'ABERTO', prioridade: 'MEDIA', autorId: admin.sub, estimativaMinutos: 180 },
+        { empresaId: empresaInicialId, projetoId: projeto.id, numero: 3, chave: 'PNL-3', ordemBacklog: 3, tipo: 'TAREFA', titulo: 'Cancelado', status: 'CANCELADO', prioridade: 'MEDIA', autorId: admin.sub, estimativaMinutos: 600 }
+      ]
+    });
+    const eventosAntes = await world.prisma.projetoEvento.count({ where: { projetoId: projeto.id } });
+    const atualizacoesAntes = await world.prisma.projetoAtualizacao.count({ where: { projetoId: projeto.id } });
+
+    const painel = await world.projetoPainelService.painel(projeto.id, admin);
+    const fonte = await world.prisma.projetoItem.findMany({
+      where: { projetoId: projeto.id, arquivadoEm: null }
+    });
+    const considerados = fonte.filter((item) => item.status !== 'CANCELADO');
+    const total = considerados.reduce((soma, item) => soma + item.estimativaMinutos, 0);
+    const concluido = considerados
+      .filter((item) => item.status === 'CONCLUIDO')
+      .reduce((soma, item) => soma + item.estimativaMinutos, 0);
+
+    expect(painel.progresso).toMatchObject({
+      percentual: Math.round(concluido / total * 100),
+      itensAbertos: 1,
+      itensConcluidos: 1,
+      itensCancelados: 1
+    });
+    expect(painel.orcamento).toMatchObject({ status: 'SEM_ORCAMENTO', totalPlanejado: null });
+    expect(await world.prisma.projetoEvento.count({ where: { projetoId: projeto.id } })).toBe(eventosAntes);
+    expect(await world.prisma.projetoAtualizacao.count({ where: { projetoId: projeto.id } })).toBe(atualizacoesAntes);
   });
 
   it('impede excluir usuario com vinculos e informa todas as dependencias sem remover empresas', async () => {

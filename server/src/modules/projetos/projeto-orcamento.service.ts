@@ -39,6 +39,23 @@ export class ProjetoOrcamentoService {
     return { recursos: recursos.map((item) => this.recurso(item)), itens: itens.map((item) => this.item(item)), financeiro: financeiro ? this.financeiro(financeiro, await this.horasAprovadas(this.prisma, { projetoId })) : null, permissoes };
   }
 
+  /** Resumo somente-leitura para o painel do projeto; a falta de permissao oculta o bloco. */
+  async resumoPainel(projetoId: string, empresaId: number, user: JwtPayload) {
+    if (!await this.authorization.podeVisualizarFinanceiro(user)) {
+      return { podeVisualizar: false, financeiro: null };
+    }
+    const item = await this.prisma.projetoOrcamento.findFirst({
+      where: { projetoId, empresaId },
+      include: FINANCE_INCLUDE
+    });
+    return {
+      podeVisualizar: true,
+      financeiro: item
+        ? this.financeiro(item, await this.horasAprovadas(this.prisma, { projetoId }))
+        : null
+    };
+  }
+
   async salvarOrcamento(input: SalvarProjetoOrcamentoInput, user: JwtPayload) {
     const contexto = await this.authorization.contexto(input.projetoId, user); await this.authorization.gerenciarFinanceiro(contexto, user);
     const moeda = input.moeda.trim().toUpperCase();

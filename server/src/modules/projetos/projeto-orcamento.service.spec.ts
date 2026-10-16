@@ -27,6 +27,7 @@ const createService = () => {
     projetos: jest.fn().mockResolvedValue({ where: { empresaId: 7 } }),
     contexto: jest.fn().mockResolvedValue(contexto),
     permissoes: jest.fn().mockResolvedValue({ podeVisualizarFinanceiro: true }),
+    podeVisualizarFinanceiro: jest.fn().mockResolvedValue(true),
     gerenciarFinanceiro: jest.fn().mockResolvedValue(undefined),
     aprovarOrcamento: jest.fn().mockResolvedValue(undefined)
   };
@@ -55,6 +56,46 @@ describe('ProjetoOrcamentoService', () => {
     });
     expect(prisma.projetoItem.findMany).not.toHaveBeenCalled();
     expect(prisma.projetoOrcamento.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('omite o resumo do painel sem consultar dados quando falta visualizar_financeiro', async () => {
+    const { prisma, authorization, service } = createService();
+    authorization.podeVisualizarFinanceiro.mockResolvedValue(false);
+
+    await expect(service.resumoPainel('p1', 7, user)).resolves.toEqual({
+      podeVisualizar: false,
+      financeiro: null
+    });
+    expect(prisma.projetoOrcamento.findFirst).not.toHaveBeenCalled();
+    expect(prisma.projetoApontamento.groupBy).not.toHaveBeenCalled();
+  });
+
+  it('reutiliza o consolidado atual no resumo financeiro do painel', async () => {
+    const { prisma, service } = createService();
+    prisma.projetoOrcamento.findFirst.mockResolvedValue({
+      ...financeiro,
+      categorias: [{ id: 'c1', nome: 'Geral', valorPlanejado: '200', valorComprometido: '0', valorRealizado: '50' }],
+      custos: [{
+        id: 'cost1', categoriaId: 'c1', tipo: ProjetoCustoTipo.RECURSO,
+        taxaHora: '25', valorPlanejado: '25', valorComprometido: '0',
+        valorRealizado: '0', recurso: null, item: null, taxas: []
+      }]
+    });
+    prisma.projetoApontamento.groupBy.mockResolvedValue([
+      { custoId: 'cost1', custoSituacao: 'CALCULADO', _sum: { minutos: 60, valorCusto: '25' }, _count: { _all: 1 } }
+    ]);
+
+    await expect(service.resumoPainel('p1', 7, user)).resolves.toMatchObject({
+      podeVisualizar: true,
+      financeiro: {
+        totalPlanejado: '200.00',
+        totalRealizadoConsolidado: '75.00',
+        variacaoConsolidada: '125.00'
+      }
+    });
+    expect(prisma.projetoOrcamento.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: { projetoId: 'p1', empresaId: 7 }
+    }));
   });
 
   it('rejeita moeda inválida e orçamento aprovado sem abrir transação', async () => {

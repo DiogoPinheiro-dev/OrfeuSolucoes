@@ -27,6 +27,7 @@ import {
 } from './projeto-sprint-authorization.service';
 import { ProjetoPeriodoService } from './projeto-periodo.service';
 import { ProjetoRecursoHierarquiaService } from './projeto-recurso-hierarquia.service';
+import { calcularProjetoProgresso } from './policies/projeto-progresso.policy';
 import {
   ProjetoItemPrioridade,
   ProjetoItemStatus,
@@ -615,6 +616,7 @@ export class ProjetoSprintService {
       (item: ProjetoSprintType['itens'][number]) =>
         item.status === ProjetoItemStatus.CONCLUIDO
     ).length;
+    const progresso = calcularProjetoProgresso(atuais);
 
     return {
       id: sprint.id,
@@ -636,9 +638,7 @@ export class ProjetoSprintService {
       itensRetiradosAposInicio: sprint.itensRetiradosAposInicio ?? 0,
       totalItens: atuais.length,
       totalConcluidos: concluidos,
-      progressoPercentual: atuais.length
-        ? Math.round((concluidos / atuais.length) * 100)
-        : 0,
+      progressoPercentual: progresso.percentual,
       itens,
       criadoEm: sprint.criadoEm,
       atualizadoEm: sprint.atualizadoEm

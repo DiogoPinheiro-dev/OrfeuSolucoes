@@ -14,6 +14,8 @@ import { ProjetoOrganizacaoService } from '../src/modules/projetos/projeto-organ
 import { ProjetoRecursoAuthorizationService } from '../src/modules/projetos/projeto-recurso-authorization.service';
 import { ProjetosResolver } from '../src/modules/projetos/projetos.resolver';
 import { ProjetosService } from '../src/modules/projetos/projetos.service';
+import { ProjetoPainelResolver } from '../src/modules/projetos/projeto-painel.resolver';
+import { ProjetoPainelService } from '../src/modules/projetos/projeto-painel.service';
 
 const admin = {
   sub: '11111111-1111-4111-8111-111111111111',
@@ -131,6 +133,7 @@ describe('Projetos GraphQL e2e', () => {
     comunicacaoProjetos: jest.fn(),
     comunicacao: jest.fn()
   };
+  const painelService = { painel: jest.fn() };
 
   beforeAll(async () => {
     const fixture = await Test.createTestingModule({
@@ -146,10 +149,12 @@ describe('Projetos GraphQL e2e', () => {
         ProjetosResolver,
         ProjetoComunicacaoResolver,
         ProjetoOrganizacaoResolver,
+        ProjetoPainelResolver,
         { provide: ProjetoOrganizacaoService, useValue: organizationService },
         GqlAuthGuard,
         ProjectTestJwtStrategy,
-        { provide: ProjetosService, useValue: service }
+        { provide: ProjetosService, useValue: service },
+        { provide: ProjetoPainelService, useValue: painelService }
       ]
     }).compile();
 
@@ -220,6 +225,34 @@ describe('Projetos GraphQL e2e', () => {
       nivel: 0,
       trilha: 'ORFEU-1 — Historia principal'
     }]);
+    painelService.painel.mockResolvedValue({
+      projetoId: project.id,
+      progresso: {
+        calculadoEm: new Date('2026-10-16T12:00:00.000Z'),
+        avisos: [],
+        origem: { tela: 'Backlog do projeto', filtros: ['arquivadoEm=null'] },
+        percentual: 25,
+        esperadoPercentual: 50,
+        usaEstimativas: true,
+        itensAbertos: 1,
+        itensEmAndamento: 0,
+        itensConcluidos: 1,
+        itensCancelados: 1
+      },
+      prazos: {},
+      sprintAtiva: {
+        calculadoEm: new Date('2026-10-16T12:00:00.000Z'),
+        avisos: ['O projeto Scrum nao possui sprint ativa.'],
+        origem: { tela: 'Sprints do projeto', filtros: ['status=ATIVA'] },
+        nome: null,
+        diasRestantes: null,
+        progressoPercentual: 0,
+        itensAdicionadosAposInicio: 0,
+        itensRetiradosAposInicio: 0
+      },
+      bloqueios: {}, marcosEntregas: {},
+      orcamento: null, esforco: {}, atividade: {}
+    });
   });
 
   const gql = (token: string, query: string, variables?: Record<string, unknown>) =>
@@ -322,6 +355,49 @@ describe('Projetos GraphQL e2e', () => {
       project.id,
       expect.objectContaining({ sub: admin.sub, empresaId: 10 }),
       itemId
+    );
+  });
+
+  it('expoe o painel somente-leitura pela borda GraphQL', async () => {
+    const response = await gql(adminToken, `
+      query Painel($projetoId: String!) {
+        projetoPainel(projetoId: $projetoId) {
+          projetoId
+          progresso {
+            percentual esperadoPercentual usaEstimativas
+            itensAbertos itensConcluidos itensCancelados
+            calculadoEm avisos origem { tela filtros }
+          }
+          sprintAtiva { nome diasRestantes progressoPercentual avisos }
+          orcamento { moeda }
+        }
+      }
+    `, { projetoId: project.id }).expect(200);
+
+    expect(response.body.errors).toBeUndefined();
+    expect(response.body.data.projetoPainel).toMatchObject({
+      projetoId: project.id,
+      progresso: {
+        percentual: 25,
+        esperadoPercentual: 50,
+        usaEstimativas: true,
+        itensAbertos: 1,
+        itensConcluidos: 1,
+        itensCancelados: 1,
+        avisos: [],
+        origem: { tela: 'Backlog do projeto', filtros: ['arquivadoEm=null'] }
+      },
+      sprintAtiva: {
+        nome: null,
+        diasRestantes: null,
+        progressoPercentual: 0,
+        avisos: ['O projeto Scrum nao possui sprint ativa.']
+      },
+      orcamento: null
+    });
+    expect(painelService.painel).toHaveBeenCalledWith(
+      project.id,
+      expect.objectContaining({ sub: admin.sub, empresaId: 10 })
     );
   });
 

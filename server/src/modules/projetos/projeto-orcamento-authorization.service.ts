@@ -46,6 +46,16 @@ export class ProjetoOrcamentoAuthorizationService {
     return { podeVisualizarFinanceiro: visualizar, podeGerenciarFinanceiro: gerenciar, podeAprovarOrcamento: aprovar };
   }
 
+  /** Permissao financeira isolada para consumidores que ja autorizaram o projeto visivel. */
+  async podeVisualizarFinanceiro(user: JwtPayload): Promise<boolean> {
+    if (this.authorization.isSystemAdmin(user)) return true;
+    return this.can(() => this.authorization.assertFeatureActionAccess(
+      user,
+      ProjetoFuncionalidade.ORCAMENTO,
+      ProjetoAcao.VISUALIZAR_FINANCEIRO
+    ).then(() => undefined));
+  }
+
   private async financeiro(contexto: ProjetoOrcamentoContexto, user: JwtPayload, action: string, operation: string) {
     await this.authorization.assertOperationalAction(user, contexto.projeto, contexto.empresaId, contexto.papel,
       ProjetoFuncionalidade.ORCAMENTO, action, [ProjetoPapel.RESPONSAVEL], operation);

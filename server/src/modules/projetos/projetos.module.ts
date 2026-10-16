@@ -51,6 +51,9 @@ import { ProjetoOrganizacaoResolver } from './projeto-organizacao.resolver';
 import { ProjetoOrganizacaoService } from './projeto-organizacao.service';
 import { ProjetoEquipeVinculoService } from './projeto-equipe-vinculo.service';
 import { ProjetoRecursoHierarquiaService } from './projeto-recurso-hierarquia.service';
+import { ProjetoIndicadoresService } from './projeto-indicadores.service';
+import { ProjetoPainelService } from './projeto-painel.service';
+import { ProjetoPainelResolver } from './projeto-painel.resolver';
 
 @Module({
   imports: [PrismaModule, SolucoesModule],
@@ -72,6 +75,8 @@ import { ProjetoRecursoHierarquiaService } from './projeto-recurso-hierarquia.se
     ProjetoOrganizacaoService,
     ProjetoEquipeVinculoService,
     ProjetoRecursoHierarquiaService,
+    ProjetoIndicadoresService,
+    ProjetoPainelService,
     ProjetoOrcamentoAuthorizationService,
     ProjetoOrcamentoService,
     ProjetoApontamentoAuthorizationService,
@@ -105,6 +110,7 @@ import { ProjetoRecursoHierarquiaService } from './projeto-recurso-hierarquia.se
     ProjetoOrcamentoResolver,
     ProjetoApontamentoResolver,
     ProjetoOrganizacaoResolver,
+    ProjetoPainelResolver,
   ],
   exports: [
     ProjetoAuthorizationService,
@@ -136,6 +142,8 @@ import { ProjetoRecursoHierarquiaService } from './projeto-recurso-hierarquia.se
     ProjetoItemHierarquiaService,
     ProjetoItemQueryService,
     ProjetoQueryService,
+    ProjetoIndicadoresService,
+    ProjetoPainelService,
     ProjetoSequenciaService,
     ProjetosService
   ]
